@@ -1,0 +1,75 @@
+﻿<Window x:Class="MusicWrap.UI.Windows.CompactPlayer"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MusicWrap.UI.Windows"
+        mc:Ignorable="d"
+        Icon="/Resources/icon.ico" 
+        Title="MusicWrap" 
+        Width="275" 
+        Height="390" 
+        WindowStartupLocation="CenterScreen"
+        Background="#222222"
+        ResizeMode="NoResize"
+        >
+    <WindowChrome.WindowChrome>
+        <WindowChrome
+        CaptionHeight="275"
+        ResizeBorderThickness="6"
+        CornerRadius="8"
+        GlassFrameThickness="0"
+        UseAeroCaptionButtons="False"
+        />
+    </WindowChrome.WindowChrome>
+    <Border
+        BorderThickness="1"
+        CornerRadius="8"
+        BorderBrush="#444444"
+        >
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="275"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <!--Artwork-->
+            <Grid Grid.Row="0">
+
+            </Grid>
+            <!--Controls-->
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="auto"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+
+                </Grid>
+                <Grid Grid.Row="1">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Button Style="{StaticResource SubtleButton}" Padding="8" ToolTip="Open main player" Click="HandleOpenMainPlayer">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEE47;" FontSize="14" />
+                        </Button>
+                        <Button Style="{StaticResource SubtleButton}" Padding="8" ToolTip="Show Queue" Click="HandleOpenQueue">
+                            <TextBlock x:Name="QueueFontIcon" FontFamily="Segoe Fluent Icons" Text="&#xe70d;" FontSize="14" />
+                        </Button>
+                        <Button Style="{StaticResource SubtleButton}" Padding="8" Click="HandleToggleAllwayOnTop">
+                            <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="14" />
+                        </Button>
+                    </StackPanel>
+                    <Button Style="{StaticResource CloseButton}" Padding="8" Click="HandleCloseApp" HorizontalAlignment="Right">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8bb;" FontSize="11" />
+                    </Button>
+                </Grid>
+                <Grid
+                    Grid.Row="2"
+                    x:Name="QueuePanel"
+                    Visibility="Collapsed"
+                    >
+                    <TextBlock Text="Queue goes here" Foreground="#888" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

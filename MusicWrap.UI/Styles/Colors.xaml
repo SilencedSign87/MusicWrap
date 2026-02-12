@@ -1,0 +1,45 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Background -->
+    <SolidColorBrush x:Key="BackgroundPrimaryBrush" Color="#222222" />
+    <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#2b2b2b" />
+    <SolidColorBrush x:Key="BackgroundTertiaryBrush" Color="#3b3b3b" />
+    
+    <!-- Stroke -->
+    <SolidColorBrush x:Key="StrokePrimaryBrush" Color="#FF444444"/>
+    <SolidColorBrush x:Key="StrokeSecondaryBrush" Color="#FF666666"/>
+    <SolidColorBrush x:Key="StrokeDisabledBrush" Color="#FF333333"/>
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFFFF"/>
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FFB0B0B0"/>
+    <SolidColorBrush x:Key="TextDisabledBrush" Color="#FF666666"/>
+    
+    <!-- Accent -->
+    <SolidColorBrush x:Key="AccentBrush10" Color="#000307" />
+    <SolidColorBrush x:Key="AccentBrush20" Color="#001929" />
+    <SolidColorBrush x:Key="AccentBrush30" Color="#002840" />
+    <SolidColorBrush x:Key="AccentBrush40" Color="#003454" />
+    <SolidColorBrush x:Key="AccentBrush50" Color="#004169" />
+    <SolidColorBrush x:Key="AccentBrush60" Color="#004D80" />
+    <SolidColorBrush x:Key="AccentBrush70" Color="#005A99" />
+    <SolidColorBrush x:Key="AccentBrush80" Color="#0067B4" />
+    <SolidColorBrush x:Key="AccentBrush90" Color="#0074D1" />
+    <SolidColorBrush x:Key="AccentBrush100" Color="#3881E1" />
+    <SolidColorBrush x:Key="AccentBrush110" Color="#588DEE" />
+    <SolidColorBrush x:Key="AccentBrush120" Color="#759AF9" />
+    <SolidColorBrush x:Key="AccentBrush130" Color="#90A7FF" />
+    <SolidColorBrush x:Key="AccentBrush140" Color="#ABB5FF" />
+    <SolidColorBrush x:Key="AccentBrush150" Color="#C2C4FF" />
+    <SolidColorBrush x:Key="AccentBrush160" Color="#D6D3FF" />
+    
+    
+
+    <!--Text in accent-->
+    <SolidColorBrush x:Key="TextOnAccentPrimaryBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="TextOnAccentSecondaryBrush" Color="#121212"/>
+    <SolidColorBrush x:Key="TextOnAccentTertiaryBrush" Color="#202020"/>
+
+
+</ResourceDictionary>
