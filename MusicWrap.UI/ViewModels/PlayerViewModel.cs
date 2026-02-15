@@ -3,12 +3,14 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core;
 using MusicWrap.Data;
 using MusicWrap.Data.Library;
+using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -30,7 +32,7 @@ namespace MusicWrap.UI.ViewModels
         private string currentTrackArtists = "";
 
         [ObservableProperty]
-        private string? currentTrackCoverPath;
+        private BitmapImage? currentTrackImage;
         [ObservableProperty]
         private string? currentTrackDominantColorHex;
         [ObservableProperty]
@@ -169,7 +171,7 @@ namespace MusicWrap.UI.ViewModels
             {
                 CurrentTrackTitle = "No track playing";
                 CurrentTrackArtists = "";
-                CurrentTrackCoverPath = null;
+                CurrentTrackImage = ImageHelper.GetDefaultAlbumImage(275);
                 return;
             }
 
@@ -178,7 +180,7 @@ namespace MusicWrap.UI.ViewModels
             {
                 CurrentTrackTitle = "Unknown track";
                 CurrentTrackArtists = "";
-                CurrentTrackCoverPath = null;
+                CurrentTrackImage = ImageHelper.GetDefaultAlbumImage(275);
                 return;
             }
 
@@ -192,6 +194,8 @@ namespace MusicWrap.UI.ViewModels
 
             // Get cover
             int coverId = track.CoverId;
+            string? coverPath = null;
+
             if (coverId == 0)
             {
                 var album = _library.Albums.FirstOrDefault(a => a.Id == track.AlbumId);
@@ -206,17 +210,21 @@ namespace MusicWrap.UI.ViewModels
                 var coverAsset = _library.CoverAssets.FirstOrDefault(c => c.Id == coverId);
                 if (coverAsset != null)
                 {
-                    CurrentTrackCoverPath = Path.Combine(CoversBasePath, coverAsset.FileName);
+                    coverPath = Path.Combine(CoversBasePath, coverAsset.FileName);
                     CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
                     CurrentTrackForegroundColorHex = coverAsset.ForegroundColorHex;
                 }
             }
             else
             {
-                CurrentTrackCoverPath = null;
                 CurrentTrackDominantColorHex = null;
                 CurrentTrackForegroundColorHex = null;
             }
+            CurrentTrackImage = ImageHelper.LoadThumbnail(
+                       coverPath,
+                       "album",
+                       275
+                   )!;
         }
 
         private static string FormatTime(double seconds)

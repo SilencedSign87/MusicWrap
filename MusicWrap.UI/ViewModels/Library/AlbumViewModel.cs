@@ -42,7 +42,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private void LoadAlbumData()
         {
-            var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
+            var album = _library.Albums.FirstOrDefault(a => a.Id == AlbumId);
             if (album == null) return;
 
             Title = album.Title;

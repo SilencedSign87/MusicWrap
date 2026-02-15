@@ -5,6 +5,7 @@ using MusicWrap.Data;
 using MusicWrap.Data.Library;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace MusicWrap.UI.ViewModels.Library
@@ -32,10 +33,10 @@ namespace MusicWrap.UI.ViewModels.Library
         [ObservableProperty]
         private List<DiskGroup> diskGroups = [];
 
-        private MusicLibrary _library;
-        private IMusicPlayerService? _playerService;
+        private readonly MusicLibrary _library;
+        private readonly IMusicPlayerService _playerService;
 
-        public AlbumTracksViewModel(MusicLibrary library, int albumId, string dominantColor = "#1a1a1a", string foregroundColor = "#ffffff", IMusicPlayerService? playerService = null)
+        public AlbumTracksViewModel(MusicLibrary library, IMusicPlayerService playerService, int albumId, string dominantColor = "#1a1a1a", string foregroundColor = "#ffffff")
         {
             _library = library;
             _playerService = playerService;
@@ -52,7 +53,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
             // Get all tracks from the album in order
             var allTracks = _library.Tracks
-                .Where(t => t.AlbumId == albumId)
+                .Where(t => t.AlbumId == AlbumId)
                 .OrderBy(t => t.Disk)
                 .ThenBy(t => t.TrackNumber)
                 .ThenBy(t => t.Title)
@@ -66,22 +67,73 @@ namespace MusicWrap.UI.ViewModels.Library
             _playerService.PlayTrack(trackId);
         }
 
+
+        [RelayCommand]
+        private void PlayNext(int track)
+        {
+            var currentQueue = _playerService.GetQueue() ?? [];
+            // insert track after the currently playing track
+            var newQueue = new List<int>();
+            foreach (var trackItem in currentQueue) { 
+                newQueue.Add(trackItem);
+                if (trackItem == _playerService.CurrentTrackId)
+                {
+                    newQueue.Add(track);
+                }
+            }
+            _playerService?.SetQueue(newQueue);
+        }
+
+        [RelayCommand]
+        private void AddToQueue(int track)
+        {
+            _playerService.AddToQueue(track);
+        }
+
+        [RelayCommand]
+        private void EditTrack(int track)
+        {
+            // TODO: Show edit metadata window
+        }
+
+        [RelayCommand]
+        private void ShowInExplorer(int track)
+        {
+            var path = _library.Tracks.FirstOrDefault(t => t.Id == track)?.Path;
+            if (path != null)
+            {
+                Process.Start(
+                    new ProcessStartInfo
+                    {
+                        FileName = "explorer",
+                        Arguments = $"/select,\"{path}\"",
+                        UseShellExecute = true
+                    }
+                );
+            }
+        }
+
+        [RelayCommand]
+        private void ShowProperties(int track)
+        {
+            
+        }
         private void LoadAlbumAndTracks()
         {
             // Get album info
-            var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
+            var album = _library.Albums.FirstOrDefault(a => a.Id == AlbumId);
             if (album == null) return;
 
-            albumTitle = album.Title;
-            albumYear = album.Year;
+            AlbumTitle = album.Title;
+            AlbumYear = album.Year;
             
             // Get album artists
             var artists = _library.Artists.Where(a => album.ArtistIds.Contains(a.Id)).Select(a => a.Name);
-            albumArtists = string.Join(", ", artists);
+            AlbumArtists= string.Join(", ", artists);
 
             // Get and group tracks by disk
             var tracks = _library.Tracks
-                .Where(t => t.AlbumId == albumId)
+                .Where(t => t.AlbumId == AlbumId)
                 .OrderBy(t => t.Disk)
                 .ThenBy(t => t.TrackNumber)
                 .ThenBy(t => t.Title)
@@ -97,15 +149,14 @@ namespace MusicWrap.UI.ViewModels.Library
                 .ToList();
 
             // Group by disk
-            diskGroups = tracks
+            DiskGroups = [.. tracks
                 .GroupBy(t => t.Disk)
                 .Select(g => new DiskGroup
                 {
                     DiskNumber = g.Key,
                     DiskTitle = g.Key > 0 ? $"Disc {g.Key}" : "Tracks",
-                    Tracks = g.ToList()
-                })
-                .ToList();
+                    Tracks = [.. g]
+                })];
         }
 
         private string GetArtistNames(int[] artistIds)

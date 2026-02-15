@@ -31,9 +31,9 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void StartPlayingFromTrack(object sender, MouseButtonEventArgs e)
         {
-            if (sender is Border border && border.Tag is int trackId && DataContext is AlbumTracksViewModel vm)
+            if (sender is Border border && border.DataContext is AlbumTracksViewModel.TrackItem trackItem && DataContext is AlbumTracksViewModel vm)
             {
-                vm.PlayTrackCommand.Execute(trackId);
+                vm.PlayTrackCommand.Execute(trackItem.Id);
             }
         }
     }

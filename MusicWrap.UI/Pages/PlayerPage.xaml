@@ -31,10 +31,11 @@
                 </Grid.ColumnDefinitions>
                 <Image
                     Grid.Column="0"
-                    Source="{Binding CurrentTrackCoverPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=128}"
+                    Source="{Binding CurrentTrackImage}"
                     Height="56"
                     Width="56"
                     Stretch="UniformToFill"
+                    RenderOptions.BitmapScalingMode="HighQuality"
                 />
                 <StackPanel Grid.Column="1" Orientation="Vertical" Margin="8" VerticalAlignment="Center">
                     <TextBlock FontSize="14" 

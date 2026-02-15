@@ -47,7 +47,9 @@
             <!--Artwork-->
             <Grid Grid.Row="0">
                 <Image
-                    Source="{Binding CurrentTrackCoverPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=275}"
+                    Source="{Binding CurrentTrackImage}"
+                    Width="275"
+                    RenderOptions.BitmapScalingMode="HighQuality"
                     />
             </Grid>
             <!--Controls-->

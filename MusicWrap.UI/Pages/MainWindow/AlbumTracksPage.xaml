@@ -9,10 +9,11 @@
          mc:Ignorable="d" 
          d:DataContext="{d:DesignInstance Type=vm:AlbumTracksViewModel}"
          d:DesignHeight="450" d:DesignWidth="800"
+         Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
          Background="Transparent">
-<UserControl.Resources>
-    <converters:DiskNumberToVisibilityConverter x:Key="DiskNumberToVisibilityConverter"/>
-</UserControl.Resources>
+    <UserControl.Resources>
+        <converters:DiskNumberToVisibilityConverter x:Key="DiskNumberToVisibilityConverter"/>
+    </UserControl.Resources>
     <Grid Margin="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -50,33 +51,85 @@
                                    Opacity="0.8"
                                    Margin="0,0,0,8"
                                    Visibility="{Binding DiskNumber, Converter={StaticResource DiskNumberToVisibilityConverter}}"/>
-                        
+
                         <!-- Tracks in this disk -->
                         <ItemsControl ItemsSource="{Binding Tracks}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="Transparent"
+                                    <Border
                                             Padding="8,6"
                                             Margin="0,1"
+                                            CornerRadius="4"
                                             MouseLeftButtonDown="StartPlayingFromTrack"
-                                            Tag="{Binding Id}"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             Cursor="Hand">
                                         <Border.Style>
                                             <Style TargetType="Border">
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="#2a2a2a"/>
+                                                        <Setter Property="Background" Value="#1f000000"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsMouseOver" Value="False">
+                                                        <Setter Property="Background" Value="Transparent"/>
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Border.Style>
+                                        <Border.ContextMenu>
+                                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                                <MenuItem Header="Play Now" 
+                                                          Command="{Binding PlayTrackCommand}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.Icon>
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;" FontSize="14"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Play Next" 
+                                                          Command="{Binding PlayNextCommand}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.Icon>
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE710;" FontSize="14"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Add to Queue" 
+                                                          Command="{Binding AddToQueueCommand}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.Icon>
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE142;" FontSize="14"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <Separator/>
+                                                <MenuItem Header="Edit Track Info" 
+                                                          Command="{Binding EditTrackCommand}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.Icon>
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE70F;" FontSize="14"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <Separator/>
+                                                <MenuItem Header="Show in File Explorer" 
+                                                          Command="{Binding ShowInExplorerCommand}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.Icon>
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B7;" FontSize="14"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Properties" 
+                                                          Command="{Binding ShowPropertiesCommand}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.Icon>
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" FontSize="14"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="40"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            
+
                                             <!-- Track Number -->
                                             <TextBlock Grid.Column="0"
                                                        Text="{Binding TrackNumberDisplay}" 
@@ -86,7 +139,7 @@
                                                        VerticalAlignment="Center"
                                                        HorizontalAlignment="Right"
                                                        Margin="0,0,12,0"/>
-                                            
+
                                             <!-- Track Info -->
                                             <StackPanel Grid.Column="1">
                                                 <TextBlock Text="{Binding Title}" 
@@ -101,7 +154,7 @@
                                                            TextTrimming="CharacterEllipsis"
                                                            Margin="0,2,0,0"/>
                                             </StackPanel>
-                                            
+
                                             <!-- Duration -->
                                             <TextBlock Grid.Column="2"
                                                        Text="{Binding FormattedDuration}" 

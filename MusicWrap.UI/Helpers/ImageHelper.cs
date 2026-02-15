@@ -8,37 +8,36 @@ namespace MusicWrap.UI.Helpers
 {
     public static class ImageHelper
     {
-        private static BitmapImage? _defaultAlbumImage = null;
-        public static BitmapImage DefaultAlbumImage
+        private static readonly Dictionary<int, BitmapImage?> _defaultAlbumImages = new();
+        public static BitmapImage? GetDefaultAlbumImage(int size = 64)
         {
-            get
+            if (!_defaultAlbumImages.TryGetValue(size, out var image))
             {
-                if (_defaultAlbumImage == null)
+                try
                 {
-                    try
-                    {
-                        var bitmap = new BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.DecodePixelWidth = 64;
-                        bitmap.UriSource = new Uri("pack://application:,,,/Resources/DefaultTrack.png", UriKind.Absolute);
-                        bitmap.EndInit();
-                        bitmap.Freeze();
-                        _defaultAlbumImage = bitmap;
-                    }
-                    catch
-                    {
-                        _defaultAlbumImage = null;
-                    }
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.DecodePixelWidth = size;
+                    bitmap.UriSource = new Uri("pack://application:,,,/Resources/DefaultTrack.png", UriKind.Absolute);
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    _defaultAlbumImages[size] = bitmap;
+                    image = bitmap;
                 }
-                return _defaultAlbumImage!;
+                catch
+                {
+                    _defaultAlbumImages[size] = null;
+                    image = null;
+                }
             }
+            return image;
         }
 
         public static BitmapImage? LoadThumbnail(string? imagePath, string type = "album", int size = 64)
         {
             if (string.IsNullOrWhiteSpace(imagePath) || !File.Exists(imagePath))
-                return type == "album" ? DefaultAlbumImage : DefaultAlbumImage; // TODO: Add default artist image
+                return GetDefaultAlbumImage(size); // TODO: Add default artist image
             try
             {
                 var bitmap = new BitmapImage();
@@ -52,7 +51,7 @@ namespace MusicWrap.UI.Helpers
             }
             catch
             {
-                return type == "album" ? DefaultAlbumImage : DefaultAlbumImage;
+                return GetDefaultAlbumImage(size); // TODO: Add default artist image
             }
         }
 

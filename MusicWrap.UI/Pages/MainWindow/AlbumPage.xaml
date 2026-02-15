@@ -27,12 +27,14 @@
             
             <!-- Album Cover -->
             <Image Grid.Row="0"
-                   Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=200}"
+                   Source="{Binding Image}"
                    Stretch="UniformToFill"
                    VerticalAlignment="Top"
                    Width="200"
                    Height="200"
-                   HorizontalAlignment="Center"/>
+                   HorizontalAlignment="Center"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   />
             
             <!-- Album Info -->
             <Border Grid.Row="1" 

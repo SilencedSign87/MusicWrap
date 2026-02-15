@@ -96,10 +96,10 @@ namespace MusicWrap.UI.Pages.MainWindow
                 
                 var tracksViewModel = new AlbumTracksViewModel(
                     library, 
+                    playerService,
                     placeholder.AlbumId, 
                     placeholder.DominantColor, 
-                    placeholder.ForegroundColor,
-                    playerService
+                    placeholder.ForegroundColor
                 );
                 var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
                 

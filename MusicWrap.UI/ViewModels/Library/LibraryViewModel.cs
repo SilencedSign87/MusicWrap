@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using MusicWrap.Data;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Services;
+using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace MusicWrap.UI.ViewModels.Library
@@ -205,9 +207,11 @@ namespace MusicWrap.UI.ViewModels.Library
                 if (trackCount == 0) continue;
 
                 CoverAsset? imageAsset = null;
+                string? imagePath = null;
                 if (album.CoverId > 0 && coverLookup.TryGetValue(album.CoverId, out var cover))
                 {
                     imageAsset = cover;
+                    imagePath = Path.Combine(CoversBasePath, cover.FileName);
                 }
 
                 var artistNames = string.Join(", ", _library.Artists
@@ -222,7 +226,7 @@ namespace MusicWrap.UI.ViewModels.Library
                     ArtistNames = artistNames,
                     DominantColor = imageAsset?.DominantColorHex ?? "#808080",
                     ForegroundColor = imageAsset?.ForegroundColorHex ?? "#ffffff",
-                    ImagePath = imageAsset != null ? Path.Combine(CoversBasePath, imageAsset.FileName) : null
+                    Image = ImageHelper.LoadThumbnail(imagePath, "album", 200)
                 });
             }
 
@@ -299,7 +303,7 @@ namespace MusicWrap.UI.ViewModels.Library
             public string Title { get; set; } = "";
             public int Year { get; set; }
             public string ArtistNames { get; set; } = "";
-            public string? ImagePath { get; set; }
+            public BitmapImage? Image { get; set; }
             public string DominantColor { get; set; } = "#808080";
             public string ForegroundColor { get; set; } = "#ffffff";
         }
