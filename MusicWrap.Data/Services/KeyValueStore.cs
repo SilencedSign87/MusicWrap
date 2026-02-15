@@ -19,7 +19,7 @@ namespace MusicWrap.Data.Services
     public class KeyValueStore : IKeyValueStore
     {
         private static readonly object _lock = new();
-        private static KeyValueObj _data;
+        private static KeyValueObj _data = null!;
 
         public KeyValueStore()
         {

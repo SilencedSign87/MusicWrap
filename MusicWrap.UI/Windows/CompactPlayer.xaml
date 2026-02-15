@@ -14,7 +14,7 @@
         WindowStartupLocation="CenterScreen"
         Background="#222222"
         ResizeMode="CanMinimize"
-        Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}"
+        Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
         >
     <Window.Resources>
         <Style x:Key="CompactPlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}" >

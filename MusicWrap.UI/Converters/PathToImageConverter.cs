@@ -26,7 +26,7 @@ namespace MusicWrap.UI.Converters
                         var bitmap = new BitmapImage();
                         bitmap.BeginInit();
                         bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.UriSource = new Uri("pack://application:,,,/Resources/MusicUI.png", UriKind.Absolute);
+                        bitmap.UriSource = new Uri("pack://application:,,,/Resources/DefaultTrack.png", UriKind.Absolute);
                         bitmap.EndInit();
                         bitmap.Freeze();
                         _defaultImage = bitmap;

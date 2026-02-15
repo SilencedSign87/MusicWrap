@@ -7,8 +7,23 @@ namespace MusicWrap.UI.Converters
 {
     public class HexToBrushConverter : IValueConverter
     {
+        private static readonly SolidColorBrush _defaultBackgroundBrush;
+        private static readonly SolidColorBrush _defaultForegroundBrush;
+
+        static HexToBrushConverter()
+        {
+            _defaultBackgroundBrush = new(Color.FromRgb(26, 26, 26));
+            _defaultBackgroundBrush.Freeze();
+            _defaultForegroundBrush = new(Color.FromRgb(255, 255, 255));
+            _defaultForegroundBrush.Freeze();
+
+        }
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
+            bool isForeground = parameter is string param &&
+                        (param.Equals("foreground", StringComparison.OrdinalIgnoreCase) ||
+                         param.Equals("fg", StringComparison.OrdinalIgnoreCase));
+
             if (value is string hexColor && !string.IsNullOrWhiteSpace(hexColor))
             {
                 try
@@ -23,11 +38,11 @@ namespace MusicWrap.UI.Converters
                 }
                 catch
                 {
-                    return new SolidColorBrush(Color.FromRgb(26, 26, 26));
+                    return isForeground ? _defaultForegroundBrush : _defaultBackgroundBrush;
                 }
             }
 
-            return new SolidColorBrush(Color.FromRgb(26, 26, 26));
+            return isForeground ? _defaultForegroundBrush : _defaultBackgroundBrush;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

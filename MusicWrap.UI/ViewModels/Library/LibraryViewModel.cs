@@ -4,19 +4,23 @@ using Microsoft.Win32;
 using MusicWrap.Data;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Services;
+using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Windows;
 using System.Windows.Data;
+using System.Windows.Threading;
 
 namespace MusicWrap.UI.ViewModels.Library
 {
     public partial class LibraryViewModel : ObservableObject
     {
         [ObservableProperty]
-        private string listBy = "Artist"; // Album, Artist, Genre, Year
+        private string listBy = "Artist"; // Album, Artist, Genre, Decade
 
         [ObservableProperty]
         private bool ascending = true;
@@ -28,9 +32,6 @@ namespace MusicWrap.UI.ViewModels.Library
         private CollectionViewSource entriesViewSource = new();
 
         [ObservableProperty]
-        private bool isLoading = false;
-
-        [ObservableProperty]
         private LibraryEntry? selectedEntry;
 
         [ObservableProperty]
@@ -39,8 +40,9 @@ namespace MusicWrap.UI.ViewModels.Library
         [ObservableProperty]
         private int? expandedAlbumId = null;
 
-        private MusicLibrary _library;
-        private ILibraryScanner _scanner;
+        private readonly MusicLibrary _library;
+        private readonly ILibraryScanner _scanner;
+        private readonly ILibraryCacheService _LibraryCache;
 
         private static readonly string CoversBasePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -48,10 +50,14 @@ namespace MusicWrap.UI.ViewModels.Library
             "covers"
             );
 
-        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner)
+        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, IKeyValueStore settings)
         {
             _library = library;
             _scanner = scanner;
+            _LibraryCache = libraryCache;
+            // Load Initial Settings
+            ListBy = settings.GetValue<string>("library_list_by") ?? "Artist";
+            Ascending = settings.GetValue<bool>("library_list_ascending");
 
             LoadEntries();
         }
@@ -85,18 +91,6 @@ namespace MusicWrap.UI.ViewModels.Library
             }
 
             LoadAlbumsForEntry(value);
-        }
-        private string GetInitialGroup(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-                return "#";
-
-            char firstChar = char.ToUpperInvariant(text[0]);
-
-            if (char.IsLetter(firstChar))
-                return firstChar.ToString();
-
-            return "#"; // numbers
         }
 
         [RelayCommand]
@@ -140,6 +134,7 @@ namespace MusicWrap.UI.ViewModels.Library
         [RelayCommand]
         private void Refresh()
         {
+            _LibraryCache.InvalidateCache();
             LoadEntries();
         }
 
@@ -166,219 +161,25 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private async void LoadEntries()
         {
-            IsLoading = true;
-
-
-            List<LibraryEntry> entries = await Task.Run(() =>
-            {
-                return ListBy switch
-                {
-                    "Album" => ConstructAlbumEntries(),
-                    "Artist" => ConstructArtistEntries(),
-                    "Genre" => ConstructGenreEntries(),
-                    "Decade" => ConstructDecadeEntries(),
-                    _ => ConstructArtistEntries()
-                };
-            });
+            DateTime timeStart = DateTime.Now;
+            var entries = await _LibraryCache.GetEntriesAsync(ListBy, Ascending);
 
             ApplyGrouping(entries);
-            IsLoading = false;
-        }
-        private CoverAsset? FindCoverAsset(IEnumerable<int> albumIds, IEnumerable<int>? trackIds = null)
-        {
-            foreach (var albumId in albumIds)
-            {
-                var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
-                if (album?.CoverId > 0)
-                {
-                    var coverAsset = _library.CoverAssets.FirstOrDefault(c => c.Id == album.CoverId);
-                    if (coverAsset != null)
-                        return coverAsset;
-                }
-            }
 
-            if (trackIds != null)
-            {
-                foreach (var trackId in trackIds)
-                {
-                    var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
-                    if (track?.CoverId > 0)
-                    {
-                        var coverAsset = _library.CoverAssets.FirstOrDefault(c => c.Id == track.CoverId);
-                        if (coverAsset != null)
-                            return coverAsset;
-                    }
-                }
-            }
-            else
-            {
-                foreach (var albumId in albumIds)
-                {
-                    var tracks = _library.Tracks.Where(t => t.AlbumId == albumId);
-                    foreach (var track in tracks)
-                    {
-                        if (track.CoverId > 0)
-                        {
-                            var coverAsset = _library.CoverAssets.FirstOrDefault(c => c.Id == track.CoverId);
-                            if (coverAsset != null)
-                                return coverAsset;
-                        }
-                    }
-                }
-            }
-
-            return null;
+            DateTime timeEnd = DateTime.Now;
+            Debug.WriteLine($"Loaded {entries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
         }
 
-        private List<LibraryEntry> ConstructAlbumEntries()
-        {
-            var albums = _library.Albums;
-            var entries = new List<LibraryEntry>();
-
-            foreach (var album in albums)
-            {
-                var trackCount = _library.Tracks.Count(t => t.AlbumId == album.Id);
-                if (trackCount == 0)
-                {
-                    continue;
-                }
-
-                var imageAsset = FindCoverAsset(new[] { album.Id });
-
-                LibraryEntry newEntry = new LibraryEntry
-                {
-                    Id = album.Id,
-                    Type = "Album",
-                    Title = album.Title,
-                    Description = $"{trackCount} track{(trackCount > 1 ? "s" : "")}",
-                    ImagePath = imageAsset != null ? Path.Combine(CoversBasePath, imageAsset.FileName) : null,
-                    GroupKey = GetInitialGroup(album.Title)
-                };
-                entries.Add(newEntry);
-            }
-
-            return Ascending ? entries.OrderBy(e => e.Title).ToList() : entries.OrderByDescending(e => e.Title).ToList();
-        }
-
-        private List<LibraryEntry> ConstructArtistEntries()
-        {
-            var artists = _library.Artists;
-            var entries = new List<LibraryEntry>();
-
-            foreach (var artist in artists)
-            {
-                var albumIds = _library.Albums.Where(a => a.ArtistIds.Contains(artist.Id)).Select(a => a.Id).ToList();
-                var albumCount = albumIds.Count;
-
-                if (albumCount == 0)
-                {
-                    continue;
-                }
-
-                var imageAsset = FindCoverAsset(albumIds);
-
-                LibraryEntry newEntry = new LibraryEntry
-                {
-                    Id = artist.Id,
-                    Type = "Artist",
-                    Title = artist.Name,
-                    Description = $"{albumCount} Album{(albumCount != 1 ? "s" : "")}",
-                    ImagePath = imageAsset != null ? Path.Combine(CoversBasePath, imageAsset.FileName) : null,
-                    GroupKey = GetInitialGroup(artist.Name)
-                };
-                entries.Add(newEntry);
-            }
-
-            return Ascending ? entries.OrderBy(e => e.Title).ToList() : entries.OrderByDescending(e => e.Title).ToList();
-        }
-
-        private List<LibraryEntry> ConstructGenreEntries()
-        {
-            var genres = _library.Genres;
-            var entries = new List<LibraryEntry>();
-
-            foreach (var genre in genres)
-            {
-                // Obtener álbumes únicos de forma eficiente
-                var albumIds = _library.Tracks
-                    .Where(t => t.GenreIds.Contains(genre.Id))
-                    .Select(t => t.AlbumId)
-                    .Distinct()
-                    .ToList();
-
-                var albumCount = albumIds.Count;
-
-                if (albumCount == 0)
-                {
-                    continue;
-                }
-
-                var imageAsset = FindCoverAsset(albumIds);
-
-                LibraryEntry newEntry = new LibraryEntry
-                {
-                    Id = genre.Id,
-                    Type = "Genre",
-                    Title = genre.Name,
-                    Description = $"{albumCount} Album{(albumCount != 1 ? "s" : "")}",
-                    ImagePath = imageAsset != null ? Path.Combine(CoversBasePath, imageAsset.FileName) : null,
-                    GroupKey = GetInitialGroup(genre.Name)
-                };
-                entries.Add(newEntry);
-            }
-
-            return Ascending ? entries.OrderBy(e => e.Title).ToList() : entries.OrderByDescending(e => e.Title).ToList();
-        }
-
-        private List<LibraryEntry> ConstructDecadeEntries()
-        {
-            var albums = _library.Albums.Where(a => a.Year > 0).ToList();
-
-            if (albums.Count == 0)
-            {
-                return [];
-            }
-
-            var decadeGroups = albums
-                .GroupBy(a => (a.Year / 10) * 10)
-                .OrderBy(g => g.Key)
-                .ToList();
-
-            var entries = new List<LibraryEntry>();
-            int entryId = 1;
-
-            foreach (var decadeGroup in decadeGroups)
-            {
-                var decade = decadeGroup.Key;
-                var albumCount = decadeGroup.Count();
-                var albumIds = decadeGroup.Select(a => a.Id).ToList();
-
-                var imageAsset = FindCoverAsset(albumIds);
-
-                var decadeTitle = $"{decade}s";
-                var description = $"{albumCount} Album{(albumCount != 1 ? "s" : "")}";
-
-                LibraryEntry newEntry = new LibraryEntry
-                {
-                    Id = entryId++,
-                    Type = "Decade",
-                    Title = decadeTitle,
-                    Description = description,
-                    ImagePath = imageAsset != null ? Path.Combine(CoversBasePath, imageAsset.FileName) : null,
-                    GroupKey = decadeTitle
-                };
-                entries.Add(newEntry);
-            }
-
-            return Ascending ? entries.OrderBy(e => e.Title).ToList() : entries.OrderByDescending(e => e.Title).ToList();
-        }
         private void ApplyGrouping(List<LibraryEntry> entries)
         {
             Entries = entries;
 
-            EntriesViewSource.Source = entries;
-            EntriesViewSource.GroupDescriptions.Clear();
-            EntriesViewSource.GroupDescriptions.Add(new PropertyGroupDescription(nameof(LibraryEntry.GroupKey)));
+            EntriesViewSource = new CollectionViewSource { Source = Entries };
+
+            Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+            {
+                EntriesViewSource.GroupDescriptions.Add(new PropertyGroupDescription("GroupKey"));
+            }, DispatcherPriority.Render);
         }
 
         private void LoadAlbumsForEntry(LibraryEntry entry)
@@ -393,6 +194,8 @@ namespace MusicWrap.UI.ViewModels.Library
             };
 
             var albums = new List<AlbumData>();
+            var coverLookup = _library.CoverAssets.ToDictionary(c => c.Id, c => c);
+
             foreach (var albumId in albumIds)
             {
                 var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
@@ -401,8 +204,15 @@ namespace MusicWrap.UI.ViewModels.Library
                 var trackCount = _library.Tracks.Count(t => t.AlbumId == albumId);
                 if (trackCount == 0) continue;
 
-                var imageAsset = FindCoverAsset(new[] { albumId });
-                var artistNames = string.Join(", ", _library.Artists.Where(a => album.ArtistIds.Contains(a.Id)).Select(a => a.Name));
+                CoverAsset? imageAsset = null;
+                if (album.CoverId > 0 && coverLookup.TryGetValue(album.CoverId, out var cover))
+                {
+                    imageAsset = cover;
+                }
+
+                var artistNames = string.Join(", ", _library.Artists
+                    .Where(a => album.ArtistIds.Contains(a.Id))
+                    .Select(a => a.Name));
 
                 albums.Add(new AlbumData
                 {
@@ -431,17 +241,57 @@ namespace MusicWrap.UI.ViewModels.Library
                 .ToList();
         }
 
-        public MusicLibrary GetLibrary() => _library;
-
-        public class LibraryEntry
+        public void ExpandAlbum(int albumId)
         {
-            public int Id { get; set; }
-            public string Type { get; set; } = ""; // Album, Artist, Genre, Year
-            public string? ImagePath { get; set; }
-            public required string Title { get; set; }
-            public required string Description { get; set; }
-            public string GroupKey { get; set; } = "";
+            if (ExpandedAlbumId == albumId)
+            {
+                CollapseAlbum();
+                return;
+            }
+
+            CollapseAlbum();
+
+            // Find the album index and calculate row end
+            var albums = AlbumsForSelectedEntry.OfType<AlbumData>().ToList();
+            var albumIndex = albums.FindIndex(a => a.Id == albumId);
+
+            if (albumIndex == -1) return;
+
+            // Get the album's colors
+            var selectedAlbum = albums[albumIndex];
+
+
+            const int albumWidth = 208; // 200 + margins
+            int albumsPerRow = Math.Max(1, (int)(1000 / albumWidth));
+
+
+            int rowNumber = albumIndex / albumsPerRow;
+            int insertIndex = Math.Min((rowNumber + 1) * albumsPerRow, albums.Count);
+
+            var newList = new List<object>(albums.Take(insertIndex));
+            newList.Add(new TrackListPlaceholder
+            {
+                AlbumId = albumId,
+                DominantColor = selectedAlbum.DominantColor,
+                ForegroundColor = selectedAlbum.ForegroundColor
+            });
+            newList.AddRange(albums.Skip(insertIndex));
+
+            AlbumsForSelectedEntry = newList;
+            ExpandedAlbumId = albumId;
         }
+
+        public void CollapseAlbum()
+        {
+            if (ExpandedAlbumId == null) return;
+
+            // Remove placeholder
+            AlbumsForSelectedEntry = [.. AlbumsForSelectedEntry.Where(item => item is not TrackListPlaceholder)];
+
+            ExpandedAlbumId = null;
+        }
+
+        public MusicLibrary GetLibrary() => _library;
 
         public class AlbumData
         {
@@ -459,58 +309,6 @@ namespace MusicWrap.UI.ViewModels.Library
             public int AlbumId { get; set; }
             public string DominantColor { get; set; } = "#1a1a1a";
             public string ForegroundColor { get; set; } = "#ffffff";
-        }
-
-        public void ExpandAlbum(int albumId)
-        {
-            if (ExpandedAlbumId == albumId)
-            {
-                CollapseAlbum();
-                return;
-            }
-
-            CollapseAlbum();
-
-            // Find the album index and calculate row end
-            var albums = AlbumsForSelectedEntry.OfType<AlbumData>().ToList();
-            var albumIndex = albums.FindIndex(a => a.Id == albumId);
-            
-            if (albumIndex == -1) return;
-
-            // Get the album's colors
-            var selectedAlbum = albums[albumIndex];
-
-
-            const int albumWidth = 208; // 200 + margins
-            int albumsPerRow = Math.Max(1, (int)(1000 / albumWidth));
-
-
-            int rowNumber = albumIndex / albumsPerRow;
-            int insertIndex = Math.Min((rowNumber + 1) * albumsPerRow, albums.Count);
-
-            var newList = new List<object>(albums.Take(insertIndex));
-            newList.Add(new TrackListPlaceholder 
-            { 
-                AlbumId = albumId,
-                DominantColor = selectedAlbum.DominantColor,
-                ForegroundColor = selectedAlbum.ForegroundColor
-            });
-            newList.AddRange(albums.Skip(insertIndex));
-
-            AlbumsForSelectedEntry = newList;
-            ExpandedAlbumId = albumId;
-        }
-
-        public void CollapseAlbum()
-        {
-            if (ExpandedAlbumId == null) return;
-
-            // Remove placeholder
-            AlbumsForSelectedEntry = AlbumsForSelectedEntry
-                .Where(item => item is not TrackListPlaceholder)
-                .ToList();
-
-            ExpandedAlbumId = null;
         }
     }
 }

@@ -27,7 +27,7 @@
             
             <!-- Album Cover -->
             <Image Grid.Row="0"
-                   Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=400}"
+                   Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=200}"
                    Stretch="UniformToFill"
                    VerticalAlignment="Top"
                    Width="200"

@@ -9,11 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\DefaultTrack.png" />
     <None Remove="Resources\icon.ico" />
     <None Remove="Resources\SplashScreen.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Resources\DefaultTrack.png" />
     <Resource Include="Resources\icon.ico" />
     <Resource Include="Resources\MusicUI.png" />
     <Resource Include="Resources\SplashScreen.png" />

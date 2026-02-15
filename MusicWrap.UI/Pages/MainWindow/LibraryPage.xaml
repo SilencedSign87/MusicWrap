@@ -207,17 +207,18 @@
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
-                    <DataTemplate DataType="vm:LibraryEntry">
+                    <DataTemplate DataType="LibraryEntry">
                         <StackPanel 
                             Orientation="Horizontal" 
                             Margin="0"
                             ToolTipService.ToolTip="{Binding Title}"
                             HorizontalAlignment="Stretch">
                             <Image
-                                Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=64}"
+                                Source="{Binding Image}"
                                 Width="64"
                                 Height="64"
                                 Stretch="UniformToFill"
+                                RenderOptions.BitmapScalingMode="HighQuality"
                                 />
                             <StackPanel Orientation="Vertical" Margin="8,0,0,0" VerticalAlignment="Center" Width="175">
                                 <TextBlock Text="{Binding Title}" 

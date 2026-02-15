@@ -2,6 +2,7 @@
 using MusicWrap.Core;
 using MusicWrap.Data;
 using MusicWrap.Data.Services;
+using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.ViewModels.Library;
 using MusicWrap.UI.ViewModels.Settings;
@@ -20,7 +21,7 @@ namespace MusicWrap.UI
         public static Window? CurrentWindow { get; private set; }
         public static IServiceProvider Services { get; private set; } = default!;
 
-        protected override void OnStartup(StartupEventArgs e)
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -28,6 +29,8 @@ namespace MusicWrap.UI
             splash.Show(autoClose: false, topMost: true);
 
             Services = ConfigureServices();
+
+            await LoadLibrary();
 
             InitializeServicesAsync(splash);
 
@@ -64,6 +67,19 @@ namespace MusicWrap.UI
         }
 
         #region Internal 
+
+        private static async Task LoadLibrary()
+        {
+            await Task.Run(async () =>
+            {
+                var settings = Services.GetRequiredService<IKeyValueStore>();
+                var listBy = settings.GetValue<string>("library_list_by") ?? "Artist";
+                var ascending = settings.GetValue<bool>("library_list_ascending");
+
+                var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
+                await LibraryCache.InitializeAsync(listBy, ascending);
+            });
+        }
         private static void TrySaveLibrary()
         {
             try
@@ -105,12 +121,18 @@ namespace MusicWrap.UI
             services.AddTransient<CompactPlayer>();
             services.AddTransient<SettingsWindow>();
 
+            // Services
+            services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
+
+
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
             services.AddTransient<LibraryViewModel>();
-            services.AddSingleton<PlayerViewModel>();
-            //services.AddTransient<AlbumViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
+            //services.AddTransient<AlbumViewModel>();
+
+            // Player
+            services.AddSingleton<PlayerViewModel>();
 
             return services.BuildServiceProvider();
         }
