@@ -2,9 +2,11 @@
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -20,11 +22,15 @@ namespace MusicWrap.UI.Pages
     /// </summary>
     public partial class PlayerPage : UserControl
     {
+        private PlayerViewModel? _viewModel;
+        private bool _isUserSeeking = false;
+
         public PlayerPage()
         {
             InitializeComponent();
 
-            DataContext = App.Services.GetRequiredService<PlayerViewModel>();
+            _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
+            DataContext = _viewModel;
         }
 
         private void DeviceBtn_Click(object sender, RoutedEventArgs e)
@@ -41,5 +47,25 @@ namespace MusicWrap.UI.Pages
         {
             PlusPopup.IsOpen = true;
         }
+
+        private void Seek(double position)
+        {
+            _viewModel?.SeekCommand.Execute(position);
+        }
+        private void PlayerSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _isUserSeeking = true;
+        }
+
+        private void PlayerSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var slider = sender as Slider;
+            _isUserSeeking = false;
+            if (slider != null)
+            {
+                Seek(slider.Value);
+            }
+        }
+
     }
 }

@@ -108,7 +108,9 @@ namespace MusicWrap.UI
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
             services.AddTransient<LibraryViewModel>();
-            services.AddTransient<PlayerViewModel>();
+            services.AddSingleton<PlayerViewModel>();
+            //services.AddTransient<AlbumViewModel>();
+            services.AddTransient<AlbumTracksViewModel>();
 
             return services.BuildServiceProvider();
         }

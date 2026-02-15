@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core;
+using MusicWrap.Data;
 using MusicWrap.UI.ViewModels.Library;
 using System;
 using System.Collections.Generic;
@@ -22,12 +24,87 @@ namespace MusicWrap.UI.Pages.MainWindow
     public partial class LibraryPage : UserControl
     {
         public LibraryViewModel vm;
+
         public LibraryPage()
         {
             InitializeComponent();
 
             vm = App.Services.GetRequiredService<LibraryViewModel>();
             DataContext = vm;
+
+            // Subscribe to property changes
+            vm.PropertyChanged += Vm_PropertyChanged;
+        }
+
+        private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(vm.SelectedEntry))
+            {
+                HandleSelectionChanged();
+            }
+        }
+
+        private void HandleSelectionChanged()
+        {
+            if (vm.SelectedEntry == null)
+            {
+                vm.CollapseAlbum();
+                return;
+            }
+
+            // For Album view, auto-expand the single album
+            if (vm.IsAlbumView && vm.AlbumsForSelectedEntry.Count > 0)
+            {
+                // Find the first AlbumData in the collection
+                var firstAlbum = vm.AlbumsForSelectedEntry
+                    .OfType<LibraryViewModel.AlbumData>()
+                    .FirstOrDefault();
+                
+                if (firstAlbum != null)
+                {
+                    vm.ExpandAlbum(firstAlbum.Id);
+                }
+            }
+            else
+            {
+                // For other views, collapse any expanded tracks
+                vm.CollapseAlbum();
+            }
+        }
+
+        private void AlbumButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is int albumId)
+            {
+                // Use the new ViewModel method to expand/collapse
+                vm.ExpandAlbum(albumId);
+            }
+        }
+
+        private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
+        {
+            vm.CollapseAlbum();
+        }
+
+        private void TracksContentPlaceholder_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContentControl contentControl && contentControl.DataContext is LibraryViewModel.TrackListPlaceholder placeholder)
+            {
+                // Load tracks for the album with colors and player service
+                var library = vm.GetLibrary();
+                var playerService = App.Services.GetRequiredService<IMusicPlayerService>();
+                
+                var tracksViewModel = new AlbumTracksViewModel(
+                    library, 
+                    placeholder.AlbumId, 
+                    placeholder.DominantColor, 
+                    placeholder.ForegroundColor,
+                    playerService
+                );
+                var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
+                
+                contentControl.Content = tracksPage;
+            }
         }
 
         private void EntriesListView_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -76,4 +153,6 @@ namespace MusicWrap.UI.Pages.MainWindow
         }
     }
 }
+
+
 

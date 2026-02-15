@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
+﻿using MusicWrap.Data.Library;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.ColorSpaces;
+using SixLabors.ImageSharp.ColorSpaces.Conversion;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using System.IO;
-using System.Text;
-using MusicWrap.Data.Library;
 
 namespace MusicWrap.Data.Services
 {
@@ -132,6 +133,8 @@ namespace MusicWrap.Data.Services
                     FileSize = fileSize,
                     CoverId = coverId,
                     LastWriteTime = LastModifiedUtc.Ticks,
+                    Disk = (int)tagFile.Tag.Disc,
+                    TrackNumber = (int)tagFile.Tag.Track,
                     GenreIds = genreIds,
                 };
                 _library.Tracks.Add(track);
@@ -226,7 +229,7 @@ namespace MusicWrap.Data.Services
             lock (_lock)
             {
                 var existing = _library.CoverAssets
-                .FirstOrDefault(c => string.Equals(c.fingerprint, fingerprint, StringComparison.Ordinal));
+                .FirstOrDefault(c => string.Equals(c.Fingerprint, fingerprint, StringComparison.Ordinal));
 
                 if (existing is not null) return existing.Id;
 
@@ -242,11 +245,15 @@ namespace MusicWrap.Data.Services
                 if (!File.Exists(fullPath))
                     File.WriteAllBytes(fullPath, imageBytes);
 
+                var (domminantColor, foregroundColor) = ExtractColorsFromImage(imageBytes);
+
                 var asset = new CoverAsset
                 {
                     Id = _library.GenerateCoverId(),
                     FileName = filename,
-                    fingerprint = fingerprint
+                    Fingerprint = fingerprint,
+                    DominantColorHex = domminantColor,
+                    ForegroundColorHex = foregroundColor
                 };
 
                 _library.CoverAssets.Add(asset);
@@ -286,6 +293,160 @@ namespace MusicWrap.Data.Services
                 return _library.Tracks.FirstOrDefault(t => t.FileSize == fileSize && t.LastWriteTime == lastModifiedTicks);
             }
         }
+
+        public static (string dominantColor, string foregroundColor) ExtractColorsFromImage(byte[] imageBytes)
+        {
+            try
+            {
+                using var image = Image.Load<Rgba32>(imageBytes);
+
+                // Reducir tamaño para rendimiento
+                image.Mutate(x => x.Resize(64, 64));
+
+                var colorScores = new Dictionary<Rgba32, double>();
+
+                image.ProcessPixelRows(accessor =>
+                {
+                    for (int y = 0; y < accessor.Height; y++)
+                    {
+                        var row = accessor.GetRowSpan(y);
+
+                        for (int x = 0; x < row.Length; x++)
+                        {
+                            var pixel = row[x];
+
+                            if (!IsValidColor(pixel))
+                                continue;
+
+                            // Convertir a HSV
+                            var hsv = ColorSpaceConverter.ToHsv(pixel);
+
+                            // Ignorar colores casi grises
+                            if (hsv.S < 0.15f)
+                                continue;
+
+                            var quantized = QuantizeColor(pixel);
+
+                            // Score ponderado
+                            double score =
+                                hsv.S *      // saturación
+                                hsv.V;       // brillo
+
+                            if (colorScores.ContainsKey(quantized))
+                                colorScores[quantized] += score;
+                            else
+                                colorScores[quantized] = score;
+                        }
+                    }
+                });
+
+                Rgba32 dominant;
+
+                // Si encontramos colores saturados
+                if (colorScores.Any())
+                {
+                    dominant = colorScores
+                        .OrderByDescending(x => x.Value)
+                        .First().Key;
+                }
+                else
+                {
+                    // Fallback: usar el más frecuente
+                    dominant = GetMostFrequentColor(image);
+                }
+
+                // Forzar saturación mínima
+                dominant = BoostSaturation(dominant, 0.4f);
+
+                string bg = ToHex(dominant);
+                string fg = GetContrastColor(dominant);
+
+                return (bg, fg);
+            }
+            catch
+            {
+                return ("#404040", "#FFFFFF");
+            }
+        }
+        private static Rgba32 QuantizeColor(Rgba32 pixel)
+        {
+            const int factor = 32;
+
+            return new Rgba32(
+                (byte)((pixel.R / factor) * factor),
+                (byte)((pixel.G / factor) * factor),
+                (byte)((pixel.B / factor) * factor),
+                255);
+        }
+
+        private static Rgba32 BoostSaturation(Rgba32 color, float minSaturation)
+        {
+            var hsv = ColorSpaceConverter.ToHsv(color);
+
+            float s = hsv.S < minSaturation ? minSaturation : hsv.S;
+            float v = MathF.Min(1f, hsv.V * 1.05f);
+
+            var adjustedHsv = new Hsv(hsv.H, s, v);
+
+            var rgb = ColorSpaceConverter.ToRgb(adjustedHsv);
+
+            return new Rgba32(
+                (byte)(rgb.R * 255),
+                (byte)(rgb.G * 255),
+                (byte)(rgb.B * 255),
+                255);
+        }
+        private static bool IsValidColor(Rgba32 color)
+        {
+            // Filtrar colores muy oscuros o transparentes
+            return color.A > 25 && (color.R > 15 || color.G > 15 || color.B > 15);
+        }
+        private static Rgba32 GetMostFrequentColor(Image<Rgba32> image)
+        {
+            var counts = new Dictionary<Rgba32, int>();
+
+            image.ProcessPixelRows(accessor =>
+            {
+                for (int y = 0; y < accessor.Height; y++)
+                {
+                    var row = accessor.GetRowSpan(y);
+
+                    for (int x = 0; x < row.Length; x++)
+                    {
+                        var q = QuantizeColor(row[x]);
+
+                        counts[q] = counts.TryGetValue(q, out var c)
+                            ? c + 1
+                            : 1;
+                    }
+                }
+            });
+
+            return counts
+                .OrderByDescending(x => x.Value)
+                .First()
+                .Key;
+        }
+        private static string GetContrastColor(Rgba32 bg)
+        {
+            double r = bg.R / 255.0;
+            double g = bg.G / 255.0;
+            double b = bg.B / 255.0;
+
+            double luminance =
+                0.2126 * r +
+                0.7152 * g +
+                0.0722 * b;
+
+            return luminance > 0.5
+                ? "#000000"
+                : "#FFFFFF";
+        }
+        private static string ToHex(Rgba32 color)
+        {
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+
         #endregion
     }
 }

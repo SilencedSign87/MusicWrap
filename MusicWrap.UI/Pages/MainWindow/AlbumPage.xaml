@@ -4,10 +4,63 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+             xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
+             xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="200" d:DesignWidth="200">
+             d:DataContext="{d:DesignInstance Type=vm:AlbumViewModel}"
+             d:DesignHeight="200" d:DesignWidth="200"
+             Cursor="Hand">
+    <UserControl.Resources>
+        <converters:PathToImageConverter x:Key="PathToImageConverter"/>
+    </UserControl.Resources>
     <!-- Renders an album -->
-    <Grid>
-
-    </Grid>
+    <Border Background="Transparent" 
+            BorderThickness="0"
+            CornerRadius="4"
+            Margin="4"
+            Padding="0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Album Cover -->
+            <Image Grid.Row="0"
+                   Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=400}"
+                   Stretch="UniformToFill"
+                   VerticalAlignment="Top"
+                   Width="200"
+                   Height="200"
+                   HorizontalAlignment="Center"/>
+            
+            <!-- Album Info -->
+            <Border Grid.Row="1" 
+                    Padding="8,4"
+                    Background="Transparent">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding Title}" 
+                               FontSize="12" 
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap"/>
+                    <TextBlock Grid.Row="1"
+                               FontSize="11" 
+                               Foreground="#999999"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding ArtistNames}"/>
+                        <Run Text=" • "/>
+                        <Run Text="{Binding Year}"/>
+                    </TextBlock>
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
 </UserControl>

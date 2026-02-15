@@ -14,5 +14,12 @@
   <ItemGroup>
     <ProjectReference Include="..\MusicWrap.Data\MusicWrap.Data.csproj" />
   </ItemGroup>
+	
+  <ItemGroup>
+    <None Update="Native\x64\bass.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<Link>bass.dll</Link>
+    </None>
+  </ItemGroup>
 
 </Project>

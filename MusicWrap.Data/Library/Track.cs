@@ -22,6 +22,9 @@ namespace MusicWrap.Data.Library
         [Key(7)] public long FileSize;
         [Key(8)] public long LastWriteTime;
 
+        [Key(9)] public int Disk;
+        [Key(10)] public int TrackNumber;
+
         [Key(100)] public int CoverId;
 
     }

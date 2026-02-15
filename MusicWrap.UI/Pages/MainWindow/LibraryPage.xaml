@@ -1,18 +1,69 @@
 ﻿<UserControl x:Class="MusicWrap.UI.Pages.MainWindow.LibraryPage"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
-             xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
-             xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
-             mc:Ignorable="d" 
-             Foreground="White"
-             d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel}"
-             d:DesignHeight="450" d:DesignWidth="800">
+         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+         xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+         xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
+         xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
+         xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
+         mc:Ignorable="d" 
+         Foreground="White"
+         d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel}"
+         d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
-        <converters:PathToImageConverter x:Key="PathToImageConverter"/>
-        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <!-- Template for Album -->
+        <DataTemplate x:Key="AlbumTemplate">
+            <Button Background="Transparent"
+                BorderThickness="0"
+                Padding="0"
+                Width="200"
+                Height="250"
+                Cursor="Hand"
+                Tag="{Binding Id}"
+                Click="AlbumButton_Click">
+                <local:AlbumPage DataContext="{Binding}"/>
+            </Button>
+        </DataTemplate>
+
+        <!-- Template for Track List Placeholder -->
+        <DataTemplate x:Key="TrackListTemplate">
+            <Border Background="{Binding DominantColor, Converter={StaticResource HexToBrushConverter}}"
+                Margin="0,8"
+                CornerRadius="4"
+                MinHeight="200"
+                Width="{Binding RelativeSource={RelativeSource AncestorType=Grid}, Path=ActualWidth}"
+                HorizontalAlignment="Left">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <ContentControl x:Name="TracksContentPlaceholder"
+                                Grid.Row="0"
+                                Margin="0,0,0,0"
+                                Loaded="TracksContentPlaceholder_Loaded"/>
+
+                    <!-- Close Button -->
+                    <Button x:Name="CloseTracksButton"
+                        Content="✕"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Padding="8,4"
+                        Background="Transparent"
+                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                        BorderThickness="0"
+                        FontSize="14"
+                        Cursor="Hand"
+                        Click="CloseTracksButton_Click"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- Template Selector -->
+        <selectors:AlbumItemTemplateSelector x:Key="AlbumItemSelector"
+                                         AlbumTemplate="{StaticResource AlbumTemplate}"
+                                         TrackListTemplate="{StaticResource TrackListTemplate}"/>
     </UserControl.Resources>
 
     <Grid>
@@ -99,6 +150,7 @@
             <ListView
                     x:Name="EntriesListView"
                     ItemsSource="{Binding EntriesViewSource.View}"
+                    SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
                     Grid.Row="1"
                     SelectionMode="Single"
                     HorizontalAlignment="Stretch"
@@ -185,10 +237,23 @@
             </ListView>
         </Grid>
         <!-- Selected content -->
-        <Grid Grid.Column="1">
-            <WrapPanel ItemWidth="150" ItemHeight="150" x:Name="AlbumWrapPanel">
-                
-            </WrapPanel>
+        <Grid Grid.Column="1" Background="#0e0e0e">
+            <!-- Show albums grid for all view modes -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <Grid Margin="16">
+                    <!-- Albums WrapPanel with dynamic track list insertion -->
+                    <ItemsControl ItemsSource="{Binding AlbumsForSelectedEntry}"
+                                  ItemTemplateSelector="{StaticResource AlbumItemSelector}"
+                                  x:Name="AlbumsItemsControl">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </Grid>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

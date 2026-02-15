@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -17,10 +19,15 @@ namespace MusicWrap.UI.Windows
     /// </summary>
     public partial class CompactPlayer : Window
     {
+        private PlayerViewModel? _viewModel;
+        private bool _isUserSeeking = false;
         private bool _isQueueOpen = false;
+        
         public CompactPlayer()
         {
             InitializeComponent();
+            _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
+            DataContext = _viewModel;
         }
 
         private void HandleOpenMainPlayer(object sender, RoutedEventArgs e)
@@ -62,6 +69,36 @@ namespace MusicWrap.UI.Windows
         private void HandleCloseApp(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void PlayerSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _isUserSeeking = true;
+        }
+
+        private void PlayerSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var slider = sender as Slider;
+            _isUserSeeking = false;
+            if (slider != null)
+            {
+                Seek(slider.Value);
+            }
+
+        }
+        private void Seek(double position)
+        {
+            _viewModel?.SeekCommand.Execute(position);
+        }
+
+        private void MinimizeClick(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+
+        private void VolumeButton_Click(object sender, RoutedEventArgs e)
+        {
+            VolumePopup.IsOpen = true;
         }
     }
 }

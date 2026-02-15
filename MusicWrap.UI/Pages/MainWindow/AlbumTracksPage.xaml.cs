@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core;
+using MusicWrap.UI.ViewModels.Library;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -18,9 +21,20 @@ namespace MusicWrap.UI.Pages.MainWindow
     /// </summary>
     public partial class AlbumTracksPage : UserControl
     {
+        private readonly IMusicPlayerService _musicPlayerService;
         public AlbumTracksPage()
         {
             InitializeComponent();
+            _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
+            //DataContext = App.Services.GetRequiredService<AlbumTracksViewModel>();
+        }
+
+        private void StartPlayingFromTrack(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Border border && border.Tag is int trackId && DataContext is AlbumTracksViewModel vm)
+            {
+                vm.PlayTrackCommand.Execute(trackId);
+            }
         }
     }
 }

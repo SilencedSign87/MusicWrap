@@ -21,7 +21,7 @@
             CaptionHeight="48"
             ResizeBorderThickness="8"
             CornerRadius="8"
-            GlassFrameThickness="0"
+            GlassFrameThickness="1"
             />
     </WindowChrome.WindowChrome>
 

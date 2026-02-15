@@ -46,25 +46,30 @@ namespace MusicWrap.UI.Converters
                 return DefaultImage;
             }
 
-            if (_cache.TryGetValue(path, out var weakRef) && weakRef.TryGetTarget(out var cachedImage))
+            // Parse size from parameter
+            int size = 200; // default thumbnail size
+            if (parameter is string sizeStr && int.TryParse(sizeStr, out int parsedSize))
+            {
+                size = parsedSize;
+            }
+
+            // Create cache key with both path and size
+            string cacheKey = $"{path}|{size}";
+
+            // Check cache with size-specific key
+            if (_cache.TryGetValue(cacheKey, out var weakRef) && weakRef.TryGetTarget(out var cachedImage))
             {
                 return cachedImage;
             }
 
             if (!File.Exists(path))
             {
-                _cache.Remove(path);
+                _cache.Remove(cacheKey);
                 return DefaultImage;
             }
 
             try
             {
-                int size = 200; // thumbnail size
-                if (parameter is string sizeStr && int.TryParse(sizeStr, out int parsedSize))
-                {
-                    size = parsedSize;
-                }
-
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
@@ -73,13 +78,14 @@ namespace MusicWrap.UI.Converters
                 bitmap.EndInit();
                 bitmap.Freeze();
 
-                _cache[path] = new WeakReference<BitmapImage>(bitmap);
+                // Cache with size-specific key
+                _cache[cacheKey] = new WeakReference<BitmapImage>(bitmap);
 
                 return bitmap;
             }
             catch
             {
-                _cache.Remove(path);
+                _cache.Remove(cacheKey);
                 return DefaultImage;
             }
         }
@@ -95,3 +101,4 @@ namespace MusicWrap.UI.Converters
         }
     }
 }
+

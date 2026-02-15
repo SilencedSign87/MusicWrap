@@ -31,14 +31,21 @@
                 </Grid.ColumnDefinitions>
                 <Image
                     Grid.Column="0"
-                    Source="/Resources/MusicUI.png"
+                    Source="{Binding CurrentTrackCoverPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=128}"
                     Height="56"
                     Width="56"
                     Stretch="UniformToFill"
                 />
                 <StackPanel Grid.Column="1" Orientation="Vertical" Margin="8" VerticalAlignment="Center">
-                    <TextBlock FontSize="18" FontWeight="Normal" >Title</TextBlock>
-                    <TextBlock FontSize="14" FontWeight="Light" Opacity="0.7">Artists</TextBlock>
+                    <TextBlock FontSize="14" 
+                               FontWeight="SemiBold" 
+                               Text="{Binding CurrentTrackTitle}"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock FontSize="12" 
+                               FontWeight="Light" 
+                               Opacity="0.7"
+                               Text="{Binding CurrentTrackArtists}"
+                               TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
                 <Grid Grid.Column="2">
                     <Button x:Name="PlusButton" Style="{StaticResource SubtleButton}" Click="PlusButton_Click" Width="40" Height="40" Padding="0">
@@ -85,13 +92,19 @@
                     <Button x:Name="RepeadButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Repeat">
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8ee;" FontSize="14"/>
                     </Button>
-                    <Button x:Name="PrevButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Previous track">
+                    <Button x:Name="PrevButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Previous track"
+                            Command="{Binding PreviousCommand}"
+                            >
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
                     </Button>
-                    <Button x:Name="PlayButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe768;" FontSize="20"/>
+                    <Button x:Name="PlayButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40"
+                            Command="{Binding PlayPauseCommand}"
+                            >
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="20"/>
                     </Button>
-                    <Button x:Name="NextButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Next track">
+                    <Button x:Name="NextButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Next track"
+                            Command="{Binding NextCommand}"
+                            >
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
                     </Button>
                     <Button x:Name="ShuffleButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Shuffle">
@@ -105,9 +118,28 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="0:00" FontWeight="Light" FontSize="11" VerticalAlignment="Center"/>
-                    <Slider Grid.Column="1" Minimum="0" Maximum="100" VerticalAlignment="Center" Margin="8,0" Height="32"/>
-                    <TextBlock Grid.Column="2" Text="0:00" FontWeight="Light" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="0" 
+                               Text="{Binding FormattedPosition}" 
+                               FontWeight="Light" 
+                               FontSize="11" 
+                               VerticalAlignment="Center"/>
+                    <Slider Grid.Column="1" 
+                            Minimum="0" 
+                            x:Name="PlayerSlider"
+                            IsMoveToPointEnabled="True"
+                            Maximum="{Binding Duration}" 
+                            Value="{Binding CurrentPosition, Mode=OneWay}"
+                            VerticalAlignment="Center" 
+                            Margin="8,0" 
+                            Height="32"
+                            PreviewMouseLeftButtonDown="PlayerSlider_PreviewMouseLeftButtonDown"
+                            PreviewMouseLeftButtonUp="PlayerSlider_PreviewMouseLeftButtonUp"
+                            />
+                    <TextBlock Grid.Column="2" 
+                               Text="{Binding FormattedDuration}" 
+                               FontWeight="Light" 
+                               FontSize="11" 
+                               VerticalAlignment="Center"/>
                 </Grid>
 
             </Grid>
@@ -118,7 +150,15 @@
                     <Button Style="{StaticResource DefaultButton}" Width="32" Height="32" Padding="1">
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe767;" FontSize="16"/>
                     </Button>
-                    <Slider Minimum="0" Maximum="100" Margin="4,0,8,0" Width="64" VerticalAlignment="Center"/>
+                    <Slider Minimum="0" 
+                            Maximum="1" 
+                            Value="{Binding Volume, Mode=TwoWay}" 
+                            Margin="4,0,8,0" 
+                            Width="64" 
+                            IsMoveToPointEnabled="True"
+                            VerticalAlignment="Center"
+                            SmallChange="0.01"
+                            LargeChange="0.1"/>
                 </StackPanel>
                 <Button x:Name="DeviceBtn" 
                         Style="{StaticResource DefaultButton}" 
