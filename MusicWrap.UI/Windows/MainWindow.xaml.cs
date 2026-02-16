@@ -26,21 +26,30 @@ namespace MusicWrap.UI.Windows
 
             StateChanged += MainWindow_StateChanged;
 
+            UpdateBackdrop();
             NavigateToTab(0);
+        }
+
+        private void UpdateBackdrop()
+        {
+            if (!BackdropHelper.IsBackdropSupported() && !BackdropHelper.IsBackdropSupported())
+            {
+                this.SetResourceReference(BackgroundProperty, "WindowBackground");
+            }
         }
 
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
             if (WindowState == WindowState.Maximized)
             {
-                RestoreIconFont.Text = "\xE923";
-                RestoreButton.ToolTip = "Restore";
+                //RestoreIconFont.Text = "\xE923";
+                //RestoreButton.ToolTip = "Restore";
                 BorderWindow.Padding = new Thickness(8);
             }
             else
             {
-                RestoreIconFont.Text = "\xE922";
-                RestoreButton.ToolTip = "Maximize";
+                //RestoreIconFont.Text = "\xE922";
+                //RestoreButton.ToolTip = "Maximize";
                 BorderWindow.Padding = new Thickness(0);
             }
         }

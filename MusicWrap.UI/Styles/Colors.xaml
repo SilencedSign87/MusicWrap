@@ -2,10 +2,18 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Background -->
-    <SolidColorBrush x:Key="BackgroundPrimaryBrush" Color="#222222" />
-    <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#2b2b2b" />
-    <SolidColorBrush x:Key="BackgroundTertiaryBrush" Color="#3b3b3b" />
-    
+    <SolidColorBrush x:Key="BackgroundPrimaryBrush" Color="#80222222" />
+    <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#802b2b2b" />
+    <SolidColorBrush x:Key="BackgroundTertiaryBrush" Color="#803b3b3b" />
+
+    <!-- Layer -->
+    <SolidColorBrush x:Key="BackgroundLayer" Color="#10ffffff" />
+    <SolidColorBrush x:Key="BackgroundLayerAlt" Color="#2dffffff" />
+
+    <!-- Card -->
+    <SolidColorBrush x:Key="BackgroundCard" Color="#20000000" />
+    <SolidColorBrush x:Key="BackgroundCardAlt" Color="#3d000000" />
+
     <!-- Stroke -->
     <SolidColorBrush x:Key="StrokePrimaryBrush" Color="#FF444444"/>
     <SolidColorBrush x:Key="StrokeSecondaryBrush" Color="#FF666666"/>

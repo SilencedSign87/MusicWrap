@@ -19,6 +19,52 @@
             CornerRadius="4"
             Margin="4"
             Padding="0">
+        <Border.ContextMenu>
+            <ContextMenu Placement="Right">
+                <MenuItem Header="Play album">
+                    <MenuItem.Icon>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;" FontSize="14"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Play album next">
+                    <MenuItem.Icon>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xECC8;" FontSize="14"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Add to queue">
+                    <MenuItem.Icon>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" FontSize="14"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Add to playlist">
+                    <MenuItem.Icon>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xed0e;" FontSize="14"/>
+                    </MenuItem.Icon>
+                    <MenuItem Header="lista 1" IsChecked="True" IsCheckable="True">
+                        
+                    </MenuItem>
+                    <MenuItem Header="lista 2">
+
+                    </MenuItem>
+                    <MenuItem Header="lista 3">
+
+                    </MenuItem>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Edit album info">
+                    <MenuItem.Icon>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE70F;" FontSize="14"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="Properties" >
+                    <MenuItem.Icon>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" FontSize="14"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+
+            </ContextMenu>
+        </Border.ContextMenu>
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>

@@ -76,7 +76,7 @@
                                             </Style>
                                         </Border.Style>
                                         <Border.ContextMenu>
-                                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" Placement="Right">
                                                 <MenuItem Header="Play Now" 
                                                           Command="{Binding PlayTrackCommand}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
@@ -88,7 +88,7 @@
                                                           Command="{Binding PlayNextCommand}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
                                                     <MenuItem.Icon>
-                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE710;" FontSize="14"/>
+                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xECC8;" FontSize="14"/>
                                                     </MenuItem.Icon>
                                                 </MenuItem>
                                                 <MenuItem Header="Add to Queue" 

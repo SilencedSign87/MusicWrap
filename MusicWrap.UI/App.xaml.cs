@@ -21,7 +21,7 @@ namespace MusicWrap.UI
         public static Window? CurrentWindow { get; private set; }
         public static IServiceProvider Services { get; private set; } = default!;
 
-        protected override async void OnStartup(StartupEventArgs e)
+        protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
@@ -29,8 +29,6 @@ namespace MusicWrap.UI
             splash.Show(autoClose: false, topMost: true);
 
             Services = ConfigureServices();
-
-            await LoadLibrary();
 
             InitializeServicesAsync(splash);
 
@@ -68,18 +66,6 @@ namespace MusicWrap.UI
 
         #region Internal 
 
-        private static async Task LoadLibrary()
-        {
-            await Task.Run(async () =>
-            {
-                var settings = Services.GetRequiredService<IKeyValueStore>();
-                var listBy = settings.GetValue<string>("library_list_by") ?? "Artist";
-                var ascending = settings.GetValue<bool>("library_list_ascending");
-
-                var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
-                await LibraryCache.InitializeAsync(listBy, ascending);
-            });
-        }
         private static void TrySaveLibrary()
         {
             try
@@ -142,11 +128,17 @@ namespace MusicWrap.UI
             try
             {
                 // Force load
-                await Task.Run(() =>
-                {
-                    Services.GetRequiredService<MusicLibrary>();
-                    Services.GetRequiredService<IKeyValueStore>();
-                });
+
+                Services.GetRequiredService<MusicLibrary>();
+                Services.GetRequiredService<IKeyValueStore>();
+
+                var settings = Services.GetRequiredService<IKeyValueStore>();
+                var listBy = settings.GetValue<string>("library_list_by") ?? "Artist";
+                var ascending = settings.GetValue<bool>("library_list_ascending");
+
+                var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
+                await LibraryCache.InitializeAsync(listBy, ascending);
+
             }
             catch
             {
@@ -156,7 +148,6 @@ namespace MusicWrap.UI
             {
 
                 splash.Close(TimeSpan.FromSeconds(0.5));
-
                 ShowMain();
             }
         }
