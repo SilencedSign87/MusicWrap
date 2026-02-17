@@ -61,8 +61,8 @@
                         HorizontalOffset="8"
                         StaysOpen="False">
                         <Border>
-                            <Border Background="{StaticResource BackgroundSecondaryBrush}" 
-                                BorderBrush="{StaticResource StrokePrimaryBrush}" 
+                            <Border Background="{StaticResource BackgroundFloating}" 
+                            BorderBrush="{StaticResource StrokeFloating}" 
                                 CornerRadius="8" 
                                 Margin="8,16"
                                 Width="100"
@@ -176,8 +176,8 @@
                        AllowsTransparency="True"
                        StaysOpen="False">
                     <Border>
-                        <Border Background="{StaticResource BackgroundSecondaryBrush}" 
-                                BorderBrush="{StaticResource StrokePrimaryBrush}" 
+                        <Border Background="{StaticResource BackgroundFloating}" 
+                            BorderBrush="{StaticResource StrokeFloating}" 
                                 CornerRadius="8" 
                                 Margin="8,16"
                                 Width="400"
@@ -216,8 +216,8 @@
                        HorizontalOffset="8"
                     StaysOpen="False">
                     <Border>
-                        <Border Background="{StaticResource BackgroundSecondaryBrush}" 
-                            BorderBrush="{StaticResource StrokePrimaryBrush}" 
+                        <Border Background="{StaticResource BackgroundFloating}" 
+                            BorderBrush="{StaticResource StrokeFloating}" 
                             CornerRadius="8" 
                             Margin="8,16"
                             Width="330"

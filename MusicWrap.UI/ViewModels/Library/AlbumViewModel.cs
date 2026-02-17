@@ -1,8 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Data;
 using MusicWrap.Data.Library;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -40,6 +42,11 @@ namespace MusicWrap.UI.ViewModels.Library
             LoadAlbumData();
         }
 
+        [RelayCommand]
+        private void PlayAlbum()
+        {
+            Debug.WriteLine($"Playing album: {Title}");
+        }
         private void LoadAlbumData()
         {
             var album = _library.Albums.FirstOrDefault(a => a.Id == AlbumId);

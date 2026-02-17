@@ -2,22 +2,41 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Background -->
-    <SolidColorBrush x:Key="BackgroundPrimaryBrush" Color="#80222222" />
-    <SolidColorBrush x:Key="BackgroundSecondaryBrush" Color="#802b2b2b" />
-    <SolidColorBrush x:Key="BackgroundTertiaryBrush" Color="#803b3b3b" />
+    <SolidColorBrush x:Key="BackgroundSolid" Color="#202020" />
+    <SolidColorBrush x:Key="BackgroundSolidAlt" Color="#0a0a0a" />
+    <SolidColorBrush x:Key="BackgroundSolid2" Color="#1c1c1c" />
+    <SolidColorBrush x:Key="BackgroundSolid3" Color="#282828" />
+    <SolidColorBrush x:Key="BackgroundSolid4" Color="#2c2c2c" />
+    <SolidColorBrush x:Key="BackgroundSolid5" Color="#333333" />
+    <SolidColorBrush x:Key="BackgroundSolid6" Color="#373737" />
 
     <!-- Layer -->
-    <SolidColorBrush x:Key="BackgroundLayer" Color="#10ffffff" />
-    <SolidColorBrush x:Key="BackgroundLayerAlt" Color="#2dffffff" />
+    <SolidColorBrush x:Key="BackgroundLayer" Color="#3a3a3a" Opacity="0.3"/>
+    <SolidColorBrush x:Key="BackgroundLayerAlt" Color="#ffffff" Opacity="0.0538" />
 
     <!-- Card -->
-    <SolidColorBrush x:Key="BackgroundCard" Color="#20000000" />
-    <SolidColorBrush x:Key="BackgroundCardAlt" Color="#3d000000" />
+    <SolidColorBrush x:Key="BackgroundCard1" Color="#ffffff" Opacity="0.0512"/> <!-- Default -->
+    <SolidColorBrush x:Key="BackgroundCard2" Color="#ffffff" Opacity="0.0326"/> <!-- Hover -->
+    <SolidColorBrush x:Key="BackgroundCard3" Color="#ffffff" Opacity="0.0698" /> <!-- Pressed -->
+
+    <SolidColorBrush x:Key="BackgroundSmoke" Color="#000000" Opacity="0.3" />
+
+    <!--Control-->
+    <SolidColorBrush x:Key="BackgroundControlTransparent" Color="#FFFFFF" Opacity="0"/>
+    <SolidColorBrush x:Key="BackgroundControlDefault" Color="#FFFFFF" Opacity="0.0605"/>
+    <SolidColorBrush x:Key="BackgroundControlHover" Color="#FFFFFF" Opacity="0.0837" />
+    <SolidColorBrush x:Key="BackgroundControlPressed" Color="#FFFFFF" Opacity="0.0326" />
+    <SolidColorBrush x:Key="BackgroundControlDisable" Color="#FFFFFF" Opacity="0.0419" />
+    
+    <!-- Floating -->
+    <SolidColorBrush x:Key="BackgroundFloating" Color="#2C2C2C" Opacity="0.96" />
 
     <!-- Stroke -->
-    <SolidColorBrush x:Key="StrokePrimaryBrush" Color="#FF444444"/>
-    <SolidColorBrush x:Key="StrokeSecondaryBrush" Color="#FF666666"/>
-    <SolidColorBrush x:Key="StrokeDisabledBrush" Color="#FF333333"/>
+    <SolidColorBrush x:Key="StrokeSurface" Color="#757575" Opacity="0.4"/>
+    <SolidColorBrush x:Key="StrokeLayerCard" Color="#000000" Opacity="0.1"/>
+    <SolidColorBrush x:Key="StrokeFloating" Color="#000000" Opacity="0.2"/>
+    <SolidColorBrush x:Key="StrokeControl" Color="#ffffff" Opacity="0.0698"/>
+    <SolidColorBrush x:Key="StrokeDivider" Color="#ffffff" Opacity="0.0837"/>
 
     <!-- Text -->
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFFFF"/>

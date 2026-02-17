@@ -163,7 +163,7 @@
                     VirtualizingPanel.CacheLengthUnit="Page"
                     ScrollViewer.CanContentScroll="False"
                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                    Background="{StaticResource BackgroundCard}"
+                    Background="{StaticResource BackgroundLayer}"
                     >
                 <ListView.GroupStyle>
                     <GroupStyle>
@@ -172,7 +172,7 @@
                                 <Border Background="Transparent" 
                                         Padding="8,4" 
                                         BorderThickness="0,0,0,1"
-                                        BorderBrush="{StaticResource StrokePrimaryBrush}"
+                                        BorderBrush="{StaticResource StrokeDivider}"
                                         Margin="0,16,0,0">
                                     <TextBlock Text="{Binding Name}" 
                                                FontSize="14" 
@@ -238,7 +238,7 @@
             </ListView>
         </Grid>
         <!-- Selected content -->
-        <Grid Grid.Column="1" Background="{StaticResource BackgroundCardAlt}">
+        <Grid Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
             <!-- Show albums grid for all view modes -->
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">

@@ -2,6 +2,7 @@
 using MusicWrap.UI.ViewModels.Library;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;

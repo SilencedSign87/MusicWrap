@@ -41,17 +41,17 @@
 
     <!-- Default button -->
     <Style x:Key="DefaultButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Background" Value="{StaticResource BackgroundLayer}" />
-        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource BackgroundTertiaryBrush}"/>
+        <Setter Property="Background" Value="{StaticResource BackgroundControlDefault}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource StrokeControl}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
-                <Setter Property="Background" Value="{StaticResource BackgroundLayerAlt}"/>
+                <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
                 <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
-                <Setter Property="Background" Value="{StaticResource BackgroundLayer}" />
+                <Setter Property="Background" Value="{StaticResource BackgroundControlPressed}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -71,22 +71,16 @@
     </Style>
 
     <!-- Subtle button -->
-    <Style x:Key="SubtleButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Background" Value="Transparent" />
+    <Style x:Key="SubtleButton" TargetType="Button" BasedOn="{StaticResource DefaultButton}">
+        <Setter Property="Background" Value="{StaticResource BackgroundControlTransparent}" />
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="true">
-                <Setter Property="Background" Value="#10ffffff"/>
-                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-            </Trigger>
-        </Style.Triggers>
     </Style>
 
     <!-- Transparent button -->
     <Style x:Key="TransparentButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Background" Value="{StaticResource BackgroundControlTransparent}" />
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="1"/>

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI"
         xmlns:pages="clr-namespace:MusicWrap.UI.Pages"
+        xmlns:ic="clr-namespace:FluentIcons.Wpf;assembly=FluentIcons.Wpf"
         mc:Ignorable="d"
         Icon="/Resources/icon.ico" 
         Title="MusicWrap" 
@@ -110,7 +111,7 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="0">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8f1;" FontSize="12" VerticalAlignment="Center"/>
+                                    <ic:FluentIcon Icon="Library" FontSize="16" />
                                     <TextBlock Text="Library" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
@@ -118,7 +119,7 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="1">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8fd;" FontSize="12" VerticalAlignment="Center"/>
+                                    <ic:FluentIcon Icon="ListBar" FontSize="16" />
                                     <TextBlock Text="Playlists" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
@@ -126,7 +127,7 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="2">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xeb51;" FontSize="14" VerticalAlignment="Center"/>
+                                    <ic:FluentIcon Icon="Heart" FontSize="16" />
                                     <TextBlock Text="Favorites" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
@@ -135,10 +136,10 @@
                     <Border Margin="4" Width="1" Background="#333">
                     </Border>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE713;" FontSize="14"/>
+                        <ic:FluentIcon Icon="Settings" FontSize="18"/>
                     </Button>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenMiniPlayer" ToolTip="MiniPlayer">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEE49;" FontSize="14"/>
+                        <ic:FluentIcon Icon="ContractDownLeft" FontSize="18"/>
                     </Button>
                     <Border Margin="4" Width="1" Background="#333">
                     </Border>

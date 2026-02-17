@@ -18,10 +18,11 @@
             BorderThickness="0"
             CornerRadius="4"
             Margin="4"
-            Padding="0">
+            Padding="0"
+            >
         <Border.ContextMenu>
             <ContextMenu Placement="Right">
-                <MenuItem Header="Play album">
+                <MenuItem Header="Play album" Command="{Binding PlayAlbumCommand}">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;" FontSize="14"/>
                     </MenuItem.Icon>
