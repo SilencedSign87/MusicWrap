@@ -40,9 +40,9 @@ namespace MusicWrap.UI.Windows
             _isQueueOpen = !_isQueueOpen;
             if (_isQueueOpen)
             {
-                Height = 600;
+                Height = 700;
                 QueuePanel.Visibility = Visibility.Visible;
-                QueuePanel.Height = 600 - 390;
+                QueuePanel.Height = 700 - 390;
                 QueueFontIcon.Text = "\ue70e";
             }
             else

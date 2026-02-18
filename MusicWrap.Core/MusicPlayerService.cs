@@ -36,7 +36,7 @@ namespace MusicWrap.Core
         event EventHandler? TrackEnded;
         event EventHandler<PlaybackState>? PlaybackStateChanged;
         event EventHandler<double>? PositionChanged;
-
+        event EventHandler<int[]>? QueueChanged;
         void Play();
         void Pause();
         void Stop();
@@ -62,7 +62,7 @@ namespace MusicWrap.Core
         private readonly MusicLibrary _library;
         private readonly AudioEngine _audioEngine;
 
-        private readonly List<int> _queue = new();
+        private readonly List<int> _queue = [];
         private int _currentIndex = -1;
         private int _currentStream;
         private PlaybackState _playbackState = PlaybackState.Stopped;
@@ -122,6 +122,7 @@ namespace MusicWrap.Core
         public event EventHandler? TrackEnded;
         public event EventHandler<PlaybackState>? PlaybackStateChanged;
         public event EventHandler<double>? PositionChanged;
+        public event EventHandler<int[]>? QueueChanged;
 
         public void Play()
         {
@@ -229,11 +230,13 @@ namespace MusicWrap.Core
         public void AddToQueue(int TrackId)
         {
             _queue.Add(TrackId);
+            QueueChanged?.Invoke(this, [.. _queue]);
         }
 
         public void AddToQueue(IEnumerable<int> TrackIds)
         {
             _queue.AddRange(TrackIds);
+            QueueChanged?.Invoke(this, [.. _queue]);
         }
 
         public void SetQueue(IEnumerable<int> TrackIds)
@@ -241,6 +244,7 @@ namespace MusicWrap.Core
             _queue.Clear();
             _queue.AddRange(TrackIds);
             _currentIndex = _queue.Count > 0 ? 0 : -1;
+            QueueChanged?.Invoke(this, [.. _queue]);
         }
 
         public void RemoveFromQueue(int index)
@@ -261,6 +265,7 @@ namespace MusicWrap.Core
             {
                 _currentIndex--;
             }
+            QueueChanged?.Invoke(this, [.. _queue]);
         }
 
         public void ClearQueue()
@@ -268,11 +273,12 @@ namespace MusicWrap.Core
             Stop();
             _queue.Clear();
             _currentIndex = -1;
+            QueueChanged?.Invoke(this, [.. _queue]);
         }
 
         public int[] GetQueue()
         {
-            return _queue.ToArray();
+            return [.. _queue];
         }
 
         public void PlayTrack(int TrackId)
@@ -358,6 +364,7 @@ namespace MusicWrap.Core
             SetPlaybackState(PlaybackState.Playing);
 
             TrackChanged?.Invoke(this, track.Path);
+            QueueChanged?.Invoke(this, [.. _queue]);
         }
 
         private void SetPlaybackState(PlaybackState state)

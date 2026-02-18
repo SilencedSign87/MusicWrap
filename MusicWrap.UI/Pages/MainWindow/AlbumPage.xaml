@@ -7,7 +7,7 @@
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance Type=vm:AlbumViewModel}"
+             d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumData}"
              d:DesignHeight="200" d:DesignWidth="200"
              Cursor="Hand">
     <UserControl.Resources>
@@ -22,23 +22,23 @@
             >
         <Border.ContextMenu>
             <ContextMenu Placement="Right">
-                <MenuItem Header="Play album" Command="{Binding PlayAlbumCommand}">
+                <MenuItem Header="Play album" Click="PlayAlbum">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;" FontSize="14"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Play album next">
+                <MenuItem Header="Play album next" Click="AddAlbumToQueue">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xECC8;" FontSize="14"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
-                <MenuItem Header="Add to queue">
+                <MenuItem Header="Add to queue" Click="AddToQueue">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" FontSize="14"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Add to playlist">
+                <MenuItem Header="Add to playlist" x:Name="ListSelectorMenuItem">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xed0e;" FontSize="14"/>
                     </MenuItem.Icon>

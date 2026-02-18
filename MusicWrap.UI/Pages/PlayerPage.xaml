@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Pages"
+             xmlns:mw="clr-namespace:MusicWrap.UI.Pages.MainWindow"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
              mc:Ignorable="d" 
              d:DesignHeight="80" 
@@ -213,7 +214,7 @@
                     Placement="Top" 
                     PopupAnimation="Slide"
                     AllowsTransparency="True"
-                       HorizontalOffset="8"
+                    HorizontalOffset="8"
                     StaysOpen="False">
                     <Border>
                         <Border Background="{StaticResource BackgroundFloating}" 
@@ -221,6 +222,7 @@
                             CornerRadius="8" 
                             Margin="8,16"
                             Width="330"
+                            Height="600"
                             BorderThickness="1">
                             <Border.Effect>
                                 <DropShadowEffect Color="#000000"
@@ -230,7 +232,7 @@
                                     Opacity="0.5"/>
                             </Border.Effect>
                             <TabControl Margin="0,8,0,0">
-                                <TabItem>
+                                <TabItem IsSelected="True" >
                                     <TabItem.Header>
                                         <StackPanel Orientation="Horizontal" Margin="8,0">
                                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe768;" VerticalAlignment="Center" />
@@ -238,7 +240,7 @@
                                         </StackPanel>
                                     </TabItem.Header>
                                     <Grid>
-                                        <TextBlock Margin="12" Text="World" />
+                                        <mw:QueueListPage />
                                     </Grid>
                                 </TabItem>
                                 <TabItem IsSelected="True">

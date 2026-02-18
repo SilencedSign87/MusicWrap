@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI.Windows"
+        xmlns:mw="clr-namespace:MusicWrap.UI.Pages.MainWindow"
         xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
         d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
         mc:Ignorable="d"
@@ -12,9 +13,10 @@
         Width="275" 
         Height="390" 
         WindowStartupLocation="CenterScreen"
-        Background="#222222"
+        Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}"
         ResizeMode="CanMinimize"
         Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
+        d:Background="#2c2c2c"
         >
     <Window.Resources>
         <Style x:Key="CompactPlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}" >
@@ -54,7 +56,6 @@
             </Grid>
             <!--Controls-->
             <Grid Grid.Row="1"
-                  Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}"
                   >
                 <Grid.RowDefinitions>
                     <RowDefinition/>
@@ -189,8 +190,9 @@
                     Grid.Row="2"
                     x:Name="QueuePanel"
                     Visibility="Collapsed"
+                    Background="{StaticResource BackgroundLayer}"
                     >
-                    <TextBlock Text="Queue goes here" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <mw:QueueListPage />
                 </Grid>
             </Grid>
         </Grid>

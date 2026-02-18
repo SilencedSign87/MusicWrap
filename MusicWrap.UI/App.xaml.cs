@@ -2,6 +2,7 @@
 using MusicWrap.Core;
 using MusicWrap.Data;
 using MusicWrap.Data.Services;
+using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.ViewModels.Library;
@@ -115,6 +116,7 @@ namespace MusicWrap.UI
             services.AddTransient<DirectoriesManagerViewModel>();
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
+            services.AddTransient<QueueViewModel>();
             //services.AddTransient<AlbumViewModel>();
 
             // Player
