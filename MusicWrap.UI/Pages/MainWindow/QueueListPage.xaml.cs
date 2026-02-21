@@ -2,6 +2,7 @@
 using MusicWrap.UI.ViewModels.Library;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,6 +29,36 @@ namespace MusicWrap.UI.Pages.MainWindow
             _vm = App.Services.GetRequiredService<QueueViewModel>();
             DataContext = _vm;
 
+        }
+
+        private void ListDoubleClickPlay(object sender, MouseButtonEventArgs e)
+        {
+            var items = QueueListView.SelectedItems;
+
+            var selectedTrackIds = items
+                .OfType<QueueData>()
+                .Select(x => x.TrackId)
+                .ToList();
+
+            if (selectedTrackIds.Count != 0)
+            {
+                _vm.SetSelectedTracksToPlayNext(selectedTrackIds);
+            }
+
+        }
+
+        private void PlayNext(object sender, RoutedEventArgs e)
+        {
+            var items = QueueListView.SelectedItems;
+            var selectedTrackIds = items
+                .OfType<QueueData>()
+                .Select(x => x.TrackId)
+                .ToList();
+            if (selectedTrackIds.Count != 0)
+            {
+                _vm.SetSelectedTracksToPlayNext(selectedTrackIds);
+
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Hardcodet.Wpf.TaskbarNotification;
+using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Pages.MainWindow;
 using System.Text;
@@ -20,6 +21,7 @@ namespace MusicWrap.UI.Windows
     public partial class MainWindow : Window
     {
         private readonly Dictionary<int, UserControl> _pageCache = [];
+
         public MainWindow()
         {
             InitializeComponent();

@@ -58,12 +58,13 @@ namespace MusicWrap.UI.Pages.MainWindow
             if (DataContext is LibraryViewModel.AlbumData data)
             {
                 //Debug.WriteLine("Searching tracks...");
+                _playerService.ClearQueue();
                 _playerService.SetQueue(TracksId);
                 _playerService.Play();
             }
         }
 
-        private void AddAlbumToQueue(object sender, RoutedEventArgs e)
+        private void AddAlbumToNext(object sender, RoutedEventArgs e)
         {
             if (DataContext is LibraryViewModel.AlbumData data)
             {

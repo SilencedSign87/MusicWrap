@@ -12,8 +12,6 @@ namespace MusicWrap.UI.ViewModels.Library
 {
     public partial class QueueViewModel : ObservableObject
     {
-        [ObservableProperty]
-        private QueueData? nowPlaying;
 
         [ObservableProperty]
         private List<QueueData> queueDataList;
@@ -40,32 +38,37 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private void LoadQueueData(int[] currentQueue)
         {
-            var currentQueueTrackIds = currentQueue;
-            var currentTrackId = _player.CurrentTrackId;
-
-            var currentTrackIndex = currentQueueTrackIds.IndexOf(currentTrackId);
-
-            //var previousTracks = currentQueueTrackIds.Take(currentTrackIndex).ToList();
-            List<int> nextTracks = currentTrackIndex >= 0 ? [.. currentQueueTrackIds.Skip(currentTrackIndex + 1)] : [];
-
-            QueueDataList = TrackIdsToQueueData(nextTracks);
-            if (currentTrackIndex >= 0)
-            {
-                NowPlaying = TrackIdsToQueueData(new List<int> { currentTrackId }).FirstOrDefault();
-            }
-            else
-            {
-                NowPlaying = null;
-            }
-
+            QueueDataList = TrackIdsToQueueData(currentQueue);
         }
 
-        private List<QueueData> TrackIdsToQueueData(List<int> trackIds)
+        public void SetSelectedTracksToPlayNext(List<int> trackIDs)
+        {
+            var currentTrackId = _player.CurrentTrackId;
+            var currentQueue = _player.GetQueue().ToList();
+
+            // remove tracks to play from current queue
+            currentQueue = [.. currentQueue.Where(id => !trackIDs.Contains(id))];
+
+            List<int> newQueue = [];
+
+            // Insert tracks to play next after the current track
+            int currentIndex = currentQueue.IndexOf(currentTrackId);
+            if (currentIndex == -1) return;
+            currentQueue.InsertRange(currentIndex + 1, trackIDs);
+
+            // set queue to player
+            _player.SetQueue(currentQueue);
+            // move the index to the current track to avoid changing the currently playing track
+            _player.SetSilentIndex(newQueue.IndexOf(currentTrackId));
+        }
+
+        private List<QueueData> TrackIdsToQueueData(IEnumerable<int> trackIds)
         {
             var queueDataList = new List<QueueData>();
-            for (int i = 0; i < trackIds.Count; i++)
+            var currentTrackId = _player.CurrentTrackId;
+            for (int i = 0; i < trackIds.Count(); i++)
             {
-                var track = _library.Tracks.FirstOrDefault(t => t.Id == trackIds[i]);
+                var track = _library.Tracks.FirstOrDefault(t => t.Id == trackIds.ElementAt(i));
                 if (track is not null)
                 {
                     var coverArt = _library.CoverAssets.FirstOrDefault(c => c.Id == track.CoverId);
@@ -76,7 +79,8 @@ namespace MusicWrap.UI.ViewModels.Library
                         Title = track.Title,
                         ArtistString = string.Join(", ", track.ArtistIds.Select(aid => _library.Artists.FirstOrDefault(a => a.Id == aid)?.Name ?? "Unknown Artist")),
                         DurationString = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),
-                        AlbumArt = ImageHelper.LoadThumbnail(coverArt is not null ? Path.Combine(ImageHelper.BaseCoverPath ,coverArt.FileName) : null, "album", 64)
+                        AlbumArt = ImageHelper.LoadThumbnail(coverArt is not null ? Path.Combine(ImageHelper.BaseCoverPath, coverArt.FileName) : null, "album", 64),
+                        IsPlaying = track.Id == currentTrackId
                     });
                 }
             }
@@ -92,5 +96,6 @@ namespace MusicWrap.UI.ViewModels.Library
         public string Title { get; set; } = string.Empty;
         public string ArtistString { get; set; } = string.Empty;
         public string DurationString { get; set; } = "0:00";
+        public bool IsPlaying { get; set; } = false;
     }
 }

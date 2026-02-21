@@ -27,17 +27,17 @@
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;" FontSize="14"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <MenuItem Header="Play album next" Click="AddAlbumToQueue">
+                <MenuItem Header="Play album next" Click="AddAlbumToNext">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xECC8;" FontSize="14"/>
                     </MenuItem.Icon>
                 </MenuItem>
-                <Separator/>
                 <MenuItem Header="Add to queue" Click="AddToQueue">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" FontSize="14"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <Separator/>
                 <MenuItem Header="Add to playlist" x:Name="ListSelectorMenuItem">
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xed0e;" FontSize="14"/>

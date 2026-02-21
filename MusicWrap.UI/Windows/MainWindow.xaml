@@ -5,12 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI"
         xmlns:pages="clr-namespace:MusicWrap.UI.Pages"
-        xmlns:ic="clr-namespace:FluentIcons.Wpf;assembly=FluentIcons.Wpf"
         mc:Ignorable="d"
-        Icon="/Resources/icon.ico" 
-        Title="MusicWrap" 
-        Height="800" 
-        Width="1200" 
+        Icon="/Resources/icon.ico"
+        Title="MusicWrap"
+        Height="800"
+        Width="1200"
         MinHeight="600"
         MinWidth="700"
         WindowStartupLocation="CenterScreen"
@@ -46,7 +45,7 @@
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="8"
                                 >
-                            <ContentPresenter HorizontalAlignment="Center" 
+                            <ContentPresenter HorizontalAlignment="Center"
                                 VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
@@ -93,15 +92,15 @@
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" Grid.Column="0" HorizontalAlignment="Left" Margin="4">
-                    <Image 
-                        Source="/Resources/MusicUI.png" 
-                        Width="20" 
-                        Height="20" 
-                        Margin="8,0" 
+                    <Image
+                        Source="/Resources/MusicUI.png"
+                        Width="20"
+                        Height="20"
+                        Margin="8,0"
                         RenderOptions.BitmapScalingMode="HighQuality"
                         />
 
-                    
+
                     <TabControl
                         Margin="0,4"
                         SelectionChanged="TabControl_SelectionChanged"
@@ -111,7 +110,7 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="0">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <ic:FluentIcon Icon="Library" FontSize="16" />
+                                    <TextBlock Text="&#xe8f1;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                                     <TextBlock Text="Library" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
@@ -119,7 +118,7 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="1">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <ic:FluentIcon Icon="ListBar" FontSize="16" />
+                                    <TextBlock Text="&#xe90b;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                                     <TextBlock Text="Playlists" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
@@ -127,7 +126,7 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="2">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <ic:FluentIcon Icon="Heart" FontSize="16" />
+                                    <TextBlock Text="&#xeb51;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                                     <TextBlock Text="Favorites" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
@@ -136,20 +135,20 @@
                     <Border Margin="4" Width="1" Background="#333">
                     </Border>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">
-                        <ic:FluentIcon Icon="Settings" FontSize="18"/>
+                        <TextBlock Text="&#xe713;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenMiniPlayer" ToolTip="MiniPlayer">
-                        <ic:FluentIcon Icon="ContractDownLeft" FontSize="18"/>
+                        <TextBlock Text="&#xee49;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
                     <Border Margin="4" Width="1" Background="#333">
                     </Border>
 
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
-                   
-                    
+
+
                 </StackPanel>
-                
+
             </Grid>
             <!--Content-->
             <Grid Grid.Row="1">
@@ -158,11 +157,12 @@
                     />
             </Grid>
             <!--Player-->
-            <Grid 
+            <Grid
                 Grid.Row="2"
                 Height="80">
                 <pages:PlayerPage/>
             </Grid>
+
         </Grid>
     </Border>
 </Window>

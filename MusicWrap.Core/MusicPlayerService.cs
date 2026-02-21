@@ -46,6 +46,7 @@ namespace MusicWrap.Core
         void SetVolume(float volume);
         void PlayIndex(int index);
 
+        void SetSilentIndex(int index);
         void AddToQueue(int TrackId);
         void AddToQueue(IEnumerable<int> TrackIds);
         void SetQueue(IEnumerable<int> TrackIds);
@@ -112,8 +113,10 @@ namespace MusicWrap.Core
 
             _endCallback = OnTrackEndedInternal;
 
-            _positionTimer = new System.Timers.Timer(500);
-            _positionTimer.AutoReset = true;
+            _positionTimer = new System.Timers.Timer(1000)
+            {
+                AutoReset = true
+            };
             _positionTimer.Elapsed += PositionTimerOnElapsed;
             _positionTimer.Start();
         }
@@ -225,6 +228,14 @@ namespace MusicWrap.Core
 
             _currentIndex = index;
             StartPlaybackOfCurrent();
+        }
+
+        public void SetSilentIndex(int index) // Change current index without starting playback
+        {
+            if (index < 0 || index >= _queue.Count)
+                return;
+
+            _currentIndex = index;
         }
 
         public void AddToQueue(int TrackId)
@@ -401,7 +412,7 @@ namespace MusicWrap.Core
             }
         }
     }
-    
+
     public class QueuedTrack
     {
         public int TrackId { get; set; }

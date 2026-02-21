@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Hardcodet.Wpf.TaskbarNotification;
+using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
 using MusicWrap.Data;
 using MusicWrap.Data.Services;
+using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
@@ -21,6 +23,7 @@ namespace MusicWrap.UI
     {
         public static Window? CurrentWindow { get; private set; }
         public static IServiceProvider Services { get; private set; } = default!;
+        private TaskbarIcon? _trayIcon;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -35,8 +38,20 @@ namespace MusicWrap.UI
 
         }
 
+        private void _trayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            if (CurrentWindow is not null)
+            {
+                if (CurrentWindow.WindowState == WindowState.Minimized)
+                    CurrentWindow.WindowState = WindowState.Normal;
+                CurrentWindow.Activate();
+                CurrentWindow.Show();
+            }
+        }
+
         protected override void OnExit(ExitEventArgs e)
         {
+            TrayIconManager.DisposeTrayIcon();
             TrySaveLibrary();
             base.OnExit(e);
         }
@@ -65,7 +80,7 @@ namespace MusicWrap.UI
             CurrentWindow = player;
         }
 
-        #region Internal 
+        #region Internal
 
         private static void TrySaveLibrary()
         {
@@ -141,6 +156,8 @@ namespace MusicWrap.UI
                 var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
                 await LibraryCache.InitializeAsync(listBy, ascending);
 
+                _trayIcon = TrayIconManager.GetTrayIcon();
+                _trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
             }
             catch
             {
