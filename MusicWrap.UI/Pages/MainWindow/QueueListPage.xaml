@@ -10,33 +10,38 @@
              d:DesignHeight="700" d:DesignWidth="500">
     <UserControl.Resources>
         <DataTemplate x:Key="QueueItemTemplate" DataType="vm:QueueData">
-            <Border x:Name="TrackContainer">
-                <Grid Height="72">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="72"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <!-- Image -->
-                    <Image Grid.Column="0"
-                       Width="64" Height="64" VerticalAlignment="Center"
+            <Grid x:Name="TrackContainer" Height="48" HorizontalAlignment="Stretch">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="48" />
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <!-- Image -->
+                <Image
+                    Grid.Column="0"
+                       Width="40" Height="40"
+                       Margin="4"
                        Source="{Binding AlbumArt}"/>
-                    <!-- Body -->
-                    <Grid Grid.Column="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="8,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" TextTrimming="WordEllipsis"/>
-                            <TextBlock Text="{Binding ArtistString}" FontSize="12" Opacity="0.7" TextTrimming="WordEllipsis"/>
-                        </StackPanel>
-                        <TextBlock Grid.Column="1" Text="{Binding DurationString}" Margin="8,0,8,0" VerticalAlignment="Center" Opacity="0.7"/>
-                    </Grid>
+                <!-- Body -->
+                <Grid Grid.Column="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" x:Name="PlayingIcon" Visibility="Collapsed">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe995;" FontSize="16" VerticalAlignment="Center" TextTrimming="WordEllipsis" Margin="2" Foreground="{StaticResource AccentBrush100}"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="TitleText" Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" TextTrimming="WordEllipsis"/>
+                        <TextBlock Text="{Binding ArtistString}" FontSize="11" Opacity="0.7" TextTrimming="WordEllipsis"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding DurationString}" Margin="8,0,8,0" VerticalAlignment="Center" Opacity="0.7"/>
                 </Grid>
-            </Border>
+            </Grid>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsPlaying}" Value="True">
-                    <Setter TargetName="TrackContainer" Property="Background" Value="{StaticResource AccentBrush100}" />
+                    <Setter TargetName="TitleText" Property="Foreground" Value="{StaticResource AccentBrush100}" />
+                    <Setter TargetName="PlayingIcon" Property="Visibility" Value="Visible" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -58,11 +63,19 @@
             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
             MouseDoubleClick="ListDoubleClickPlay"
             >
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Height" Value="auto"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Play now" />
                     <MenuItem Header="Play next" Click="PlayNext" />
-                    <MenuItem Header="Remove" />
+                    <MenuItem Header="Remove" Click="RemoveFromQueue" />
                     <Separator />
                     <MenuItem Header="Playlist" />
                 </ContextMenu>

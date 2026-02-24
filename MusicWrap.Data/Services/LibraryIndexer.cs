@@ -136,6 +136,10 @@ namespace MusicWrap.Data.Services
                     Disk = (int)tagFile.Tag.Disc,
                     TrackNumber = (int)tagFile.Tag.Track,
                     GenreIds = genreIds,
+                    SamplingRate = tagFile.Properties.AudioSampleRate,
+                    Bitrate = tagFile.Properties.AudioBitrate,
+                    Channels = tagFile.Properties.AudioChannels,
+                    BitDeph = tagFile.Properties.BitsPerSample
                 };
                 _library.Tracks.Add(track);
             }

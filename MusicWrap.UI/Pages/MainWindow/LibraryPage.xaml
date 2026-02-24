@@ -15,13 +15,15 @@
         <!-- Template for Album -->
         <DataTemplate x:Key="AlbumTemplate">
             <Button Background="Transparent"
-                BorderThickness="0"
-                Padding="0"
-                Width="200"
-                Height="250"
-                Cursor="Hand"
-                Tag="{Binding Id}"
-                Click="AlbumButton_Click">
+                    BorderThickness="0"
+                    Padding="0"
+                    Width="200"
+                    Height="250"
+                    Cursor="Hand"
+                    Tag="{Binding Id}"
+                    Click="AlbumButton_Click"
+                    MouseDoubleClick="Album_MouseDoubleClick"
+                    >
                 <local:AlbumPage DataContext="{Binding}"/>
             </Button>
         </DataTemplate>
@@ -31,7 +33,6 @@
             <Border Background="{Binding DominantColor, Converter={StaticResource HexToBrushConverter}}"
                 Margin="0,8"
                 CornerRadius="4"
-                MinHeight="200"
                 Width="{Binding RelativeSource={RelativeSource AncestorType=Grid}, Path=ActualWidth}"
                 HorizontalAlignment="Left">
                 <Grid Margin="8">
@@ -213,6 +214,14 @@
                             Margin="0"
                             ToolTipService.ToolTip="{Binding Title}"
                             HorizontalAlignment="Stretch">
+                            <StackPanel.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Play"/>
+                                    <MenuItem Header="Play next"/>
+                                    <MenuItem Header="Add to queue"/>
+                                    <MenuItem Header="Add to playlist"/>
+                                </ContextMenu>
+                            </StackPanel.ContextMenu>
                             <Image
                                 Source="{Binding Image}"
                                 Width="64"

@@ -39,8 +39,11 @@ namespace MusicWrap.UI.Pages.MainWindow
                 .OfType<QueueData>()
                 .Select(x => x.TrackId)
                 .ToList();
-
-            if (selectedTrackIds.Count != 0)
+            if (selectedTrackIds.Count == 1)
+            {
+                _vm.PlayTrack(selectedTrackIds.First());
+            }
+            else if (selectedTrackIds.Count > 1)
             {
                 _vm.SetSelectedTracksToPlayNext(selectedTrackIds);
             }
@@ -58,6 +61,19 @@ namespace MusicWrap.UI.Pages.MainWindow
             {
                 _vm.SetSelectedTracksToPlayNext(selectedTrackIds);
 
+            }
+        }
+
+        private void RemoveFromQueue(object sender, RoutedEventArgs e)
+        {
+            var items = QueueListView.SelectedItems;
+            var selectedTrackIds = items
+                .OfType<QueueData>()
+                .Select(x => x.TrackId)
+                .ToList();
+            if (selectedTrackIds.Count != 0)
+            {
+                _vm.RemoveSelectedTracksFromQueue(selectedTrackIds);
             }
         }
     }

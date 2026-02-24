@@ -59,7 +59,7 @@ namespace MusicWrap.UI.Pages.MainWindow
                 var firstAlbum = vm.AlbumsForSelectedEntry
                     .OfType<LibraryViewModel.AlbumData>()
                     .FirstOrDefault();
-                
+
                 if (firstAlbum != null)
                 {
                     vm.ExpandAlbum(firstAlbum.Id);
@@ -93,16 +93,16 @@ namespace MusicWrap.UI.Pages.MainWindow
                 // Load tracks for the album with colors and player service
                 var library = vm.GetLibrary();
                 var playerService = App.Services.GetRequiredService<IMusicPlayerService>();
-                
+
                 var tracksViewModel = new AlbumTracksViewModel(
-                    library, 
+                    library,
                     playerService,
-                    placeholder.AlbumId, 
-                    placeholder.DominantColor, 
+                    placeholder.AlbumId,
+                    placeholder.DominantColor,
                     placeholder.ForegroundColor
                 );
                 var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
-                
+
                 contentControl.Content = tracksPage;
             }
         }
@@ -130,7 +130,7 @@ namespace MusicWrap.UI.Pages.MainWindow
         private void ScrollToGroup(string groupKey)
         {
             var view = EntriesListView.Items;
-            
+
             if (view.Groups == null || view.Groups.Count == 0)
                 return;
 
@@ -141,14 +141,23 @@ namespace MusicWrap.UI.Pages.MainWindow
                     if (group.ItemCount > 0)
                     {
                         var firstItem = group.Items[0];
-                        
+
                         EntriesListView.ScrollIntoView(firstItem);
-                        
+
                         EntriesListView.SelectedItem = firstItem;
-                        
+
                         break;
                     }
                 }
+            }
+        }
+
+        private void Album_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Button button && button.Tag is int albumId)
+            {
+                // Use the new ViewModel method to expand/collapse
+                vm.PlayAlbum(albumId);
             }
         }
     }

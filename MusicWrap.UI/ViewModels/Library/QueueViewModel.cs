@@ -40,7 +40,25 @@ namespace MusicWrap.UI.ViewModels.Library
         {
             QueueDataList = TrackIdsToQueueData(currentQueue);
         }
-
+        public void RemoveSelectedTracksFromQueue(List<int> trackIDs)
+        {
+            var currentTrackId = _player.CurrentTrackId;
+            if (trackIDs.Contains(currentTrackId))
+            {
+                _player.Stop();
+            }
+            var currentQueue = _player.GetQueue().ToList();
+            currentQueue = [.. currentQueue.Where(id => !trackIDs.Contains(id))];
+            _player.SetQueue(currentQueue);
+        }
+        public void PlayTrack(int trackID)
+        {
+            var newIndex = _player.GetQueue().ToList().IndexOf(trackID);
+            if (newIndex >= 0)
+            {
+                _player.PlayIndex(newIndex);
+            }
+        }
         public void SetSelectedTracksToPlayNext(List<int> trackIDs)
         {
             var currentTrackId = _player.CurrentTrackId;

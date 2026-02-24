@@ -42,15 +42,6 @@
                     <MenuItem.Icon>
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xed0e;" FontSize="14"/>
                     </MenuItem.Icon>
-                    <MenuItem Header="lista 1" IsChecked="True" IsCheckable="True">
-                        
-                    </MenuItem>
-                    <MenuItem Header="lista 2">
-
-                    </MenuItem>
-                    <MenuItem Header="lista 3">
-
-                    </MenuItem>
                 </MenuItem>
                 <Separator/>
                 <MenuItem Header="Edit album info">

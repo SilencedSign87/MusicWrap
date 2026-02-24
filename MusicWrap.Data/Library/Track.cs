@@ -25,6 +25,12 @@ namespace MusicWrap.Data.Library
         [Key(9)] public int Disk;
         [Key(10)] public int TrackNumber;
 
+        // Metadata
+        [Key(11)] public int SamplingRate;
+        [Key(12)] public int Bitrate;
+        [Key(13)] public int Channels;
+        [Key(14)] public int BitDeph;
+
         [Key(100)] public int CoverId;
 
     }

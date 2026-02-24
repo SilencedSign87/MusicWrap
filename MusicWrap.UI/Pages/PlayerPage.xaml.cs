@@ -33,21 +33,6 @@ namespace MusicWrap.UI.Pages
             DataContext = _viewModel;
         }
 
-        private void DeviceBtn_Click(object sender, RoutedEventArgs e)
-        {
-            DevicePopup.IsOpen = true;
-        }
-
-        private void QueueBtn_Click(object sender, RoutedEventArgs e)
-        {
-            QueuePopup.IsOpen = true;
-        }
-
-        private void PlusButton_Click(object sender, RoutedEventArgs e)
-        {
-            PlusPopup.IsOpen = true;
-        }
-
         private void Seek(double position)
         {
             _viewModel?.SeekCommand.Execute(position);

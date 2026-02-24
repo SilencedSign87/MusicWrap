@@ -6,6 +6,7 @@ using MusicWrap.Data.Library;
 using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -27,9 +28,22 @@ namespace MusicWrap.UI.ViewModels
 
         [ObservableProperty]
         private string currentTrackTitle = "No track playing";
-
+        [ObservableProperty]
+        private string currentTrackAlbum = "";
         [ObservableProperty]
         private string currentTrackArtists = "";
+        [ObservableProperty]
+        private string currentTrackYear = "";
+        [ObservableProperty]
+        private string currentTrackSampleRate = "";
+        [ObservableProperty]
+        private string currentTrackFormat = "";
+        [ObservableProperty]
+        private string currentTrackBitrate = "";
+        [ObservableProperty]
+        private string currentTrackBitDepth = "";
+        [ObservableProperty]
+        private string currentTrackChannels = "";
 
         [ObservableProperty]
         private BitmapImage? currentTrackImage;
@@ -57,12 +71,18 @@ namespace MusicWrap.UI.ViewModels
         private string playPauseIcon = "\ue768"; // Play icon
 
         private bool _isSeekingPosition = false;
+        private string ArtworkPath = "";
 
         private static readonly string CoversBasePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "MusicWrap",
             "covers"
         );
+
+        public void OpenArtworkOnDefaultApp()
+        {
+            Process.Start(new ProcessStartInfo(ArtworkPath) { UseShellExecute = true});
+        }
 
         public PlayerViewModel(IMusicPlayerService service, MusicLibrary library)
         {
@@ -176,6 +196,12 @@ namespace MusicWrap.UI.ViewModels
             }
 
             var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+            CurrentTrackSampleRate = track != null ? $"{track.SamplingRate / 1000.0:F1} kHz" : "";
+            CurrentTrackFormat = track != null ? Path.GetExtension(track.Path).TrimStart('.').ToUpper() : "";
+            CurrentTrackBitrate = track != null ? $"{track.Bitrate} kbps" : "";
+            CurrentTrackBitDepth = track != null ? $"{track.BitDeph} bit" : "";
+            CurrentTrackChannels = track != null ? $"{track.Channels} channel{(track.Channels > 1 ? "s" : "")}" : "";
+
             if (track == null)
             {
                 CurrentTrackTitle = "Unknown track";
@@ -185,6 +211,11 @@ namespace MusicWrap.UI.ViewModels
             }
 
             CurrentTrackTitle = track.Title;
+            
+            // Get Album
+            var album = _library.Albums.FirstOrDefault(a => a.Id == track.AlbumId);
+            CurrentTrackAlbum = album != null ? album.Title : "Unknown Album";
+            CurrentTrackYear = album != null ? album.Year.ToString() : "?";
 
             // Get artists
             var artists = _library.Artists
@@ -198,7 +229,6 @@ namespace MusicWrap.UI.ViewModels
 
             if (coverId == 0)
             {
-                var album = _library.Albums.FirstOrDefault(a => a.Id == track.AlbumId);
                 if (album != null)
                 {
                     coverId = album.CoverId;
@@ -211,6 +241,7 @@ namespace MusicWrap.UI.ViewModels
                 if (coverAsset != null)
                 {
                     coverPath = Path.Combine(CoversBasePath, coverAsset.FileName);
+                    ArtworkPath = coverPath;
                     CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
                     CurrentTrackForegroundColorHex = coverAsset.ForegroundColorHex;
                 }

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using MusicWrap.Core;
 using MusicWrap.Data;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Services;
@@ -45,6 +46,7 @@ namespace MusicWrap.UI.ViewModels.Library
         private readonly MusicLibrary _library;
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryCacheService _LibraryCache;
+        private readonly IMusicPlayerService _player;
 
         private static readonly string CoversBasePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -52,11 +54,12 @@ namespace MusicWrap.UI.ViewModels.Library
             "covers"
             );
 
-        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, IKeyValueStore settings)
+        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, IKeyValueStore settings, IMusicPlayerService player)
         {
             _library = library;
             _scanner = scanner;
             _LibraryCache = libraryCache;
+            _player = player;
             // Load Initial Settings
             ListBy = settings.GetValue<string>("library_list_by") ?? "Artist";
             Ascending = settings.GetValue<bool>("library_list_ascending");
@@ -182,6 +185,20 @@ namespace MusicWrap.UI.ViewModels.Library
             {
                 EntriesViewSource.GroupDescriptions.Add(new PropertyGroupDescription("GroupKey"));
             }, DispatcherPriority.Render);
+        }
+
+        public void PlayAlbum(int albumId)
+        {
+            var allTracks = _library.Tracks
+                .Where(t => t.AlbumId == albumId)
+                .OrderBy(t => t.Disk)
+                .ThenBy(t => t.TrackNumber)
+                .ThenBy(t => t.Title)
+                .Select(t => t.Id)
+                .ToArray();
+
+            _player.SetQueue(allTracks);
+            _player.PlayIndex(0);
         }
 
         private void LoadAlbumsForEntry(LibraryEntry entry)

@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="MusicWrap.Core/MusicWrap.Core.csproj" />
   <Project Path="MusicWrap.Data/MusicWrap.Data.csproj" />
-  <Project Path="MusicWrap.Installer/MusicWrap.Installer.vdproj" Type="Installer" />
+  <Project Path="MusicWrap.Installer/MusicWrap.Installer.vdproj" Type="Installer">
+    <Build />
+  </Project>
   <Project Path="MusicWrap.UI/MusicWrap.UI.csproj" />
 </Solution>
