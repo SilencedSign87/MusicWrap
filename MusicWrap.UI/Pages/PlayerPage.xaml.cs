@@ -23,7 +23,6 @@ namespace MusicWrap.UI.Pages
     public partial class PlayerPage : UserControl
     {
         private PlayerViewModel? _viewModel;
-        private bool _isUserSeeking = false;
 
         public PlayerPage()
         {
@@ -31,26 +30,53 @@ namespace MusicWrap.UI.Pages
 
             _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
             DataContext = _viewModel;
+
+            PlayerSlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler(PlayerSlider_DragStarted));
+            PlayerSlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(PlayerSlider_DragCompleted));
+        }
+        private void PlayerSlider_DragStarted(object sender, DragStartedEventArgs e)
+        {
+            _viewModel?.StartSeekingCommand.Execute(null);
         }
 
-        private void Seek(double position)
+        private void PlayerSlider_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-            _viewModel?.SeekCommand.Execute(position);
+            _viewModel?.EndSeekingCommand.Execute(PlayerSlider.Value);
         }
+
         private void PlayerSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            _isUserSeeking = true;
+            if (e.OriginalSource is not Thumb) // ignore if is dragging the thumb
+            {
+                _viewModel?.StartSeekingCommand.Execute(null);
+            }
         }
 
         private void PlayerSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            var slider = sender as Slider;
-            _isUserSeeking = false;
-            if (slider != null)
+            if (e.OriginalSource is not Thumb) // ignore if is dragging the thumb
             {
-                Seek(slider.Value);
+                _viewModel?.EndSeekingCommand.Execute(PlayerSlider.Value);
             }
         }
 
+        private void PlayerSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_viewModel != null)
+            {
+                if (Math.Abs(_viewModel.CurrentPosition - e.NewValue) > 0.1)
+                {
+                    _viewModel.FormattedPosition = FormatTime(e.NewValue);
+                }
+            }
+        }
+
+        private static string FormatTime(double seconds)
+        {
+            var time = System.TimeSpan.FromSeconds(seconds);
+            if (time.TotalHours >= 1)
+                return time.ToString(@"h\:mm\:ss");
+            return time.ToString(@"m\:ss");
+        }
     }
 }

@@ -49,7 +49,23 @@ namespace MusicWrap.UI.Windows
             UpdateBackdrop();
             NavigateToTab(0);
             PlayPauseButton.ImageSource = _playIcon;
+
+            TrackExpander.Expanded += TrackExpander_Expanded;
+            DeviceExpander.Expanded += DeviceExpander_Expanded;
         }
+
+        private void TrackExpander_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (DeviceExpander.IsExpanded)
+                DeviceExpander.IsExpanded = false;
+        }
+
+        private void DeviceExpander_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (TrackExpander.IsExpanded)
+                TrackExpander.IsExpanded = false;
+        }
+
 
         private void _player_PlaybackStateChanged(object? sender, PlaybackState e)
         {

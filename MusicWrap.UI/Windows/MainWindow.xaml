@@ -97,7 +97,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
+      
     </Window.Resources>
 
     <!--Window-->
@@ -159,7 +159,7 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="3">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xe7f3;" FontFamily="Segoe Fluent Icons" FontSize="16" />
+                                    <TextBlock Text="&#xF61F;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                                     <TextBlock Text="Audio Console" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
@@ -198,6 +198,7 @@
                     Grid.Column="1"
                     />
 
+                <!-- Sidebar -->
                 <Grid
                          Grid.Column="2"
                     HorizontalAlignment="Stretch"
@@ -209,7 +210,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" MinHeight="40"/>
                         <RowDefinition Height="auto"/>
-                        <RowDefinition Height="auto" MaxHeight="500"/>
+                        <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
                         <Grid.RowDefinitions>
@@ -217,7 +218,7 @@
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
-                        <Border Grid.Row="0" Background="{StaticResource BackgroundLayerAlt}" CornerRadius="4">
+                        <Border Grid.Row="0" Background="{StaticResource BackgroundLayerAlt}" CornerRadius="4" ContextMenuService.Placement="Right">
                             <Border.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Clear queue" Icon="{ex:Icon Glyph=e74d}"/>
@@ -233,7 +234,8 @@
                         <mw:QueueListPage Grid.Row="1"/>
 
                     </Grid>
-                    <Expander Grid.Row="1" ExpandDirection="Up">
+
+                    <Expander Grid.Row="1" ExpandDirection="Up" x:Name="DeviceExpander">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xe7f5;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
@@ -241,10 +243,13 @@
                             </StackPanel>
                         </Expander.Header>
                         <Expander.Content>
-                            <mw:DevicePage />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <mw:DevicePage />
+                            </ScrollViewer>
                         </Expander.Content>
                     </Expander>
-                    <Expander Grid.Row="2" ExpandDirection="Up">
+
+                    <Expander Grid.Row="2" ExpandDirection="Up" x:Name="TrackExpander">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
@@ -252,7 +257,9 @@
                             </StackPanel>
                         </Expander.Header>
                         <Expander.Content>
-                            <mw:TrackInformationPage />
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <mw:TrackInformationPage />
+                            </ScrollViewer>
                         </Expander.Content>
                     </Expander>
                 </Grid>

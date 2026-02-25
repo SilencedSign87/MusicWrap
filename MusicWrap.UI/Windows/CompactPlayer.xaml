@@ -190,7 +190,6 @@
                     Grid.Row="2"
                     x:Name="QueuePanel"
                     Visibility="Collapsed"
-                    Background="{StaticResource BackgroundLayer}"
                     >
                     <mw:QueueListPage />
                 </Grid>

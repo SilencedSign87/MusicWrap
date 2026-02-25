@@ -89,11 +89,14 @@ namespace MusicWrap.UI
                 if (Services is null) return;
                 var store = Services.GetService<ILibraryStore>();
                 var library = Services.GetService<MusicLibrary>();
+                var libraryCache = Services.GetService<ILibraryCacheService>();
+                libraryCache?.SaveToDisk();
 
                 if (store != null && library != null)
                 {
                     store.Save(library);
                 }
+
                 var settings = Services.GetService<IKeyValueStore>();
                 settings?.SaveToDisk();
             }

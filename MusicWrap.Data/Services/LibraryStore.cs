@@ -98,10 +98,15 @@ namespace MusicWrap.Data.Services
             );
         public static readonly string LibraryFile = Path.Combine(Root, "library.dat");
         public static readonly string BackupFile = Path.Combine(Root, "library.bak");
-        public static readonly string CoversDir = Path.Combine(Root, "covers");
 
         public static readonly string SettingsFile = Path.Combine(Root, "settings.dat");
         public static readonly string SettingsBackupFile = Path.Combine(Root, "settings.bak");
+
+        public static readonly string CoversDir = Path.Combine(Root, "covers");
+        public static readonly string CacheDir = Path.Combine(Root, "cache");
+        public static readonly string LogsDir = Path.Combine(Root, "logs");
+        public static readonly string TempDir = Path.Combine(Root, "temp");
+
         static AppPaths()
         {
             Directory.CreateDirectory(Root);

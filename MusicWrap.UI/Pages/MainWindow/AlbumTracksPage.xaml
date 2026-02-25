@@ -22,12 +22,30 @@
         </Grid.RowDefinitions>
 
         <!-- Album Header -->
+
         <StackPanel Grid.Row="0" Margin="0,8,0,16">
-            <TextBlock Text="{Binding AlbumTitle}" 
-                       FontSize="18" 
-                       FontWeight="Bold"
-                       Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
-                       TextWrapping="Wrap"/>
+            <Grid Margin="0,0,24,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Button Width="26" Height="26" Padding="0" VerticalAlignment="Top"
+                        Grid.Column="0"
+                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip="{Binding AlbumPlayTooltip}" 
+                        Command="{Binding PlayPauseAlbumCommand}"
+                        >
+                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
+                </Button>
+                <TextBlock Text="{Binding AlbumTitle}" 
+                           Grid.Column="1"
+                           FontSize="18" 
+                           FontWeight="Bold"
+                           Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                           TextTrimming="CharacterEllipsis"/>
+            </Grid>
             <TextBlock FontSize="13" 
                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
                        Opacity="0.7"
@@ -37,6 +55,8 @@
                 <Run Text="{Binding AlbumYear}"/>
             </TextBlock>
         </StackPanel>
+
+
 
         <!-- Tracks List Grouped by Disk -->
         <ItemsControl Grid.Row="1"

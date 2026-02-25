@@ -27,6 +27,20 @@ namespace MusicWrap.UI.ViewModels
         private bool isPaused = false;
 
         [ObservableProperty]
+        private bool isDJOn = false;
+        [ObservableProperty]
+        private string djButtonIcon = "";
+        [ObservableProperty]
+        private string djTooltip = "Toggle DJ mode";
+
+        [ObservableProperty]
+        private RepeatMode selectedRepeatMode = RepeatMode.None;
+        [ObservableProperty]
+        private string repeatModeIcon = "";
+        [ObservableProperty]
+        private string repeatModeTooltip = "";
+
+        [ObservableProperty]
         private string currentTrackTitle = "No track playing";
         [ObservableProperty]
         private string currentTrackAlbum = "";
@@ -44,7 +58,6 @@ namespace MusicWrap.UI.ViewModels
         private string currentTrackBitDepth = "";
         [ObservableProperty]
         private string currentTrackChannels = "";
-
         [ObservableProperty]
         private BitmapImage? currentTrackImage;
         [ObservableProperty]
@@ -81,7 +94,7 @@ namespace MusicWrap.UI.ViewModels
 
         public void OpenArtworkOnDefaultApp()
         {
-            Process.Start(new ProcessStartInfo(ArtworkPath) { UseShellExecute = true});
+            Process.Start(new ProcessStartInfo(ArtworkPath) { UseShellExecute = true });
         }
 
         public PlayerViewModel(IMusicPlayerService service, MusicLibrary library)
@@ -93,6 +106,10 @@ namespace MusicWrap.UI.ViewModels
             _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
             _playerService.TrackChanged += OnTrackChanged;
             _playerService.PositionChanged += OnPositionChanged;
+
+            // Load initial states
+            UpdateDJButtonIcon();
+            UpdateRepeatModeIcon();
 
             // Initialize state
             UpdatePlaybackState(_playerService.IsPlaying);
@@ -138,10 +155,56 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void EndSeeking(double position)
         {
-            _isSeekingPosition = false;
+            //_isSeekingPosition = false;
             _playerService.Seek(position);
+            CurrentPosition = position;
+            FormattedPosition = FormatTime(position);
+            _isSeekingPosition = false;
+        }
+        [RelayCommand]
+        private void CicleRepeatMode()
+        {
+            _playerService.RepeatMode = SelectedRepeatMode switch
+            {
+                RepeatMode.None => RepeatMode.RepeatTrack,
+                RepeatMode.RepeatTrack => RepeatMode.RepeatQueue,
+                RepeatMode.RepeatQueue => RepeatMode.None,
+                _ => RepeatMode.None
+            };
+            UpdateRepeatModeIcon();
+        }
+        [RelayCommand]
+        private void ToggleDJMode()
+        {
+            _playerService.ContinueMode = IsDJOn ? ContinueMode.None : ContinueMode.DJEnd;
+            UpdateDJButtonIcon();
         }
 
+        private void UpdateRepeatModeIcon()
+        {
+            SelectedRepeatMode = _playerService.RepeatMode;
+            switch (SelectedRepeatMode)
+            {
+                case RepeatMode.None:
+                    RepeatModeIcon = "\uebe7"; // No repeat
+                    RepeatModeTooltip = "No repeat";
+                    break;
+                case RepeatMode.RepeatTrack:
+                    RepeatModeIcon = "\ue8ed"; // Repeat one
+                    RepeatModeTooltip = "Repeat current track";
+                    break;
+                case RepeatMode.RepeatQueue:
+                    RepeatModeIcon = "\ue8ee"; // Repeat all
+                    RepeatModeTooltip = "Repeat entire queue";
+                    break;
+            }
+        }
+        private void UpdateDJButtonIcon()
+        {
+            IsDJOn = _playerService.ContinueMode == ContinueMode.DJEnd;
+            DjButtonIcon = IsDJOn ? "\ue7f6" : "\ue738"; // DJ On : DJ Off
+                DjTooltip = IsDJOn ? "DJ mode is ON" : "DJ mode is OFF";
+        }
         partial void OnVolumeChanged(float value)
         {
             _playerService.SetVolume(value);
@@ -211,7 +274,7 @@ namespace MusicWrap.UI.ViewModels
             }
 
             CurrentTrackTitle = track.Title;
-            
+
             // Get Album
             var album = _library.Albums.FirstOrDefault(a => a.Id == track.AlbumId);
             CurrentTrackAlbum = album != null ? album.Title : "Unknown Album";
@@ -254,7 +317,7 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackImage = ImageHelper.LoadThumbnail(
                        coverPath,
                        "album",
-                       275
+                       300
                    )!;
         }
 

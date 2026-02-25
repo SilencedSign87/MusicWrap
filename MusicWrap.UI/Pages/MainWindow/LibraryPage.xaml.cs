@@ -77,7 +77,7 @@ namespace MusicWrap.UI.Pages.MainWindow
             if (sender is Button button && button.Tag is int albumId)
             {
                 // Use the new ViewModel method to expand/collapse
-                vm.ExpandAlbum(albumId);
+                vm.ExpandAlbum(albumId, (int)AlbumWrapper.ActualWidth);
             }
         }
 

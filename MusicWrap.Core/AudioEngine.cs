@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing.Interop;
+using System.Security.Permissions;
 using System.Text;
 using Un4seen.Bass;
+using Un4seen.Bass.AddOn.Mix;
 
 
 namespace MusicWrap.Core
 {
     public class AudioEngine : IDisposable
     {
-        private int _currentStream;
         private bool _isInitialized;
 
         public bool Initialize(int deviceIndex = -1, int sampleRate = 44100)
@@ -18,28 +20,52 @@ namespace MusicWrap.Core
             _isInitialized = Bass.BASS_Init(deviceIndex, sampleRate, BASSInit.BASS_DEVICE_DEFAULT, IntPtr.Zero);
             return _isInitialized;
         }
+
+        #region MIXER
+
+        public int CreateMixer(int sampleRate = 44100)
+        {
+            return BassMix.BASS_Mixer_StreamCreate(sampleRate, 2, BASSFlag.BASS_SAMPLE_FLOAT | BASSFlag.BASS_MIXER_NONSTOP); // gapless mixing
+        }
+        public int CreateDecodeStream(string filePath)
+        {
+            return Bass.BASS_StreamCreateFile(filePath, 0, 0, BASSFlag.BASS_STREAM_DECODE | BASSFlag.BASS_SAMPLE_FLOAT);
+        }
+        public bool AddToMixer(int mixerStream, int stream, BASSFlag flags = BASSFlag.BASS_DEFAULT)
+        {
+            return BassMix.BASS_Mixer_StreamAddChannel(mixerStream, stream, flags);
+        }
+        public bool RemoveFromMixer(int stream)
+        {
+            return BassMix.BASS_Mixer_ChannelRemove(stream);
+        }
+        public double GetMixerPosition(int stream)
+        {
+            long pos = BassMix.BASS_Mixer_ChannelGetPosition(stream);
+            if (pos < 0) return 0.0;
+            return Bass.BASS_ChannelBytes2Seconds(stream, pos);
+        }
+
+        #endregion
+
+        public int GetDeviceLatencyMs()
+        {
+            var info = Bass.BASS_GetInfo();
+            return Math.Max(0, info.latency);
+        }
+
         public int CreateStream(string filePath)
         {
             if (!_isInitialized) throw new InvalidOperationException("Audio engine not initialized.");
 
             return Bass.BASS_StreamCreateFile(filePath, 0, 0, BASSFlag.BASS_DEFAULT);
         }
-        public bool Play(int stream, bool restart = false)
-        {
-            return Bass.BASS_ChannelPlay(stream, restart);
-        }
-        public bool Pause(int stream)
-        {
-            return Bass.BASS_ChannelPause(stream);
-        }
-        public bool Stop(int stream)
-        {
-            return Bass.BASS_ChannelStop(stream);
-        }
-        public bool Free(int stream)
-        {
-            return Bass.BASS_StreamFree(stream);
-        }
+        #region PLAYBACK
+        public bool Play(int stream, bool restart = false) => Bass.BASS_ChannelPlay(stream, restart);
+        public bool Pause(int stream) => Bass.BASS_ChannelPause(stream);
+        public bool Stop(int stream) => Bass.BASS_ChannelStop(stream);
+        public bool Free(int stream) => Bass.BASS_StreamFree(stream);
+
         public BASSActive GetChannelState(int stream)
         {
             return Bass.BASS_ChannelIsActive(stream);
@@ -50,18 +76,20 @@ namespace MusicWrap.Core
         }
         public float GetVolume(int stream)
         {
-            float volume = 0f; 
+            float volume = 0f;
             Bass.BASS_ChannelGetAttribute(stream, BASSAttribute.BASS_ATTRIB_VOL, ref volume);
             return volume;
         }
         public double GetDuration(int stream)
         {
             long length = Bass.BASS_ChannelGetLength(stream);
+            if (length < 0) return 0.0;
             return Bass.BASS_ChannelBytes2Seconds(stream, length);
         }
         public double GetPosition(int stream)
         {
             long pos = Bass.BASS_ChannelGetPosition(stream);
+            if (pos < 0) return 0.0;
             return Bass.BASS_ChannelBytes2Seconds(stream, pos);
         }
         public bool SetPosition(int stream, double seconds)
@@ -82,6 +110,19 @@ namespace MusicWrap.Core
             Bass.BASS_Free();
             _isInitialized = false;
             return Initialize(deviceIndex);
+        }
+        public bool SlideVolume(int stream, float volume, int timeMS)
+        {
+            return Bass.BASS_ChannelSlideAttribute(stream, BASSAttribute.BASS_ATTRIB_VOL, Math.Clamp(volume, 0f, 1f), timeMS);
+        }
+        public void SetPositionSync(int stream, double seconds, SYNCPROC callback)
+        {
+            long bytePos = Bass.BASS_ChannelSeconds2Bytes(stream, seconds);
+            Bass.BASS_ChannelSetSync(stream, BASSSync.BASS_SYNC_POS | BASSSync.BASS_SYNC_MIXTIME, bytePos, callback, IntPtr.Zero);
+        }
+        public void SetSlideSync(int stream, SYNCPROC callback)
+        {
+            Bass.BASS_ChannelSetSync(stream, BASSSync.BASS_SYNC_SLIDE | BASSSync.BASS_SYNC_MIXTIME, 0, callback, IntPtr.Zero);
         }
         public (int Index, BASS_DEVICEINFO Info)[] GetOutputDevices()
         {
@@ -106,21 +147,22 @@ namespace MusicWrap.Core
             }
             return [.. devices];
         }
-        public void SetEndCallback(int stream, SYNCPROC callback)
+        public void SetEndCallback(int stream, SYNCPROC callback, bool mixTime = false)
         {
-            Bass.BASS_ChannelSetSync(stream, BASSSync.BASS_SYNC_END, 0, callback, IntPtr.Zero);
+            var flags = BASSSync.BASS_SYNC_END | (mixTime ? BASSSync.BASS_SYNC_MIXTIME : 0);
+            Bass.BASS_ChannelSetSync(stream, flags, 0, callback, IntPtr.Zero);
+            // Bass.BASS_ChannelSetSync(stream, BASSSync.BASS_SYNC_END | BASSSync.BASS_SYNC_MIXTIME, 0, callback, IntPtr.Zero);
         }
         public BASSError GetLastError()
         {
             return Bass.BASS_ErrorGetCode();
         }
+        #endregion
 
         public void Dispose()
         {
             if (_isInitialized)
             {
-                if (_currentStream != 0)
-                    Free(_currentStream);
                 Bass.BASS_Free();
                 _isInitialized = false;
             }

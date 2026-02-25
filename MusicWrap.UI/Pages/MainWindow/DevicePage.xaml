@@ -8,7 +8,7 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:DeviceViewModel}"
              d:Background="#1fffffff"
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="500" d:DesignWidth="300">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -44,7 +44,7 @@
         </Border>
         <!-- Settings -->
         <StackPanel Grid.Row="3">
-            
+
             <TextBlock Grid.Row="1" Grid.Column="0" Text="Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
             <ComboBox Grid.Row="1" Grid.Column="1" 
                       Margin="0,0,0,8" 
@@ -60,7 +60,7 @@
             </ComboBox>
 
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
-            <ComboBox  Grid.Row="2" Grid.Column="1" SelectedIndex="{Binding CurrentSampleRateIndex}" SelectionChanged="SampleRateChanged">
+            <ComboBox  Grid.Row="2" Grid.Column="1" SelectedIndex="{Binding CurrentSampleRateIndex}" SelectionChanged="SampleRateChanged" Margin="0,0,0,8" >
                 <ComboBoxItem Tag="auto" Content="Match track sample rate" />
                 <ComboBoxItem Tag="44100" Content="44100 hz" />
                 <ComboBoxItem Tag="48000" Content="48000 hz" />
@@ -69,6 +69,25 @@
                 <ComboBoxItem Tag="176400" Content="176400 hz" />
                 <ComboBoxItem Tag="192000" Content="192000 hz" />
             </ComboBox>
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Crossfade (ms)" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <Grid Height="32">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="55" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" VerticalAlignment="Center">
+                    <Run Text="{Binding CurrentCrossfade}"/>
+                    <Run Text="ms"/>
+                </TextBlock>
+                <Slider Value="{Binding CurrentCrossfade}" 
+                        Grid.Column="1"
+                        TickFrequency="1000"
+                        TickPlacement="Both"
+                    Minimum="0" Maximum="5000"  
+                    IsMoveToPointEnabled="True"
+                    Margin="8,0"
+                    />
+            </Grid>
         </StackPanel>
     </Grid>
 </UserControl>

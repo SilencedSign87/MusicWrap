@@ -31,6 +31,9 @@ namespace MusicWrap.UI.ViewModels.Library
         private string foregroundColor = "#ffffff";
 
         [ObservableProperty]
+        private string albumPlayTooltip = "Play Album";
+
+        [ObservableProperty]
         private List<DiskGroup> diskGroups = [];
 
         private readonly MusicLibrary _library;
@@ -44,6 +47,20 @@ namespace MusicWrap.UI.ViewModels.Library
             this.dominantColor = dominantColor;
             this.foregroundColor = foregroundColor;
             LoadAlbumAndTracks();
+        }
+        [RelayCommand]
+        private void PlayPauseAlbum()
+        {
+            if (_playerService == null) return;
+            var firstTrack = _library.Tracks
+                .Where(t => t.AlbumId == AlbumId)
+                .OrderBy(t => t.Disk)
+                .ThenBy(t => t.TrackNumber)
+                .ThenBy(t => t.Title)
+                .FirstOrDefault();
+            if (firstTrack != null) {
+                PlayTrackCommand.Execute(firstTrack.Id);
+            }
         }
 
         [RelayCommand]

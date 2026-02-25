@@ -304,7 +304,6 @@ namespace MusicWrap.Data.Services
             {
                 using var image = Image.Load<Rgba32>(imageBytes);
 
-                // Reducir tamaño para rendimiento
                 image.Mutate(x => x.Resize(64, 64));
 
                 var colorScores = new Dictionary<Rgba32, double>();
@@ -322,10 +321,8 @@ namespace MusicWrap.Data.Services
                             if (!IsValidColor(pixel))
                                 continue;
 
-                            // Convertir a HSV
                             var hsv = ColorSpaceConverter.ToHsv(pixel);
 
-                            // Ignorar colores casi grises
                             if (hsv.S < 0.15f)
                                 continue;
 
@@ -346,7 +343,6 @@ namespace MusicWrap.Data.Services
 
                 Rgba32 dominant;
 
-                // Si encontramos colores saturados
                 if (colorScores.Any())
                 {
                     dominant = colorScores
@@ -355,11 +351,9 @@ namespace MusicWrap.Data.Services
                 }
                 else
                 {
-                    // Fallback: usar el más frecuente
                     dominant = GetMostFrequentColor(image);
                 }
 
-                // Forzar saturación mínima
                 dominant = BoostSaturation(dominant, 0.4f);
 
                 string bg = ToHex(dominant);
@@ -402,7 +396,6 @@ namespace MusicWrap.Data.Services
         }
         private static bool IsValidColor(Rgba32 color)
         {
-            // Filtrar colores muy oscuros o transparentes
             return color.A > 25 && (color.R > 15 || color.G > 15 || color.B > 15);
         }
         private static Rgba32 GetMostFrequentColor(Image<Rgba32> image)

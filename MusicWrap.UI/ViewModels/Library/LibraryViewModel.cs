@@ -262,7 +262,7 @@ namespace MusicWrap.UI.ViewModels.Library
                 .ToList();
         }
 
-        public void ExpandAlbum(int albumId)
+        public void ExpandAlbum(int albumId , int currentAvailableWidth = 1000)
         {
             if (ExpandedAlbumId == albumId)
             {
@@ -282,8 +282,8 @@ namespace MusicWrap.UI.ViewModels.Library
             var selectedAlbum = albums[albumIndex];
 
 
-            const int albumWidth = 208; // 200 + margins
-            int albumsPerRow = Math.Max(1, (int)(1000 / albumWidth));
+            const int albumWidth = 200;
+            int albumsPerRow = Math.Max(1, (int)(currentAvailableWidth / albumWidth));
 
 
             int rowNumber = albumIndex / albumsPerRow;

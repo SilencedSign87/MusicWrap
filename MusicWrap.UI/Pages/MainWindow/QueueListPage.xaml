@@ -56,7 +56,7 @@
             SelectionMode="Extended"
             Padding="0"
             Margin="0"
-            VirtualizingPanel.ScrollUnit="Pixel"
+            VirtualizingPanel.ScrollUnit="Item"
             VirtualizingPanel.IsContainerVirtualizable="True"
             VirtualizingPanel.IsVirtualizing="True"
             ScrollViewer.CanContentScroll="True"
