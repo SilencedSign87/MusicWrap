@@ -355,8 +355,6 @@ namespace MusicWrap.Core
                 _currentStream = 0;
             }
             CurrentDeviceIndex = deviceIndex;
-            _audioEngine.ChangeOutputDevice(deviceIndex);
-
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
                 StartPlaybackOfCurrent();
@@ -372,7 +370,8 @@ namespace MusicWrap.Core
                 _currentStream = 0;
             }
             CurrentSampleRate = sampleRate;
-            _audioEngine.ChangeSampleRate(CurrentDeviceIndex, sampleRate);
+            //_audioEngine.ChangeSampleRate(CurrentDeviceIndex, sampleRate);
+            SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = sampleRate, EffectiveSampleRate = sampleRate > 0 ? sampleRate : 0 });
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
                 StartPlaybackOfCurrent();
@@ -425,9 +424,9 @@ namespace MusicWrap.Core
             int effectiveSampleRate = CurrentSampleRate > 0 ? CurrentSampleRate : track.SamplingRate;
 
             // Notify track sample rate
-            SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate});
-
             _audioEngine.ChangeSampleRate(CurrentDeviceIndex, effectiveSampleRate);
+            SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate });
+
             _currentStream = _audioEngine.CreateStream(track.Path);
             _audioEngine.SetVolume(_currentStream, _volume);
             _audioEngine.SetEndCallback(_currentStream, _endCallback);
@@ -483,5 +482,14 @@ namespace MusicWrap.Core
     {
         public int PreferedSampleRate { get; set; }
         public int EffectiveSampleRate { get; set; }
+    }
+
+    public class OutputDeviceState
+    {
+        public int SampleRate {  get; set; }
+        public int Bitrate { get; set; }
+        public int Channels { get; set; }
+        public int BitDepth { get; set; }
+        public string Codec { get; set; } = string.Empty;
     }
 }

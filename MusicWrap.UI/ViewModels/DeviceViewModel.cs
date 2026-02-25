@@ -19,38 +19,84 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private int currentSampleRateIndex = 0;
 
+        public bool IsInitialized { get; private set; } = false;
+
         private readonly IMusicPlayerService _player;
-        public DeviceViewModel( IMusicPlayerService player)
+        private readonly int[] SampleRates = new int[] { -1, 44100, 48000, 88200, 96000, 176400, 192000 };
+        public DeviceViewModel(IMusicPlayerService player)
         {
             _player = player;
 
             LoadDevices();
+            // Initialize states
+            var devIdx = _player.CurrentDeviceIndex;
+            if (devIdx >= 0)
+            {
+                var idx = AvailableDevices.FindIndex(d => d.Index == devIdx);
+                CurrentDeviceIndex = idx >= 0 ? idx : 0;
+            }
+            CurrentDeviceName = AvailableDevices.Count > 0 ? AvailableDevices[CurrentDeviceIndex].Name : "Default Device";
+
+            var sr = _player.CurrentSampleRate;
+            var srIdx = Array.IndexOf(SampleRates, sr);
+            CurrentSampleRateIndex = srIdx >= 0 ? srIdx : 0;
+            CurrentSampleRate = sr > 0 ? sr.ToString() : "Auto";
+
             _player.DeviceIndexChanged += _player_DeviceIndexChanged;
             _player.SampleRateChanged += _player_SampleRateChanged;
+            IsInitialized = true;
+        }
+
+        public void SetCurrentSampleRate(int index)
+        {
+            if (index >= 0 && index < SampleRates.Length)
+            {
+                _player.ChangeSampleRate(SampleRates[index]);
+            }
+        }
+        public void SetCurrentDevice(int index)
+        {
+            if (index >= 0 && index < AvailableDevices.Count)
+            {
+                _player.ChangeOutputDevice(AvailableDevices[index].Index);
+            }
         }
 
         private void _player_SampleRateChanged(object? sender, SampleRateChangedEventArgs e)
         {
-            CurrentSampleRate = e.EffectiveSampleRate.ToString();
+            var prefered = e.PreferedSampleRate;
+            var effective = e.EffectiveSampleRate;
+            CurrentSampleRate = effective > 0 ? effective.ToString() : "Auto";
+
+            var idx = Array.IndexOf(SampleRates, prefered);
+            if (idx < 0) { 
+                idx = Array.IndexOf(SampleRates, effective);
+            }
+            CurrentSampleRateIndex = idx >= 0 ? idx : 0;
         }
 
         private void _player_DeviceIndexChanged(object? sender, int e)
         {
-            //throw new NotImplementedException();
+            var idx = AvailableDevices.FindIndex(d => d.Index == e);
+            if (idx >= 0) {
+                CurrentDeviceIndex = idx;
+                CurrentDeviceName = AvailableDevices[CurrentDeviceIndex].Name;
+            }
         }
 
         private void LoadDevices()
         {
             var devices = _player.GetAvailableDevices();
             List<DeviceDefinition> deviceDefinitions = [];
-            foreach (var device in devices) {
+            foreach (var device in devices)
+            {
                 deviceDefinitions.Add(new DeviceDefinition() { Index = device.Index, Name = device.Name });
             }
             AvailableDevices = deviceDefinitions;
         }
     }
 
-    public class  DeviceDefinition
+    public class DeviceDefinition
     {
         public int Index { get; set; }
         public string Name { get; set; } = string.Empty;

@@ -86,7 +86,7 @@ namespace MusicWrap.Core
         public (int Index, BASS_DEVICEINFO Info)[] GetOutputDevices()
         {
             var devices = new List<(int, BASS_DEVICEINFO)>();
-            int index = 0;
+            int index = 1;
             BASS_DEVICEINFO info;
             while (true)
             {

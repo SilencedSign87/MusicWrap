@@ -20,31 +20,22 @@
         <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}" Margin="0,0,0,8">
             <StackPanel  Margin="0,0,0,8" Orientation="Horizontal">
                 <TextBlock  Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Current information" VerticalAlignment="Center" />
+                <TextBlock Text="Current device information" VerticalAlignment="Center" />
             </StackPanel>
         </Border>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Grid.RowDefinitions>
-                <RowDefinition/>
-                <RowDefinition/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
+        <StackPanel Grid.Row="1">
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Current Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Current Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis" />
             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentDeviceName}" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right" />
 
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="Current Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" />
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Current Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis"/>
             <TextBlock Grid.Row="2" Grid.Column="1" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right">
                 <Run Text="{Binding CurrentSampleRate}" />
                 <Run Text=" hz" />
             </TextBlock>
 
-        </Grid>
+        </StackPanel>
         <Border Grid.Row="2" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}" Margin="0,8,0,8">
             <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
                 <TextBlock  Text="&#xe713;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
@@ -59,17 +50,18 @@
                       Margin="0,0,0,8" 
                       SelectedIndex="{Binding CurrentDeviceIndex}"
                       ItemsSource="{Binding AvailableDevices}"
+                      SelectionChanged="DeviceChanged"
                       >
                 <ComboBox.ItemTemplate>
                     <DataTemplate DataType="vm:DeviceDefinition">
-                        <TextBlock Text="{Binding Name}" TextTrimming="WordEllipsis" />
+                        <TextBlock Tag="{Binding Index}" Text="{Binding Name}" TextTrimming="WordEllipsis" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
 
             <TextBlock Grid.Row="2" Grid.Column="0" Text="Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
-            <ComboBox  Grid.Row="2" Grid.Column="1" SelectedIndex="{Binding CurrentSampleRateIndex}">
-                <ComboBoxItem Tag="auto" Content="Track sample rate" />
+            <ComboBox  Grid.Row="2" Grid.Column="1" SelectedIndex="{Binding CurrentSampleRateIndex}" SelectionChanged="SampleRateChanged">
+                <ComboBoxItem Tag="auto" Content="Match track sample rate" />
                 <ComboBoxItem Tag="44100" Content="44100 hz" />
                 <ComboBoxItem Tag="48000" Content="48000 hz" />
                 <ComboBoxItem Tag="88200" Content="88200 hz" />
