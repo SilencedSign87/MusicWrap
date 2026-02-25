@@ -1,0 +1,82 @@
+﻿<UserControl x:Class="MusicWrap.UI.Pages.MainWindow.DevicePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+             xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:DeviceViewModel}"
+             d:Background="#1fffffff"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- Current Info -->
+        <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}" Margin="0,0,0,8">
+            <StackPanel  Margin="0,0,0,8" Orientation="Horizontal">
+                <TextBlock  Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Current information" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Current Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentDeviceName}" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Current Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" />
+            <TextBlock Grid.Row="2" Grid.Column="1" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right">
+                <Run Text="{Binding CurrentSampleRate}" />
+                <Run Text=" hz" />
+            </TextBlock>
+
+        </Grid>
+        <Border Grid.Row="2" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}" Margin="0,8,0,8">
+            <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
+                <TextBlock  Text="&#xe713;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Device settings" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+        <!-- Settings -->
+        <StackPanel Grid.Row="3">
+            
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="1" Grid.Column="1" 
+                      Margin="0,0,0,8" 
+                      SelectedIndex="{Binding CurrentDeviceIndex}"
+                      ItemsSource="{Binding AvailableDevices}"
+                      >
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="vm:DeviceDefinition">
+                        <TextBlock Text="{Binding Name}" TextTrimming="WordEllipsis" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox  Grid.Row="2" Grid.Column="1" SelectedIndex="{Binding CurrentSampleRateIndex}">
+                <ComboBoxItem Tag="auto" Content="Track sample rate" />
+                <ComboBoxItem Tag="44100" Content="44100 hz" />
+                <ComboBoxItem Tag="48000" Content="48000 hz" />
+                <ComboBoxItem Tag="88200" Content="88200 hz" />
+                <ComboBoxItem Tag="96000" Content="96000 hz" />
+                <ComboBoxItem Tag="176400" Content="176400 hz" />
+                <ComboBoxItem Tag="192000" Content="192000 hz" />
+            </ComboBox>
+        </StackPanel>
+    </Grid>
+</UserControl>

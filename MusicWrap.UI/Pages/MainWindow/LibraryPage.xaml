@@ -4,6 +4,7 @@
          xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
          xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
          xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+         xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
@@ -80,72 +81,59 @@
             </Grid.RowDefinitions>
 
             <Menu Grid.Row="0">
-                <MenuItem Header="Add">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe710;" />
-                    </MenuItem.Icon>
+                <MenuItem Header="Add" Icon="{ex:Icon Glyph=E710}">
                     <MenuItem Header="Add Folder" Command="{Binding AddFolderCommand}"/>
                     <MenuItem Header="Add Files" Command="{Binding AddFilesCommand}"/>
                     <Separator/>
                     <MenuItem Header="Refresh library" Command="{Binding RefreshCommand}"/>
                 </MenuItem>
-                <MenuItem Header="View">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe7b3;" />
-                    </MenuItem.Icon>
+                <MenuItem Header="View" Icon="{ex:Icon Glyph=E7B3}">
                     <MenuItem Header="Albums" 
                               Command="{Binding SetViewModeCommand}" 
                               CommandParameter="Album"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsAlbumView, Mode=OneWay}">
-                        <MenuItem.Icon>
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe93c;" />
-                        </MenuItem.Icon>
-                    </MenuItem>
+                              IsChecked="{Binding IsAlbumView, Mode=OneWay}"
+                              Icon="{ex:Icon Glyph=E93C}"
+                              />
+
                     <MenuItem Header="Artist" 
                               Command="{Binding SetViewModeCommand}" 
                               CommandParameter="Artist"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsArtistView, Mode=OneWay}">
-                        <MenuItem.Icon>
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe77b;" />
-                        </MenuItem.Icon>
-                    </MenuItem>
+                              IsChecked="{Binding IsArtistView, Mode=OneWay}"
+                              Icon="{ex:Icon Glyph=E77B}"
+                              />
+
                     <MenuItem Header="Genre" 
                               Command="{Binding SetViewModeCommand}" 
                               CommandParameter="Genre"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsGenreView, Mode=OneWay}">
-                        <MenuItem.Icon>
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8d6;" />
-                        </MenuItem.Icon>
-                    </MenuItem>
+                              IsChecked="{Binding IsGenreView, Mode=OneWay}"
+                              Icon="{ex:Icon Glyph=E8D6}"
+                              />
+
                     <MenuItem Header="Decade" 
                               Command="{Binding SetViewModeCommand}" 
                               CommandParameter="Decade"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsDecadeView, Mode=OneWay}">
-                        <MenuItem.Icon>
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe787;" />
-                        </MenuItem.Icon>
-                    </MenuItem>
+                              IsChecked="{Binding IsDecadeView, Mode=OneWay}"
+                              Icon="{ex:Icon Glyph=E787}"
+                              />
+
                     <Separator/>
                     <MenuItem Header="Ascending" 
                               Command="{Binding SetAscendingCommand}"
                               IsCheckable="True" 
-                              IsChecked="{Binding Ascending, Mode=OneWay}">
-                        <MenuItem.Icon>
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe74a;" />
-                        </MenuItem.Icon>
-                    </MenuItem>
+                              IsChecked="{Binding Ascending, Mode=OneWay}"
+                              Icon="{ex:Icon Glyph=E74A}"
+                              />
+
                     <MenuItem Header="Descending" 
                               Command="{Binding SetDescendingCommand}"
                               IsCheckable="True" 
-                              IsChecked="{Binding Ascending, Mode=OneWay, Converter={StaticResource InverseBoolConverter}}">
-                        <MenuItem.Icon>
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe74b;" />
-                        </MenuItem.Icon>
-                    </MenuItem>
+                              IsChecked="{Binding Ascending, Mode=OneWay, Converter={StaticResource InverseBoolConverter}}"
+                              Icon="{ex:Icon Glyph=E74B}"
+                              />
                 </MenuItem>
             </Menu>
             <ListView
@@ -216,10 +204,13 @@
                             HorizontalAlignment="Stretch">
                             <StackPanel.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Play"/>
-                                    <MenuItem Header="Play next"/>
-                                    <MenuItem Header="Add to queue"/>
-                                    <MenuItem Header="Add to playlist"/>
+                                    <MenuItem Header="Play" Icon="{ex:Icon Glyph=E768}"/>
+                                    <MenuItem Header="Play next" Icon="{ex:Icon Glyph=ECC8}"/>
+                                    <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E90B}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Add to playlist" Icon="{ex:Icon Glyph=ED0E}"/>
+                                    <Separator/>
+                                    <MenuItem Header="Edit" Icon="{ex:Icon Glyph=E70F}"/>
                                 </ContextMenu>
                             </StackPanel.ContextMenu>
                             <Image

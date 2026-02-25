@@ -77,12 +77,10 @@ namespace MusicWrap.UI.Pages.MainWindow
                     newQueue.Add(currentQueue[i]);
                     if (currentQueue[i] == currentTrackPlaying)
                     {
-
                         newQueue.AddRange(TracksId);
                     }
                 }
-                _playerService.SetQueue(newQueue);
-
+                _playerService.SetQueue(newQueue, true);
             }
         }
 
@@ -93,7 +91,7 @@ namespace MusicWrap.UI.Pages.MainWindow
                 var currentQueue = _playerService.GetQueue() ?? [];
                 List<int> newQueue = [.. currentQueue];
                 newQueue.AddRange(TracksId);
-                _playerService.SetQueue(newQueue);
+                _playerService.SetQueue(newQueue, true);
             }
         }
 

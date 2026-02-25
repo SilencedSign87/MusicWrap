@@ -69,6 +69,13 @@ namespace MusicWrap.Core
             long bytePos = Bass.BASS_ChannelSeconds2Bytes(stream, seconds);
             return Bass.BASS_ChannelSetPosition(stream, bytePos);
         }
+        public bool ChangeSampleRate(int deviceIndex, int sampleRate)
+        {
+            if (!_isInitialized) return false;
+            Bass.BASS_Free();
+            _isInitialized = false;
+            return Initialize(deviceIndex, sampleRate);
+        }
         public bool ChangeOutputDevice(int deviceIndex)
         {
             if (!_isInitialized) return false;

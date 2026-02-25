@@ -49,7 +49,7 @@ namespace MusicWrap.UI.ViewModels.Library
             }
             var currentQueue = _player.GetQueue().ToList();
             currentQueue = [.. currentQueue.Where(id => !trackIDs.Contains(id))];
-            _player.SetQueue(currentQueue);
+            _player.SetQueue(currentQueue, true);
         }
         public void PlayTrack(int trackID)
         {
@@ -75,9 +75,7 @@ namespace MusicWrap.UI.ViewModels.Library
             currentQueue.InsertRange(currentIndex + 1, trackIDs);
 
             // set queue to player
-            _player.SetQueue(currentQueue);
-            // move the index to the current track to avoid changing the currently playing track
-            _player.SetSilentIndex(newQueue.IndexOf(currentTrackId));
+            _player.SetQueue(currentQueue, true);
         }
 
         private List<QueueData> TrackIdsToQueueData(IEnumerable<int> trackIds)

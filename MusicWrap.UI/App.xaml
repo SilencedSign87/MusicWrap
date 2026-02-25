@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:MusicWrap.UI"
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
+             xmlns:helpers="clr-namespace:MusicWrap.UI.Helpers"
              ThemeMode="Dark"
              >
     <Application.Resources>
@@ -12,7 +13,7 @@
                 <ResourceDictionary Source="pack://application:,,,/PresentationFramework.Fluent;component/Themes/Fluent.xaml" />
                 <ResourceDictionary Source="/Styles/Resources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            
+
             <!-- Global Converters -->
             <converters:PathToImageConverter x:Key="PathToImageConverter"/>
             <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
@@ -20,6 +21,7 @@
             <converters:TypeNameConverter x:Key="TypeNameConverter"/>
             <converters:DiskNumberToVisibilityConverter x:Key="DiskNumberToVisibilityConverter"/>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
         </ResourceDictionary>
 
     </Application.Resources>

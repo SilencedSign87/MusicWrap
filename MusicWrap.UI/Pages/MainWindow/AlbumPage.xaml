@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d" 
@@ -22,39 +23,14 @@
             >
         <Border.ContextMenu>
             <ContextMenu Placement="Right">
-                <MenuItem Header="Play album" Click="PlayAlbum">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="Play album next" Click="AddAlbumToNext">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xECC8;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="Add to queue" Click="AddToQueue">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
+                <MenuItem Header="Play album" Click="PlayAlbum" Icon="{ex:Icon Glyph=E768}"/>
+                <MenuItem Header="Play album next" Click="AddAlbumToNext" Icon="{ex:Icon Glyph=ECC8}"/>
+                <MenuItem Header="Add to queue" Click="AddToQueue" Icon="{ex:Icon Glyph=E90B}"/>
                 <Separator/>
-                <MenuItem Header="Add to playlist" x:Name="ListSelectorMenuItem">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xed0e;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
+                <MenuItem Header="Add to playlist" x:Name="ListSelectorMenuItem" Icon="{ex:Icon Glyph=ED0E}"/>
                 <Separator/>
-                <MenuItem Header="Edit album info">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE70F;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="Properties" >
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-
+                <MenuItem Header="Edit album" Icon="{ex:Icon Glyph=E70F}"/>
+                <MenuItem Header="Properties" Icon="{ex:Icon Glyph=E946}"/>
             </ContextMenu>
         </Border.ContextMenu>
         <Grid>

@@ -1,5 +1,6 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Pages.MainWindow;
 using System.Text;
@@ -21,6 +22,9 @@ namespace MusicWrap.UI.Windows
     public partial class MainWindow : Window
     {
         private readonly Dictionary<int, UserControl> _pageCache = [];
+        private readonly IMusicPlayerService _player;
+        private readonly BitmapImage _playIcon = new BitmapImage(new Uri("pack://application:,,,/Resources/Icons/PlayIcon.png"));
+        private readonly BitmapImage _pauseIcon = new BitmapImage(new Uri("pack://application:,,,/Resources/Icons/PauseIcon.png"));
 
         public MainWindow()
         {
@@ -28,8 +32,24 @@ namespace MusicWrap.UI.Windows
 
             StateChanged += MainWindow_StateChanged;
 
+            _player = App.Services.GetRequiredService<IMusicPlayerService>();
+            _player.PlaybackStateChanged += _player_PlaybackStateChanged;
+
             UpdateBackdrop();
             NavigateToTab(0);
+        }
+
+        private void _player_PlaybackStateChanged(object? sender, PlaybackState e)
+        {
+            // update play/pause button in taskbar
+            if (e == PlaybackState.Playing)
+            {
+                PlayPauseButton.ImageSource = _pauseIcon;
+            }
+            else
+            {
+                PlayPauseButton.ImageSource = _playIcon;
+            }
         }
 
         private void UpdateBackdrop()
@@ -125,6 +145,28 @@ namespace MusicWrap.UI.Windows
             }
 
             MainFrame.Content = page;
+        }
+
+        private void ThumbButtonInfo_Previous(object sender, EventArgs e)
+        {
+            _player.Previous();
+        }
+
+        private void ThumbButtonInfo_PlayPause(object sender, EventArgs e)
+        {
+            if (_player.IsPlaying)
+            {
+                _player.Pause();
+            }
+            else
+            {
+                _player.Play();
+            }
+        }
+
+        private void ThumbButtonInfo_Next(object sender, EventArgs e)
+        {
+            _player.Next();
         }
     }
 }

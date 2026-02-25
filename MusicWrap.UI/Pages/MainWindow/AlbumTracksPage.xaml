@@ -5,6 +5,7 @@
          xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
          xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
          xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
+         xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          mc:Ignorable="d" 
          d:DataContext="{d:DesignInstance Type=vm:AlbumTracksViewModel}"
@@ -79,48 +80,43 @@
                                             <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" Placement="Right">
                                                 <MenuItem Header="Play Now" 
                                                           Command="{Binding PlayTrackCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                                                    <MenuItem.Icon>
-                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;" FontSize="14"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
+                                                          Icon="{ex:Icon Glyph=E768}"
+                                                          />
+
                                                 <MenuItem Header="Play Next" 
                                                           Command="{Binding PlayNextCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                                                    <MenuItem.Icon>
-                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xECC8;" FontSize="14"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          Icon="{ex:Icon Glyph=ECC8}"
+                                                          />
+
                                                 <MenuItem Header="Add to Queue" 
                                                           Command="{Binding AddToQueueCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                                                    <MenuItem.Icon>
-                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE142;" FontSize="14"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          Icon="{ex:Icon Glyph=E142}"
+                                                          />
                                                 <Separator/>
-                                                <MenuItem Header="Edit Track Info" 
+                                                <MenuItem Header="Add to playlist" Icon="{ex:Icon Glyph=ED0E}"/>
+
+                                                <Separator/>
+                                                <MenuItem Header="Edit Track" 
                                                           Command="{Binding EditTrackCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                                                    <MenuItem.Icon>
-                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE70F;" FontSize="14"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          Icon="{ex:Icon Glyph=E70F}"
+                                                          />
+
                                                 <Separator/>
                                                 <MenuItem Header="Show in File Explorer" 
                                                           Command="{Binding ShowInExplorerCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                                                    <MenuItem.Icon>
-                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B7;" FontSize="14"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          Icon="{ex:Icon Glyph=E8B7}"
+                                                          />
+
                                                 <MenuItem Header="Properties" 
                                                           Command="{Binding ShowPropertiesCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
-                                                    <MenuItem.Icon>
-                                                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" FontSize="14"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          Icon="{ex:Icon Glyph=E946}"
+                                                          />
                                             </ContextMenu>
                                         </Border.ContextMenu>
                                         <Grid>

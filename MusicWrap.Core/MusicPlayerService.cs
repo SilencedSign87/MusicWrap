@@ -29,6 +29,8 @@ namespace MusicWrap.Core
         int CurrentTrackId { get; }
         string CurrentTrackPath { get; }
         int QueueCount { get; }
+        int CurrentDeviceIndex { get; }
+        int CurrentSampleRate { get; }
 
         RepeatMode RepeatMode { get; set; }
 
@@ -37,6 +39,8 @@ namespace MusicWrap.Core
         event EventHandler<PlaybackState>? PlaybackStateChanged;
         event EventHandler<double>? PositionChanged;
         event EventHandler<int[]>? QueueChanged;
+        event EventHandler<int>? DeviceIndexChanged;
+        event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
         void Play();
         void Pause();
         void Stop();
@@ -49,13 +53,14 @@ namespace MusicWrap.Core
         void SetSilentIndex(int index);
         void AddToQueue(int TrackId);
         void AddToQueue(IEnumerable<int> TrackIds);
-        void SetQueue(IEnumerable<int> TrackIds);
+        void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false);
         void RemoveFromQueue(int index);
         void ClearQueue();
         int[] GetQueue();
         void PlayTrack(int TrackId);
 
         void ChangeOutputDevice(int deviceIndex);
+        void ChangeSampleRate(int sampleRate);
         (int Index, string Name)[] GetAvailableDevices();
     }
     public class MusicPlayerService : IMusicPlayerService, IDisposable
@@ -70,6 +75,25 @@ namespace MusicWrap.Core
         private float _volume = 1.0f;
         private readonly SYNCPROC _endCallback;
         private readonly System.Timers.Timer _positionTimer;
+
+        private int _currentDeviceIndex = -1;
+        public int CurrentDeviceIndex
+        {
+            get => _currentDeviceIndex;
+            private set
+            {
+                _currentDeviceIndex = value;
+            }
+        }
+        private int _currentSampleRate = -1; // Auto
+        public int CurrentSampleRate
+        {
+            get => _currentSampleRate;
+            private set
+            {
+                _currentSampleRate = value;
+            }
+        }
 
         public bool IsPlaying => _playbackState == PlaybackState.Playing;
         public bool IsPaused => _playbackState == PlaybackState.Paused;
@@ -109,7 +133,8 @@ namespace MusicWrap.Core
             _library = library;
 
             _audioEngine = new AudioEngine();
-            _audioEngine.Initialize();
+
+            _audioEngine.Initialize(CurrentDeviceIndex);
 
             _endCallback = OnTrackEndedInternal;
 
@@ -126,6 +151,8 @@ namespace MusicWrap.Core
         public event EventHandler<PlaybackState>? PlaybackStateChanged;
         public event EventHandler<double>? PositionChanged;
         public event EventHandler<int[]>? QueueChanged;
+        public event EventHandler<int>? DeviceIndexChanged;
+        public event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
 
         public void Play()
         {
@@ -250,11 +277,25 @@ namespace MusicWrap.Core
             QueueChanged?.Invoke(this, [.. _queue]);
         }
 
-        public void SetQueue(IEnumerable<int> TrackIds)
+        public void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false)
         {
+            // Search the current track in the new queue
+            int newIndex = TrackIds.Any() ? 0 : -1;
+            if (CalculateNewIndex)
+            {
+                for (int i = 0; i < TrackIds.Count(); i++)
+                {
+                    if (TrackIds.ElementAt(i) == CurrentTrackId)
+                    {
+                        newIndex = i;
+                        break;
+                    }
+                }
+            }
+
             _queue.Clear();
             _queue.AddRange(TrackIds);
-            _currentIndex = _queue.Count > 0 ? 0 : -1;
+            _currentIndex = newIndex;
             QueueChanged?.Invoke(this, [.. _queue]);
         }
 
@@ -307,17 +348,31 @@ namespace MusicWrap.Core
 
         public void ChangeOutputDevice(int deviceIndex)
         {
-            // Detenemos y liberamos el stream actual antes de cambiar de dispositivo
             if (_currentStream != 0)
             {
                 _audioEngine.Stop(_currentStream);
                 _audioEngine.Free(_currentStream);
                 _currentStream = 0;
             }
-
+            CurrentDeviceIndex = deviceIndex;
             _audioEngine.ChangeOutputDevice(deviceIndex);
 
-            // Opcionalmente reanudamos la reproducción del track actual en el nuevo dispositivo
+            if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
+            {
+                StartPlaybackOfCurrent();
+            }
+            DeviceIndexChanged?.Invoke(this, deviceIndex);
+        }
+        public void ChangeSampleRate(int sampleRate)
+        {
+            if (_currentStream != 0)
+            {
+                _audioEngine.Stop(_currentStream);
+                _audioEngine.Free(_currentStream);
+                _currentStream = 0;
+            }
+            CurrentSampleRate = sampleRate;
+            _audioEngine.ChangeSampleRate(CurrentDeviceIndex, sampleRate);
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
                 StartPlaybackOfCurrent();
@@ -367,6 +422,12 @@ namespace MusicWrap.Core
                 _currentStream = 0;
             }
 
+            int effectiveSampleRate = CurrentSampleRate > 0 ? CurrentSampleRate : track.SamplingRate;
+
+            // Notify track sample rate
+            SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate});
+
+            _audioEngine.ChangeSampleRate(CurrentDeviceIndex, effectiveSampleRate);
             _currentStream = _audioEngine.CreateStream(track.Path);
             _audioEngine.SetVolume(_currentStream, _volume);
             _audioEngine.SetEndCallback(_currentStream, _endCallback);
@@ -417,5 +478,10 @@ namespace MusicWrap.Core
     {
         public int TrackId { get; set; }
         public string FilePath { get; set; } = string.Empty;
+    }
+    public class SampleRateChangedEventArgs
+    {
+        public int PreferedSampleRate { get; set; }
+        public int EffectiveSampleRate { get; set; }
     }
 }

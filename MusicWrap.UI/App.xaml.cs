@@ -132,6 +132,7 @@ namespace MusicWrap.UI
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
             services.AddTransient<QueueViewModel>();
+            services.AddTransient<DeviceViewModel>();
             //services.AddTransient<AlbumViewModel>();
 
             // Player

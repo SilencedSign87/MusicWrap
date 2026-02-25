@@ -11,12 +11,20 @@
   <ItemGroup>
     <None Remove="Resources\DefaultTrack.png" />
     <None Remove="Resources\icon.ico" />
+    <None Remove="Resources\Icons\NextIcon.png" />
+    <None Remove="Resources\Icons\PauseIcon.png" />
+    <None Remove="Resources\Icons\PlayIcon.png" />
+    <None Remove="Resources\Icons\PreviousIcon.png" />
     <None Remove="Resources\SplashScreen.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Resources\DefaultTrack.png" />
     <Resource Include="Resources\icon.ico" />
+    <Resource Include="Resources\Icons\NextIcon.png" />
+    <Resource Include="Resources\Icons\PauseIcon.png" />
+    <Resource Include="Resources\Icons\PlayIcon.png" />
+    <Resource Include="Resources\Icons\PreviousIcon.png" />
     <Resource Include="Resources\MusicUI.png" />
     <Resource Include="Resources\SplashScreen.png" />
   </ItemGroup>

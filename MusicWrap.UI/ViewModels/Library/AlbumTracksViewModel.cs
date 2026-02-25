@@ -81,7 +81,7 @@ namespace MusicWrap.UI.ViewModels.Library
                     newQueue.Add(track);
                 }
             }
-            _playerService?.SetQueue(newQueue);
+            _playerService?.SetQueue(newQueue, true);
         }
 
         [RelayCommand]
