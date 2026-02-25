@@ -41,7 +41,6 @@
                 <ThumbButtonInfo
                     x:Name="PlayPauseButton"
                     Description="Play"
-                    ImageSource="/Resources/Icons/PlayIcon.png"
                     Click="ThumbButtonInfo_PlayPause"
                     />
                 <ThumbButtonInfo

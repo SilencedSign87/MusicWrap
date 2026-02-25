@@ -23,8 +23,19 @@ namespace MusicWrap.UI.Windows
     {
         private readonly Dictionary<int, UserControl> _pageCache = [];
         private readonly IMusicPlayerService _player;
-        private readonly BitmapImage _playIcon = new BitmapImage(new Uri("pack://application:,,,/Resources/Icons/PlayIcon.png"));
-        private readonly BitmapImage _pauseIcon = new BitmapImage(new Uri("pack://application:,,,/Resources/Icons/PauseIcon.png"));
+        private readonly BitmapImage _playIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
+        private readonly BitmapImage _pauseIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png");
+
+        private static BitmapImage LoadBitmapFromResource(string uri)
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(uri);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
+        }
 
         public MainWindow()
         {
@@ -37,19 +48,23 @@ namespace MusicWrap.UI.Windows
 
             UpdateBackdrop();
             NavigateToTab(0);
+            PlayPauseButton.ImageSource = _playIcon;
         }
 
         private void _player_PlaybackStateChanged(object? sender, PlaybackState e)
         {
-            // update play/pause button in taskbar
-            if (e == PlaybackState.Playing)
+            // update play/pause button in taskbar, always on UI thread
+            Dispatcher.Invoke(() =>
             {
-                PlayPauseButton.ImageSource = _pauseIcon;
-            }
-            else
-            {
-                PlayPauseButton.ImageSource = _playIcon;
-            }
+                if (e == PlaybackState.Playing)
+                {
+                    PlayPauseButton.ImageSource = _pauseIcon;
+                }
+                else
+                {
+                    PlayPauseButton.ImageSource = _playIcon;
+                }
+            });
         }
 
         private void UpdateBackdrop()

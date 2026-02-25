@@ -458,18 +458,21 @@ namespace MusicWrap.Core
 
         private void OnTrackEndedInternal(int handle, int channel, int data, IntPtr user)
         {
-            // Se llama desde el callback de BASS
-            TrackEnded?.Invoke(this, EventArgs.Empty);
+            
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                TrackEnded?.Invoke(this, EventArgs.Empty);
 
-            if (RepeatMode == RepeatMode.RepeatTrack)
-            {
-                // Repetir el mismo track
-                StartPlaybackOfCurrent();
-            }
-            else
-            {
-                Next();
-            }
+                if (RepeatMode == RepeatMode.RepeatTrack)
+                {
+                    
+                    StartPlaybackOfCurrent();
+                }
+                else
+                {
+                    Next();
+                }
+            });
         }
     }
 
