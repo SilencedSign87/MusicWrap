@@ -35,7 +35,6 @@ namespace MusicWrap.Core
         int QueueCount { get; }
         int CurrentDeviceIndex { get; }
         int CurrentSampleRate { get; }
-        int CrossfadeDuration { get; set; }
 
         RepeatMode RepeatMode { get; set; }
         ContinueMode ContinueMode { get; set; }
@@ -139,8 +138,6 @@ namespace MusicWrap.Core
         }
 
         public int QueueCount => _queue.Count;
-
-        public int CrossfadeDuration { get; set; } = 0;
         public RepeatMode RepeatMode { get; set; } = RepeatMode.None;
         public ContinueMode ContinueMode { get; set; } = ContinueMode.None;
 
@@ -366,6 +363,7 @@ namespace MusicWrap.Core
 
         public void ChangeOutputDevice(int deviceIndex)
         {
+            if (deviceIndex == _currentDeviceIndex) return;
             if (_currentStream != 0)
             {
                 FreeStream(_currentStream);
@@ -382,6 +380,7 @@ namespace MusicWrap.Core
 
         public void ChangeSampleRate(int sampleRate)
         {
+            if (sampleRate == _currentSampleRate) return;
             if (_currentStream != 0)
             {
                 FreeStream(_currentStream);
@@ -516,6 +515,22 @@ namespace MusicWrap.Core
 
             InvokeUI(() => TrackEnded?.Invoke(this, EventArgs.Empty));
 
+            // Handle RepeatTrack mode
+            if (RepeatMode == RepeatMode.RepeatTrack)
+            {
+                _audioEngine.SetPosition(_currentStream, 0.0);
+
+                // Re-setup callbacks for the repeated track
+                double duration = _audioEngine.GetDuration(_currentStream);
+                const double preloadLeadSeconds = 0.75;
+                if (duration > preloadLeadSeconds)
+                {
+                    _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
+                }
+
+                return;
+            }
+
             int nextIndex = _currentIndex + 1;
             if (nextIndex >= _queue.Count)
             {
@@ -529,6 +544,7 @@ namespace MusicWrap.Core
 
             int nextTrackId = _queue[nextIndex];
 
+            // If preloaded stream is available and matches next track, use it
             if (_preloadedStream != 0 && _preloadedTrackId == nextTrackId)
             {
                 int previousStream = _currentStream;
@@ -565,13 +581,16 @@ namespace MusicWrap.Core
                 return;
             }
 
-            // Fallback: si no hay stream preloaded, usar el método normal
+            // Fallback: if no preloaded stream, load next track normally
             _currentIndex = nextIndex;
             StartPlaybackOfCurrent();
         }
 
         private void OnPreloadSync(int handle, int channel, int data, IntPtr user)
         {
+            // Don't preload if we're in RepeatTrack mode
+            if (RepeatMode == RepeatMode.RepeatTrack) return;
+
             Task.Run(() =>
             {
                 int nextIndex = _currentIndex + 1;

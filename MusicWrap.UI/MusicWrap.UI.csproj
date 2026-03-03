@@ -40,4 +40,8 @@
     <ProjectReference Include="..\MusicWrap.Data\MusicWrap.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Behaviors\" />
+  </ItemGroup>
+
 </Project>

@@ -18,13 +18,11 @@ namespace MusicWrap.UI.ViewModels
         private int currentDeviceIndex = 0;
         [ObservableProperty]
         private int currentSampleRateIndex = 0;
-        [ObservableProperty]
-        private int currentCrossfade = 0;
 
         public bool IsInitialized { get; private set; } = false;
 
         private readonly IMusicPlayerService _player;
-        private readonly int[] SampleRates = new int[] { -1, 44100, 48000, 88200, 96000, 176400, 192000 };
+        private readonly int[] SampleRates = [-1, 44100, 48000, 88200, 96000, 176400, 192000];
         public DeviceViewModel(IMusicPlayerService player)
         {
             _player = player;
@@ -45,7 +43,6 @@ namespace MusicWrap.UI.ViewModels
             CurrentSampleRateIndex = srIdx >= 0 ? srIdx : 0;
             CurrentSampleRate = sr > 0 ? sr.ToString() : "Auto";
 
-            CurrentCrossfade = _player.CrossfadeDuration;
 
             _player.DeviceIndexChanged += _player_DeviceIndexChanged;
             _player.SampleRateChanged += _player_SampleRateChanged;

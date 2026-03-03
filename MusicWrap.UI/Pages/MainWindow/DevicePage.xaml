@@ -69,25 +69,6 @@
                 <ComboBoxItem Tag="176400" Content="176400 hz" />
                 <ComboBoxItem Tag="192000" Content="192000 hz" />
             </ComboBox>
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="Crossfade (ms)" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
-            <Grid Height="32">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="55" />
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" VerticalAlignment="Center">
-                    <Run Text="{Binding CurrentCrossfade}"/>
-                    <Run Text="ms"/>
-                </TextBlock>
-                <Slider Value="{Binding CurrentCrossfade}" 
-                        Grid.Column="1"
-                        TickFrequency="1000"
-                        TickPlacement="Both"
-                    Minimum="0" Maximum="5000"  
-                    IsMoveToPointEnabled="True"
-                    Margin="8,0"
-                    />
-            </Grid>
         </StackPanel>
     </Grid>
 </UserControl>

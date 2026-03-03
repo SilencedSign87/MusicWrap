@@ -12,7 +12,7 @@ namespace MusicWrap.UI.Converters
             if (value is int diskNumber)
             {
                 // Show disk header only if disk number is greater than 0 (multi-disk albums)
-                return diskNumber > 1 ? Visibility.Visible : Visibility.Collapsed;
+                return diskNumber > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
             return Visibility.Collapsed;
         }

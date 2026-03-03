@@ -14,6 +14,7 @@
          Background="Transparent">
     <UserControl.Resources>
         <converters:DiskNumberToVisibilityConverter x:Key="DiskNumberToVisibilityConverter"/>
+        <converters:ItemCountToColumnsConverter x:Key="ItemCountToColumnsConverter"/>
     </UserControl.Resources>
     <Grid Margin="0">
         <Grid.RowDefinitions>
@@ -22,7 +23,6 @@
         </Grid.RowDefinitions>
 
         <!-- Album Header -->
-
         <StackPanel Grid.Row="0" Margin="0,8,0,16">
             <Grid Margin="0,0,24,0">
                 <Grid.ColumnDefinitions>
@@ -56,8 +56,6 @@
             </TextBlock>
         </StackPanel>
 
-
-
         <!-- Tracks List Grouped by Disk -->
         <ItemsControl Grid.Row="1"
                       ItemsSource="{Binding DiskGroups}">
@@ -74,7 +72,20 @@
                                    Visibility="{Binding DiskNumber, Converter={StaticResource DiskNumberToVisibilityConverter}}"/>
 
                         <!-- Tracks in this disk -->
-                        <ItemsControl ItemsSource="{Binding Tracks}">
+                        <ItemsControl ItemsSource="{Binding Tracks}"
+                                      Name="TracksItemsControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ex:ColumnFlowPanel>
+                                        <ex:ColumnFlowPanel.Columns>
+                                            <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,600">
+                                                <Binding RelativeSource="{RelativeSource FindAncestor, AncestorType=ItemsControl}" Path="Items.Count"/>
+                                                <Binding RelativeSource="{RelativeSource FindAncestor, AncestorType=ItemsControl}" Path="ActualWidth"/>
+                                            </MultiBinding>
+                                        </ex:ColumnFlowPanel.Columns>
+                                    </ex:ColumnFlowPanel>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border
