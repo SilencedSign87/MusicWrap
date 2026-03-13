@@ -19,9 +19,9 @@
                 <!-- Image -->
                 <Image
                     Grid.Column="0"
-                       Width="40" Height="40"
-                       Margin="4"
-                       Source="{Binding AlbumArt}"
+                    Width="40" Height="40"
+                    Margin="4"
+                    Source="{Binding AlbumArt}"
                     RenderOptions.BitmapScalingMode="LowQuality"
                     />
                 <!-- Body -->
@@ -76,7 +76,7 @@
             </ListView.ItemContainerStyle>
             <ListView.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Play now"  Icon="{ex:Icon Glyph=e768}"/>
+                    <MenuItem Header="Play now" Click="PlaySelectedNow"  Icon="{ex:Icon Glyph=e768}"/>
                     <MenuItem Header="Play next" Click="PlayNext" Icon="{ex:Icon Glyph=ECC8}"/>
                     <MenuItem Header="Remove" Click="RemoveFromQueue" Icon="{ex:Icon Glyph=ecc9}" />
                     <Separator />

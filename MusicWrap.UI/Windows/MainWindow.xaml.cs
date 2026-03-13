@@ -176,6 +176,29 @@ namespace MusicWrap.UI.Windows
             }
 
             MainFrame.Content = page;
+
+            TrimPageCache(index);
+        }
+
+        private void TrimPageCache(int currentIndex)
+        {
+            const int libraryIndex = 0;
+            var keysToRemove = _pageCache.Keys
+                .Where(k=>k != libraryIndex && k != currentIndex)
+                .ToList();
+
+            foreach (var key in keysToRemove) {
+                if (!_pageCache.TryGetValue(key, out var cachedPage))
+                    continue;
+
+                if (ReferenceEquals(MainFrame.Content, cachedPage))
+                    MainFrame.Content = null;
+
+                if (cachedPage is IDisposable disposable)
+                    disposable.Dispose();
+
+                _pageCache.Remove(key);
+            }
         }
 
         private void ThumbButtonInfo_Previous(object sender, EventArgs e)

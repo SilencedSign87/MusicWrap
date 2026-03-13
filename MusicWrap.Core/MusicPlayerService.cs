@@ -284,34 +284,39 @@ namespace MusicWrap.Core
         public void AddToQueue(int TrackId)
         {
             _queue.Add(TrackId);
-            InvokeUI(() => QueueChanged?.Invoke(this, [.. _queue]));
+            NotifyQueueChanged();
         }
 
         public void AddToQueue(IEnumerable<int> TrackIds)
         {
             _queue.AddRange(TrackIds);
-            InvokeUI(() => QueueChanged?.Invoke(this, [.. _queue]));
+            NotifyQueueChanged();
         }
 
         public void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false)
         {
-            int newIndex = TrackIds.Any() ? 0 : -1;
-            if (CalculateNewIndex)
-            {
-                for (int i = 0; i < TrackIds.Count(); i++)
+            var list = TrackIds as IList<int> ?? TrackIds.ToList();
+
+            int newIndex = list.Count > 0 ? 0 : -1;
+
+            if (CalculateNewIndex && list.Count > 0) {
+                int currentTrackId = CurrentTrackId;
+                for (int i = 0; i < list.Count; i++)
                 {
-                    if (TrackIds.ElementAt(i) == CurrentTrackId)
+                    if (list[i] == currentTrackId)
                     {
                         newIndex = i;
                         break;
                     }
                 }
             }
-
             _queue.Clear();
-            _queue.AddRange(TrackIds);
+            if (list.Count > 0) {
+                _queue.AddRange(list);
+            }
             _currentIndex = newIndex;
-            InvokeUI(() => QueueChanged?.Invoke(this, [.. _queue]));
+
+            NotifyQueueChanged();
         }
 
         public void RemoveFromQueue(int index)
@@ -332,7 +337,8 @@ namespace MusicWrap.Core
             {
                 _currentIndex--;
             }
-            InvokeUI(() => QueueChanged?.Invoke(this, [.. _queue]));
+
+            NotifyQueueChanged();
         }
 
         public void ClearQueue()
@@ -340,12 +346,12 @@ namespace MusicWrap.Core
             Stop();
             _queue.Clear();
             _currentIndex = -1;
-            InvokeUI(() => QueueChanged?.Invoke(this, [.. _queue]));
+            NotifyQueueChanged();
         }
 
         public int[] GetQueue()
         {
-            return [.. _queue];
+            return _queue.Count == 0 ? Array.Empty<int>() : _queue.ToArray();
         }
 
         public void PlayTrack(int TrackId)
@@ -482,11 +488,12 @@ namespace MusicWrap.Core
             _audioEngine.Play(_mixerStream, false);
             SetPlaybackState(PlaybackState.Playing);
 
+            var snapshot = CreateQueueSnapshot();
             InvokeUI(() =>
             {
                 SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate });
                 TrackChanged?.Invoke(this, track.Path);
-                QueueChanged?.Invoke(this, [.. _queue]);
+                QueueChanged?.Invoke(this, snapshot);
             });
         }
 
@@ -570,12 +577,13 @@ namespace MusicWrap.Core
                 }
 
                 var track = GetCurrentTrack();
+                var snapshot = CreateQueueSnapshot();
                 if (track != null)
                 {
                     InvokeUI(() =>
                     {
                         TrackChanged?.Invoke(this, track.Path);
-                        QueueChanged?.Invoke(this, [.. _queue]);
+                        QueueChanged?.Invoke(this, snapshot);
                     });
                 }
                 return;
@@ -638,6 +646,16 @@ namespace MusicWrap.Core
             {
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, action);
             }
+        }
+
+        private int[] CreateQueueSnapshot()
+        {
+            return _queue.Count == 0 ? Array.Empty<int>() : [.. _queue];
+        }
+        private void NotifyQueueChanged()
+        {
+            var snapshot = CreateQueueSnapshot();
+            InvokeUI(() => QueueChanged?.Invoke(this, snapshot));
         }
     }
 
