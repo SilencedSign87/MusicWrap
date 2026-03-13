@@ -21,7 +21,9 @@
                     Grid.Column="0"
                        Width="40" Height="40"
                        Margin="4"
-                       Source="{Binding AlbumArt}"/>
+                       Source="{Binding AlbumArt}"
+                    RenderOptions.BitmapScalingMode="LowQuality"
+                    />
                 <!-- Body -->
                 <Grid Grid.Column="1">
                     <Grid.ColumnDefinitions>

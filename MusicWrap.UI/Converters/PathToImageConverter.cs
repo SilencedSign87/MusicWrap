@@ -47,7 +47,7 @@ namespace MusicWrap.UI.Converters
             }
 
             // Parse size from parameter
-            int size = 200; // default thumbnail size
+            int size = 64; // default thumbnail size
             if (parameter is string sizeStr && int.TryParse(sizeStr, out int parsedSize))
             {
                 size = parsedSize;
@@ -60,12 +60,6 @@ namespace MusicWrap.UI.Converters
             if (_cache.TryGetValue(cacheKey, out var weakRef) && weakRef.TryGetTarget(out var cachedImage))
             {
                 return cachedImage;
-            }
-
-            if (!File.Exists(path))
-            {
-                _cache.Remove(cacheKey);
-                return DefaultImage;
             }
 
             try

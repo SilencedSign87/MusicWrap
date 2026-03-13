@@ -41,13 +41,13 @@
             
             <!-- Album Cover -->
             <Image Grid.Row="0"
-                   Source="{Binding Image}"
+                   Source="{Binding CoverImage}"
                    Stretch="UniformToFill"
                    VerticalAlignment="Top"
                    Width="200"
                    Height="200"
                    HorizontalAlignment="Center"
-                   RenderOptions.BitmapScalingMode="HighQuality"
+                   RenderOptions.BitmapScalingMode="LowQuality"
                    />
             
             <!-- Album Info -->

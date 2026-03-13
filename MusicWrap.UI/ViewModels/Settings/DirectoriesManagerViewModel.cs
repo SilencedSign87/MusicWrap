@@ -4,6 +4,7 @@ using Microsoft.Win32;
 using MusicWrap.Data;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Services;
+using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -47,11 +48,14 @@ namespace MusicWrap.UI.ViewModels.Settings
 
         private readonly ILibraryScanner _scanner;
         private readonly MusicLibrary _library;
+        private readonly ILibraryCacheService _cache;
 
-        public DirectoriesManagerViewModel(ILibraryScanner scanner, MusicLibrary library)
+        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryCacheService cache, MusicLibrary library)
         {
             _scanner = scanner;
             _library = library;
+            _cache = cache;
+
 
             _scanCancellationTokenSource = new CancellationTokenSource();
 
@@ -113,15 +117,14 @@ namespace MusicWrap.UI.ViewModels.Settings
 
                 if (SelectedDirectories.Count > 0)
                 {
-                    // Escanear solo los directorios seleccionados
                     var paths = SelectedDirectories.Select(d => d.Path).ToArray();
                     await _scanner.ScanSpecificDirectories(paths, _scanningProgress, cancelationToken);
                 }
                 else
                 {
-                    // Escanear todos si no hay selección
                     await _scanner.ScanAllDirectories(_scanningProgress, cancelationToken);
                 }
+                _cache.InvalidateCache();
             }
             catch (OperationCanceledException)
             {
@@ -133,6 +136,7 @@ namespace MusicWrap.UI.ViewModels.Settings
             }
             finally
             {
+
                 UpdateDirectories();
                 IsScanning = Visibility.Hidden;
             }

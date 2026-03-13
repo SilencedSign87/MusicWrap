@@ -5,6 +5,7 @@ using MusicWrap.Data.Services;
 using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -55,10 +56,10 @@ namespace MusicWrap.UI.Services
                 {
                     var data = File.ReadAllBytes(_libraryFileName);
                     var library = MessagePackSerializer.Deserialize<LibraryCache>(data);
-                    _artistCache = library._ByArtists != null ? LibraryEntryToRecord(library._ByArtists).ToList() : null;
-                    _albumCache = library._ByAlbums != null ? LibraryEntryToRecord(library._ByAlbums).ToList() : null;
-                    _genreCache = library._ByGenres != null ? LibraryEntryToRecord(library._ByGenres).ToList() : null;
-                    _decadeCache = library._ByDecades != null ? LibraryEntryToRecord(library._ByDecades).ToList() : null;
+                    _artistCache = library._ByArtists?.ToList();
+                    _albumCache = library._ByAlbums?.ToList();
+                    _genreCache = library._ByGenres?.ToList();
+                    _decadeCache = library._ByDecades?.ToList();
                 }
                 catch
                 {
@@ -77,16 +78,17 @@ namespace MusicWrap.UI.Services
             lock (_diskLock)
             {
                 var directory = Path.GetDirectoryName(_libraryFileName);
+                if (directory is null) return;
                 if (!Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
                 }
                 var data = MessagePackSerializer.Serialize(new LibraryCache
                 {
-                    _ByArtists = _artistCache != null ? LibraryEntryToClass(_artistCache).ToArray() : null,
-                    _ByAlbums = _albumCache != null ? LibraryEntryToClass(_albumCache).ToArray() : null,
-                    _ByGenres = _genreCache != null ? LibraryEntryToClass(_genreCache).ToArray() : null,
-                    _ByDecades = _decadeCache != null ? LibraryEntryToClass(_decadeCache).ToArray() : null
+                    _ByArtists = _artistCache?.ToArray(),
+                    _ByAlbums = _albumCache?.ToArray(),
+                    _ByGenres = _genreCache?.ToArray(),
+                    _ByDecades = _decadeCache?.ToArray()
                 });
 
                 var tmp = _libraryFileName + ".tmp";
@@ -181,15 +183,16 @@ namespace MusicWrap.UI.Services
                     imagePath = Path.Combine(_coversPath, cover.FileName);
                 }
 
-                entries.Add(new LibraryEntry(
-                    Id: albums[i].Id,
-                    Type: "Album",
-                    ImagePath: imagePath,
-                    Image: ImageHelper.LoadThumbnail(imagePath),
-                    Title: albums[i].Title,
-                    Description: $"{trackCount} track{(trackCount > 1 ? "s" : "")}",
-                    GroupKey: GetInitialGroup(albums[i].Title)
-                    ));
+                entries.Add(new LibraryEntry
+                {
+                    Id = albums[i].Id,
+                    Type = "Album",
+                    ImagePath = imagePath,
+                    Title = albums[i].Title,
+                    Description = $"{trackCount} track{(trackCount > 1 ? "s" : "")}",
+                    GroupKey = GetInitialGroup(albums[i].Title)
+                }
+                    );
             }
 
             return entries;
@@ -210,15 +213,16 @@ namespace MusicWrap.UI.Services
                 if (imagePath != null)
                     imagePath = Path.Combine(_coversPath, imagePath);
 
-                entries.Add(new LibraryEntry(
-                    Id: artist.Id,
-                    Type: "Artist",
-                    ImagePath: imagePath,
-                    Image: ImageHelper.LoadThumbnail(imagePath),
-                    Title: artist.Name,
-                    Description: $"{albumCount} album{(albumCount > 1 ? "s" : "")}",
-                    GroupKey: GetInitialGroup(artist.Name)
-                    ));
+                entries.Add(new LibraryEntry
+                {
+
+                    Id = artist.Id,
+                    Type = "Artist",
+                    ImagePath = imagePath,
+                    Title = artist.Name,
+                    Description = $"{albumCount} album{(albumCount > 1 ? "s" : "")}",
+                    GroupKey = GetInitialGroup(artist.Name)
+                });
             }
             return entries;
         }
@@ -241,15 +245,17 @@ namespace MusicWrap.UI.Services
                 if (imagePath != null)
                     imagePath = Path.Combine(_coversPath, imagePath);
 
-                entries.Add(new LibraryEntry(
-                    Id: genres[i].Id,
-                    Type: "Genre",
-                    ImagePath: imagePath,
-                    Image: ImageHelper.LoadThumbnail(imagePath),
-                    Title: genres[i].Name,
-                    Description: $"{albumCount} album{(albumCount > 1 ? "s" : "")}",
-                    GroupKey: GetInitialGroup(genres[i].Name)
-                    ));
+                entries.Add(new LibraryEntry
+                {
+
+                    Id = genres[i].Id,
+                    Type = "Genre",
+                    ImagePath = imagePath,
+                    Title = genres[i].Name,
+                    Description = $"{albumCount} album{(albumCount > 1 ? "s" : "")}",
+                    GroupKey = GetInitialGroup(genres[i].Name)
+                }
+                    );
             }
             return entries;
         }
@@ -280,15 +286,17 @@ namespace MusicWrap.UI.Services
                 if (imagePath != null)
                     imagePath = Path.Combine(_coversPath, imagePath);
 
-                entries.Add(new LibraryEntry(
-                    Id: entryId++,
-                    Type: "Decade",
-                    ImagePath: imagePath,
-                    Image: ImageHelper.LoadThumbnail(imagePath),
-                    Title: $"{decade}s",
-                    Description: $"{albumCount} album{(albumCount > 1 ? "s" : "")}",
-                    GroupKey: $"{decade}s"
-                    ));
+                entries.Add(new LibraryEntry
+                {
+
+                    Id = entryId++,
+                    Type = "Decade",
+                    ImagePath = imagePath,
+                    Title = $"{decade}s",
+                    Description = $"{albumCount} album{(albumCount > 1 ? "s" : "")}",
+                    GroupKey = $"{decade}s"
+                }
+                    );
             }
 
             return entries;
@@ -309,121 +317,65 @@ namespace MusicWrap.UI.Services
 
         private string? FindCover(IEnumerable<int> AlbumIds, IEnumerable<int>? trackIds = null)
         {
-            for (int i = 0; i < AlbumIds.Count(); i++)
+            foreach (var albumId in AlbumIds)
             {
-                var albumcoverId = _library.Albums.First(a => a.Id == AlbumIds.ElementAt(i)).CoverId;
-                if (albumcoverId != 0 && _coverLookUp.TryGetValue(albumcoverId, out var cover))
+                var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
+                if (album is null) continue;
+
+                if (album.CoverId != 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
                 {
-                    return Path.Combine(_coversPath, cover.FileName);
+                    return cover.FileName;
                 }
             }
 
-            if (trackIds != null)
+            if (trackIds is not null)
             {
-                for (int i = 0; i < trackIds.Count(); i++)
+                foreach (var trackId in trackIds)
                 {
-                    var trackcoverId = _library.Tracks.First(t => t.Id == trackIds.ElementAt(i)).CoverId;
-                    if (trackcoverId != 0 && _coverLookUp.TryGetValue(trackcoverId, out var cover))
+                    var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+                    if (track is null) continue;
+
+                    if (track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover))
                     {
-                        return Path.Combine(_coversPath, cover.FileName);
+                        return cover.FileName;
                     }
                 }
-            }
-            else
-            {
-                for (int i = 0; i < AlbumIds.Count(); i++)
-                {
-                    var tracks = _library.Tracks.Where(t => t.AlbumId == AlbumIds.ElementAt(i));
-                    for (int j = 0; j < tracks.Count(); j++)
-                    {
-                        var trackcoverId = tracks.ElementAt(j).CoverId;
-                        if (trackcoverId != 0 && _coverLookUp.TryGetValue(trackcoverId, out var cover))
-                        {
-                            return Path.Combine(_coversPath, cover.FileName);
-                        }
-                    }
-                }
+                return null;
             }
 
+            foreach (var albumId in AlbumIds)
+            {
+                foreach (var track in _library.Tracks.Where(t => t.AlbumId == albumId))
+                {
+                    if (track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover))
+                    {
+                        return cover.FileName;
+                    }
+                }
+            }
             return null;
-        }
-
-        private static IEnumerable<LibraryEntryClass> LibraryEntryToClass(IEnumerable<LibraryEntry> entry)
-        {
-            var result = new LibraryEntryClass[entry.Count()];
-            for (int i = 0; i < entry.Count(); i++)
-            {
-                var item = entry.ElementAt(i);
-                result[i] = new LibraryEntryClass
-                {
-                    Id = item.Id,
-                    Type = item.Type,
-                    ImagePath = item.ImagePath,
-                    Title = item.Title,
-                    Description = item.Description,
-                    GroupKey = item.GroupKey
-                };
-            }
-            return result;
-        }
-
-        private static IEnumerable<LibraryEntry> LibraryEntryToRecord(IEnumerable<LibraryEntryClass> entry)
-        {
-            var result = new LibraryEntry[entry.Count()];
-            for (int i = 0; i < entry.Count(); i++)
-            {
-                var item = entry.ElementAt(i);
-                result[i] = new LibraryEntry(
-                    Id: item.Id,
-                    Type: item.Type,
-                    ImagePath: item.ImagePath,
-                    Image: ImageHelper.LoadThumbnail(item.ImagePath),
-                    Title: item.Title,
-                    Description: item.Description,
-                    GroupKey: item.GroupKey
-                    );
-            }
-            return result;
         }
     }
 
 
 
-    public record LibraryEntry(
-        int Id,
-        string Type,
-        string? ImagePath,
-        BitmapImage? Image,
-        string Title,
-        string Description,
-        string GroupKey
-        );
-    public record AlbumData(
-        int Id,
-        string Title,
-        int Year,
-        string ArtistNames,
-        string? ImagePath,
-        string DominantColor,
-        string ForegroundColor
-        );
+    [MessagePackObject]
+    public sealed class LibraryEntry
+    {
+        [Key(0)] public int Id { get; set; }
+        [Key(1)] public required string Type { get; set; }
+        [Key(2)] public string? ImagePath { get; set; }
+        [Key(3)] public required string Title { get; set; }
+        [Key(4)] public required string Description { get; set; }
+        [Key(5)] public required string GroupKey { get; set; }
+    }
 
     [MessagePackObject]
     public sealed class LibraryCache
     {
-        [Key(0)] public LibraryEntryClass[]? _ByArtists { get; set; } = null;
-        [Key(1)] public LibraryEntryClass[]? _ByAlbums { get; set; } = null;
-        [Key(2)] public LibraryEntryClass[]? _ByGenres { get; set; } = null;
-        [Key(3)] public LibraryEntryClass[]? _ByDecades { get; set; } = null;
-    }
-    [MessagePackObject]
-    public sealed class LibraryEntryClass
-    {
-        [Key(0)] public int Id;
-        [Key(1)] public string Type;
-        [Key(2)] public string? ImagePath;
-        [Key(3)] public string Title;
-        [Key(4)] public string Description;
-        [Key(5)] public string GroupKey;
+        [Key(0)] public LibraryEntry[]? _ByArtists { get; set; } = null;
+        [Key(1)] public LibraryEntry[]? _ByAlbums { get; set; } = null;
+        [Key(2)] public LibraryEntry[]? _ByGenres { get; set; } = null;
+        [Key(3)] public LibraryEntry[]? _ByDecades { get; set; } = null;
     }
 }

@@ -7,6 +7,7 @@
          xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
+         xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
          mc:Ignorable="d" 
          Foreground="White"
@@ -149,7 +150,7 @@
                     VirtualizingPanel.ScrollUnit="Pixel"
                     VirtualizingPanel.CacheLength="2,2"
                     VirtualizingPanel.CacheLengthUnit="Page"
-                    ScrollViewer.CanContentScroll="False"
+                    ScrollViewer.CanContentScroll="True"
                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                     Background="{StaticResource BackgroundLayer}"
                     >
@@ -213,11 +214,11 @@
                                 </ContextMenu>
                             </StackPanel.ContextMenu>
                             <Image
-                                Source="{Binding Image}"
+                                Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=64}"
                                 Width="64"
                                 Height="64"
                                 Stretch="UniformToFill"
-                                RenderOptions.BitmapScalingMode="HighQuality"
+                                RenderOptions.BitmapScalingMode="LowQuality"
                                 />
                             <StackPanel Orientation="Vertical" Margin="8,0,0,0" VerticalAlignment="Center" Width="175">
                                 <TextBlock Text="{Binding Title}" 
@@ -240,12 +241,15 @@
         <Grid Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
             <!-- Show albums grid for all view modes -->
             <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          CanContentScroll="True"
                           HorizontalScrollBarVisibility="Disabled">
                 <Grid Margin="16" x:Name="AlbumWrapper">
-                    <!-- Albums WrapPanel with dynamic track list insertion -->
+                     <!--Albums WrapPanel with dynamic track list insertion--> 
                     <ItemsControl ItemsSource="{Binding AlbumsForSelectedEntry}"
                                   ItemTemplateSelector="{StaticResource AlbumItemSelector}"
-                                  x:Name="AlbumsItemsControl">
+                                  x:Name="AlbumsItemsControl"
+                                  ScrollViewer.CanContentScroll="True"
+                                  >
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel />

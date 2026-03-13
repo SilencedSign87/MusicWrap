@@ -48,6 +48,7 @@ namespace MusicWrap.UI.Helpers
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                //bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
                 bitmap.DecodePixelWidth = size;
                 bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
                 bitmap.EndInit();

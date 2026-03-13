@@ -43,6 +43,8 @@ namespace MusicWrap.UI.ViewModels.Library
         [ObservableProperty]
         private int? expandedAlbumId = null;
 
+        private CancellationTokenSource? _imageCts;
+
         private readonly MusicLibrary _library;
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryCacheService _LibraryCache;
@@ -89,6 +91,8 @@ namespace MusicWrap.UI.ViewModels.Library
 
         partial void OnSelectedEntryChanged(LibraryEntry? value)
         {
+            _imageCts?.Cancel(); // cancel previous image loading if any
+
             if (value == null)
             {
                 AlbumsForSelectedEntry = [];
@@ -223,17 +227,19 @@ namespace MusicWrap.UI.ViewModels.Library
                 var trackCount = _library.Tracks.Count(t => t.AlbumId == albumId);
                 if (trackCount == 0) continue;
 
-                CoverAsset? imageAsset = null;
-                string? imagePath = null;
-                if (album.CoverId > 0 && coverLookup.TryGetValue(album.CoverId, out var cover))
-                {
-                    imageAsset = cover;
-                    imagePath = Path.Combine(CoversBasePath, cover.FileName);
-                }
+                string imagePath = null;
 
-                var artistNames = string.Join(", ", _library.Artists
-                    .Where(a => album.ArtistIds.Contains(a.Id))
-                    .Select(a => a.Name));
+                string dominantColorHex = "#808080";
+                string foregroundColorHex = "#ffffff";
+
+                if (album.CoverId > 0 && coverLookup.TryGetValue(album.CoverId, out var asset))
+                {
+                    imagePath = Path.Combine(CoversBasePath, asset.FileName);
+                    dominantColorHex = asset.DominantColorHex ?? "#808080";
+                    foregroundColorHex = asset.ForegroundColorHex ?? "#ffffff";
+                }
+                var artistNames = string.Join(", ", _library.Artists.Where(ar => album.ArtistIds.Contains(ar.Id)).Select(ar => ar.Name));
+
 
                 albums.Add(new AlbumData
                 {
@@ -241,14 +247,64 @@ namespace MusicWrap.UI.ViewModels.Library
                     Title = album.Title,
                     Year = album.Year,
                     ArtistNames = artistNames,
-                    DominantColor = imageAsset?.DominantColorHex ?? "#808080",
-                    ForegroundColor = imageAsset?.ForegroundColorHex ?? "#ffffff",
-                    Image = ImageHelper.LoadThumbnail(imagePath, "album", 200)
+                    DominantColor = dominantColorHex,
+                    ForegroundColor = foregroundColorHex,
+                    ImagePath = imagePath
                 });
             }
 
             AlbumsForSelectedEntry = albums.OrderByDescending(a => a.Year).ThenBy(a => a.Title).Cast<object>().ToList();
             ExpandedAlbumId = null;
+
+            _imageCts = new CancellationTokenSource();
+           
+            _ = LoadCoverImagesAsync(albums, _imageCts.Token);
+        }
+        private static async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)
+        {
+            using var sem = new SemaphoreSlim(3); // limit concurrent image loading
+
+            var tasks = albums
+                .Where(a => a.ImagePath is not null)
+                .Select(async (album) =>
+                {
+                    await sem.WaitAsync(ct).ConfigureAwait(false);
+                    try
+                    {
+                        if (ct.IsCancellationRequested) return;
+                        var image = await Task.Run(() =>
+                        {
+                            try
+                            {
+                                var bmp = new BitmapImage();
+                                bmp.BeginInit();
+                                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                                bmp.DecodePixelWidth = 200;
+                                bmp.UriSource = new Uri(album.ImagePath!, UriKind.Absolute);
+                                bmp.EndInit();
+                                bmp.Freeze();
+                                return (BitmapSource)bmp;
+                            }
+                            catch { return null; }
+                        }, ct).ConfigureAwait(false);
+
+                        if (image is not null && !ct.IsCancellationRequested)
+                        {
+                            album.CoverImage = image;
+                        }
+                    }
+                    catch (OperationCanceledException){}
+                    finally
+                    {
+                        sem.Release();
+                    }
+                });
+
+            try
+            {
+                await Task.WhenAll(tasks);
+            }
+            catch (OperationCanceledException) { }
         }
 
         private List<int> GetAlbumIdsForDecade(string decadeTitle)
@@ -262,7 +318,7 @@ namespace MusicWrap.UI.ViewModels.Library
                 .ToList();
         }
 
-        public void ExpandAlbum(int albumId , int currentAvailableWidth = 1000)
+        public void ExpandAlbum(int albumId, int currentAvailableWidth = 1000)
         {
             if (ExpandedAlbumId == albumId)
             {
@@ -314,15 +370,30 @@ namespace MusicWrap.UI.ViewModels.Library
 
         public MusicLibrary GetLibrary() => _library;
 
-        public class AlbumData
+        public class AlbumData : INotifyPropertyChanged
         {
             public int Id { get; set; }
-            public string Title { get; set; } = "";
+            public string Title { get; set; }
             public int Year { get; set; }
-            public string ArtistNames { get; set; } = "";
-            public BitmapImage? Image { get; set; }
+            public string ArtistNames { get; set; }
+            public string? ImagePath { get; set; }
             public string DominantColor { get; set; } = "#808080";
-            public string ForegroundColor { get; set; } = "#ffffff";
+            public string ForegroundColor { get; set; } = "#FFFFFF";
+
+            private BitmapSource? _coverImage;
+            public BitmapSource? CoverImage
+            {
+                get => _coverImage;
+                set
+                {
+                    if (_coverImage != value)
+                    {
+                        _coverImage = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CoverImage)));
+                    }
+                }
+            }
+            public event PropertyChangedEventHandler? PropertyChanged;
         }
 
         public class TrackListPlaceholder

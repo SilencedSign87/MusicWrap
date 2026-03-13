@@ -5,6 +5,7 @@ using SixLabors.ImageSharp.ColorSpaces.Conversion;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO;
+using System.Windows.Input;
 
 namespace MusicWrap.Data.Services
 {
@@ -14,6 +15,21 @@ namespace MusicWrap.Data.Services
     }
     public class LibraryIndexer : ILibraryIndexer
     {
+        private static readonly string[] preferredCoverBaseNames = [
+            "cover",
+            "folder",
+            "front",
+            "album",
+            "artwork",
+            "art"
+            ];
+        private static readonly string[] suportedCoverExtensions = [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            ".bmp",
+            ];
         private readonly MusicLibrary _library;
         private readonly object _lock = new();
 
@@ -105,6 +121,9 @@ namespace MusicWrap.Data.Services
             if (picture is not null && picture.Data?.Data is { Length: > 0 } bytes)
             {
                 coverId = GetOrCreateCoverAsset(bytes, picture.MimeType);
+            }else if (TryGetExternalCover(filePath, out var externalCoverBytes, out var externalMimeType))
+            {
+                coverId = GetOrCreateCoverAsset(externalCoverBytes, externalMimeType);
             }
 
             // Album
@@ -443,6 +462,69 @@ namespace MusicWrap.Data.Services
         {
             return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
         }
+
+        private static bool TryGetExternalCover(string audioFilePath, out byte[] imageBytes, out string mimeType)
+        {
+            imageBytes = [];
+            mimeType = "application/octet-stream";
+
+            var directory = Path.GetDirectoryName(audioFilePath);
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory)) {
+                return false;
+            }
+            const long maxCoverSizeBytes = 20 * 1024 * 1024; // 20 MB
+            try
+            {
+                var bestCandidate = Directory
+                    .EnumerateFiles(directory, "*.*", SearchOption.TopDirectoryOnly)
+                    .Where(path => suportedCoverExtensions.Contains(Path.GetExtension(path).ToLowerInvariant()))
+                    .Select(path => new FileInfo(path))
+                    .Where(file => file.Exists && file.Length > 0 && file.Length <= maxCoverSizeBytes)
+                    .OrderBy(file => GetCoverNamePriority(Path.GetFileNameWithoutExtension(file.Name)))
+                    .ThenBy(file => file.Length)
+                    .FirstOrDefault();
+
+                if (bestCandidate is null) return false;
+
+                imageBytes = File.ReadAllBytes(bestCandidate.FullName);
+                mimeType = GetMimeTypeFromExtension(bestCandidate.Extension);
+
+                return imageBytes.Length > 0;
+                
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static int GetCoverNamePriority(string baseName)
+        {
+            if (string.IsNullOrWhiteSpace(baseName))
+                return int.MaxValue;
+
+            var name = baseName.Trim().ToLowerInvariant();
+
+            for (int i = 0; i < preferredCoverBaseNames.Length; i++)
+            {
+                if (name.Equals(preferredCoverBaseNames[i], StringComparison.Ordinal))
+                    return i;
+
+                if (name.StartsWith(preferredCoverBaseNames[i], StringComparison.Ordinal))
+                    return i + 10;
+            }
+
+            return int.MaxValue;
+        }
+        private static string GetMimeTypeFromExtension(string extension) => extension.ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            ".bmp" => "image/bmp",
+            ".gif" => "image/gif",
+            _ => "application/octet-stream"
+        };
 
         #endregion
     }

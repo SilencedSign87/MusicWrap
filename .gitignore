@@ -1,5 +1,8 @@
 .vs
 .vscode
+.github
+.diagnostic
+
 bin
 obj
 *.user
