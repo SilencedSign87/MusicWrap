@@ -60,6 +60,95 @@ namespace MusicWrap.Core
 
             return Bass.BASS_StreamCreateFile(filePath, 0, 0, BASSFlag.BASS_DEFAULT);
         }
+        public static async Task<float[]> GetWaveFromDataAsync(string filePath, int dataPoints = 2000)
+        {
+            // Run the audio processing in a separate thread to avoid blocking the UI
+            return await Task.Run(() =>
+            {
+                int stream = Bass.BASS_StreamCreateFile(filePath, 0, 0,
+                    BASSFlag.BASS_STREAM_DECODE | BASSFlag.BASS_SAMPLE_FLOAT | BASSFlag.BASS_STREAM_PRESCAN);
+                if (stream == 0)
+                    return Array.Empty<float>();
+
+                try
+                {
+                    long lenghtBytes = Bass.BASS_ChannelGetLength(stream);
+                    if (lenghtBytes <= 0) return Array.Empty<float>();
+
+                    long bytesPerChunck = lenghtBytes / dataPoints;
+
+                    if (bytesPerChunck <= 0) bytesPerChunck = 4;
+
+                    int floatsPerChunk = (int)(bytesPerChunck / 4); // 4 bytes per float
+                    float[] buffer = new float[floatsPerChunk];
+                    float[] waveform = new float[dataPoints];
+
+                    float maxPeakInFile = 0f;
+
+                    for (int i = 0; i< dataPoints; i++)
+                    {
+                        int bytesRead = Bass.BASS_ChannelGetData(stream, buffer, (int)bytesPerChunck);
+                        if (bytesRead <= 0) break;
+
+                        int floatsRead = bytesRead / 4;
+                        if (floatsRead <= 0) break;
+
+                        float peak = 0f;
+
+                        double sumSq = 0;
+                        for (int j = 0; j < floatsRead; j++)
+                        {
+                            float s = buffer[j];
+                            sumSq += s * s;
+                        }
+                        float rms = (float)Math.Sqrt(sumSq / floatsRead);
+                        waveform[i] = rms;
+
+                        if (peak > maxPeakInFile)
+                            maxPeakInFile = peak;
+                    }
+
+                    // Normalize waveform
+                    //if (maxPeakInFile > 0)
+                    //{
+                    //    for (int i = 0; i < waveform.Length; i++)
+                    //    {
+                    //        waveform[i] /= maxPeakInFile;
+                    //    }
+                    //}
+
+                    var nonZero = waveform.Where(v => v > 0).OrderBy(v => v).ToArray();
+                    float refLevel = nonZero.Length > 0
+                        ? nonZero[(int)Math.Clamp(nonZero.Length * 0.98, 0, nonZero.Length - 1)]
+                        : 0f;
+
+                    if (refLevel <= 1e-6f)
+                        refLevel = waveform.Max();
+
+                    if (refLevel > 0f)
+                    {
+                        for (int i = 0; i < waveform.Length; i++)
+                        {
+                            float v = waveform[i] / refLevel;
+                            v = Math.Clamp(v, 0f, 1f);
+
+                            v = MathF.Pow(v, 0.85f) * 0.9f;
+
+                            waveform[i] = Math.Clamp(v, 0f, 1f);
+                        }
+                    }
+
+                    return waveform;
+
+                }
+                finally
+                {
+                    if (stream != 0)
+                        Bass.BASS_StreamFree(stream);
+                }
+            });
+        }
+
         #region PLAYBACK
         public bool Play(int stream, bool restart = false) => Bass.BASS_ChannelPlay(stream, restart);
         public bool Pause(int stream) => Bass.BASS_ChannelPause(stream);

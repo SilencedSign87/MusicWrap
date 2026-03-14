@@ -3,6 +3,7 @@ using MusicWrap.Data.Library;
 using System.Timers;
 using System.Linq;
 using Un4seen.Bass;
+using System.Net;
 
 namespace MusicWrap.Core
 {
@@ -46,6 +47,7 @@ namespace MusicWrap.Core
         event EventHandler<int[]>? QueueChanged;
         event EventHandler<int>? DeviceIndexChanged;
         event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
+        event EventHandler<float[]>? WaveformDataChanged;
         void Play();
         void Pause();
         void Stop();
@@ -113,6 +115,16 @@ namespace MusicWrap.Core
         public double CurrentPosition => _currentStream != 0 ? _audioEngine.GetMixerPosition(_currentStream) : 0.0;
         public double Duration => _currentStream != 0 ? _audioEngine.GetDuration(_currentStream) : 0.0;
 
+        private const double PositionTimerPlayingIntervalMs = 50;
+        private const double PositionTimerIdleIntervalMs = 500;
+
+        private const int WaveformDataPoints = 2000;
+        private readonly Dictionary<int, float[]> _waveformCache = [];
+        private readonly object _waveformCacheLock = new object();
+        private int _waveformVersion = 0;
+
+        private DateTime _suppressPositionUntilUtc = DateTime.MinValue;
+
         public float Volume
         {
             get => _volume;
@@ -152,7 +164,7 @@ namespace MusicWrap.Core
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
 
-            _positionTimer = new System.Timers.Timer(500)
+            _positionTimer = new System.Timers.Timer(PositionTimerIdleIntervalMs)
             {
                 AutoReset = true
             };
@@ -167,6 +179,7 @@ namespace MusicWrap.Core
         public event EventHandler<int[]>? QueueChanged;
         public event EventHandler<int>? DeviceIndexChanged;
         public event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
+        public event EventHandler<float[]>? WaveformDataChanged;
 
         public void Play()
         {
@@ -256,7 +269,14 @@ namespace MusicWrap.Core
             if (_currentStream == 0)
                 return;
 
-            _audioEngine.SetPosition(_currentStream, seconds);
+            if(_audioEngine.SetPosition(_currentStream, seconds))
+            {
+                var target = Math.Clamp(seconds, 0.0, Duration);
+                _suppressPositionUntilUtc = DateTime.UtcNow.AddMilliseconds(120);
+
+                //var pos = _audioEngine.GetMixerPosition(_currentStream);
+                InvokeUI(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek
+            }
         }
 
         public void SetVolume(float volume)
@@ -299,7 +319,8 @@ namespace MusicWrap.Core
 
             int newIndex = list.Count > 0 ? 0 : -1;
 
-            if (CalculateNewIndex && list.Count > 0) {
+            if (CalculateNewIndex && list.Count > 0)
+            {
                 int currentTrackId = CurrentTrackId;
                 for (int i = 0; i < list.Count; i++)
                 {
@@ -311,7 +332,8 @@ namespace MusicWrap.Core
                 }
             }
             _queue.Clear();
-            if (list.Count > 0) {
+            if (list.Count > 0)
+            {
                 _queue.AddRange(list);
             }
             _currentIndex = newIndex;
@@ -431,6 +453,7 @@ namespace MusicWrap.Core
         private void StartPlaybackOfCurrent()
         {
             var track = GetCurrentTrack();
+
             if (track == null)
             {
                 Next();
@@ -486,7 +509,10 @@ namespace MusicWrap.Core
             }
 
             _audioEngine.Play(_mixerStream, false);
+
             SetPlaybackState(PlaybackState.Playing);
+            var inmidiatePos = _audioEngine.GetMixerPosition(_currentStream);
+            InvokeUI(() => PositionChanged?.Invoke(this, inmidiatePos)); // update position immediately on track change
 
             var snapshot = CreateQueueSnapshot();
             InvokeUI(() =>
@@ -495,6 +521,7 @@ namespace MusicWrap.Core
                 TrackChanged?.Invoke(this, track.Path);
                 QueueChanged?.Invoke(this, snapshot);
             });
+            BeginWaveformPipeline(track);
         }
 
         private void SetPlaybackState(PlaybackState state)
@@ -504,6 +531,10 @@ namespace MusicWrap.Core
 
             _playbackState = state;
 
+            _positionTimer.Interval = _playbackState == PlaybackState.Playing
+                ? PositionTimerPlayingIntervalMs 
+                : PositionTimerIdleIntervalMs;
+
             InvokeUI(() => PlaybackStateChanged?.Invoke(this, _playbackState));
         }
 
@@ -511,6 +542,8 @@ namespace MusicWrap.Core
         {
             if (!IsPlaying || _currentStream == 0)
                 return;
+            if (DateTime.UtcNow < _suppressPositionUntilUtc)
+                return; // Suppress position updates for a short time after seeking to avoid UI jitter
 
             var position = _audioEngine.GetMixerPosition(_currentStream);
             InvokeUI(() => PositionChanged?.Invoke(this, position));
@@ -585,6 +618,7 @@ namespace MusicWrap.Core
                         TrackChanged?.Invoke(this, track.Path);
                         QueueChanged?.Invoke(this, snapshot);
                     });
+                    BeginWaveformPipeline(track);
                 }
                 return;
             }
@@ -628,6 +662,7 @@ namespace MusicWrap.Core
 
                 _preloadedStream = nextStream;
                 _preloadedTrackId = nextTrackId;
+                _ = PreloadWaveformCacheAsync(nextTrack);
             });
         }
 
@@ -651,6 +686,71 @@ namespace MusicWrap.Core
         private int[] CreateQueueSnapshot()
         {
             return _queue.Count == 0 ? Array.Empty<int>() : [.. _queue];
+        }
+        private void BeginWaveformPipeline(Track track)
+        {
+            int requestVersion = Interlocked.Increment(ref _waveformVersion);
+            // inmidiate fallback
+            PublishWaveformIfCurrent(track.Id, requestVersion, CreateFallbackWaveForm(WaveformDataPoints));
+
+            if (TryGetWaveformFromCache(track.Id, out var cached))
+            {
+                PublishWaveformIfCurrent(track.Id, requestVersion, cached);
+                return;
+            }
+
+            _ = Task.Run(async () =>
+            {
+                var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
+                if (waveform.Length == 0)
+                {
+                    waveform = CreateFallbackWaveForm(WaveformDataPoints);
+                }
+                CacheWaveform(track.Id, waveform);
+                PublishWaveformIfCurrent(track.Id, requestVersion, waveform);
+            });
+        }
+        private async Task PreloadWaveformCacheAsync(Track track)
+        {
+            if (TryGetWaveformFromCache(track.Id, out _)) return; // Already cached
+            var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
+            if (waveform.Length == 0) return;
+            CacheWaveform(track.Id, waveform);
+        }
+        private bool TryGetWaveformFromCache(int trackId, out float[]? data)
+        {
+            lock (_waveformCacheLock)
+            {
+                return _waveformCache.TryGetValue(trackId, out data);
+            }
+        }
+        private void CacheWaveform(int trackId, float[] data)
+        {
+            lock (_waveformCacheLock)
+            {
+                _waveformCache[trackId] = data;
+            }
+        }
+        private void PublishWaveformIfCurrent(int trackId, int requestVersion, float[] data)
+        {
+            if (trackId <= 0) return;
+
+
+            InvokeUI(() =>
+            {
+                if (requestVersion != Volatile.Read(ref _waveformVersion)) return; // Stale request, ignore
+
+                if (CurrentTrackId != trackId) return; // Not current track anymore, ignore
+
+                WaveformDataChanged?.Invoke(this, data);
+
+            });
+        }
+        private static float[] CreateFallbackWaveForm(int points = 2000)
+        {
+            var data = new float[points];
+            Array.Fill(data, 1f);
+            return data;
         }
         private void NotifyQueueChanged()
         {

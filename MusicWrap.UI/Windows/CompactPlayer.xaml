@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI.Windows"
         xmlns:mw="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
         d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
         mc:Ignorable="d"
@@ -70,16 +71,26 @@
                     <Grid Grid.Row="0">
 
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="20" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="auto" />
+                            <ColumnDefinition Width="20" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" 
                             Text="{Binding FormattedPosition}" 
                             FontWeight="Light" 
                             FontSize="11" 
                             VerticalAlignment="Center"/>
-                        <Slider Grid.Column="1" 
+                        <Grid Grid.Column="1" Margin="8,4">
+                            <controls:WaveformPlayerControl
+                                WaveformData="{Binding Waveform}"
+                                Position="{Binding CurrentPosition}"
+                                Duration="{Binding Duration}"
+                                DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
+                                SeekStarted="WaveformPlayerControl_SeekStarted"
+                                SeekEnded="WaveformPlayerControl_SeekEnded"
+                            />
+                        </Grid>
+                        <!--<Slider Grid.Column="1" 
                             Minimum="0" 
                             x:Name="PlayerSlider"
                             IsMoveToPointEnabled="True"
@@ -90,7 +101,7 @@
                             Height="32"
                             PreviewMouseLeftButtonDown="PlayerSlider_PreviewMouseLeftButtonDown"
                             PreviewMouseLeftButtonUp="PlayerSlider_PreviewMouseLeftButtonUp"
-                            />
+                            />-->
                         <TextBlock Grid.Column="2" 
                             Text="{Binding FormattedDuration}" 
                             FontWeight="Light" 

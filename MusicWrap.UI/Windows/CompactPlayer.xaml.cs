@@ -71,26 +71,6 @@ namespace MusicWrap.UI.Windows
             Close();
         }
 
-        private void PlayerSlider_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            _isUserSeeking = true;
-        }
-
-        private void PlayerSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            var slider = sender as Slider;
-            _isUserSeeking = false;
-            if (slider != null)
-            {
-                Seek(slider.Value);
-            }
-
-        }
-        private void Seek(double position)
-        {
-            _viewModel?.SeekCommand.Execute(position);
-        }
-
         private void MinimizeClick(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
@@ -99,6 +79,22 @@ namespace MusicWrap.UI.Windows
         private void VolumeButton_Click(object sender, RoutedEventArgs e)
         {
             VolumePopup.IsOpen = true;
+        }
+
+        private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
+        {
+            if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
+            {
+                _viewModel.StartSeekingCommand.Execute(null);
+            }
+        }
+
+        private void WaveformPlayerControl_SeekEnded(object sender, double e)
+        {
+            if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
+            {
+                _viewModel.EndSeekingCommand.Execute(e);
+            }
         }
     }
 }

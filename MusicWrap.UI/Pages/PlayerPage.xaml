@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Pages"
              xmlns:mw="clr-namespace:MusicWrap.UI.Pages.MainWindow"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="80" 
              d:DesignWidth="1200"
@@ -23,7 +24,15 @@
             </Grid.RowDefinitions>
             <!-- Duration slider -->
             <Grid Grid.Row="0">
-                <Slider Grid.Column="1" 
+                <controls:WaveformPlayerControl
+                    WaveformData="{Binding Waveform}"
+                    Position="{Binding CurrentPosition}"
+                    Duration="{Binding Duration}"
+                    DominantColorHex="{Binding CurrentTrackDominantColorHex}"
+                    SeekStarted="WaveformPlayerControl_SeekStarted"
+                    SeekEnded="WaveformPlayerControl_SeekEnded"
+                    />
+                <!--<Slider Grid.Column="1" 
                         Minimum="0" 
                         x:Name="PlayerSlider"
                         IsMoveToPointEnabled="True"
@@ -36,7 +45,7 @@
                         PreviewMouseLeftButtonUp="PlayerSlider_PreviewMouseLeftButtonUp"
                         ValueChanged="PlayerSlider_ValueChanged"
                         
-                        />
+                        />-->
             </Grid>
 
             <!-- Controls-->

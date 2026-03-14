@@ -11,7 +11,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Threading;
 using System.Windows.Media.Imaging;
+using TagLib.IFD;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -19,6 +21,13 @@ namespace MusicWrap.UI.ViewModels
     {
         private readonly IMusicPlayerService _playerService;
         private readonly MusicLibrary _library;
+
+        private readonly DispatcherTimer _uiPositionTmer;
+        private double _lastEnginePosition = 0;
+        private DateTime _lastEnginePositionAtUTC = DateTime.UtcNow;
+
+        private double? _pendingSeekTarget = null;
+        private DateTime _pendingSeekUntilUtc = DateTime.MinValue;
 
         [ObservableProperty]
         private bool isPlaying = false;
@@ -71,6 +80,8 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private double duration = 0;
 
+        [ObservableProperty] private float[] waveform;
+
         [ObservableProperty]
         private string formattedPosition = "0:00";
 
@@ -106,13 +117,27 @@ namespace MusicWrap.UI.ViewModels
             _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
             _playerService.TrackChanged += OnTrackChanged;
             _playerService.PositionChanged += OnPositionChanged;
+            _playerService.WaveformDataChanged += _playerService_WaveformDataChanged;
+            Waveform = [];
 
             // Load initial states
             UpdateDJButtonIcon();
             UpdateRepeatModeIcon();
 
+            _uiPositionTmer = new DispatcherTimer(DispatcherPriority.Render)
+            {
+                Interval = TimeSpan.FromMilliseconds(33)
+            };
+            _uiPositionTmer.Tick += UiPositionTimerOnTick;
+            _uiPositionTmer.Start();
+
             // Initialize state
             UpdatePlaybackState(_playerService.IsPlaying);
+        }
+
+        private void _playerService_WaveformDataChanged(object? sender, float[] e)
+        {
+            Waveform = e.Length == 0 ? Array.Empty<float>() : [..e];
         }
 
         [RelayCommand]
@@ -155,10 +180,17 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void EndSeeking(double position)
         {
-            //_isSeekingPosition = false;
             _playerService.Seek(position);
+
+            _lastEnginePosition = position;
+            _lastEnginePositionAtUTC = DateTime.UtcNow;
+
+            _pendingSeekTarget = position;
+            _pendingSeekUntilUtc = DateTime.UtcNow.AddMilliseconds(200);
+
             CurrentPosition = position;
-            FormattedPosition = FormatTime(position);
+            UpdateFormattedPosition(position);
+            //FormattedPosition = FormatTime(position);
             _isSeekingPosition = false;
         }
         [RelayCommand]
@@ -203,7 +235,7 @@ namespace MusicWrap.UI.ViewModels
         {
             IsDJOn = _playerService.ContinueMode == ContinueMode.DJEnd;
             DjButtonIcon = IsDJOn ? "\ue7f6" : "\ue738"; // DJ On : DJ Off
-                DjTooltip = IsDJOn ? "DJ mode is ON" : "DJ mode is OFF";
+            DjTooltip = IsDJOn ? "DJ mode is ON" : "DJ mode is OFF";
         }
         partial void OnVolumeChanged(float value)
         {
@@ -224,6 +256,11 @@ namespace MusicWrap.UI.ViewModels
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                CurrentPosition = 0;
+                _lastEnginePosition = 0;
+                _lastEnginePositionAtUTC = DateTime.UtcNow;
+                UpdateFormattedPosition(0);
+
                 UpdateCurrentTrackInfo();
                 Duration = _playerService.Duration;
                 FormattedDuration = FormatTime(Duration);
@@ -234,10 +271,23 @@ namespace MusicWrap.UI.ViewModels
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                if (_pendingSeekTarget.HasValue)
+                {
+                    if (DateTime.UtcNow<= _pendingSeekUntilUtc && Math.Abs(position-_pendingSeekTarget.Value) > 0.15)
+                    {
+                        return; // we already have a seek in progress
+                    }
+                    _pendingSeekTarget = null;
+                }
+
+                _lastEnginePosition = position;
+                _lastEnginePositionAtUTC = DateTime.UtcNow;
+
                 if (!_isSeekingPosition)
                 {
                     CurrentPosition = position;
-                    FormattedPosition = FormatTime(position);
+                    //FormattedPosition = FormatTime(position);
+                    UpdateFormattedPosition(position);
                 }
             });
         }
@@ -329,6 +379,34 @@ namespace MusicWrap.UI.ViewModels
                 return time.ToString(@"h\:mm\:ss");
             }
             return time.ToString(@"m\:ss");
+        }
+
+        private void UiPositionTimerOnTick(object? sender, EventArgs e)
+        {
+            if (!IsPlaying || _isSeekingPosition || Duration <= 0) return;
+
+            var elapsed = (DateTime.UtcNow - _lastEnginePositionAtUTC).TotalSeconds;
+            var predicted = _lastEnginePosition + elapsed;
+            if (predicted < 0) predicted = 0;
+            if (predicted > Duration) predicted = Duration;
+
+            if (Math.Abs(predicted - CurrentPosition ) >= 0.01)
+            {
+                CurrentPosition = predicted;
+                UpdateFormattedPosition(predicted);
+            }
+        }
+        private void UpdateFormattedPosition(double position)
+        {
+            var time = TimeSpan.FromSeconds(position);
+            if (time.TotalHours >= 1)
+            {
+                FormattedPosition = time.ToString(@"h\:mm\:ss");
+            }
+            else
+            {
+                FormattedPosition = time.ToString(@"m\:ss");
+            }
         }
     }
 }
