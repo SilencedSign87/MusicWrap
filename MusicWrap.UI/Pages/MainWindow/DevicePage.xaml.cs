@@ -21,16 +21,20 @@ namespace MusicWrap.UI.Pages.MainWindow
     public partial class DevicePage : UserControl
     {
         private readonly DeviceViewModel _viewModel;
+        private bool _isLoaded = false;
         public DevicePage()
         {
             InitializeComponent();
             _viewModel = App.Services.GetRequiredService<DeviceViewModel>();
             DataContext = _viewModel;
-        }
+            Loaded += (_, _) => _isLoaded = true;
+        }   
 
         private void SampleRateChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_viewModel.IsInitialized) return;
+
+            if (!IsLoaded || !_viewModel.IsInitialized) return;
+            if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
 
             // get index
             if (sender is ComboBox comboBox)
@@ -42,7 +46,8 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void DeviceChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_viewModel.IsInitialized) return;
+            if (!IsLoaded || !_viewModel.IsInitialized) return;
+            if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
 
             if (sender is ComboBox combobox)
             {

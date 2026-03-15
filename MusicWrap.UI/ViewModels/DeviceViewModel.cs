@@ -51,17 +51,23 @@ namespace MusicWrap.UI.ViewModels
 
         public void SetCurrentSampleRate(int index)
         {
-            if (index >= 0 && index < SampleRates.Length)
-            {
-                _player.ChangeSampleRate(SampleRates[index]);
-            }
+            if (index < 0 || index >= SampleRates.Length) return;
+
+            int target = SampleRates[index];
+            if (target == _player.CurrentSampleRate) return;
+
+            _player.ChangeSampleRate(target);
+
         }
         public void SetCurrentDevice(int index)
         {
-            if (index >= 0 && index < AvailableDevices.Count)
-            {
-                _player.ChangeOutputDevice(AvailableDevices[index].Index);
-            }
+            if (index < 0 && index >= AvailableDevices.Count) return;
+
+            int target = AvailableDevices[index].Index;
+            if (target == _player.CurrentDeviceIndex) return;
+
+            _player.ChangeOutputDevice(target);
+
         }
 
         private void _player_SampleRateChanged(object? sender, SampleRateChangedEventArgs e)
@@ -71,7 +77,8 @@ namespace MusicWrap.UI.ViewModels
             CurrentSampleRate = effective > 0 ? effective.ToString() : "Auto";
 
             var idx = Array.IndexOf(SampleRates, prefered);
-            if (idx < 0) { 
+            if (idx < 0)
+            {
                 idx = Array.IndexOf(SampleRates, effective);
             }
             CurrentSampleRateIndex = idx >= 0 ? idx : 0;
@@ -80,7 +87,8 @@ namespace MusicWrap.UI.ViewModels
         private void _player_DeviceIndexChanged(object? sender, int e)
         {
             var idx = AvailableDevices.FindIndex(d => d.Index == e);
-            if (idx >= 0) {
+            if (idx >= 0)
+            {
                 CurrentDeviceIndex = idx;
                 CurrentDeviceName = AvailableDevices[CurrentDeviceIndex].Name;
             }

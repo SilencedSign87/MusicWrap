@@ -26,6 +26,7 @@ namespace MusicWrap.Core
     }
     public interface IMusicPlayerService
     {
+        int CurrentQueueIndex { get; }
         bool IsPlaying { get; }
         bool IsPaused { get; }
         double CurrentPosition { get; }
@@ -48,6 +49,7 @@ namespace MusicWrap.Core
         event EventHandler<int>? DeviceIndexChanged;
         event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
         event EventHandler<float[]>? WaveformDataChanged;
+        void LoadIndex(int index, bool autoPlay);
         void Play();
         void Pause();
         void Stop();
@@ -109,6 +111,7 @@ namespace MusicWrap.Core
                 _currentSampleRate = value;
             }
         }
+        public int CurrentQueueIndex => _currentIndex;
 
         // States
 
@@ -185,6 +188,13 @@ namespace MusicWrap.Core
         public event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
         public event EventHandler<float[]>? WaveformDataChanged;
 
+        public void LoadIndex(int index, bool autoplay)
+        {
+            if (index < 0 || index >= _queue.Count)
+                return;
+            _currentIndex = index;
+            StartPlaybackOfCurrent(autoplay);
+        }
         public void Play()
         {
             if (_currentStream == 0)
@@ -273,12 +283,12 @@ namespace MusicWrap.Core
             if (_currentStream == 0)
                 return;
 
-            if(_audioEngine.SetPosition(_currentStream, seconds))
+            if (_audioEngine.SetPosition(_currentStream, seconds))
             {
                 var target = Math.Clamp(seconds, 0.0, Duration);
 
                 int latencyMs = _audioEngine.GetDeviceLatencyMs();
-                int suppressMs = Math.Clamp(latencyMs*2 + 40 , 250, 900); 
+                int suppressMs = Math.Clamp(latencyMs * 2 + 40, 250, 900);
                 _suppressPositionUntilUtc = DateTime.UtcNow.AddMilliseconds(suppressMs);
 
                 //var pos = _audioEngine.GetMixerPosition(_currentStream);
@@ -399,6 +409,9 @@ namespace MusicWrap.Core
         public void ChangeOutputDevice(int deviceIndex)
         {
             if (deviceIndex == _currentDeviceIndex) return;
+
+            bool shouldResume = IsPlaying;
+
             if (_currentStream != 0)
             {
                 FreeStream(_currentStream);
@@ -408,7 +421,7 @@ namespace MusicWrap.Core
             CurrentDeviceIndex = deviceIndex;
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
-                StartPlaybackOfCurrent();
+                StartPlaybackOfCurrent(shouldResume);
             }
             InvokeUI(() => DeviceIndexChanged?.Invoke(this, deviceIndex));
         }
@@ -416,6 +429,7 @@ namespace MusicWrap.Core
         public void ChangeSampleRate(int sampleRate)
         {
             if (sampleRate == _currentSampleRate) return;
+            bool shouldResume = IsPlaying;
             if (_currentStream != 0)
             {
                 FreeStream(_currentStream);
@@ -426,7 +440,7 @@ namespace MusicWrap.Core
             SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = sampleRate, EffectiveSampleRate = sampleRate > 0 ? sampleRate : 0 }));
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
-                StartPlaybackOfCurrent();
+                StartPlaybackOfCurrent(shouldResume);
             }
         }
 
@@ -457,7 +471,7 @@ namespace MusicWrap.Core
             return _library.Tracks.FirstOrDefault(t => t.Id == id);
         }
 
-        private void StartPlaybackOfCurrent()
+        private void StartPlaybackOfCurrent(bool autoplay = true)
         {
             var track = GetCurrentTrack();
 
@@ -473,7 +487,14 @@ namespace MusicWrap.Core
             if (_mixerStream == 0)
             {
                 _mixerStream = _audioEngine.CreateMixer(effectiveSampleRate);
-                _audioEngine.Play(_mixerStream, false);
+                if (autoplay)
+                {
+                    _audioEngine.Play(_mixerStream, false);
+                }
+                else
+                {
+                    _audioEngine.Pause(_mixerStream);
+                }
             }
 
             int previousStream = _currentStream;
@@ -515,9 +536,17 @@ namespace MusicWrap.Core
                 _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
             }
 
-            _audioEngine.Play(_mixerStream, false);
+            if (autoplay)
+            {
 
-            SetPlaybackState(PlaybackState.Playing);
+                _audioEngine.Play(_mixerStream, false);
+                SetPlaybackState(PlaybackState.Playing);
+            }
+            else
+            {
+                _audioEngine.Pause(_mixerStream);
+                SetPlaybackState(PlaybackState.Paused);
+            }
             var inmidiatePos = _audioEngine.GetMixerPosition(_currentStream);
             InvokeUI(() => PositionChanged?.Invoke(this, inmidiatePos)); // update position immediately on track change
 
@@ -539,7 +568,7 @@ namespace MusicWrap.Core
             _playbackState = state;
 
             _positionTimer.Interval = _playbackState == PlaybackState.Playing
-                ? PositionTimerPlayingIntervalMs 
+                ? PositionTimerPlayingIntervalMs
                 : PositionTimerIdleIntervalMs;
 
             InvokeUI(() => PlaybackStateChanged?.Invoke(this, _playbackState));

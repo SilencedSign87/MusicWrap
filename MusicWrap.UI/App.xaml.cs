@@ -97,6 +97,24 @@ namespace MusicWrap.UI
                     store.Save(library);
                 }
 
+                var playbackSession = Services.GetService<IPlaybackSessionService>();
+                var player = Services.GetService<IMusicPlayerService>();
+                if (playbackSession is not null && player is not null)
+                {
+                    var snapshot = new PlaybackSessionSnapshot
+                    {
+                        QueueTrackIds = player.GetQueue(),
+                        CurrentIndex = player.CurrentQueueIndex,
+                        PositionInSeconds = player.CurrentPosition,
+                        Volume = player.Volume,
+                        RepeatMode = (int)player.RepeatMode,
+                        ContinueMode = (int)player.ContinueMode,
+                        PlaybackState = player.IsPlaying ? 1 : (player.IsPaused ? 2 : 0),
+                    };
+
+                    playbackSession.Save(snapshot);
+                }
+
                 var settings = Services.GetService<IKeyValueStore>();
                 settings?.SaveToDisk();
             }
@@ -117,6 +135,7 @@ namespace MusicWrap.UI
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<IKeyValueStore, KeyValueStore>();
+            services.AddSingleton<IPlaybackSessionService, PlaybackSessionService>();
 
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
@@ -162,6 +181,8 @@ namespace MusicWrap.UI
 
                 _trayIcon = TrayIconManager.GetTrayIcon();
                 _trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
+
+                TryRestorePlaybackSession();
             }
             catch
             {
@@ -172,6 +193,40 @@ namespace MusicWrap.UI
 
                 splash.Close(TimeSpan.FromSeconds(0.5));
                 ShowMain();
+            }
+        }
+
+        private void TryRestorePlaybackSession()
+        {
+            try
+            {
+                var playbackSession = Services.GetService<IPlaybackSessionService>();
+                var player = Services.GetService<IMusicPlayerService>();
+
+                if (playbackSession is null || player is null) return;
+
+                var snapshot = playbackSession.Load();
+                if (snapshot is null || snapshot.QueueTrackIds.Length == 0) return;
+
+                var library = Services.GetService<MusicLibrary>();
+                if (library is null) return;
+
+                var validIds = new HashSet<int>(library.Tracks.Select(t => t.Id));
+                var queue = snapshot.QueueTrackIds.Where(id => validIds.Contains(id)).ToArray();
+                if (queue.Length == 0) return;
+
+                player.SetQueue(queue, false);
+
+                int index = snapshot.CurrentIndex;
+                if (index < 0 || index >= queue.Length)
+                    index = 0;
+
+                player.SetSilentIndex(index);
+                player.Pause();
+            }
+            catch
+            {
+
             }
         }
 
