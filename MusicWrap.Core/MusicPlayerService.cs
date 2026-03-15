@@ -110,6 +110,8 @@ namespace MusicWrap.Core
             }
         }
 
+        // States
+
         public bool IsPlaying => _playbackState == PlaybackState.Playing;
         public bool IsPaused => _playbackState == PlaybackState.Paused;
         public double CurrentPosition => _currentStream != 0 ? _audioEngine.GetMixerPosition(_currentStream) : 0.0;
@@ -117,6 +119,8 @@ namespace MusicWrap.Core
 
         private const double PositionTimerPlayingIntervalMs = 50;
         private const double PositionTimerIdleIntervalMs = 500;
+
+        // Waveform
 
         private const int WaveformDataPoints = 2000;
         private readonly Dictionary<int, float[]> _waveformCache = [];
@@ -272,7 +276,10 @@ namespace MusicWrap.Core
             if(_audioEngine.SetPosition(_currentStream, seconds))
             {
                 var target = Math.Clamp(seconds, 0.0, Duration);
-                _suppressPositionUntilUtc = DateTime.UtcNow.AddMilliseconds(120);
+
+                int latencyMs = _audioEngine.GetDeviceLatencyMs();
+                int suppressMs = Math.Clamp(latencyMs*2 + 40 , 250, 900); 
+                _suppressPositionUntilUtc = DateTime.UtcNow.AddMilliseconds(suppressMs);
 
                 //var pos = _audioEngine.GetMixerPosition(_currentStream);
                 InvokeUI(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek

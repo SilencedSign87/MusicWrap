@@ -17,6 +17,11 @@ namespace MusicWrap.Core
         {
             if (_isInitialized)
                 return true;
+
+            // Configure buffer
+            Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_BUFFER, 90);
+            Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_UPDATEPERIOD, 5);
+
             _isInitialized = Bass.BASS_Init(deviceIndex, sampleRate, BASSInit.BASS_DEVICE_DEFAULT, IntPtr.Zero);
             return _isInitialized;
         }

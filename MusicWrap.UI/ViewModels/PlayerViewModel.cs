@@ -28,6 +28,9 @@ namespace MusicWrap.UI.ViewModels
 
         private double? _pendingSeekTarget = null;
         private DateTime _pendingSeekUntilUtc = DateTime.MinValue;
+        private const double SeekConfirmToleranceSeconds = 0.12;
+        private static readonly TimeSpan SeekGuardWindow = TimeSpan.FromMilliseconds(900);
+        private static readonly TimeSpan SeekFallbackUnlock = TimeSpan.FromMilliseconds(1300);
 
         [ObservableProperty]
         private bool isPlaying = false;
@@ -137,7 +140,7 @@ namespace MusicWrap.UI.ViewModels
 
         private void _playerService_WaveformDataChanged(object? sender, float[] e)
         {
-            Waveform = e.Length == 0 ? Array.Empty<float>() : [..e];
+            Waveform = e.Length == 0 ? Array.Empty<float>() : [.. e];
         }
 
         [RelayCommand]
@@ -180,18 +183,32 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void EndSeeking(double position)
         {
-            _playerService.Seek(position);
+            var target = Math.Clamp(position, 0, Duration > 0 ? Duration : position);
 
-            _lastEnginePosition = position;
+            _pendingSeekTarget = target;
+            _pendingSeekUntilUtc = DateTime.UtcNow.Add(SeekGuardWindow);
+
+            _lastEnginePosition = target;
             _lastEnginePositionAtUTC = DateTime.UtcNow;
 
-            _pendingSeekTarget = position;
-            _pendingSeekUntilUtc = DateTime.UtcNow.AddMilliseconds(200);
+            CurrentPosition = target;
+            UpdateFormattedPosition(target);
 
-            CurrentPosition = position;
-            UpdateFormattedPosition(position);
-            //FormattedPosition = FormatTime(position);
-            _isSeekingPosition = false;
+            _isSeekingPosition = true; // keep lock until confirmend by the engine
+
+            _playerService.Seek(target);
+
+            //_playerService.Seek(position);
+
+            //_lastEnginePosition = position;
+            //_lastEnginePositionAtUTC = DateTime.UtcNow;
+
+            //_pendingSeekTarget = position;
+            //_pendingSeekUntilUtc = DateTime.UtcNow.AddMilliseconds(200);
+
+            //CurrentPosition = position;
+            //UpdateFormattedPosition(position);
+            //_isSeekingPosition = false;
         }
         [RelayCommand]
         private void CicleRepeatMode()
@@ -271,17 +288,34 @@ namespace MusicWrap.UI.ViewModels
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                var now = DateTime.UtcNow;
+
                 if (_pendingSeekTarget.HasValue)
                 {
-                    if (DateTime.UtcNow<= _pendingSeekUntilUtc && Math.Abs(position-_pendingSeekTarget.Value) > 0.15)
+                    var target = _pendingSeekTarget.Value;
+                    var delta = Math.Abs(position - target);
+
+                    if (delta <= SeekConfirmToleranceSeconds) // seek is close
                     {
-                        return; // we already have a seek in progress
+                        // Confirmed seek
+                        _pendingSeekTarget = null;
+                        _isSeekingPosition = false;
+                    }else if (now<=_pendingSeekUntilUtc) // incoherent seek
+                    {
+                        return;
                     }
-                    _pendingSeekTarget = null;
+                    else if (position < target - 0.20 && now <=_pendingSeekUntilUtc - SeekFallbackUnlock)
+                    {
+                        return;
+                    }else
+                    {
+                        _pendingSeekTarget = null;
+                        _isSeekingPosition=false;
+                    }
                 }
 
                 _lastEnginePosition = position;
-                _lastEnginePositionAtUTC = DateTime.UtcNow;
+                _lastEnginePositionAtUTC = now;
 
                 if (!_isSeekingPosition)
                 {
@@ -390,7 +424,7 @@ namespace MusicWrap.UI.ViewModels
             if (predicted < 0) predicted = 0;
             if (predicted > Duration) predicted = Duration;
 
-            if (Math.Abs(predicted - CurrentPosition ) >= 0.01)
+            if (Math.Abs(predicted - CurrentPosition) >= 0.01)
             {
                 CurrentPosition = predicted;
                 UpdateFormattedPosition(predicted);

@@ -110,11 +110,11 @@
                     </Grid>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button x:Name="MoreButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="More">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe710;" FontSize="12"/>
+                        <Button x:Name="MoreButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Search in library" Click="MoreButton_Click">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE721;" FontSize="12"/>
                         </Button>
-                        <Button x:Name="RepeadButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Repeat">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8ee;" FontSize="12"/>
+                        <Button x:Name="RepeadButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="12"/>
                         </Button>
                         <Button x:Name="PrevButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Previous track"
                             Command="{Binding PreviousCommand}"
@@ -131,8 +131,8 @@
                             >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="12"/>
                         </Button>
-                        <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Shuffle">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8b1;" FontSize="12"/>
+                        <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding DjButtonIcon}" FontSize="12"/>
                         </Button>
                         <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Volume">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe767;" FontSize="12"/>

@@ -96,5 +96,10 @@ namespace MusicWrap.UI.Windows
                 _viewModel.EndSeekingCommand.Execute(e);
             }
         }
+
+        private void MoreButton_Click(object sender, RoutedEventArgs e)
+        {
+            // TODO: launch window to browse the library
+        }
     }
 }
