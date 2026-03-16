@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Pages.Settings;
 using MusicWrap.UI.ViewModels.Settings;
 using System;
@@ -20,6 +21,7 @@ namespace MusicWrap.UI.Windows
     /// </summary>
     public partial class SettingsWindow : Window
     {
+        private string currentTab;
         private SettingsIndexViewModel viewModel => (SettingsIndexViewModel)DataContext;
         public SettingsWindow()
         {
@@ -40,17 +42,21 @@ namespace MusicWrap.UI.Windows
 
         private void NavigateToPage(string tab)
         {
-            Page page = tab switch
+            if (tab == currentTab)
+                return;
+
+            currentTab = tab;
+
+            UserControl newControl = tab switch
             {
                 "general" => new SettingsGeneralPage(),
                 "library" => new SettingsDirectoriesManagerPage(),
+                "player" => new DevicePage(),
+                "about" => new AboutPage(),
                 _ => new SettingsGeneralPage()
             };
 
-            if (SettingsFrame.Content is Page currentPage && currentPage.GetType() == page.GetType())
-                return;
-
-            SettingsFrame.Navigate(page);
+            SettingsContentControl.Content = newControl;
         }
 
         protected override void OnClosed(EventArgs e)

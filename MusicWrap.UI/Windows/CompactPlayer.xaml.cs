@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Xml.Serialization;
 
 namespace MusicWrap.UI.Windows
 {
@@ -20,14 +21,22 @@ namespace MusicWrap.UI.Windows
     public partial class CompactPlayer : Window
     {
         private PlayerViewModel? _viewModel;
-        private bool _isUserSeeking = false;
         private bool _isQueueOpen = false;
-        
+        private const int _playerWidth = 275;
+        private const int _compactHeight = 370;
+        private const int _expandedHeight = 700;
+
         public CompactPlayer()
         {
             InitializeComponent();
+            InitializeWindowSize();
             _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
             DataContext = _viewModel;
+        }
+        private void InitializeWindowSize()
+        {
+            Width = _playerWidth;
+            Height = _compactHeight;
         }
 
         private void HandleOpenMainPlayer(object sender, RoutedEventArgs e)
@@ -40,15 +49,15 @@ namespace MusicWrap.UI.Windows
             _isQueueOpen = !_isQueueOpen;
             if (_isQueueOpen)
             {
-                Height = 700;
+                Height = _expandedHeight;
                 QueuePanel.Visibility = Visibility.Visible;
-                QueuePanel.Height = 700 - 390;
+                QueuePanel.Height = _expandedHeight - _compactHeight;
                 QueueFontIcon.Text = "\ue70e";
             }
             else
             {
                 QueuePanel.Visibility = Visibility.Collapsed;
-                Height = 390;
+                Height = _compactHeight;
                 QueueFontIcon.Text = "\ue70d";
             }
         }

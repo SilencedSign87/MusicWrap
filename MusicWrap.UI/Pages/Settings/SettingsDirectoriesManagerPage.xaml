@@ -1,4 +1,4 @@
-﻿<Page x:Class="MusicWrap.UI.Pages.Settings.SettingsDirectoriesManagerPage"
+﻿<UserControl x:Class="MusicWrap.UI.Pages.Settings.SettingsDirectoriesManagerPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -10,11 +10,10 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       d:DataContext="{d:DesignInstance Type=vm:DirectoriesManagerViewModel}"
-      Foreground="White"
-      Title="SettingsDirectoriesManagerPage">
-    <Page.Resources>
+      Foreground="White">
+    <UserControl.Resources>
         <converters:DateTimeToDisplayConverter x:Key="DateTimeToDisplayConverter" />
-    </Page.Resources>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition/>
@@ -127,4 +126,4 @@
         </StackPanel>
 
     </Grid>
-</Page>
+</UserControl>

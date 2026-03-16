@@ -9,7 +9,7 @@
              d:DataContext="{d:DesignInstance Type=vm:DeviceViewModel}"
              d:Background="#1fffffff"
              d:DesignHeight="500" d:DesignWidth="300">
-    <Grid>
+    <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>

@@ -121,11 +121,12 @@ namespace MusicWrap.UI.ViewModels
             _playerService.TrackChanged += OnTrackChanged;
             _playerService.PositionChanged += OnPositionChanged;
             _playerService.WaveformDataChanged += _playerService_WaveformDataChanged;
-            Waveform = [];
 
             // Load initial states
             UpdateDJButtonIcon();
             UpdateRepeatModeIcon();
+            Waveform = [];
+            Volume = _playerService.Volume;
 
             _uiPositionTmer = new DispatcherTimer(DispatcherPriority.Render)
             {

@@ -101,6 +101,8 @@ namespace MusicWrap.UI
                 var player = Services.GetService<IMusicPlayerService>();
                 if (playbackSession is not null && player is not null)
                 {
+                    var isCompactLastSession = CurrentWindow is CompactPlayer;
+
                     var snapshot = new PlaybackSessionSnapshot
                     {
                         QueueTrackIds = player.GetQueue(),
@@ -110,6 +112,7 @@ namespace MusicWrap.UI
                         RepeatMode = (int)player.RepeatMode,
                         ContinueMode = (int)player.ContinueMode,
                         PlaybackState = player.IsPlaying ? 1 : (player.IsPaused ? 2 : 0),
+                        PlayerMode = isCompactLastSession ? 1 : 0,
                     };
 
                     playbackSession.Save(snapshot);
@@ -165,6 +168,7 @@ namespace MusicWrap.UI
 
         private async void InitializeServicesAsync(SplashScreen splash)
         {
+            int windowToShow = 0;
             try
             {
                 // Force load
@@ -182,7 +186,7 @@ namespace MusicWrap.UI
                 _trayIcon = TrayIconManager.GetTrayIcon();
                 _trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
 
-                TryRestorePlaybackSession();
+                windowToShow = TryRestorePlaybackSession();
             }
             catch
             {
@@ -192,41 +196,78 @@ namespace MusicWrap.UI
             {
 
                 splash.Close(TimeSpan.FromSeconds(0.5));
-                ShowMain();
+                if (windowToShow == 1)
+                {
+                    ShowCompactPlayer();
+                }
+                else
+                {
+                    ShowMain();
+
+                }
             }
         }
 
-        private void TryRestorePlaybackSession()
+        private int TryRestorePlaybackSession()
         {
             try
             {
+                int playermode = 0;
                 var playbackSession = Services.GetService<IPlaybackSessionService>();
                 var player = Services.GetService<IMusicPlayerService>();
 
-                if (playbackSession is null || player is null) return;
+                if (playbackSession is null || player is null) return playermode;
 
                 var snapshot = playbackSession.Load();
-                if (snapshot is null || snapshot.QueueTrackIds.Length == 0) return;
+
+                if (snapshot is null || snapshot.QueueTrackIds.Length == 0) return 0;
+
+                playermode = snapshot.PlayerMode;
 
                 var library = Services.GetService<MusicLibrary>();
-                if (library is null) return;
+                if (library is null) return playermode;
 
                 var validIds = new HashSet<int>(library.Tracks.Select(t => t.Id));
                 var queue = snapshot.QueueTrackIds.Where(id => validIds.Contains(id)).ToArray();
-                if (queue.Length == 0) return;
+                if (queue.Length == 0) return playermode;
 
                 player.SetQueue(queue, false);
+
+                player.RepeatMode = (RepeatMode)snapshot.RepeatMode;
+                player.ContinueMode = (ContinueMode)snapshot.ContinueMode;
 
                 int index = snapshot.CurrentIndex;
                 if (index < 0 || index >= queue.Length)
                     index = 0;
 
-                player.SetSilentIndex(index);
-                player.Pause();
+                player.SetVolume(0);
+                player.PlayIndex(index);
+
+                var position = snapshot.PositionInSeconds;
+                position = Math.Clamp(position, 0, player.Duration);
+
+                player.Seek(position);
+
+                switch (snapshot.PlaybackState)
+                {
+                    case 0:// stopped
+                        player.Stop();
+                        break;
+                    case 1: // playing
+                        player.Play();
+                        break;
+                    case 2: // paused
+                        player.Pause();
+                        break;
+                }
+
+                player.SetVolume(Math.Clamp(snapshot.Volume, 0f, 1f));
+
+                return playermode;
             }
             catch
             {
-
+                return 0;
             }
         }
 

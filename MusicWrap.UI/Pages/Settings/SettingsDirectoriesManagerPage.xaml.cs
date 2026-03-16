@@ -19,7 +19,7 @@ namespace MusicWrap.UI.Pages.Settings
     /// <summary>
     /// Lógica de interacción para SettingsDirectoriesManagerPage.xaml
     /// </summary>
-    public partial class SettingsDirectoriesManagerPage : Page
+    public partial class SettingsDirectoriesManagerPage : UserControl
     {
         public DirectoriesManagerViewModel vm;
         public SettingsDirectoriesManagerPage()

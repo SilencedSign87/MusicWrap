@@ -64,8 +64,9 @@ namespace MusicWrap.Data.Services
         [Key(4)] public int RepeatMode { get; set; } = 0;
         [Key(5)] public int ContinueMode { get; set; } = 0;
         [Key(6)] public int PlaybackState { get; set; } = 0; // Stopped/Playing/Paused
+        [Key(7)] public int PlayerMode { get; set; } = 0; // 0:Normal/1:Compact
 
-        [Key(7)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
+        [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
 
     }
 }

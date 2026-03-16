@@ -209,7 +209,7 @@
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" MinHeight="40"/>
-                        <RowDefinition Height="auto"/>
+                        <!--<RowDefinition Height="auto"/>-->
                         <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
@@ -235,7 +235,7 @@
 
                     </Grid>
 
-                    <Expander Grid.Row="1" ExpandDirection="Up" x:Name="DeviceExpander">
+                    <!--<Expander Grid.Row="1" ExpandDirection="Up" x:Name="DeviceExpander">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xe7f5;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
@@ -247,9 +247,9 @@
                                 <mw:DevicePage />
                             </ScrollViewer>
                         </Expander.Content>
-                    </Expander>
+                    </Expander>-->
 
-                    <Expander Grid.Row="2" ExpandDirection="Up" x:Name="TrackExpander">
+                    <Expander Grid.Row="1" ExpandDirection="Up" x:Name="TrackExpander">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />

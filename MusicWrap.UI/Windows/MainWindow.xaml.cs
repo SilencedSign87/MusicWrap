@@ -51,13 +51,13 @@ namespace MusicWrap.UI.Windows
             PlayPauseButton.ImageSource = _playIcon;
 
             TrackExpander.Expanded += TrackExpander_Expanded;
-            DeviceExpander.Expanded += DeviceExpander_Expanded;
+            //DeviceExpander.Expanded += DeviceExpander_Expanded;
         }
 
         private void TrackExpander_Expanded(object sender, RoutedEventArgs e)
         {
-            if (DeviceExpander.IsExpanded)
-                DeviceExpander.IsExpanded = false;
+            //if (DeviceExpander.IsExpanded)
+            //    DeviceExpander.IsExpanded = false;
         }
 
         private void DeviceExpander_Expanded(object sender, RoutedEventArgs e)

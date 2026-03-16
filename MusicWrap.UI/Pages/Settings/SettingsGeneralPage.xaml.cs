@@ -13,10 +13,7 @@ using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Pages.Settings
 {
-    /// <summary>
-    /// Lógica de interacción para SettingsGeneralPage.xaml
-    /// </summary>
-    public partial class SettingsGeneralPage : Page
+    public partial class SettingsGeneralPage : UserControl
     {
         public SettingsGeneralPage()
         {
