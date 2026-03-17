@@ -100,11 +100,7 @@ namespace MusicWrap.UI.ViewModels
         private bool _isSeekingPosition = false;
         private string ArtworkPath = "";
 
-        private static readonly string CoversBasePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "MusicWrap",
-            "covers"
-        );
+        private static readonly string CoversBasePath = MusicWrapDirectories.CoverDirectory;
 
         public void OpenArtworkOnDefaultApp()
         {

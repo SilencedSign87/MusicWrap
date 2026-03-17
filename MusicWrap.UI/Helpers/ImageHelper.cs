@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MusicWrap.Data;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -9,11 +10,7 @@ namespace MusicWrap.UI.Helpers
     public static class ImageHelper
     {
         private static readonly Dictionary<int, BitmapImage?> _defaultAlbumImages = new();
-        public static readonly string BaseCoverPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MusicWrap",
-                "covers"
-                );
+        public static readonly string BaseCoverPath = MusicWrapDirectories.CoverDirectory;
         public static BitmapImage? GetDefaultAlbumImage(int size = 64)
         {
             if (!_defaultAlbumImages.TryGetValue(size, out var image))

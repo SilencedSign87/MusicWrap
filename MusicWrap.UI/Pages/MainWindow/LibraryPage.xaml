@@ -7,6 +7,7 @@
          xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
+         xmlns:pages="clr-namespace:MusicWrap.UI.Pages"
          xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
          mc:Ignorable="d" 
@@ -242,9 +243,11 @@
             <!-- Show albums grid for all view modes -->
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           CanContentScroll="True"
-                          HorizontalScrollBarVisibility="Disabled">
+                          HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding IsAllAlbumsSelected, Converter={StaticResource InverseBoolConverter}, ConverterParameter=Visibility}"
+                          >
                 <Grid Margin="16" x:Name="AlbumWrapper">
-                     <!--Albums WrapPanel with dynamic track list insertion--> 
+                    <!--Albums WrapPanel with dynamic track list insertion-->
                     <ItemsControl ItemsSource="{Binding AlbumsForSelectedEntry}"
                                   ItemTemplateSelector="{StaticResource AlbumItemSelector}"
                                   x:Name="AlbumsItemsControl"
@@ -258,6 +261,7 @@
                     </ItemsControl>
                 </Grid>
             </ScrollViewer>
+            <pages:LibraryExplorerPage Visibility="{Binding IsAllAlbumsSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         </Grid>
     </Grid>
 </UserControl>

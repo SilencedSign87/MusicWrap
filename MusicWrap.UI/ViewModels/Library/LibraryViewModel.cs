@@ -22,26 +22,21 @@ namespace MusicWrap.UI.ViewModels.Library
 {
     public partial class LibraryViewModel : ObservableObject
     {
-        [ObservableProperty]
-        private string listBy = "Artist"; // Album, Artist, Genre, Decade
+        [ObservableProperty] private string listBy = "Artist"; // Album, Artist, Genre, Decade
 
-        [ObservableProperty]
-        private bool ascending = true;
+        [ObservableProperty] private bool isAllAlbumsSelected = false;
 
-        [ObservableProperty]
-        private IReadOnlyList<LibraryEntry> entries = [];
+        [ObservableProperty] private bool ascending = true;
 
-        [ObservableProperty]
-        private CollectionViewSource entriesViewSource = new();
+        [ObservableProperty] private IReadOnlyList<LibraryEntry> entries = [];
 
-        [ObservableProperty]
-        private LibraryEntry? selectedEntry;
+        [ObservableProperty] private CollectionViewSource entriesViewSource = new();
 
-        [ObservableProperty]
-        private List<object> albumsForSelectedEntry = [];
+        [ObservableProperty] private LibraryEntry? selectedEntry;
 
-        [ObservableProperty]
-        private int? expandedAlbumId = null;
+        [ObservableProperty] private List<object> albumsForSelectedEntry = [];
+
+        [ObservableProperty] private int? expandedAlbumId = null;
 
         private CancellationTokenSource? _imageCts;
 
@@ -52,11 +47,7 @@ namespace MusicWrap.UI.ViewModels.Library
         private readonly ILibraryCacheService _LibraryCache;
         private readonly IMusicPlayerService _player;
 
-        private static readonly string CoversBasePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "MusicWrap",
-            "covers"
-            );
+        private static readonly string CoversBasePath = MusicWrapDirectories.CoverDirectory;
 
         public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, IKeyValueStore settings, IMusicPlayerService player)
         {
@@ -94,7 +85,9 @@ namespace MusicWrap.UI.ViewModels.Library
         partial void OnSelectedEntryChanged(LibraryEntry? value)
         {
             _imageCts?.Cancel(); // cancel previous image loading if any
+            _imageCts = null;
 
+            IsAllAlbumsSelected = false;
             if (value == null)
             {
                 // clear previous images
@@ -103,6 +96,13 @@ namespace MusicWrap.UI.ViewModels.Library
                     item.CoverImage = null;
                 }
 
+                AlbumsForSelectedEntry = [];
+                return;
+            }
+            if (value.Id == LibraryCacheService.AllEntryId && value.Type == LibraryCacheService.AllEntryType)
+            {
+                IsAllAlbumsSelected= true;
+                CollapseAlbum();
                 AlbumsForSelectedEntry = [];
                 return;
             }
@@ -198,6 +198,7 @@ namespace MusicWrap.UI.ViewModels.Library
             Dispatcher.CurrentDispatcher.InvokeAsync(() =>
             {
                 EntriesViewSource.GroupDescriptions.Add(new PropertyGroupDescription("GroupKey"));
+                EntriesViewSource.SortDescriptions.Add(new SortDescription("GroupKey", ListSortDirection.Ascending));
                 EntriesViewSource.SortDescriptions.Add(new SortDescription("Title", Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
             }, DispatcherPriority.Render);
         }
@@ -328,7 +329,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
             ExpandedAlbumId = null;
         }
-     
+
         public MusicLibrary GetLibrary() => _library;
 
         public class AlbumData : INotifyPropertyChanged

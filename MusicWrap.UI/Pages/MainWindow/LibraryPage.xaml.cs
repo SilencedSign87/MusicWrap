@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
 using MusicWrap.Data;
+using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels.Library;
 using System;
 using System.Collections.Generic;
@@ -46,8 +47,15 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void HandleSelectionChanged()
         {
-            if (vm.SelectedEntry == null)
+            var selected = vm.SelectedEntry;
+            if (selected == null)
             {
+                vm.CollapseAlbum();
+                return;
+            }
+            bool isAllEntry = selected.Id == LibraryCacheService.AllEntryId && string.Equals(selected.Type == LibraryCacheService.AllEntryType, StringComparison.OrdinalIgnoreCase);
+
+            if (isAllEntry) {
                 vm.CollapseAlbum();
                 return;
             }

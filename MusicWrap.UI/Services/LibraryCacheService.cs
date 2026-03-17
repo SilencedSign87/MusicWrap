@@ -46,16 +46,15 @@ namespace MusicWrap.UI.Services
         private Dictionary<int, string> _artistNamesByAlbumId = [];
         private Dictionary<int, string> _artistNameById = [];
 
+        public const string AllEntryType = "all";
+        public const int AllEntryId = -1;
+
         private Dictionary<int, CoverAsset> _coverLookUp = [];
         public LibraryCacheService(MusicLibrary library, IKeyValueStore settings)
         {
             _library = library;
             _settings = settings;
-            _coversPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "MusicWrap",
-                "covers"
-                );
+            _coversPath = MusicWrapDirectories.CoverDirectory;
 
             BuildIndexes();
         }
@@ -158,6 +157,26 @@ namespace MusicWrap.UI.Services
                     _ => _albumCache = ConstructAlbumEntries(),
                 };
             });
+            entries = EnsureAllLibraryAlbum(entries);
+            
+            switch(viewType){
+                case "Album":
+                    _albumCache = entries;
+                    break;
+                case "Artist":
+                    _artistCache = entries;
+                    break;
+                case "Genre":
+                    _genreCache = entries;
+                    break;
+                case "Decade":
+                    _decadeCache = entries;
+                    break;
+                default:
+                    _albumCache = entries;
+                    break;
+            }
+
             SaveUserPreference(viewType, ascending);
             return entries;
         }
@@ -353,7 +372,7 @@ namespace MusicWrap.UI.Services
             var entries = new LibraryEntry[_albumIdsByDecade.Count];
             int w = 0;
 
-            foreach (var decadeKvp in _albumIdsByDecade.OrderBy(x=>x.Key))
+            foreach (var decadeKvp in _albumIdsByDecade.OrderBy(x => x.Key))
             {
                 var decade = decadeKvp.Key;
                 var albums = decadeKvp.Value;
@@ -484,6 +503,52 @@ namespace MusicWrap.UI.Services
             }
 
             return _albumIdsByDecade.TryGetValue(decade, out albumIds);
+        }
+
+        private static LibraryEntry CreateAllAlbumsEntry()
+        {
+            return new LibraryEntry
+            {
+                Id = AllEntryId,
+                Type = AllEntryType,
+                ImagePath = null,
+                Title = "All Albums",
+                Description = "Search across your library",
+                GroupKey = "",
+            };
+        }
+
+        private static LibraryEntry[] EnsureAllLibraryAlbum(LibraryEntry[] entries)
+        {
+            if (entries.Length > 0 && entries[0].Id == AllEntryId && entries[0].Type == AllEntryType)
+                return entries;
+
+            int existingIndex = -1;
+            for (int i = 0;  i <entries.Length; i++)
+            {
+                var e = entries[i];
+                if (e.Id == AllEntryId && e.Type == AllEntryType)
+                {
+                    existingIndex = i;
+                    break;
+                }
+            }
+            if (existingIndex == -1)
+            {
+                var result = new LibraryEntry[entries.Length + 1];
+                result[0] = CreateAllAlbumsEntry();
+                Array.Copy(entries, 0, result, 1, entries.Length);
+                return result;
+            }
+            var reordered = new LibraryEntry[entries.Length];
+            reordered[0] = entries[existingIndex];
+            int w = 1;
+            for (int i = 0; i < entries.Length; i++)
+            {
+                if (i == existingIndex) continue;
+                reordered[w++] = entries[i];
+            }
+            return reordered;
         }
 
     }

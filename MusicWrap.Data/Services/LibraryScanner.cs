@@ -1,4 +1,5 @@
-﻿using MusicWrap.Data.Library;
+﻿using MessagePack.Formatters;
+using MusicWrap.Data.Library;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,7 +23,10 @@ namespace MusicWrap.Data.Services
         private readonly ILibraryStore _store;
         private readonly ILibraryIndexer _indexer;
 
-        private static readonly string[] SupportedExtensions = [".mp3", ".flac", ".wav", ".aac", ".ogg", ".opus", ".m4a"];
+        private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".mp3", ".flac", ".wav", ".aac", ".ogg", ".opus", ".m4a"
+        };
 
         private List<ScanDirectory> Directories
         {
@@ -137,42 +141,91 @@ namespace MusicWrap.Data.Services
         {
             if (paths is null || paths.Length == 0) return;
 
-            var totalFiles = paths.Length;
-            var processedFiles = 0;
+            var cts = cancellationToken ?? CancellationToken.None;
 
-            progress?.Report(new ScanProgress
+            await Task.Run(() => // delegate to background thread for IO-bound work
             {
-                TotalFiles = totalFiles,
-                FilesProcessed = processedFiles,
-                CurrentFile = string.Empty
-            });
 
-            foreach (var filePath in paths)
-            {
-                cancellationToken?.ThrowIfCancellationRequested();
-                try
+
+                // Fingerprinting
+                var trackByFingerprint = new Dictionary<(long size, long ticks), Track>(_library.Tracks.Count);
+                for (int i = 0; i < _library.Tracks.Count; i++)
                 {
-                    progress?.Report(new ScanProgress
+                    var t = _library.Tracks[i];
+                    trackByFingerprint[(t.FileSize, t.LastWriteTime)] = t;
+                }
+
+                var totalFiles = paths.Length;
+                var processedFiles = 0;
+
+                progress?.Report(new ScanProgress
+                {
+                    TotalFiles = totalFiles,
+                    FilesProcessed = processedFiles,
+                    CurrentFile = string.Empty
+                });
+
+
+                var lastProgressAt = Environment.TickCount64;
+                const int progressIntervalMs = 250;
+                const int progressEveryNFiles = 100;
+
+                for (int i = 0; i < paths.Length; i++)
+                {
+                    cancellationToken?.ThrowIfCancellationRequested();
+                    string filePath = paths[i];
+
+                    try
                     {
-                        TotalFiles = totalFiles,
-                        FilesProcessed = processedFiles,
-                        CurrentFile = filePath
-                    });
-                    await ProcessAudioFile(filePath);
-                    processedFiles++;
+                        var fileInfo = new FileInfo(filePath);
+                        long size = fileInfo.Length;
+                        long ticks = fileInfo.LastWriteTimeUtc.Ticks;
+                        var key = (size, ticks);
+
+                        if (trackByFingerprint.TryGetValue(key, out var existingTrack)) // file exists in the library
+                        {
+                            if (!string.Equals(existingTrack.Path, filePath, StringComparison.OrdinalIgnoreCase))
+                                existingTrack.Path = filePath; // Update path if it has changed
+                        }
+                        else
+                        {
+                            _indexer.IndexFileAsync(filePath);
+
+                            if (_library.Tracks.Count > 0)
+                            {
+                                var last = _library.Tracks[^1];
+                                trackByFingerprint[(last.FileSize, last.LastWriteTime)] = last;
+                            }
+                        }
+
+                        processedFiles++;
+
+                        bool byCount = (processedFiles % progressEveryNFiles) == 0;
+                        bool byTime = (Environment.TickCount64 - lastProgressAt) >= progressIntervalMs;
+                        if (byCount || byTime)
+                        {
+                            progress?.Report(new ScanProgress
+                            {
+                                TotalFiles = totalFiles,
+                                FilesProcessed = processedFiles,
+                                CurrentFile = filePath
+                            });
+                            lastProgressAt = Environment.TickCount64;
+                        }
+                    }
+                    catch
+                    {
+
+                    }
                 }
-                catch
+
+                progress?.Report(new ScanProgress
                 {
-
-                }
-            }
-
-            progress?.Report(new ScanProgress
-            {
-                TotalFiles = totalFiles,
-                FilesProcessed = processedFiles,
-                CurrentFile = string.Empty
-            });
+                    TotalFiles = totalFiles,
+                    FilesProcessed = processedFiles,
+                    CurrentFile = string.Empty
+                });
+            }, cts);
         }
 
         #region Internal
@@ -182,7 +235,7 @@ namespace MusicWrap.Data.Services
 
             try
             {
-                return [.. Directory.GetFiles(path, "*.*", searchOption).Where(f => SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))];
+                return [.. Directory.GetFiles(path, "*.*", searchOption).Where(f => SupportedExtensions.Contains(Path.GetExtension(f)))];
 
             }
             catch
@@ -190,14 +243,6 @@ namespace MusicWrap.Data.Services
                 return [];
             }
 
-        }
-
-        private Task ProcessAudioFile(string filepath)
-        {
-            return Task.Run(() =>
-            {
-                _indexer.IndexFileAsync(filepath);
-            });
         }
         #endregion
     }

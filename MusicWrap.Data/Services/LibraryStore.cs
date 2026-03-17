@@ -93,25 +93,28 @@ namespace MusicWrap.Data.Services
 
     public static class AppPaths
     {
-        public static readonly string Root = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MusicWrap"
-            );
-        public static readonly string LibraryFile = Path.Combine(Root, "library.dat");
-        public static readonly string BackupFile = Path.Combine(Root, "library.bak");
+        public static readonly string Root = MusicWrapDirectories.ApplicationDirectory;
 
-        public static readonly string SettingsFile = Path.Combine(Root, "settings.dat");
-        public static readonly string SettingsBackupFile = Path.Combine(Root, "settings.bak");
+        public static readonly string LibraryFile = Path.Combine(MusicWrapDirectories.LibraryDirectory, "library.dat");
+        public static readonly string BackupFile = Path.Combine(MusicWrapDirectories.LibraryDirectory, "library.bak");
 
-        public static readonly string CoversDir = Path.Combine(Root, "covers");
-        public static readonly string CacheDir = Path.Combine(Root, "cache");
-        public static readonly string LogsDir = Path.Combine(Root, "logs");
-        public static readonly string TempDir = Path.Combine(Root, "temp");
+        public static readonly string SettingsFile = Path.Combine(MusicWrapDirectories.SettingsDirectory, "settings.dat");
+        public static readonly string SettingsBackupFile = Path.Combine(MusicWrapDirectories.SettingsDirectory, "settings.bak");
+
+        public static readonly string CoversDir = MusicWrapDirectories.CoverDirectory;
+        public static readonly string CacheDir = MusicWrapDirectories.CacheDirectory;
+        public static readonly string LogsDir = MusicWrapDirectories.LogsDirectory;
+        public static readonly string TempDir = MusicWrapDirectories.TemporaryDirectory;
 
         static AppPaths()
         {
             Directory.CreateDirectory(Root);
             Directory.CreateDirectory(CoversDir);
+            Directory.CreateDirectory(CacheDir);
+            Directory.CreateDirectory(LogsDir);
+            Directory.CreateDirectory(TempDir);
+            Directory.CreateDirectory(MusicWrapDirectories.LibraryDirectory);
+            Directory.CreateDirectory(MusicWrapDirectories.SettingsDirectory);
         }
-
     }
 }

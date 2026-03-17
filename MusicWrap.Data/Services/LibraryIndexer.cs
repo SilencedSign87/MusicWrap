@@ -40,11 +40,9 @@ namespace MusicWrap.Data.Services
 
         public void IndexFileAsync(string filePath)
         {
-
-            using var tagFile = TagLib.File.Create(filePath);
-
+            var fileInfo = new FileInfo(filePath);
             var LastModifiedUtc = File.GetLastWriteTimeUtc(filePath);
-            var fileSize = new FileInfo(filePath).Length;
+            var fileSize = fileInfo.Length;
 
             // Check if track already exists
             var existingTrack = FindExistingTrack(fileSize, LastModifiedUtc);
@@ -60,6 +58,8 @@ namespace MusicWrap.Data.Services
                 }
                 return;
             }
+
+            using var tagFile = TagLib.File.Create(filePath);
 
             // Genre
             int[] genreIds = [];
