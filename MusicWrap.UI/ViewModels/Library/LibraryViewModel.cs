@@ -29,7 +29,7 @@ namespace MusicWrap.UI.ViewModels.Library
         private bool ascending = true;
 
         [ObservableProperty]
-        private List<LibraryEntry> entries = [];
+        private IReadOnlyList<LibraryEntry> entries = [];
 
         [ObservableProperty]
         private CollectionViewSource entriesViewSource = new();
@@ -45,15 +45,6 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private CancellationTokenSource? _imageCts;
 
-        // Indexes for quick lookup
-        private Dictionary<int, int[]> _albumIdsByArtistId = [];
-        private Dictionary<int, int[]> _albumIdsByGenreId = [];
-        private Dictionary<int, int[]> _albumIdsByDecade = [];
-        private Dictionary<int, int> _trackCountByAlbumId = [];
-        private Dictionary<int, CoverAsset> _coverById = [];
-        private Dictionary<int, string> _artistNameById = [];
-        private Dictionary<int, string> _artistNamesByAlbumId = [];
-        private Dictionary<int, Album> _albumById = [];
 
         // Services
         private readonly MusicLibrary _library;
@@ -78,7 +69,6 @@ namespace MusicWrap.UI.ViewModels.Library
             Ascending = settings.GetValue<bool>("library_list_ascending");
 
             LoadEntries();
-            BuildIndexes();
         }
 
         public bool IsAlbumView => ListBy == "Album";
@@ -107,6 +97,12 @@ namespace MusicWrap.UI.ViewModels.Library
 
             if (value == null)
             {
+                // clear previous images
+                foreach (var item in AlbumsForSelectedEntry.OfType<AlbumData>())
+                {
+                    item.CoverImage = null;
+                }
+
                 AlbumsForSelectedEntry = [];
                 return;
             }
@@ -132,7 +128,6 @@ namespace MusicWrap.UI.ViewModels.Library
 
                 _scanner.ScanAllDirectories(null, null);
                 LoadEntries();
-                BuildIndexes();
             }
         }
 
@@ -149,7 +144,6 @@ namespace MusicWrap.UI.ViewModels.Library
                 var selectedFiles = dialog.FileNames;
                 _scanner.ScanFiles(selectedFiles, null, null);
                 LoadEntries();
-                BuildIndexes();
             }
 
         }
@@ -159,7 +153,6 @@ namespace MusicWrap.UI.ViewModels.Library
         {
             _LibraryCache.InvalidateCache();
             LoadEntries();
-            BuildIndexes();
         }
 
         [RelayCommand]
@@ -194,27 +187,24 @@ namespace MusicWrap.UI.ViewModels.Library
             Debug.WriteLine($"Loaded {entries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
         }
 
-        private void ApplyGrouping(List<LibraryEntry> entries)
+        private void ApplyGrouping(IReadOnlyList<LibraryEntry> entries)
         {
             Entries = entries;
 
             EntriesViewSource = new CollectionViewSource { Source = Entries };
+            EntriesViewSource.GroupDescriptions.Clear();
+            EntriesViewSource.SortDescriptions.Clear();
 
             Dispatcher.CurrentDispatcher.InvokeAsync(() =>
             {
                 EntriesViewSource.GroupDescriptions.Add(new PropertyGroupDescription("GroupKey"));
+                EntriesViewSource.SortDescriptions.Add(new SortDescription("Title", Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
             }, DispatcherPriority.Render);
         }
 
         public void PlayAlbum(int albumId)
         {
-            var allTracks = _library.Tracks
-                .Where(t => t.AlbumId == albumId)
-                .OrderBy(t => t.Disk)
-                .ThenBy(t => t.TrackNumber)
-                .ThenBy(t => t.Title)
-                .Select(t => t.Id)
-                .ToArray();
+            var allTracks = _LibraryCache.GetTrackQueueForAlbum(albumId);
 
             _player.SetQueue(allTracks);
             _player.PlayIndex(0);
@@ -222,67 +212,26 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private void LoadAlbumsForEntry(LibraryEntry entry)
         {
-            int[] albumIds = entry.Type switch
+            var summaries = _LibraryCache.GetAlbumsForEntry(entry);
+
+            var albums = summaries.Select(s => new AlbumData
             {
-                "Album" => [entry.Id],
-                "Artist" => _albumIdsByArtistId.TryGetValue(entry.Id, out var byArtist) ? byArtist : [],
-                "Genre" => _albumIdsByGenreId.TryGetValue(entry.Id, out var byGenre) ? byGenre : [],
-                "Decade" => TryGetDecadeAlbumIds(entry.Title, out var byDecade) ? byDecade : [],
-                _ => []
-            };
+                Id = s.Id,
+                Title = s.Title,
+                Year = s.Year,
+                ArtistNames = s.ArtistNames,
+                ImagePath = s.ImagePath,
+                CoverImage = null, // will be loaded asynchronously
+                DominantColor = s.DominantColorHex,
+                ForegroundColor = s.ForegroundColorHex,
+            }).ToList();
 
-            var albums = new List<AlbumData>();
-            var coverLookup = _library.CoverAssets.ToDictionary(c => c.Id, c => c);
+            AlbumsForSelectedEntry = [.. albums.Cast<object>()];
 
-            foreach (var albumId in albumIds)
-            {
-                var album = _albumById.TryGetValue(albumId, out var alb) ? alb : null;
-                if (album == null) continue;
-
-                var trackCount = _trackCountByAlbumId.TryGetValue(albumId, out var count) ? count : 0;
-                if (trackCount == 0) continue;
-
-                string? imagePath = null;
-
-                string dominantColorHex = "#808080";
-                string foregroundColorHex = "#ffffff";
-
-                if (album.CoverId > 0 && coverLookup.TryGetValue(album.CoverId, out var asset))
-                {
-                    imagePath = Path.Combine(CoversBasePath, asset.FileName);
-                    dominantColorHex = asset.DominantColorHex ?? "#808080";
-                    foregroundColorHex = asset.ForegroundColorHex ?? "#ffffff";
-                }
-
-                var artistNames = _artistNamesByAlbumId.TryGetValue(albumId, out var artist) ? artist : "Unknown Artist";
-
-
-                albums.Add(new AlbumData
-                {
-                    Id = albumId,
-                    Title = album.Title,
-                    Year = album.Year,
-                    ArtistNames = artistNames,
-                    DominantColor = dominantColorHex,
-                    ForegroundColor = foregroundColorHex,
-                    ImagePath = imagePath
-                });
-            }
-
-            AlbumsForSelectedEntry = albums.OrderByDescending(a => a.Year).ThenBy(a => a.Title).Cast<object>().ToList();
             ExpandedAlbumId = null;
-
             _imageCts = new CancellationTokenSource();
 
             _ = LoadCoverImagesAsync(albums, _imageCts.Token);
-        }
-        private bool TryGetDecadeAlbumIds(string decadeTitle, out int[] albumIds)
-        {
-            albumIds = [];
-            if (!int.TryParse(decadeTitle.TrimEnd('s'), out int decade))
-                return false;
-
-            return _albumIdsByDecade.TryGetValue(decade, out albumIds);
         }
         private static async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)
         {
@@ -330,18 +279,6 @@ namespace MusicWrap.UI.ViewModels.Library
             }
             catch (OperationCanceledException) { }
         }
-
-        private List<int> GetAlbumIdsForDecade(string decadeTitle)
-        {
-            if (!int.TryParse(decadeTitle.TrimEnd('s'), out int decade))
-                return [];
-
-            return _library.Albums
-                .Where(a => a.Year >= decade && a.Year < decade + 10)
-                .Select(a => a.Id)
-                .ToList();
-        }
-
         public void ExpandAlbum(int albumId, int currentAvailableWidth = 1000)
         {
             if (ExpandedAlbumId == albumId)
@@ -391,48 +328,15 @@ namespace MusicWrap.UI.ViewModels.Library
 
             ExpandedAlbumId = null;
         }
-        private void BuildIndexes()
-        {
-            _albumById = _library.Albums.ToDictionary(a => a.Id);
-            _coverById = _library.CoverAssets.ToDictionary(c => c.Id, c => c);
-            _artistNameById = _library.Artists.ToDictionary(ar => ar.Id, ar => ar.Name);
-
-            _trackCountByAlbumId = _library.Tracks
-                .GroupBy(t => t.AlbumId)
-                .ToDictionary(g => g.Key, g => g.Count());
-
-            _albumIdsByArtistId = _library.Albums
-                .SelectMany(a => a.ArtistIds.Select(arId => (ArtistId: arId, AlbumId: a.Id)))
-                .GroupBy(x => x.ArtistId)
-                .ToDictionary(g => g.Key, g => g.Select(x => x.AlbumId).ToArray());
-
-            _albumIdsByGenreId = _library.Tracks
-                .SelectMany(t => t.GenreIds.Select(gId => (GenreId: gId, AlbumId: t.AlbumId)))
-                .GroupBy(x => x.GenreId)
-                .ToDictionary(g => g.Key, g => g.Select(x => x.AlbumId).Distinct().ToArray());
-
-            _albumIdsByDecade = _library.Albums
-                .GroupBy(a => (a.Year / 10) * 10)
-                .ToDictionary(g => g.Key, g => g.Select(a => a.Id).ToArray());
-
-            _artistNamesByAlbumId = new Dictionary<int, string>(_library.Albums.Count);
-            foreach (var album in _library.Albums)
-            {
-                var names = album.ArtistIds
-                    .Where(id => _artistNameById.ContainsKey(id))
-                    .Select(id => _artistNameById[id]);
-                _artistNamesByAlbumId[album.Id] = string.Join(", ", names);
-            }
-        }
-
+     
         public MusicLibrary GetLibrary() => _library;
 
         public class AlbumData : INotifyPropertyChanged
         {
             public int Id { get; set; }
-            public string Title { get; set; }
+            public string Title { get; set; } = string.Empty;
             public int Year { get; set; }
-            public string ArtistNames { get; set; }
+            public string ArtistNames { get; set; } = string.Empty;
             public string? ImagePath { get; set; }
             public string DominantColor { get; set; } = "#808080";
             public string ForegroundColor { get; set; } = "#FFFFFF";

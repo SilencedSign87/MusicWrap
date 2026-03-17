@@ -12,8 +12,8 @@ namespace MusicWrap.UI.Converters
     public class PathToImageConverter : IValueConverter
     {
         private const int SmallImageThreshold = 80;
-        private const int SmallCacheLimit = 200;
-        private const int LargeCacheLimit = 50;
+        private const int SmallCacheLimit = 100;
+        private const int LargeCacheLimit = 30;
 
         private static readonly object _cacheLock = new();
 

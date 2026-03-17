@@ -9,44 +9,54 @@
              d:DataContext="{d:DesignInstance Type=vm:DeviceViewModel}"
              d:Background="#1fffffff"
              d:DesignHeight="500" d:DesignWidth="300">
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <StackPanel Margin="16">
         <!-- Current Info -->
-        <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}" Margin="0,0,0,8">
-            <StackPanel  Margin="0,0,0,8" Orientation="Horizontal">
+
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
                 <TextBlock  Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
                 <TextBlock Text="Current device information" VerticalAlignment="Center" />
             </StackPanel>
-        </Border>
+            <Border Grid.Column="1" Padding="8,0,0,0">
+                <Separator VerticalAlignment="Center" />
+            </Border>
+        </Grid>
 
-        <StackPanel Grid.Row="1">
+        <StackPanel Margin="0,0,0,16">
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Current Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis" />
-            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentDeviceName}" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right" />
+            <TextBlock   Text="Current Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis" />
+            <TextBlock   Text="{Binding CurrentDeviceName}" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right" />
 
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="Current Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis"/>
-            <TextBlock Grid.Row="2" Grid.Column="1" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right">
+            <TextBlock  Text="Current Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis"/>
+            <TextBlock  FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right">
                 <Run Text="{Binding CurrentSampleRate}" />
                 <Run Text=" hz" />
             </TextBlock>
 
         </StackPanel>
-        <Border Grid.Row="2" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}" Margin="0,8,0,8">
-            <StackPanel Margin="0,0,0,8" Orientation="Horizontal">
+
+        <Grid  Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
                 <TextBlock  Text="&#xe713;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
                 <TextBlock Text="Device settings" VerticalAlignment="Center" />
             </StackPanel>
-        </Border>
+            <Border Grid.Column="1" Padding="8,0,0,0">
+                <Separator VerticalAlignment="Center" />
+            </Border>
+        </Grid>
         <!-- Settings -->
-        <StackPanel Grid.Row="3">
+        <StackPanel Margin="0,0,0,16">
 
-            <TextBlock Grid.Row="1" Grid.Column="0" Text="Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="1" Grid.Column="1" 
+            <TextBlock Text="Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox
                       Margin="0,0,0,8" 
                       SelectedIndex="{Binding CurrentDeviceIndex}"
                       ItemsSource="{Binding AvailableDevices}"
@@ -59,8 +69,8 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
 
-            <TextBlock Grid.Row="2" Grid.Column="0" Text="Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
-            <ComboBox  Grid.Row="2" Grid.Column="1" SelectedIndex="{Binding CurrentSampleRateIndex}" SelectionChanged="SampleRateChanged" Margin="0,0,0,8" >
+            <TextBlock Text="Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox  SelectedIndex="{Binding CurrentSampleRateIndex}" SelectionChanged="SampleRateChanged" Margin="0,0,0,8" >
                 <ComboBoxItem Tag="auto" Content="Match track sample rate" />
                 <ComboBoxItem Tag="44100" Content="44100 hz" />
                 <ComboBoxItem Tag="48000" Content="48000 hz" />
@@ -70,5 +80,27 @@
                 <ComboBoxItem Tag="192000" Content="192000 hz" />
             </ComboBox>
         </StackPanel>
-    </Grid>
+
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                <TextBlock  Text="&#xE7E8;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="App startup" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Grid.Column="1" Padding="8,0,0,0">
+                <Separator VerticalAlignment="Center" />
+            </Border>
+        </Grid>
+
+        <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
+            <RadioButton GroupName="start"  Content="Resume playing" Margin="8,0" />
+            <RadioButton GroupName="start" Content="Preserve queue and current track" Margin="8,0"/>
+            <RadioButton GroupName="start" Content="Preserve queue" Margin="8,0"/>
+            <RadioButton GroupName="start" Content="Nothing" Margin="8,0"/>
+        </WrapPanel>
+
+    </StackPanel>
 </UserControl>

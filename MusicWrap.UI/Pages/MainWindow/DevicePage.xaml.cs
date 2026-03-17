@@ -33,7 +33,7 @@ namespace MusicWrap.UI.Pages.MainWindow
         private void SampleRateChanged(object sender, SelectionChangedEventArgs e)
         {
 
-            if (!IsLoaded || !_viewModel.IsInitialized) return;
+            if (!_isLoaded || !_viewModel.IsInitialized) return;
             if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
 
             // get index
@@ -46,7 +46,7 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void DeviceChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!IsLoaded || !_viewModel.IsInitialized) return;
+            if (!_isLoaded || !_viewModel.IsInitialized) return;
             if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
 
             if (sender is ComboBox combobox)
