@@ -17,6 +17,10 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string currentSampleRate = "44100";
         [ObservableProperty]
+        private int currentOutputModeIndex = 0;
+        [ObservableProperty]
+        private string currentOutputModeName = "WASAPI Shared";
+        [ObservableProperty]
         private int currentDeviceIndex = 0;
         [ObservableProperty]
         private int currentSampleRateIndex = 0;
@@ -27,6 +31,7 @@ namespace MusicWrap.UI.ViewModels
         private readonly IUserSettingsRepository _userSettingsRepository;
         private readonly UserSettings _userSettings;
         private readonly int[] SampleRates = [-1, 44100, 48000, 88200, 96000, 176400, 192000];
+        private readonly OutputMode[] Outputmodes = [OutputMode.WasapiShared, OutputMode.WasapiExclusive];
         public DeviceViewModel(IMusicPlayerService player, IUserSettingsRepository userSettingsRepository, UserSettings userSettings)
         {
             _player = player;
@@ -49,10 +54,26 @@ namespace MusicWrap.UI.ViewModels
             CurrentSampleRateIndex = srIdx >= 0 ? srIdx : 0;
             CurrentSampleRate = sr > 0 ? sr.ToString() : "Auto";
 
+            var outputMode = _player.CurrentOutputMode;
+            var outIdx = Array.IndexOf(Outputmodes, outputMode);
+            CurrentOutputModeIndex = outIdx >= 0 ? outIdx : 0;
+            CurrentOutputModeName = outputMode == OutputMode.WasapiShared ? "WASAPI Shared" : "WASAPI Exclusive";
+
 
             _player.DeviceIndexChanged += _player_DeviceIndexChanged;
             _player.SampleRateChanged += _player_SampleRateChanged;
+            _player.OutputModeChanged += _player_OutputModeChanged;
             IsInitialized = true;
+        }
+        public void SetCurrentOutputMode(int index)
+        {
+            if (index < 0 || index >= Outputmodes.Length) return;
+            var target = Outputmodes[index];
+            if (target == _player.CurrentOutputMode) return;
+
+            _player.ChangeOutputMode(target);
+            _userSettings.PreferredOutputMode = target;
+            _userSettingsRepository.Save(_userSettings);
         }
 
         public void SetCurrentSampleRate(int index)
@@ -102,6 +123,12 @@ namespace MusicWrap.UI.ViewModels
                 CurrentDeviceIndex = idx;
                 CurrentDeviceName = AvailableDevices[CurrentDeviceIndex].Name;
             }
+        }
+        private void _player_OutputModeChanged(object? sender, OutputMode e)
+        {
+            var idx = Array.IndexOf(Outputmodes, e);
+            CurrentOutputModeIndex = idx >= 0 ? idx : 0;
+            CurrentOutputModeName = e == OutputMode.WasapiShared ? "WASAPI Shared" : "WASAPI Exclusive";
         }
 
         private void LoadDevices()

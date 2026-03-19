@@ -79,28 +79,13 @@
                 <ComboBoxItem Tag="176400" Content="176400 hz" />
                 <ComboBoxItem Tag="192000" Content="192000 hz" />
             </ComboBox>
+
+            <TextBlock Text="Output mode" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox SelectedIndex="{Binding CurrentOutputModeIndex}" SelectionChanged="OutputModeChanged" Margin="0,0,0,8">
+                <ComboBoxItem Tag="wasapi-shared" Content="WASAPI Shared" />
+                <ComboBoxItem Tag="wasapi-exclusive" Content="WASAPI Exclusive" />
+            </ComboBox>
         </StackPanel>
-
-        <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0">
-                <TextBlock  Text="&#xE7E8;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="App startup" VerticalAlignment="Center" />
-            </StackPanel>
-            <Border Grid.Column="1" Padding="8,0,0,0">
-                <Separator VerticalAlignment="Center" />
-            </Border>
-        </Grid>
-
-        <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
-            <RadioButton GroupName="start"  Content="Resume playing" Margin="8,0" />
-            <RadioButton GroupName="start" Content="Preserve queue and current track" Margin="8,0"/>
-            <RadioButton GroupName="start" Content="Preserve queue" Margin="8,0"/>
-            <RadioButton GroupName="start" Content="Nothing" Margin="8,0"/>
-        </WrapPanel>
 
     </StackPanel>
 </UserControl>

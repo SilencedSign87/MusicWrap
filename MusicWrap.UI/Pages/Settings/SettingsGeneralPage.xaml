@@ -6,11 +6,31 @@
       xmlns:local="clr-namespace:MusicWrap.UI.Pages.Settings"
       xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Settings"
       mc:Ignorable="d" 
+             d:Background="#1fffffff"
       d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.DataContext>
         <vm:SettingsGeneralViewModel />
     </UserControl.DataContext>
-    <Grid Margin="8">
-        <TextBlock Text="General Settings" FontSize="24" FontWeight="Bold" Margin="0,0,0,16" Foreground="white"/>
-    </Grid>
+    <StackPanel Margin="16">
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Grid.Column="0">
+                <TextBlock  Text="&#xE7E8;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                <TextBlock Text="App startup" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Grid.Column="1" Padding="8,0,0,0">
+                <Separator VerticalAlignment="Center" />
+            </Border>
+        </Grid>
+
+        <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
+            <RadioButton GroupName="start"  Content="Resume playing" Margin="8,0" />
+            <RadioButton GroupName="start" Content="Preserve queue and current track" Margin="8,0"/>
+            <RadioButton GroupName="start" Content="Preserve queue" Margin="8,0"/>
+            <RadioButton GroupName="start" Content="Nothing" Margin="8,0"/>
+        </WrapPanel>
+    </StackPanel>
 </UserControl>

@@ -16,6 +16,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Reference Include="Un4seen.BassWasapi">
+			<HintPath>Native\x64\Un4seen.BassWasapi.dll</HintPath>
+			<Private>true</Private>
+		</Reference>
+	</ItemGroup>
+	
+	<ItemGroup>
 		<None Update="Native\x64\bass.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>bass.dll</Link>

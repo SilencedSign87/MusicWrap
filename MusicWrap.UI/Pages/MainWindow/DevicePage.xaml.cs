@@ -2,6 +2,7 @@
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -28,7 +29,7 @@ namespace MusicWrap.UI.Pages.MainWindow
             _viewModel = App.Services.GetRequiredService<DeviceViewModel>();
             DataContext = _viewModel;
             Loaded += (_, _) => _isLoaded = true;
-        }   
+        }
 
         private void SampleRateChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -55,6 +56,17 @@ namespace MusicWrap.UI.Pages.MainWindow
 
                 _viewModel.SetCurrentDevice(index);
 
+            }
+        }
+        private void OutputModeChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isLoaded || !_viewModel.IsInitialized) return;
+            if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
+
+            if (sender is ComboBox comboBox)
+            {
+                int index = comboBox.SelectedIndex;
+                _viewModel.SetCurrentOutputMode(index);
             }
         }
     }

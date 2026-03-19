@@ -87,7 +87,7 @@ namespace MusicWrap.Data.User
             {
                 PreferredDeviceIndex = -1,
                 PreferredSampleRate = SampleRatePreference.Auto,
-                PreferredOutputMode = OutputMode.BassDefault,
+                PreferredOutputMode = OutputMode.WasapiShared,
                 PreferredVolume = 1.0f,
                 StartupBehavior = StartupBehavior.RestoreQueueOnly,
                 LastWindowMode = LastWindowMode.MainPlayer,

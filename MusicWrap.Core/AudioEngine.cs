@@ -1,11 +1,15 @@
-﻿using System;
+﻿using MusicWrap.Data.User.Models;
+using SixLabors.ImageSharp.Metadata;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Interop;
+using System.Net;
 using System.Security.Permissions;
 using System.Text;
 using Un4seen.Bass;
 using Un4seen.Bass.AddOn.Mix;
+using Un4seen.BassWasapi;
 
 
 namespace MusicWrap.Core
@@ -13,19 +17,42 @@ namespace MusicWrap.Core
     public class AudioEngine : IDisposable
     {
         private bool _isInitialized;
+        private bool _isWasapiInitialized;
         private int _flacPluginHandle;
 
-        public bool Initialize(int deviceIndex = -1, int sampleRate = 44100)
+        private OutputMode _currentOutputMode = OutputMode.WasapiShared;
+
+        private WASAPIPROC? _wasapiProc;
+
+        private int _outputMixerStream;
+        private int _lastDeviceIndex = -1;
+        private int _lastSampleRate = 44100;
+        private int _lastRequestedSampleRate = 44100;
+        private int _lastRequestedChannels = 2;
+        private int _currentOutputSampleRate = 44100;
+        private int _currentOutputChannels = 2;
+
+        public OutputMode CurrentOutputMode => _currentOutputMode;
+        public int CurrentOutputSampleRate => _currentOutputSampleRate;
+        public int CurrentOutputChannels => _currentOutputChannels;
+
+
+        public bool Initialize(int deviceIndex = -1, int sampleRate = 44100, OutputMode outputmode = OutputMode.WasapiShared)
         {
             if (_isInitialized)
                 return true;
+            _lastDeviceIndex = deviceIndex;
+            _lastSampleRate = sampleRate > 0 ? sampleRate : 44100;
+            _lastRequestedSampleRate = _lastSampleRate;
+            _lastRequestedChannels = 2;
+
+            _currentOutputMode = outputmode;
 
             // Configure buffer
             Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_BUFFER, 90);
             Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_UPDATEPERIOD, 5);
 
             _isInitialized = Bass.BASS_Init(deviceIndex, sampleRate, BASSInit.BASS_DEVICE_DEFAULT, IntPtr.Zero);
-
             if (!_isInitialized) return false;
 
             _flacPluginHandle = Bass.BASS_PluginLoad("bassflac.dll");
@@ -35,14 +62,70 @@ namespace MusicWrap.Core
                 Debug.WriteLine($"Failed to load FLAC plugin: {err}");
             }
 
+            // initialize wasapi
+            if (!InitializeWasapiForCurrentMode(_lastSampleRate))
+            {
+                Teardown();
+                return false;
+            }
+
             return _isInitialized;
+        }
+        public bool Reinitialize(int deviceIndex = -1, int sampleRate = 44100, OutputMode outputmode = OutputMode.WasapiShared)
+        {
+            Teardown();
+            return Initialize(deviceIndex, sampleRate, outputmode);
+        }
+        public int PrepareOutputForTrack(int sampleRate, int channels = 2)
+        {
+            int requestedRate = sampleRate > 0 ? sampleRate : 44100;
+            int requestedChannels = channels > 0 ? channels : 2;
+
+            if (!IsWasapiMode())
+            {
+                _currentOutputSampleRate = requestedRate;
+                _currentOutputChannels = requestedChannels;
+                return _currentOutputSampleRate;
+            }
+
+            bool requiresReopen = !_isWasapiInitialized
+                || _lastRequestedSampleRate != requestedRate
+                || _lastRequestedChannels != requestedChannels;
+
+            if (requiresReopen)
+            {
+                _lastSampleRate = requestedRate;
+                _lastRequestedSampleRate = requestedRate;
+                _lastRequestedChannels = requestedChannels;
+                ReopenWasapi(requestedRate, requestedChannels);
+            }
+
+            return _currentOutputSampleRate > 0 ? _currentOutputSampleRate : requestedRate;
+        }
+        public void AttachOutputToMixer(int mixerStream, int sampleRate, int channels = 2)
+        {
+            _outputMixerStream = mixerStream;
+            _ = sampleRate;
+            _ = channels;
         }
 
         #region MIXER
 
         public int CreateMixer(int sampleRate = 44100)
         {
-            return BassMix.BASS_Mixer_StreamCreate(sampleRate, 2, BASSFlag.BASS_SAMPLE_FLOAT | BASSFlag.BASS_MIXER_NONSTOP); // gapless mixing
+            var flags = BASSFlag.BASS_SAMPLE_FLOAT | BASSFlag.BASS_MIXER_NONSTOP; // gapless mixing
+            if (IsWasapiMode())
+            {
+                flags |= BASSFlag.BASS_STREAM_DECODE;
+            }
+
+            int mixRate = sampleRate > 0 ? sampleRate : 44100;
+            if (IsWasapiMode() && _currentOutputSampleRate > 0)
+            {
+                mixRate = _currentOutputSampleRate;
+            }
+
+            return BassMix.BASS_Mixer_StreamCreate(mixRate, 2, flags); // gapless mixing
         }
         public int CreateDecodeStream(string filePath)
         {
@@ -67,8 +150,17 @@ namespace MusicWrap.Core
 
         public int GetDeviceLatencyMs()
         {
-            var info = Bass.BASS_GetInfo();
-            return Math.Max(0, info.latency);
+            if (IsWasapiMode() && _isWasapiInitialized)
+            {
+                var info = BassWasapi.BASS_WASAPI_GetInfo();
+                var bufferSeconds = Convert.ToDouble(info.buflen);
+                if (bufferSeconds > 0)
+                {
+                    return Math.Max(1, (int)Math.Round(bufferSeconds * 1000.0));
+                }
+            }
+            var bassInfo = Bass.BASS_GetInfo();
+            return Math.Max(0, bassInfo.latency);
         }
 
         public int CreateStream(string filePath)
@@ -102,7 +194,7 @@ namespace MusicWrap.Core
 
                     float maxPeakInFile = 0f;
 
-                    for (int i = 0; i< dataPoints; i++)
+                    for (int i = 0; i < dataPoints; i++)
                     {
                         int bytesRead = Bass.BASS_ChannelGetData(stream, buffer, (int)bytesPerChunck);
                         if (bytesRead <= 0) break;
@@ -124,15 +216,6 @@ namespace MusicWrap.Core
                         if (peak > maxPeakInFile)
                             maxPeakInFile = peak;
                     }
-
-                    // Normalize waveform
-                    //if (maxPeakInFile > 0)
-                    //{
-                    //    for (int i = 0; i < waveform.Length; i++)
-                    //    {
-                    //        waveform[i] /= maxPeakInFile;
-                    //    }
-                    //}
 
                     var nonZero = waveform.Where(v => v > 0).OrderBy(v => v).ToArray();
                     float refLevel = nonZero.Length > 0
@@ -167,9 +250,30 @@ namespace MusicWrap.Core
         }
 
         #region PLAYBACK
-        public bool Play(int stream, bool restart = false) => Bass.BASS_ChannelPlay(stream, restart);
-        public bool Pause(int stream) => Bass.BASS_ChannelPause(stream);
-        public bool Stop(int stream) => Bass.BASS_ChannelStop(stream);
+        public bool Play(int stream, bool restart = false)
+        {
+            if (IsWasapiMode())
+            {
+                return _isWasapiInitialized && BassWasapi.BASS_WASAPI_Start();
+            }
+            return Bass.BASS_ChannelPlay(stream, restart);
+        }
+        public bool Pause(int stream)
+        {
+            if (IsWasapiMode())
+            {
+                return _isWasapiInitialized && BassWasapi.BASS_WASAPI_Stop(false);
+            }
+            return Bass.BASS_ChannelPause(stream);
+        }
+        public bool Stop(int stream)
+        {
+            if (IsWasapiMode())
+            {
+                return _isWasapiInitialized && BassWasapi.BASS_WASAPI_Stop(true);
+            }
+            return Bass.BASS_ChannelStop(stream);
+        }
         public bool Free(int stream) => Bass.BASS_StreamFree(stream);
 
         public BASSActive GetChannelState(int stream)
@@ -203,20 +307,7 @@ namespace MusicWrap.Core
             long bytePos = Bass.BASS_ChannelSeconds2Bytes(stream, seconds);
             return Bass.BASS_ChannelSetPosition(stream, bytePos);
         }
-        public bool ChangeSampleRate(int deviceIndex, int sampleRate)
-        {
-            if (!_isInitialized) return false;
-            Bass.BASS_Free();
-            _isInitialized = false;
-            return Initialize(deviceIndex, sampleRate);
-        }
-        public bool ChangeOutputDevice(int deviceIndex)
-        {
-            if (!_isInitialized) return false;
-            Bass.BASS_Free();
-            _isInitialized = false;
-            return Initialize(deviceIndex);
-        }
+        public OutputMode GetCurrentOutputMode() => _currentOutputMode;
         public bool SlideVolume(int stream, float volume, int timeMS)
         {
             return Bass.BASS_ChannelSlideAttribute(stream, BASSAttribute.BASS_ATTRIB_VOL, Math.Clamp(volume, 0f, 1f), timeMS);
@@ -257,26 +348,147 @@ namespace MusicWrap.Core
         {
             var flags = BASSSync.BASS_SYNC_END | (mixTime ? BASSSync.BASS_SYNC_MIXTIME : 0);
             Bass.BASS_ChannelSetSync(stream, flags, 0, callback, IntPtr.Zero);
-            // Bass.BASS_ChannelSetSync(stream, BASSSync.BASS_SYNC_END | BASSSync.BASS_SYNC_MIXTIME, 0, callback, IntPtr.Zero);
         }
         public BASSError GetLastError()
         {
             return Bass.BASS_ErrorGetCode();
         }
-        #endregion
-
-        public void Dispose()
+        private bool InitializeWasapiForCurrentMode(int sampleRate)
         {
+            if (!IsWasapiMode())
+            {
+                _isWasapiInitialized = false;
+                return true;
+            }
+
+            _wasapiProc = WasapiDataProc;
+
+            const int device = -1; // default device
+            bool exclusive = _currentOutputMode == OutputMode.WasapiExclusive;
+            var flags = (BASSWASAPIInit)0;
+            if (exclusive)
+            {
+                flags |= BASSWASAPIInit.BASS_WASAPI_EXCLUSIVE;
+            }
+
+            _isWasapiInitialized = BassWasapi.BASS_WASAPI_Init(
+                device,
+                sampleRate,
+                2,
+                flags,
+                0.05f, // buffer
+                0.01f, // period
+                _wasapiProc,
+                IntPtr.Zero
+                );
+
+            // In shared mode, try exact format first. If unsupported, allow autoformat fallback.
+            if (!_isWasapiInitialized && !exclusive)
+            {
+                _isWasapiInitialized = BassWasapi.BASS_WASAPI_Init(
+                    device,
+                    sampleRate,
+                    2,
+                    BASSWASAPIInit.BASS_WASAPI_AUTOFORMAT,
+                    0.05f,
+                    0.01f,
+                    _wasapiProc,
+                    IntPtr.Zero
+                    );
+            }
+
+            if (!_isWasapiInitialized && exclusive) // fallback
+            {
+                Debug.WriteLine("WASAPI Exlusive failed, trying shared...");
+                _currentOutputMode = OutputMode.WasapiShared;
+                
+                _isWasapiInitialized = BassWasapi.BASS_WASAPI_Init(
+                    device,
+                    sampleRate,
+                    2,
+                    BASSWASAPIInit.BASS_WASAPI_AUTOFORMAT,
+                    0.05f, // buffer
+                    0.01f, // period
+                    _wasapiProc,
+                    IntPtr.Zero
+                    );
+            }
+            if (_isWasapiInitialized)
+            {
+                var info = BassWasapi.BASS_WASAPI_GetInfo();
+                _currentOutputSampleRate = info.freq > 0 ? info.freq : sampleRate;
+                _currentOutputChannels = info.chans > 0 ? info.chans : 2;
+                _lastSampleRate = _currentOutputSampleRate;
+            }
+            if (!_isWasapiInitialized)
+            {
+                Debug.WriteLine("WASAPI Init failed with error: " + GetLastError());
+            }
+            return _isWasapiInitialized;
+        }
+        private void ReopenWasapi(int samplerate, int channels)
+        {
+            if (!IsWasapiMode())
+            {
+                return;
+            }
+            if (_isWasapiInitialized)
+            {
+                BassWasapi.BASS_WASAPI_Stop(true);
+                BassWasapi.BASS_WASAPI_Free();
+                _isWasapiInitialized = false;
+            }
+
+            _ = channels; // TODO: multichannel
+            InitializeWasapiForCurrentMode(samplerate);
+        }
+        private int WasapiDataProc(IntPtr buffer, int length, IntPtr user)
+        {            
+            if (_outputMixerStream == 0)
+            {
+                return 0;
+            }
+
+            return Bass.BASS_ChannelGetData(_outputMixerStream, buffer, length | (int)BASSData.BASS_DATA_FLOAT);
+        }
+        private bool IsWasapiMode()
+        {
+            return _currentOutputMode == OutputMode.WasapiShared
+                || _currentOutputMode == OutputMode.WasapiExclusive;
+        }
+        private void Teardown()
+        {
+            if (_isWasapiInitialized)
+            {
+                BassWasapi.BASS_WASAPI_Stop(true);
+                BassWasapi.BASS_WASAPI_Free();
+                _isWasapiInitialized = false;
+            }
+
             if (_flacPluginHandle != 0)
             {
                 Bass.BASS_PluginFree(_flacPluginHandle);
                 _flacPluginHandle = 0;
             }
+
             if (_isInitialized)
             {
                 Bass.BASS_Free();
                 _isInitialized = false;
             }
+
+            _outputMixerStream = 0;
+            _wasapiProc = null;
+            _lastRequestedSampleRate = 44100;
+            _lastRequestedChannels = 2;
+            _currentOutputSampleRate = 44100;
+            _currentOutputChannels = 2;
+        }
+        #endregion
+
+        public void Dispose()
+        {
+            Teardown();
         }
     }
 }

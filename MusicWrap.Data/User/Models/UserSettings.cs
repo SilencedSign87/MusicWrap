@@ -10,7 +10,7 @@ namespace MusicWrap.Data.User.Models
     {
         [Key(0)] public int PreferredDeviceIndex { get; set; } = -1; // default audio output
         [Key(1)] public SampleRatePreference PreferredSampleRate { get; set; } = SampleRatePreference.Auto;
-        [Key(2)] public OutputMode PreferredOutputMode { get; set; } = OutputMode.BassDefault;
+        [Key(2)] public OutputMode PreferredOutputMode { get; set; } = OutputMode.WasapiShared;
         [Key(3)] public float PreferredVolume { get; set; } = 1.0f;
         [Key(4)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreQueueOnly;
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
@@ -38,9 +38,8 @@ namespace MusicWrap.Data.User.Models
 
     public enum OutputMode
     {
-        BassDefault = 0,
-        WasapiShared = 1,
-        WasapiExclusive = 2,
+        WasapiShared = 0,
+        WasapiExclusive = 1,
     }
     public enum StartupBehavior
     {

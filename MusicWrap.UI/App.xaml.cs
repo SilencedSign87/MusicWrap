@@ -199,6 +199,8 @@ namespace MusicWrap.UI
                     player.ChangeOutputDevice(userSettings.PreferredDeviceIndex);
                 }
 
+                player.ChangeOutputMode(userSettings.PreferredOutputMode);
+
                 int preferredSampleRate = (int)userSettings.PreferredSampleRate;
                 if (preferredSampleRate != player.CurrentSampleRate)
                 {
