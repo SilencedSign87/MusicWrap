@@ -814,7 +814,7 @@ namespace MusicWrap.Core
 
             if (TryGetWaveformFromCache(track.Id, out var cached))
             {
-                PublishWaveformIfCurrent(track.Id, requestVersion, cached);
+                PublishWaveformIfCurrent(track.Id, requestVersion, cached ?? Array.Empty<float>());
                 return;
             }
 

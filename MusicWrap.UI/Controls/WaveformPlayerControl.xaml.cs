@@ -19,6 +19,8 @@ namespace MusicWrap.UI.Controls
     public partial class WaveformPlayerControl : UserControl
     {
         private bool _isDragging = false;
+        private bool _dragCanceled = false;
+        private UIElement? _dragCaptureElement;
 
         public WaveformPlayerControl()
         {
@@ -74,6 +76,7 @@ namespace MusicWrap.UI.Controls
 
         public event EventHandler SeekStarted;
         public event EventHandler<double> SeekEnded;
+        public event EventHandler? SeekCanceled;
 
         #endregion
 
@@ -166,32 +169,70 @@ namespace MusicWrap.UI.Controls
         {
             if (e.LeftButton == MouseButtonState.Pressed && Duration > 0)
             {
+                _dragCanceled = false;
                 _isDragging = true;
-                ((UIElement)sender).CaptureMouse();
+                _dragCaptureElement = (UIElement)sender;
+                _dragCaptureElement.CaptureMouse();
+
+                Focus();
+                Keyboard.Focus(this);
+
                 SeekStarted?.Invoke(this, EventArgs.Empty); // notify the viewmodel to stop updating the position while dragging
 
-                UpdateVisualFromMouse(e.GetPosition(this).X);
+                double mousex = e.GetPosition(this).X;
+                UpdateVisualFromMouse(mousex);
+                UpdateSeekPopup(mousex);
+
+                e.Handled = true;
             }
         }
 
         private void Rectangle_MouseMove(object sender, MouseEventArgs e)
         {
             if (_isDragging && e.LeftButton == MouseButtonState.Pressed) {
-                UpdateVisualFromMouse(e.GetPosition(this).X);
+                double mousex = e.GetPosition(this).X;
+                UpdateVisualFromMouse(mousex);
+                UpdateSeekPopup(mousex);
             }
         }
 
         private void Rectangle_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (_isDragging && e.LeftButton == MouseButtonState.Released)
+            if (!_isDragging || e.ChangedButton != MouseButton.Left) return;
+
+            _isDragging = false;
+            HideSeekPopup();
+            if (_dragCaptureElement is not null)
             {
-                double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0, 1);
-                double newPosition = percentage * Duration;
+                _dragCaptureElement.ReleaseMouseCapture();
+                _dragCaptureElement = null;
+            }
+            if (_dragCanceled)
+            {
+                _dragCanceled = false;
+                e.Handled = true;
+                return;
+            }
+            double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0 ,1);
+            double NewPosition = percentage * Duration;
+            SeekEnded?.Invoke(this, NewPosition);
+            e.Handled = true;
+        }
+        private void Rectangle_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_isDragging)
+            {
+                CancelSeek();
+                e.Handled = true;
+            }
+        }
 
-                SeekEnded?.Invoke(this, newPosition); // notify the viewmodel to update the position and resume updates
-
-                _isDragging = false;
-                ((UIElement)sender).ReleaseMouseCapture();
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape && _isDragging)
+            {
+                CancelSeek();
+                e.Handled = true;
             }
         }
 
@@ -213,6 +254,65 @@ namespace MusicWrap.UI.Controls
         {
             DrawWaveform();
             UpdateProgressVisual(Position);
+        }
+
+
+        private static string FormatTime(double seconds)
+        {
+            var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
+            if (ts.TotalHours >= 1)
+            {
+                return ts.ToString(@"h\:mm\:ss");
+            }
+
+            return ts.ToString(@"m\:ss");
+        }
+
+        private void UpdateSeekPopup(double mouseX)
+        {
+            if (Duration <= 0 || ActualWidth <= 0)
+            {
+                return;
+            }
+
+            double clampedX = Math.Clamp(mouseX, 0, ActualWidth);
+            double percentage = clampedX / ActualWidth;
+            double visualPosition = percentage * Duration;
+
+            SeekPopupText.Text = FormatTime(visualPosition);
+
+            SeekPopup.HorizontalOffset = clampedX + 19;
+            SeekPopup.VerticalOffset = -34;
+            SeekPopup.IsOpen = true;
+        }
+
+        private void HideSeekPopup()
+        {
+            SeekPopup.IsOpen = false;
+        }
+
+        private void CancelSeek()
+        {
+            if (!_isDragging)
+            {
+                return;
+            }
+
+            _dragCanceled = true;
+            _isDragging = false;
+
+            HideSeekPopup();
+
+            if (_dragCaptureElement is not null)
+            {
+                _dragCaptureElement.ReleaseMouseCapture();
+                _dragCaptureElement = null;
+            }
+
+            // Vuelve al valor real del player.
+            UpdateProgressVisual(Position);
+
+            SeekCanceled?.Invoke(this, EventArgs.Empty);
         }
     }
 }

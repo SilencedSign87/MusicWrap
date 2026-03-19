@@ -98,6 +98,12 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string playPauseIcon = "\ue768"; // Play icon
 
+        [ObservableProperty]
+        private bool isMuted = false;
+        private float previousVolume = 1.0f;
+        [ObservableProperty]
+        private string muteButtonIcon = "\xE767"; // Volume on icon
+
         private bool _isSeekingPosition = false;
         private string ArtworkPath = "";
 
@@ -139,6 +145,24 @@ namespace MusicWrap.UI.ViewModels
         private void _playerService_WaveformDataChanged(object? sender, float[] e)
         {
             Waveform = e.Length == 0 ? Array.Empty<float>() : [.. e];
+        }
+
+        [RelayCommand]
+        private void ToggleMute()
+        {
+            if (IsMuted)
+            {
+                Volume = previousVolume;
+                IsMuted = false;
+                UpdateVolumeIcon(Volume);
+            }
+            else
+            {
+                previousVolume = Volume;
+                Volume = 0;
+                IsMuted = true;
+                MuteButtonIcon = "\xE74F";
+            }
         }
 
         [RelayCommand]
@@ -208,6 +232,25 @@ namespace MusicWrap.UI.ViewModels
             //UpdateFormattedPosition(position);
             //_isSeekingPosition = false;
         }
+
+        [RelayCommand]
+        private void CancelSeeking()
+        {
+            _pendingSeekTarget = null;
+            _pendingSeekUntilUtc = DateTime.MinValue;
+
+            double enginePosition = _playerService.CurrentPosition;
+            double target = Math.Clamp(enginePosition, 0, Duration > 0 ? Duration : enginePosition);
+
+            _lastEnginePosition = target;
+            _lastEnginePositionAtUTC = DateTime.UtcNow;
+
+            CurrentPosition = target;
+            UpdateFormattedPosition(target);
+
+            _isSeekingPosition = false;
+        }
+
         [RelayCommand]
         private void CicleRepeatMode()
         {
@@ -254,9 +297,34 @@ namespace MusicWrap.UI.ViewModels
         }
         partial void OnVolumeChanged(float value)
         {
+            if (IsMuted && value > 0)
+            {
+                IsMuted = false;
+            }
+            if (!IsMuted)
+            {
+                UpdateVolumeIcon(value);
+            }
             _playerService.SetVolume(value);
         }
-
+        private void UpdateVolumeIcon(float value)
+        {
+            switch (value)
+            {
+                case 0:
+                    MuteButtonIcon = "\xE992";
+                    break;
+                case < 0.35f:
+                    MuteButtonIcon = "\xE993";
+                    break;
+                case < 0.75f:
+                    MuteButtonIcon = "\xE994";
+                    break;
+                default:
+                    MuteButtonIcon = "\xE767";
+                    break;
+            }
+        }
         private void OnPlaybackStateChanged(object? sender, PlaybackState state)
         {
             Application.Current?.Dispatcher.Invoke(() =>
@@ -298,17 +366,19 @@ namespace MusicWrap.UI.ViewModels
                         // Confirmed seek
                         _pendingSeekTarget = null;
                         _isSeekingPosition = false;
-                    }else if (now<=_pendingSeekUntilUtc) // incoherent seek
+                    }
+                    else if (now <= _pendingSeekUntilUtc) // incoherent seek
                     {
                         return;
                     }
-                    else if (position < target - 0.20 && now <=_pendingSeekUntilUtc - SeekFallbackUnlock)
+                    else if (position < target - 0.20 && now <= _pendingSeekUntilUtc - SeekFallbackUnlock)
                     {
                         return;
-                    }else
+                    }
+                    else
                     {
                         _pendingSeekTarget = null;
-                        _isSeekingPosition=false;
+                        _isSeekingPosition = false;
                     }
                 }
 

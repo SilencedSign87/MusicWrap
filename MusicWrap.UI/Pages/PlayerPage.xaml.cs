@@ -58,5 +58,13 @@ namespace MusicWrap.UI.Pages
                 _viewModel.EndSeekingCommand.Execute(e);
             }
         }
+
+        private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
+        {
+            if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
+            {
+                _viewModel.CancelSeekingCommand.Execute(null);
+            }
+        }
     }
 }

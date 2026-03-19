@@ -110,5 +110,13 @@ namespace MusicWrap.UI.Windows
         {
             // TODO: launch window to browse the library
         }
+
+        private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
+        {
+            if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
+            {
+                _viewModel.CancelSeekingCommand.Execute(null);
+            }
+        }
     }
 }

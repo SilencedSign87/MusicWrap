@@ -88,6 +88,8 @@
                                 DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
                                 SeekStarted="WaveformPlayerControl_SeekStarted"
                                 SeekEnded="WaveformPlayerControl_SeekEnded"
+                                SeekCanceled="WaveformPlayerControl_SeekCanceled"
+
                             />
                         </Grid>
                         <!--<Slider Grid.Column="1" 
