@@ -1,9 +1,9 @@
-using MusicWrap.Data;
-using MusicWrap.Data.Library;
 using System.Timers;
 using System.Linq;
 using Un4seen.Bass;
 using System.Net;
+using System.Diagnostics;
+using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.Core
 {
@@ -515,6 +515,11 @@ namespace MusicWrap.Core
                 }
 
                 _currentStream = _audioEngine.CreateDecodeStream(track.Path);
+                if (_currentStream == 0) {
+                    var err = _audioEngine.GetLastError();
+                    Debug.WriteLine($"Failed to create stream for track {track.Path}, error code: {err}");
+                    Next();
+                }
             }
 
             // Remove previous stream if it exists
@@ -694,8 +699,12 @@ namespace MusicWrap.Core
 
                 // Create decode stream and prepare it (but don't add to mixer yet)
                 int nextStream = _audioEngine.CreateDecodeStream(nextTrack.Path);
-                if (nextStream == 0) return;
-
+                if (nextStream == 0)
+                {
+                    var err = _audioEngine.GetLastError();
+                    Debug.WriteLine($"Failed to create preload stream for track {nextTrack.Path}, error code: {err}");
+                    return;
+                }
                 _preloadedStream = nextStream;
                 _preloadedTrackId = nextTrackId;
                 _ = PreloadWaveformCacheAsync(nextTrack);

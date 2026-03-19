@@ -2,9 +2,11 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using MusicWrap.Core;
-using MusicWrap.Data;
+using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
-using MusicWrap.Data.Services;
+using MusicWrap.Data.Library.Application;
+using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using System;
@@ -12,6 +14,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Windows;
 using System.Windows.Data;
@@ -40,6 +43,8 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private CancellationTokenSource? _imageCts;
 
+        private bool _isInitializing;
+        private int _loadEntriesRequestId;
 
         // Services
         private readonly MusicLibrary _library;
@@ -47,19 +52,22 @@ namespace MusicWrap.UI.ViewModels.Library
         private readonly ILibraryCacheService _LibraryCache;
         private readonly IMusicPlayerService _player;
 
-        private static readonly string CoversBasePath = MusicWrapDirectories.CoverDirectory;
-
-        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, IKeyValueStore settings, IMusicPlayerService player)
+        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, UserSettings settings, IMusicPlayerService player)
         {
             _library = library;
             _scanner = scanner;
             _LibraryCache = libraryCache;
             _player = player;
-            // Load Initial Settings
-            ListBy = settings.GetValue<string>("library_list_by") ?? "Artist";
-            Ascending = settings.GetValue<bool>("library_list_ascending");
 
-            LoadEntries();
+            _isInitializing = true;
+
+            ListBy = string.IsNullOrWhiteSpace(settings.LibraryListBy) ? "Artist" : settings.LibraryListBy;
+            Ascending = settings.LibraryAscending;
+
+            _isInitializing = false;
+
+            _ = LoadEntriesAsync();
+
         }
 
         public bool IsAlbumView => ListBy == "Album";
@@ -74,12 +82,15 @@ namespace MusicWrap.UI.ViewModels.Library
             OnPropertyChanged(nameof(IsGenreView));
             OnPropertyChanged(nameof(IsDecadeView));
 
-            LoadEntries();
+            if (_isInitializing) return;
+
+            _ = LoadEntriesAsync();
         }
 
         partial void OnAscendingChanged(bool value)
         {
-            LoadEntries();
+            if (_isInitializing) return;
+            _ = LoadEntriesAsync();
         }
 
         partial void OnSelectedEntryChanged(LibraryEntry? value)
@@ -101,7 +112,7 @@ namespace MusicWrap.UI.ViewModels.Library
             }
             if (value.Id == LibraryCacheService.AllEntryId && value.Type == LibraryCacheService.AllEntryType)
             {
-                IsAllAlbumsSelected= true;
+                IsAllAlbumsSelected = true;
                 CollapseAlbum();
                 AlbumsForSelectedEntry = [];
                 return;
@@ -111,7 +122,7 @@ namespace MusicWrap.UI.ViewModels.Library
         }
 
         [RelayCommand]
-        private void AddFolder()
+        private async Task AddFolder()
         {
             var dialog = new OpenFolderDialog
             {
@@ -126,13 +137,14 @@ namespace MusicWrap.UI.ViewModels.Library
                     _scanner.AddDirectory(selectedPath, true);
                 }
 
-                _scanner.ScanAllDirectories(null, null);
-                LoadEntries();
+                await _scanner.ScanAllDirectories(null, null);
+
+                await LoadEntriesAsync();
             }
         }
 
         [RelayCommand]
-        private void AddFiles()
+        private async Task AddFiles()
         {
             var dialog = new OpenFileDialog
             {
@@ -142,8 +154,10 @@ namespace MusicWrap.UI.ViewModels.Library
             if (dialog.ShowDialog() == true)
             {
                 var selectedFiles = dialog.FileNames;
-                _scanner.ScanFiles(selectedFiles, null, null);
-                LoadEntries();
+                if (selectedFiles is null || selectedFiles.Length == 0) return;
+
+                await _scanner.ScanFiles(selectedFiles, null, null);
+                await LoadEntriesAsync();
             }
 
         }
@@ -152,7 +166,7 @@ namespace MusicWrap.UI.ViewModels.Library
         private void Refresh()
         {
             _LibraryCache.InvalidateCache();
-            LoadEntries();
+            _ = LoadEntriesAsync();
         }
 
         [RelayCommand]
@@ -176,31 +190,66 @@ namespace MusicWrap.UI.ViewModels.Library
             Ascending = false;
         }
 
-        private async void LoadEntries()
+        private async Task LoadEntriesAsync()
         {
-            DateTime timeStart = DateTime.Now;
-            var entries = await _LibraryCache.GetEntriesAsync(ListBy, Ascending);
+            var requestId = Interlocked.Increment(ref _loadEntriesRequestId);
+            var listBySnapshot = ListBy;
+            var ascendingSnapshot = Ascending;
 
-            ApplyGrouping(entries);
+            DateTime timeStart = DateTime.Now;
+            var loadedEntries = await _LibraryCache.GetEntriesAsync(listBySnapshot, ascendingSnapshot);
+
+            if (requestId != Volatile.Read(ref _loadEntriesRequestId)) return;
+
+            ApplyGrouping(loadedEntries, ascendingSnapshot);
 
             DateTime timeEnd = DateTime.Now;
-            Debug.WriteLine($"Loaded {entries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
+            Debug.WriteLine($"Loaded {loadedEntries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
         }
 
-        private void ApplyGrouping(IReadOnlyList<LibraryEntry> entries)
+        private void ApplyGrouping(IReadOnlyList<LibraryEntry> entries, bool ascendingSnapshot)
         {
-            Entries = entries;
-
-            EntriesViewSource = new CollectionViewSource { Source = Entries };
-            EntriesViewSource.GroupDescriptions.Clear();
-            EntriesViewSource.SortDescriptions.Clear();
-
-            Dispatcher.CurrentDispatcher.InvokeAsync(() =>
+            var normalizedEntries = entries.Select(e =>
+            new LibraryEntry
             {
-                EntriesViewSource.GroupDescriptions.Add(new PropertyGroupDescription("GroupKey"));
-                EntriesViewSource.SortDescriptions.Add(new SortDescription("GroupKey", ListSortDirection.Ascending));
-                EntriesViewSource.SortDescriptions.Add(new SortDescription("Title", Ascending ? ListSortDirection.Ascending : ListSortDirection.Descending));
-            }, DispatcherPriority.Render);
+                Id = e.Id,
+                Title = e.Title,
+                Description = e.Description,
+                GroupKey = NormalizeGroupKey(e.GroupKey),
+                Type = e.Type,
+                ImagePath = e.ImagePath,
+            }).ToArray();
+
+            Entries = normalizedEntries;
+
+            var viewSource = new CollectionViewSource { Source = Entries };
+            viewSource.SortDescriptions.Clear();
+            viewSource.GroupDescriptions.Clear();
+
+            viewSource.GroupDescriptions.Add(
+                new PropertyGroupDescription(nameof(LibraryEntry.GroupKey))
+                );
+
+            viewSource.SortDescriptions.Add(
+                new SortDescription(nameof(LibraryEntry.GroupKey), ascendingSnapshot ? ListSortDirection.Ascending : ListSortDirection.Descending)
+                );
+
+            viewSource.SortDescriptions.Add(
+                new SortDescription(nameof(LibraryEntry.Title), ascendingSnapshot ? ListSortDirection.Ascending : ListSortDirection.Descending)
+                );
+
+            EntriesViewSource = viewSource;
+        }
+
+        private static string NormalizeGroupKey(string? key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return "#";
+            }
+
+            var trimmed = key.Trim();
+            return trimmed.Length == 0 ? "#" : trimmed.ToUpperInvariant();
         }
 
         public void PlayAlbum(int albumId)

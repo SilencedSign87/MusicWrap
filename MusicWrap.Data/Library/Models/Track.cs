@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using MessagePack;
 
-namespace MusicWrap.Data.Library
+namespace MusicWrap.Data.Library.Models
 {
     [MessagePackObject]
     public sealed class Track

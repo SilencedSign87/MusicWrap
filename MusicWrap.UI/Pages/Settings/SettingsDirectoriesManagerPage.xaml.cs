@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.ViewModels.Settings;
 using System;
 using System.Collections.Generic;

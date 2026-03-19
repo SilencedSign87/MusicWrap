@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MusicWrap.Core;
+using MusicWrap.Data.User;
+using MusicWrap.Data.User.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -22,10 +24,14 @@ namespace MusicWrap.UI.ViewModels
         public bool IsInitialized { get; private set; } = false;
 
         private readonly IMusicPlayerService _player;
+        private readonly IUserSettingsRepository _userSettingsRepository;
+        private readonly UserSettings _userSettings;
         private readonly int[] SampleRates = [-1, 44100, 48000, 88200, 96000, 176400, 192000];
-        public DeviceViewModel(IMusicPlayerService player)
+        public DeviceViewModel(IMusicPlayerService player, IUserSettingsRepository userSettingsRepository, UserSettings userSettings)
         {
             _player = player;
+            _userSettingsRepository = userSettingsRepository;
+            _userSettings = userSettings;
 
             LoadDevices();
 
@@ -57,6 +63,8 @@ namespace MusicWrap.UI.ViewModels
             if (target == _player.CurrentSampleRate) return;
 
             _player.ChangeSampleRate(target);
+            _userSettings.PreferredSampleRate = (SampleRatePreference)target;
+            _userSettingsRepository.Save(_userSettings);
 
         }
         public void SetCurrentDevice(int index)
@@ -67,6 +75,8 @@ namespace MusicWrap.UI.ViewModels
             if (target == _player.CurrentDeviceIndex) return;
 
             _player.ChangeOutputDevice(target);
+            _userSettings.PreferredDeviceIndex = target;
+            _userSettingsRepository.Save(_userSettings);
 
         }
 

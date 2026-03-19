@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core;
-using MusicWrap.Data;
 using MusicWrap.Data.Library;
 using MusicWrap.UI.Helpers;
 using System;
@@ -14,6 +13,8 @@ using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Media.Imaging;
 using TagLib.IFD;
+using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.Infrastructure;
 
 namespace MusicWrap.UI.ViewModels
 {

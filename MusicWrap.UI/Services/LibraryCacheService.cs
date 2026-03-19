@@ -1,7 +1,9 @@
 ﻿using MessagePack;
-using MusicWrap.Data;
+using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
-using MusicWrap.Data.Services;
+using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.User;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
@@ -26,11 +28,12 @@ namespace MusicWrap.UI.Services
     }
     public class LibraryCacheService : ILibraryCacheService
     {
-        private static readonly string _libraryFileName = Path.Combine(AppPaths.CacheDir, "library.dat");
+        private static readonly string _libraryFileName = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.dat");
         private static readonly object _diskLock = new();
 
         private readonly MusicLibrary _library;
-        private readonly IKeyValueStore _settings;
+        private readonly IUserSettingsRepository _userSettingsRepository;
+        private readonly UserSettings _userSettings;
         private readonly string _coversPath;
 
         private LibraryEntry[]? _artistCache;
@@ -50,10 +53,11 @@ namespace MusicWrap.UI.Services
         public const int AllEntryId = -1;
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
-        public LibraryCacheService(MusicLibrary library, IKeyValueStore settings)
+        public LibraryCacheService(MusicLibrary library, IUserSettingsRepository userSettingsRepository, UserSettings userSettings)
         {
             _library = library;
-            _settings = settings;
+            _userSettingsRepository = userSettingsRepository;
+            _userSettings = userSettings;
             _coversPath = MusicWrapDirectories.CoverDirectory;
 
             BuildIndexes();
@@ -258,10 +262,9 @@ namespace MusicWrap.UI.Services
 
         private void SaveUserPreference(string listBy, bool ascending)
         {
-            _settings.SetValue("library_list_by", listBy);
-            _settings.SetValue("library_list_ascending", ascending);
-
-            _settings.SaveToDisk();
+            _userSettings.LibraryListBy = listBy;
+            _userSettings.LibraryAscending = ascending;
+            _userSettingsRepository.Save(_userSettings);
         }
 
         private void BuildCoverLookUp()

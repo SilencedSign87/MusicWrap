@@ -53,7 +53,7 @@ namespace MusicWrap.UI.Pages.MainWindow
                 vm.CollapseAlbum();
                 return;
             }
-            bool isAllEntry = selected.Id == LibraryCacheService.AllEntryId && string.Equals(selected.Type == LibraryCacheService.AllEntryType, StringComparison.OrdinalIgnoreCase);
+            bool isAllEntry = selected.Id == LibraryCacheService.AllEntryId && string.Equals(selected.Type, LibraryCacheService.AllEntryType, StringComparison.OrdinalIgnoreCase);
 
             if (isAllEntry) {
                 vm.CollapseAlbum();

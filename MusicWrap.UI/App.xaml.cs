@@ -1,8 +1,14 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
-using MusicWrap.Data;
-using MusicWrap.Data.Services;
+using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Library;
+using MusicWrap.Data.Library.Application;
+using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.Player;
+using MusicWrap.Data.Player.Models;
+using MusicWrap.Data.User;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Services;
@@ -28,6 +34,9 @@ namespace MusicWrap.UI
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            // Recreate app data folders if they were deleted between runs.
+            MusicWrapDirectories.EnsureCreated();
 
             SplashScreen splash = new("Resources/SplashScreen.png");
             splash.Show(autoClose: false, topMost: true);
@@ -87,7 +96,7 @@ namespace MusicWrap.UI
             try
             {
                 if (Services is null) return;
-                var store = Services.GetService<ILibraryStore>();
+                var store = Services.GetService<ILibraryRepository>();
                 var library = Services.GetService<MusicLibrary>();
                 var libraryCache = Services.GetService<ILibraryCacheService>();
                 libraryCache?.SaveToDisk();
@@ -97,29 +106,33 @@ namespace MusicWrap.UI
                     store.Save(library);
                 }
 
-                var playbackSession = Services.GetService<IPlaybackSessionService>();
+                var playbackRepository = Services.GetService<IPlaybackRepository>();
+                var userSettingsRepository = Services.GetService<IUserSettingsRepository>();
+                var userSettings = Services.GetService<UserSettings>();
                 var player = Services.GetService<IMusicPlayerService>();
-                if (playbackSession is not null && player is not null)
+                if (playbackRepository is not null && player is not null)
                 {
                     var isCompactLastSession = CurrentWindow is CompactPlayer;
 
-                    var snapshot = new PlaybackSessionSnapshot
+                    var snapshot = new PlaybackQueueSnapshot
                     {
-                        QueueTrackIds = player.GetQueue(),
+                        TrackIds = player.GetQueue(),
                         CurrentIndex = player.CurrentQueueIndex,
                         PositionInSeconds = player.CurrentPosition,
-                        Volume = player.Volume,
                         RepeatMode = (int)player.RepeatMode,
                         ContinueMode = (int)player.ContinueMode,
-                        PlaybackState = player.IsPlaying ? 1 : (player.IsPaused ? 2 : 0),
-                        PlayerMode = isCompactLastSession ? 1 : 0,
+                        PlaybackState = player.IsPlaying ? 1 : (player.IsPaused ? 2 : 0)
                     };
 
-                    playbackSession.Save(snapshot);
-                }
+                    playbackRepository.Save(snapshot);
 
-                var settings = Services.GetService<IKeyValueStore>();
-                settings?.SaveToDisk();
+                    if (userSettings is not null && userSettingsRepository is not null)
+                    {
+                        userSettings.LastWindowMode = isCompactLastSession ? LastWindowMode.CompactPlayer : LastWindowMode.MainPlayer;
+                        userSettings.PreferredVolume = player.Volume;
+                        userSettingsRepository.Save(userSettings);
+                    }
+                }
             }
             catch
             {
@@ -131,14 +144,17 @@ namespace MusicWrap.UI
         {
             var services = new ServiceCollection();
 
-
             //Data layer
-            services.AddSingleton<ILibraryStore, LibraryStore>();
-            services.AddSingleton(sp => sp.GetRequiredService<ILibraryStore>().Load());
+            services.AddSingleton<ILibraryRepository, LibraryRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<ILibraryRepository>().Load());// Provide Music library
+            services.AddSingleton<IPlaybackRepository, PlaybackRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<IPlaybackRepository>().Load()); // Provide Queue settings
+            services.AddSingleton<IUserSettingsRepository, UserSettingsRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
+
+            // Services
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
-            services.AddSingleton<IKeyValueStore, KeyValueStore>();
-            services.AddSingleton<IPlaybackSessionService, PlaybackSessionService>();
 
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
@@ -174,11 +190,27 @@ namespace MusicWrap.UI
                 // Force load
 
                 Services.GetRequiredService<MusicLibrary>();
-                Services.GetRequiredService<IKeyValueStore>();
+                var userSettings = Services.GetRequiredService<UserSettings>();
+                var player = Services.GetRequiredService<IMusicPlayerService>();
 
-                var settings = Services.GetRequiredService<IKeyValueStore>();
-                var listBy = settings.GetValue<string>("library_list_by") ?? "Artist";
-                var ascending = settings.GetValue<bool>("library_list_ascending");
+                // Apply persisted audio preferences before restoring playback/caching state.
+                if (userSettings.PreferredDeviceIndex >= 0 && userSettings.PreferredDeviceIndex != player.CurrentDeviceIndex)
+                {
+                    player.ChangeOutputDevice(userSettings.PreferredDeviceIndex);
+                }
+
+                int preferredSampleRate = (int)userSettings.PreferredSampleRate;
+                if (preferredSampleRate != player.CurrentSampleRate)
+                {
+                    player.ChangeSampleRate(preferredSampleRate);
+                }
+
+                player.SetVolume(Math.Clamp(userSettings.PreferredVolume, 0f, 1f));
+
+                var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)
+                    ? "Artist"
+                    : userSettings.LibraryListBy;
+                var ascending = userSettings.LibraryAscending;
 
                 var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
                 await LibraryCache.InitializeAsync(listBy, ascending);
@@ -208,28 +240,32 @@ namespace MusicWrap.UI
             }
         }
 
-        private int TryRestorePlaybackSession()
+        private static int TryRestorePlaybackSession()
         {
             try
             {
-                int playermode = 0;
-                var playbackSession = Services.GetService<IPlaybackSessionService>();
+                int playerMode = 0;
+                var userSettings = Services.GetService<UserSettings>();
+                if (userSettings is not null)
+                {
+                    playerMode = (int)userSettings.LastWindowMode;
+                }
+
+                var playbackRepository = Services.GetService<IPlaybackRepository>();
                 var player = Services.GetService<IMusicPlayerService>();
 
-                if (playbackSession is null || player is null) return playermode;
+                if (playbackRepository is null || player is null) return playerMode;
 
-                var snapshot = playbackSession.Load();
+                var snapshot = playbackRepository.Load();
 
-                if (snapshot is null || snapshot.QueueTrackIds.Length == 0) return 0;
-
-                playermode = snapshot.PlayerMode;
+                if (snapshot.TrackIds.Length == 0) return playerMode;
 
                 var library = Services.GetService<MusicLibrary>();
-                if (library is null) return playermode;
+                if (library is null) return playerMode;
 
                 var validIds = new HashSet<int>(library.Tracks.Select(t => t.Id));
-                var queue = snapshot.QueueTrackIds.Where(id => validIds.Contains(id)).ToArray();
-                if (queue.Length == 0) return playermode;
+                var queue = snapshot.TrackIds.Where(id => validIds.Contains(id)).ToArray();
+                if (queue.Length == 0) return playerMode;
 
                 player.SetQueue(queue, false);
 
@@ -261,9 +297,12 @@ namespace MusicWrap.UI
                         break;
                 }
 
-                player.SetVolume(Math.Clamp(snapshot.Volume, 0f, 1f));
+                if (userSettings is not null)
+                {
+                    player.SetVolume(Math.Clamp(userSettings.PreferredVolume, 0f, 1f));
+                }
 
-                return playermode;
+                return playerMode;
             }
             catch
             {

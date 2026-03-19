@@ -1,4 +1,6 @@
-﻿using MusicWrap.Data.Library;
+﻿using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Library;
+using MusicWrap.Data.Library.Models;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.ColorSpaces.Conversion;
@@ -7,7 +9,7 @@ using SixLabors.ImageSharp.Processing;
 using System.IO;
 using System.Windows.Input;
 
-namespace MusicWrap.Data.Services
+namespace MusicWrap.Data.Library.Application
 {
     public interface ILibraryIndexer
     {
@@ -263,8 +265,9 @@ namespace MusicWrap.Data.Services
                     "image/webp" => ".webp",
                     _ => ".bin"
                 };
+                Directory.CreateDirectory(MusicWrapDirectories.CoverDirectory);
                 var filename = fingerprint.GetHashCode().ToString("X8") + ext;
-                var fullPath = Path.Combine(AppPaths.CoversDir, filename);
+                var fullPath = Path.Combine(MusicWrapDirectories.CoverDirectory, filename);
                 if (!File.Exists(fullPath))
                     File.WriteAllBytes(fullPath, imageBytes);
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing.Interop;
 using System.Security.Permissions;
 using System.Text;
@@ -12,6 +13,7 @@ namespace MusicWrap.Core
     public class AudioEngine : IDisposable
     {
         private bool _isInitialized;
+        private int _flacPluginHandle;
 
         public bool Initialize(int deviceIndex = -1, int sampleRate = 44100)
         {
@@ -23,6 +25,16 @@ namespace MusicWrap.Core
             Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_UPDATEPERIOD, 5);
 
             _isInitialized = Bass.BASS_Init(deviceIndex, sampleRate, BASSInit.BASS_DEVICE_DEFAULT, IntPtr.Zero);
+
+            if (!_isInitialized) return false;
+
+            _flacPluginHandle = Bass.BASS_PluginLoad("bassflac.dll");
+            if (_flacPluginHandle == 0)
+            {
+                var err = Bass.BASS_ErrorGetCode();
+                Debug.WriteLine($"Failed to load FLAC plugin: {err}");
+            }
+
             return _isInitialized;
         }
 
@@ -255,6 +267,11 @@ namespace MusicWrap.Core
 
         public void Dispose()
         {
+            if (_flacPluginHandle != 0)
+            {
+                Bass.BASS_PluginFree(_flacPluginHandle);
+                _flacPluginHandle = 0;
+            }
             if (_isInitialized)
             {
                 Bass.BASS_Free();

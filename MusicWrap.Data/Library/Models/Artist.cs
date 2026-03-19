@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MusicWrap.Data.Library
+namespace MusicWrap.Data.Library.Models
 {
     [MessagePackObject]
     public sealed class Artist

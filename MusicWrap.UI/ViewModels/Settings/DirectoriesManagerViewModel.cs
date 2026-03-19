@@ -1,9 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
-using MusicWrap.Data;
-using MusicWrap.Data.Library;
-using MusicWrap.Data.Services;
+using MusicWrap.Data.Library.Application;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;

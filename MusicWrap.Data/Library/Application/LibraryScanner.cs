@@ -1,11 +1,12 @@
 ﻿using MessagePack.Formatters;
 using MusicWrap.Data.Library;
+using MusicWrap.Data.Library.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace MusicWrap.Data.Services
+namespace MusicWrap.Data.Library.Application
 {
     public interface ILibraryScanner
     {
@@ -20,7 +21,7 @@ namespace MusicWrap.Data.Services
     public class LibraryScanner : ILibraryScanner
     {
         private readonly MusicLibrary _library;
-        private readonly ILibraryStore _store;
+        private readonly ILibraryRepository _store;
         private readonly ILibraryIndexer _indexer;
 
         private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
@@ -37,7 +38,7 @@ namespace MusicWrap.Data.Services
             }
         }
 
-        public LibraryScanner(MusicLibrary library, ILibraryStore store, ILibraryIndexer indexer)
+        public LibraryScanner(MusicLibrary library, ILibraryRepository store, ILibraryIndexer indexer)
         {
             _library = library;
             _store = store;
@@ -145,8 +146,6 @@ namespace MusicWrap.Data.Services
 
             await Task.Run(() => // delegate to background thread for IO-bound work
             {
-
-
                 // Fingerprinting
                 var trackByFingerprint = new Dictionary<(long size, long ticks), Track>(_library.Tracks.Count);
                 for (int i = 0; i < _library.Tracks.Count; i++)
@@ -245,5 +244,20 @@ namespace MusicWrap.Data.Services
 
         }
         #endregion
+    }
+
+    public sealed class ScanProgress
+    {
+        public int FilesProcessed { get; set; }
+        public int TotalFiles { get; set; }
+        public string CurrentFile { get; set; } = string.Empty;
+        public ScanState State { get; set; }
+    }
+
+    public enum ScanState
+    {
+        Fingerprinting,
+        Scanning,
+        Saving
     }
 }
