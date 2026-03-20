@@ -102,6 +102,11 @@ namespace MusicWrap.UI.ViewModels.Settings
         [RelayCommand]
         private void RemoveSelected()
         {
+            if (SelectedDirectories.Count <= 0) return;
+            foreach (var dir in SelectedDirectories)
+            {
+                _scanner.RemoveDirectory(dir.Path, true);
+            }
         }
 
         [RelayCommand]

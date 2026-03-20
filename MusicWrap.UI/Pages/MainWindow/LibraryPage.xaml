@@ -32,23 +32,33 @@
 
         <!-- Template for Track List Placeholder -->
         <DataTemplate x:Key="TrackListTemplate">
-            <Border Background="{Binding DominantColor, Converter={StaticResource HexToBrushConverter}}"
+            <Border 
                 Margin="0,8"
                 CornerRadius="4"
                 Width="{Binding RelativeSource={RelativeSource AncestorType=Grid}, Path=ActualWidth}"
-                HorizontalAlignment="Left">
-                <Grid Margin="8">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                HorizontalAlignment="Left"
+                BorderThickness="1"
+                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                >
+                <Border.Background>
+                    <ImageBrush 
+                        ImageSource="{Binding ImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=512}" 
+                        RenderOptions.BitmapScalingMode="HighQuality"
+                        Stretch="UniformToFill"/>
+                </Border.Background>
+                <Grid>
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                    <ContentControl x:Name="TracksContentPlaceholder"
+                        <ContentControl x:Name="TracksContentPlaceholder"
                                 Grid.Row="0"
                                 Margin="0,0,0,0"
                                 Loaded="TracksContentPlaceholder_Loaded"/>
 
-                    <!-- Close Button -->
-                    <Button x:Name="CloseTracksButton"
+                        <!-- Close Button -->
+                        <Button x:Name="CloseTracksButton"
                         Content="✕"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Top"
@@ -59,6 +69,7 @@
                         FontSize="14"
                         Cursor="Hand"
                         Click="CloseTracksButton_Click"/>
+                    </Grid>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -78,19 +89,22 @@
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
             <Menu Grid.Row="0">
-                <MenuItem Header="Add" Icon="{ex:Icon Glyph=E710}">
-                    <MenuItem Header="Add Folder" Command="{Binding AddFolderCommand}"/>
-                    <MenuItem Header="Add Files" Command="{Binding AddFilesCommand}"/>
+                <MenuItem Header="Library" Icon="{ex:Icon Glyph=E8F1}">
+                    <MenuItem Header="Rescan directories" Icon="{ex:Icon Glyph=E895}" Command="{Binding RescanAllDirectoriesCommand}"/>
                     <Separator/>
-                    <MenuItem Header="Refresh library" Command="{Binding RefreshCommand}"/>
+                    <MenuItem Header="Add Folder" Icon="{ex:Icon Glyph=E8F4}" Command="{Binding AddFolderCommand}"/>
+                    <MenuItem Header="Add Files" Icon="{ex:Icon Glyph=E710}" Command="{Binding AddFilesCommand}"/>
+                    <Separator/>
+                    <MenuItem Header="Refresh library" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}"/>
                 </MenuItem>
                 <MenuItem Header="View" Icon="{ex:Icon Glyph=E7B3}">
                     <MenuItem Header="Albums" 
-                              Command="{Binding SetViewModeCommand}" 
+                              Command="{Binding RescanAllDirectoriesCommand}" 
                               CommandParameter="Album"
                               IsCheckable="True" 
                               IsChecked="{Binding IsAlbumView, Mode=OneWay}"
@@ -126,22 +140,25 @@
                               Command="{Binding SetAscendingCommand}"
                               IsCheckable="True" 
                               IsChecked="{Binding Ascending, Mode=OneWay}"
-                              Icon="{ex:Icon Glyph=E74A}"
+                              Icon="{ex:Icon Glyph=E74A, FontSize=12}"
                               />
 
                     <MenuItem Header="Descending" 
                               Command="{Binding SetDescendingCommand}"
                               IsCheckable="True" 
                               IsChecked="{Binding Ascending, Mode=OneWay, Converter={StaticResource InverseBoolConverter}}"
-                              Icon="{ex:Icon Glyph=E74B}"
+                              Icon="{ex:Icon Glyph=E74B, FontSize=12}"
                               />
                 </MenuItem>
             </Menu>
+            <Border Grid.Row="1" Padding="4" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ProgressBar IsIndeterminate="True"/>
+            </Border>
             <ListView
                     x:Name="EntriesListView"
                     ItemsSource="{Binding EntriesViewSource.View}"
                     SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
-                    Grid.Row="1"
+                    Grid.Row="2"
                     SelectionMode="Single"
                     HorizontalAlignment="Stretch"
                     PreviewKeyDown="EntriesListView_PreviewKeyDown"

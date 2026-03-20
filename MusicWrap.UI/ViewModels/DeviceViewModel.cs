@@ -2,6 +2,7 @@
 using MusicWrap.Core;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -29,14 +30,16 @@ namespace MusicWrap.UI.ViewModels
 
         private readonly IMusicPlayerService _player;
         private readonly IUserSettingsRepository _userSettingsRepository;
+        private readonly ISaveCoordinator _saveCoordinator;
         private readonly UserSettings _userSettings;
         private readonly int[] SampleRates = [-1, 44100, 48000, 88200, 96000, 176400, 192000];
         private readonly OutputMode[] Outputmodes = [OutputMode.WasapiShared, OutputMode.WasapiExclusive];
-        public DeviceViewModel(IMusicPlayerService player, IUserSettingsRepository userSettingsRepository, UserSettings userSettings)
+        public DeviceViewModel(IMusicPlayerService player, IUserSettingsRepository userSettingsRepository, ISaveCoordinator saveCoordinator, UserSettings userSettings)
         {
             _player = player;
             _userSettingsRepository = userSettingsRepository;
             _userSettings = userSettings;
+            _saveCoordinator = saveCoordinator;
 
             LoadDevices();
 
@@ -73,7 +76,8 @@ namespace MusicWrap.UI.ViewModels
 
             _player.ChangeOutputMode(target);
             _userSettings.PreferredOutputMode = target;
-            _userSettingsRepository.Save(_userSettings);
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+            //_userSettingsRepository.Save(_userSettings);
         }
 
         public void SetCurrentSampleRate(int index)
@@ -85,7 +89,8 @@ namespace MusicWrap.UI.ViewModels
 
             _player.ChangeSampleRate(target);
             _userSettings.PreferredSampleRate = (SampleRatePreference)target;
-            _userSettingsRepository.Save(_userSettings);
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+            //_userSettingsRepository.Save(_userSettings);
 
         }
         public void SetCurrentDevice(int index)
@@ -97,7 +102,8 @@ namespace MusicWrap.UI.ViewModels
 
             _player.ChangeOutputDevice(target);
             _userSettings.PreferredDeviceIndex = target;
-            _userSettingsRepository.Save(_userSettings);
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+            //_userSettingsRepository.Save(_userSettings);
 
         }
 

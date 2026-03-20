@@ -4,17 +4,14 @@ using MusicWrap.Core;
 using MusicWrap.Data.Library;
 using MusicWrap.UI.Helpers;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Media.Imaging;
-using TagLib.IFD;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.UI.Services;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -22,6 +19,7 @@ namespace MusicWrap.UI.ViewModels
     {
         private readonly IMusicPlayerService _playerService;
         private readonly MusicLibrary _library;
+        private readonly ISaveCoordinator _saveCoordinator;
 
         private readonly DispatcherTimer _uiPositionTmer;
         private double _lastEnginePosition = 0;
@@ -114,10 +112,12 @@ namespace MusicWrap.UI.ViewModels
             Process.Start(new ProcessStartInfo(ArtworkPath) { UseShellExecute = true });
         }
 
-        public PlayerViewModel(IMusicPlayerService service, MusicLibrary library)
+        public PlayerViewModel(IMusicPlayerService service, MusicLibrary library, ISaveCoordinator saveCoordinator)
         {
             _playerService = service;
             _library = library;
+            _saveCoordinator = saveCoordinator;
+
 
             // Subscribe to player events
             _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -219,18 +219,6 @@ namespace MusicWrap.UI.ViewModels
             _isSeekingPosition = true; // keep lock until confirmend by the engine
 
             _playerService.Seek(target);
-
-            //_playerService.Seek(position);
-
-            //_lastEnginePosition = position;
-            //_lastEnginePositionAtUTC = DateTime.UtcNow;
-
-            //_pendingSeekTarget = position;
-            //_pendingSeekUntilUtc = DateTime.UtcNow.AddMilliseconds(200);
-
-            //CurrentPosition = position;
-            //UpdateFormattedPosition(position);
-            //_isSeekingPosition = false;
         }
 
         [RelayCommand]
@@ -262,12 +250,14 @@ namespace MusicWrap.UI.ViewModels
                 _ => RepeatMode.None
             };
             UpdateRepeatModeIcon();
+            _saveCoordinator.Enqueue(SaveKind.Playback);
         }
         [RelayCommand]
         private void ToggleDJMode()
         {
             _playerService.ContinueMode = IsDJOn ? ContinueMode.None : ContinueMode.DJEnd;
             UpdateDJButtonIcon();
+            _saveCoordinator.Enqueue(SaveKind.Playback);
         }
 
         private void UpdateRepeatModeIcon()

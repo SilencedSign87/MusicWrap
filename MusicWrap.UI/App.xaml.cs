@@ -30,6 +30,9 @@ namespace MusicWrap.UI
         public static Window? CurrentWindow { get; private set; }
         public static IServiceProvider Services { get; private set; } = default!;
         private TaskbarIcon? _trayIcon;
+        private IMusicPlayerService? _player;
+        private ISaveCoordinator? _saveCoordinator;
+        private bool _saveHooksAttached;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -61,8 +64,32 @@ namespace MusicWrap.UI
         protected override void OnExit(ExitEventArgs e)
         {
             TrayIconManager.DisposeTrayIcon();
-            TrySaveLibrary();
-            base.OnExit(e);
+            try
+            {
+                var save = Services.GetService<ISaveCoordinator>();
+                if (save is not null)
+                {
+                    save.Enqueue(SaveKind.Cache | SaveKind.Library | SaveKind.Playback | SaveKind.Settings);
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    save.FlushAsync(cts.Token).GetAwaiter().GetResult();
+                }
+                else
+                {
+                    TrySaveLibrary();
+                }
+            }
+            catch
+            {
+            }
+            finally
+            {
+                DetachSaveHooks();
+                if (_saveCoordinator is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+                base.OnExit(e);
+            }
         }
 
         public static void ShowMain()
@@ -155,6 +182,8 @@ namespace MusicWrap.UI
             // Services
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
+            services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
+            services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
 
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
@@ -164,19 +193,13 @@ namespace MusicWrap.UI
             services.AddTransient<CompactPlayer>();
             services.AddTransient<SettingsWindow>();
 
-            // Services
-            services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
-
-
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
+            services.AddTransient<SettingsGeneralViewModel>();
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
             services.AddSingleton<QueueViewModel>();
             services.AddSingleton<DeviceViewModel>();
-            //services.AddTransient<AlbumViewModel>();
-
-            // Player
             services.AddSingleton<PlayerViewModel>();
 
             return services.BuildServiceProvider();
@@ -221,6 +244,8 @@ namespace MusicWrap.UI
                 _trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
 
                 windowToShow = TryRestorePlaybackSession();
+
+                AttachSaveHooks();
             }
             catch
             {
@@ -255,11 +280,12 @@ namespace MusicWrap.UI
 
                 var playbackRepository = Services.GetService<IPlaybackRepository>();
                 var player = Services.GetService<IMusicPlayerService>();
-
                 if (playbackRepository is null || player is null) return playerMode;
 
-                var snapshot = playbackRepository.Load();
+                var startupBehavior = userSettings?.StartupBehavior ?? StartupBehavior.RestoreQueueOnly;
+                if (startupBehavior == StartupBehavior.StartClean) return playerMode;
 
+                var snapshot = playbackRepository.Load();
                 if (snapshot.TrackIds.Length == 0) return playerMode;
 
                 var library = Services.GetService<MusicLibrary>();
@@ -270,32 +296,37 @@ namespace MusicWrap.UI
                 if (queue.Length == 0) return playerMode;
 
                 player.SetQueue(queue, false);
-
                 player.RepeatMode = (RepeatMode)snapshot.RepeatMode;
                 player.ContinueMode = (ContinueMode)snapshot.ContinueMode;
 
                 int index = snapshot.CurrentIndex;
-                if (index < 0 || index >= queue.Length)
-                    index = 0;
+                if (index < 0 || index >= queue.Length) index = 0;
 
-                player.SetVolume(0);
-                player.PlayIndex(index);
-
-                var position = snapshot.PositionInSeconds;
-                position = Math.Clamp(position, 0, player.Duration);
-
-                player.Seek(position);
-
-                switch (snapshot.PlaybackState)
+                switch (startupBehavior)
                 {
-                    case 0:// stopped
+                    case StartupBehavior.RestoreQueueOnly:
                         player.Stop();
                         break;
-                    case 1: // playing
-                        player.Play();
+
+                    case StartupBehavior.RestoreQueueAndIndexOnly:
+                        player.SetSilentIndex(index);
+                        player.Stop();
                         break;
-                    case 2: // paused
-                        player.Pause();
+
+                    case StartupBehavior.ResumePlayback:
+                        player.SetVolume(0f);
+                        player.PlayIndex(index);
+
+                        var position = Math.Clamp(snapshot.PositionInSeconds, 0, player.Duration);
+                        player.Seek(position);
+
+                        switch (snapshot.PlaybackState)
+                        {
+                            case 0: player.Stop(); break;
+                            case 1: player.Play(); break;
+                            case 2: player.Pause(); break;
+                            default: player.Pause(); break;
+                        }
                         break;
                 }
 
@@ -310,6 +341,68 @@ namespace MusicWrap.UI
             {
                 return 0;
             }
+        }
+        
+        private void AttachSaveHooks()
+        {
+            if (_saveHooksAttached) return;
+            _player = Services.GetService<IMusicPlayerService>();
+            _saveCoordinator = Services.GetService<ISaveCoordinator>();
+
+            if (_player is null || _saveCoordinator is null) return;
+
+            _player.QueueChanged += OnQueueChanged;
+            _player.PlaybackStateChanged += OnPlaybackStateChanged;
+            _player.TrackChanged += OnTrackChanged;
+            _player.DeviceIndexChanged += OnDeviceIndexChanged;
+            _player.SampleRateChanged += OnSampleRateChanged;
+            _player.OutputModeChanged += OnOutputModeChanged;
+
+            _saveHooksAttached = true;
+        }
+        private void DetachSaveHooks()
+        {
+            if (!_saveHooksAttached) return;
+            if (_player is not null)
+            {
+                _player.QueueChanged -= OnQueueChanged;
+                _player.PlaybackStateChanged -= OnPlaybackStateChanged;
+                _player.TrackChanged -= OnTrackChanged;
+                _player.DeviceIndexChanged -= OnDeviceIndexChanged;
+                _player.SampleRateChanged -= OnSampleRateChanged;
+                _player.OutputModeChanged -= OnOutputModeChanged;
+            }
+            _saveHooksAttached = false;
+        }
+
+        private void OnOutputModeChanged(object? sender, OutputMode e)
+        {
+            _saveCoordinator?.Enqueue(SaveKind.Settings);
+        }
+
+        private void OnSampleRateChanged(object? sender, SampleRateChangedEventArgs e)
+        {
+            _saveCoordinator?.Enqueue(SaveKind.Settings);
+        }
+
+        private void OnDeviceIndexChanged(object? sender, int e)
+        {
+            _saveCoordinator?.Enqueue(SaveKind.Settings);
+        }
+
+        private void OnTrackChanged(object? sender, string e)
+        {
+            _saveCoordinator?.Enqueue(SaveKind.Playback);
+        }
+
+        private void OnPlaybackStateChanged(object? sender, PlaybackState e)
+        {
+            _saveCoordinator?.Enqueue(SaveKind.Playback);
+        }
+
+        private void OnQueueChanged(object? sender, int[] e)
+        {
+            _saveCoordinator?.Enqueue(SaveKind.Playback);
         }
 
         private static void CheckMemory()

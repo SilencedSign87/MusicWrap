@@ -30,6 +30,7 @@ namespace MusicWrap.UI.Services
     {
         private static readonly string _libraryFileName = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.dat");
         private static readonly object _diskLock = new();
+        private static readonly object _indexLock = new();
 
         private readonly MusicLibrary _library;
         private readonly IUserSettingsRepository _userSettingsRepository;
@@ -162,8 +163,9 @@ namespace MusicWrap.UI.Services
                 };
             });
             entries = EnsureAllLibraryAlbum(entries);
-            
-            switch(viewType){
+
+            switch (viewType)
+            {
                 case "Album":
                     _albumCache = entries;
                     break;
@@ -199,6 +201,7 @@ namespace MusicWrap.UI.Services
             _trackCountByAlbumId = [];
             _artistNamesByAlbumId = [];
             _artistNameById = [];
+            _coverLookUp = [];
         }
 
         public IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry)
@@ -222,12 +225,14 @@ namespace MusicWrap.UI.Services
                 if (!_trackCountByAlbumId.TryGetValue(albumId, out var trackCount) || trackCount <= 0) continue;
 
                 string? imagePath = null;
+                string? bluredImagePath = null;
                 string DominantColorHex = "#808080";
                 string ForegroundColorHex = "#FFFFFF";
 
                 if (album.CoverId > 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
                 {
                     imagePath = Path.Combine(_coversPath, cover.FileName);
+                    bluredImagePath = Path.Combine(_coversPath, cover.BlurFileName);
                     DominantColorHex = cover.DominantColorHex ?? "#808080";
                     ForegroundColorHex = cover.ForegroundColorHex ?? "#FFFFFF";
                 }
@@ -240,6 +245,7 @@ namespace MusicWrap.UI.Services
                     Year = album.Year,
                     ArtistNames = artistName,
                     ImagePath = imagePath ?? string.Empty,
+                    BluredImagePath = bluredImagePath ?? string.Empty,
                     DominantColorHex = DominantColorHex,
                     ForegroundColorHex = ForegroundColorHex
                 });
@@ -264,6 +270,7 @@ namespace MusicWrap.UI.Services
         {
             _userSettings.LibraryListBy = listBy;
             _userSettings.LibraryAscending = ascending;
+            //_saveCoordinator.Enqueue(SaveKind.Settings);
             _userSettingsRepository.Save(_userSettings);
         }
 
@@ -456,11 +463,27 @@ namespace MusicWrap.UI.Services
         }
         private void EnsureIndexes()
         {
-            if (_albumById.Count == 0)
-                BuildIndexes();
+            lock (_indexLock)
+            {
+                bool mustRebuildIndexes =
+                    _albumById.Count != _library.Albums.Count ||
+                    _artistNameById.Count != _library.Artists.Count ||
+                    _trackCountByAlbumId.Count != _library.Albums.Count ||
+                    _artistNamesByAlbumId.Count != _library.Albums.Count;
+                if (mustRebuildIndexes)
+                {
+                    BuildIndexes();
+                }
 
-            if (_coverLookUp.Count == 0)
-                BuildCoverLookUp();
+                bool mustRebuildCoverLookUp =
+                    _coverLookUp.Count != _library.CoverAssets.Count ||
+                    (_library.CoverAssets.Count > 0 && !_coverLookUp.ContainsKey(_library.CoverAssets[0].Id));
+                if (mustRebuildCoverLookUp)
+                {
+                    BuildCoverLookUp();
+                }
+
+            }
         }
 
         private void BuildIndexes()
@@ -527,7 +550,7 @@ namespace MusicWrap.UI.Services
                 return entries;
 
             int existingIndex = -1;
-            for (int i = 0;  i <entries.Length; i++)
+            for (int i = 0; i < entries.Length; i++)
             {
                 var e = entries[i];
                 if (e.Id == AllEntryId && e.Type == AllEntryType)
@@ -583,6 +606,7 @@ namespace MusicWrap.UI.Services
         public int Year { get; set; }
         public string ArtistNames { get; set; } = string.Empty;
         public string? ImagePath { get; set; }
+        public string? BluredImagePath { get; set; }
         public string DominantColorHex { get; set; } = "#808080";
         public string ForegroundColorHex { get; set; } = "#FFFFFF";
     }

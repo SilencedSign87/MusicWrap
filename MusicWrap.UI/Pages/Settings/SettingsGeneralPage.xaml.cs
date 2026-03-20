@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.ViewModels.Settings;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -15,9 +17,12 @@ namespace MusicWrap.UI.Pages.Settings
 {
     public partial class SettingsGeneralPage : UserControl
     {
+        private readonly SettingsGeneralViewModel _viewModel;
         public SettingsGeneralPage()
         {
             InitializeComponent();
+            _viewModel = App.Services.GetRequiredService<SettingsGeneralViewModel>();
+            DataContext = _viewModel;
         }
     }
 }

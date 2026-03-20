@@ -123,7 +123,8 @@ namespace MusicWrap.Data.Library.Application
             if (picture is not null && picture.Data?.Data is { Length: > 0 } bytes)
             {
                 coverId = GetOrCreateCoverAsset(bytes, picture.MimeType);
-            }else if (TryGetExternalCover(filePath, out var externalCoverBytes, out var externalMimeType))
+            }
+            else if (TryGetExternalCover(filePath, out var externalCoverBytes, out var externalMimeType))
             {
                 coverId = GetOrCreateCoverAsset(externalCoverBytes, externalMimeType);
             }
@@ -273,13 +274,16 @@ namespace MusicWrap.Data.Library.Application
 
                 var (domminantColor, foregroundColor) = ExtractColorsFromImage(imageBytes);
 
+                var blurFileName = EnsureBlurCover(imageBytes, fingerprint, filename, domminantColor);
+
                 var asset = new CoverAsset
                 {
                     Id = _library.GenerateCoverId(),
                     FileName = filename,
                     Fingerprint = fingerprint,
                     DominantColorHex = domminantColor,
-                    ForegroundColorHex = foregroundColor
+                    ForegroundColorHex = foregroundColor,
+                    BlurFileName = blurFileName,
                 };
 
                 _library.CoverAssets.Add(asset);
@@ -320,67 +324,164 @@ namespace MusicWrap.Data.Library.Application
             }
         }
 
+        private static string? EnsureBlurCover(byte[] imageBytes, string fingerprint, string originalFileName, string DominantColorHex)
+        {
+            const int ImageWidth = 512;
+            const int ImageHeight = 512;
+            try
+            {
+                var dominantColor = new Rgba32(
+                    Convert.ToByte(DominantColorHex.Substring(1, 2), 16),
+                    Convert.ToByte(DominantColorHex.Substring(3, 2), 16),
+                    Convert.ToByte(DominantColorHex.Substring(5, 2), 16),
+                    255);
+
+                var blurDirectory = Path.Combine(MusicWrapDirectories.CoverDirectory, "Blur");
+                Directory.CreateDirectory(blurDirectory);
+
+                var blurFileName = fingerprint.GetHashCode().ToString("X8") + ".blur.jpg";
+                var blurPath = Path.Combine(blurDirectory, blurFileName);
+
+                if (File.Exists(blurPath))
+                    return blurFileName;
+
+                using var image = Image.Load<Rgba32>(imageBytes);
+                image.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(ImageWidth, ImageHeight),
+                    Mode = ResizeMode.Max,
+                    Sampler = KnownResamplers.Lanczos3,
+                })
+                .GaussianBlur(32f)
+                );
+
+                // Create base image 
+                using var dominantLayer = new Image<Rgba32>(ImageWidth, ImageHeight, dominantColor);
+
+                const float domFactor = 0.8f;
+                const float imgFactor = 1f - domFactor;
+
+                image.ProcessPixelRows(dominantLayer, (imgAccesor, domAccesor) =>
+                {
+                    for (int y = 0; y < image.Height; y++)
+                    {
+                        var imgRow = imgAccesor.GetRowSpan(y);
+                        var domRow = domAccesor.GetRowSpan(y);
+                        for (int x = 0; x < imgRow.Length; x++)
+                        {
+                            var imgPixel = imgRow[x];
+                            var domPixel = domRow[x];
+
+                            // blend
+                            imgRow[x] = new Rgba32(
+                                (byte)((domPixel.R * domFactor) + (imgPixel.R * imgFactor)),
+                                (byte)((domPixel.G * domFactor) + (imgPixel.G * imgFactor)),
+                                (byte)((domPixel.B * domFactor) + (imgPixel.B * imgFactor)),
+                                255);
+                        }
+                    }
+                });
+
+                //grain
+
+                AddNoiseGrain(image, 0.08f, 3);
+
+                image.Mutate(x => x.Brightness(0.98f).Saturate(0.9f).GaussianBlur(1.2f));
+
+                image.SaveAsJpeg(blurPath, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
+                {
+                    Quality = 99,
+                    ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.YCbCrRatio444
+                });
+
+                return Path.Combine("Blur", blurFileName);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void AddNoiseGrain(Image<Rgba32> image, float intensity, int grainSize)
+        {
+            var random = new Random(42);
+            int width = image.Width;
+            int height = image.Height;
+
+            image.ProcessPixelRows(accessor =>
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    var row = accessor.GetRowSpan(y);
+                    for (int x = 0; x < width; x++)
+                    {
+                        if (random.NextSingle() > (1f - intensity))
+                        {
+                            var pixel = row[x];
+
+                            int noise = random.Next(-grainSize, grainSize + 1);
+
+                            byte r = (byte)Math.Clamp(pixel.R + noise, 0, 255);
+                            byte g = (byte)Math.Clamp(pixel.G + noise, 0, 255);
+                            byte b = (byte)Math.Clamp(pixel.B + noise, 0, 255);
+
+                            row[x] = new Rgba32(r, g, b, 255);
+                        }
+                    }
+                }
+            });
+        }
+
         public static (string dominantColor, string foregroundColor) ExtractColorsFromImage(byte[] imageBytes)
         {
             try
             {
                 using var image = Image.Load<Rgba32>(imageBytes);
-
                 image.Mutate(x => x.Resize(64, 64));
 
-                var colorScores = new Dictionary<Rgba32, double>();
+                var counts = new Dictionary<Rgba32, int>();
+                int validPixels = 0;
 
                 image.ProcessPixelRows(accessor =>
                 {
                     for (int y = 0; y < accessor.Height; y++)
                     {
                         var row = accessor.GetRowSpan(y);
-
                         for (int x = 0; x < row.Length; x++)
                         {
                             var pixel = row[x];
-
                             if (!IsValidColor(pixel))
                                 continue;
 
-                            var hsv = ColorSpaceConverter.ToHsv(pixel);
-
-                            if (hsv.S < 0.15f)
-                                continue;
-
-                            var quantized = QuantizeColor(pixel);
-
-                            // Score ponderado
-                            double score =
-                                hsv.S *      // saturación
-                                hsv.V;       // brillo
-
-                            if (colorScores.ContainsKey(quantized))
-                                colorScores[quantized] += score;
-                            else
-                                colorScores[quantized] = score;
+                            var q = QuantizeColor(pixel);
+                            counts[q] = counts.TryGetValue(q, out var c) ? c + 1 : 1;
+                            validPixels++;
                         }
                     }
                 });
 
-                Rgba32 dominant;
+                if (validPixels == 0 || counts.Count == 0)
+                    return ("#404040", "#FFFFFF");
 
-                if (colorScores.Any())
-                {
-                    dominant = colorScores
-                        .OrderByDescending(x => x.Value)
-                        .First().Key;
-                }
-                else
-                {
-                    dominant = GetMostFrequentColor(image);
-                }
+                int minCount = Math.Max(1, (int)(validPixels * 0.008)); // 0.8%
+                var filtered = counts.Where(kv => kv.Value >= minCount).ToList();
+                if (filtered.Count == 0)
+                    filtered = counts.ToList();
 
-                dominant = BoostSaturation(dominant, 0.4f);
+                var dominant = filtered
+                    .OrderByDescending(kv => kv.Value)
+                    .ThenByDescending(kv =>
+                    {
+                        var hsv = ColorSpaceConverter.ToHsv(kv.Key);
+                        return hsv.S * 0.7f + hsv.V * 0.3f;
+                    })
+                    .First()
+                    .Key;
+
+                dominant = BoostSaturation(dominant, 0.14f);
 
                 string bg = ToHex(dominant);
                 string fg = GetContrastColor(dominant);
-
                 return (bg, fg);
             }
             catch
@@ -403,12 +504,19 @@ namespace MusicWrap.Data.Library.Application
         {
             var hsv = ColorSpaceConverter.ToHsv(color);
 
-            float s = hsv.S < minSaturation ? minSaturation : hsv.S;
-            float v = MathF.Min(1f, hsv.V * 1.05f);
+            if (hsv.S < 0.06f) return color;
+            if (hsv.V > 0.92f && hsv.S < 0.18f) return color;
 
-            var adjustedHsv = new Hsv(hsv.H, s, v);
+            float s = hsv.S;
+            if (s < minSaturation)
+            {
+                s = s + (minSaturation - s) * 0.35f;
+            }
 
-            var rgb = ColorSpaceConverter.ToRgb(adjustedHsv);
+            float v = MathF.Min(1f, hsv.V * 1.01f);
+
+            var adjusted = new Hsv(hsv.H, s, v);
+            var rgb = ColorSpaceConverter.ToRgb(adjusted);
 
             return new Rgba32(
                 (byte)(rgb.R * 255),
@@ -472,7 +580,8 @@ namespace MusicWrap.Data.Library.Application
             mimeType = "application/octet-stream";
 
             var directory = Path.GetDirectoryName(audioFilePath);
-            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory)) {
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
                 return false;
             }
             const long maxCoverSizeBytes = 20 * 1024 * 1024; // 20 MB
@@ -493,7 +602,7 @@ namespace MusicWrap.Data.Library.Application
                 mimeType = GetMimeTypeFromExtension(bestCandidate.Extension);
 
                 return imageBytes.Length > 0;
-                
+
             }
             catch
             {

@@ -8,9 +8,6 @@
       mc:Ignorable="d" 
              d:Background="#1fffffff"
       d:DesignHeight="450" d:DesignWidth="800">
-    <UserControl.DataContext>
-        <vm:SettingsGeneralViewModel />
-    </UserControl.DataContext>
     <StackPanel Margin="16">
         <Grid Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
@@ -27,10 +24,25 @@
         </Grid>
 
         <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
-            <RadioButton GroupName="start"  Content="Resume playing" Margin="8,0" />
-            <RadioButton GroupName="start" Content="Preserve queue and current track" Margin="8,0"/>
-            <RadioButton GroupName="start" Content="Preserve queue" Margin="8,0"/>
-            <RadioButton GroupName="start" Content="Nothing" Margin="8,0"/>
+            <RadioButton GroupName="start"
+                 Content="Resume playing"
+                 Margin="8,0"
+                 IsChecked="{Binding ResumePlayback, Mode=TwoWay}" />
+
+            <RadioButton GroupName="start"
+                 Content="Preserve queue and current track"
+                 Margin="8,0"
+                 IsChecked="{Binding RestoreQueueAndIndexOnly, Mode=TwoWay}" />
+
+            <RadioButton GroupName="start"
+                 Content="Preserve queue"
+                 Margin="8,0"
+                 IsChecked="{Binding RestoreQueueOnly, Mode=TwoWay}" />
+
+            <RadioButton GroupName="start"
+                 Content="Nothing"
+                 Margin="8,0"
+                 IsChecked="{Binding StartClean, Mode=TwoWay}" />
         </WrapPanel>
     </StackPanel>
 </UserControl>

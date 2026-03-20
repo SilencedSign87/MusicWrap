@@ -41,6 +41,8 @@ namespace MusicWrap.UI.ViewModels.Library
 
         [ObservableProperty] private int? expandedAlbumId = null;
 
+        [ObservableProperty] private bool isLoading;
+
         private CancellationTokenSource? _imageCts;
 
         private bool _isInitializing;
@@ -58,6 +60,7 @@ namespace MusicWrap.UI.ViewModels.Library
             _scanner = scanner;
             _LibraryCache = libraryCache;
             _player = player;
+            IsLoading = false;
 
             _isInitializing = true;
 
@@ -119,6 +122,12 @@ namespace MusicWrap.UI.ViewModels.Library
             }
 
             LoadAlbumsForEntry(value);
+        }
+
+        [RelayCommand]
+        private async Task RescanAllDirectories()
+        {
+            await _scanner.ScanAllDirectories(null, null);
         }
 
         [RelayCommand]
@@ -271,6 +280,7 @@ namespace MusicWrap.UI.ViewModels.Library
                 Year = s.Year,
                 ArtistNames = s.ArtistNames,
                 ImagePath = s.ImagePath,
+                BlurredImagePath = s.BluredImagePath,
                 CoverImage = null, // will be loaded asynchronously
                 DominantColor = s.DominantColorHex,
                 ForegroundColor = s.ForegroundColorHex,
@@ -361,6 +371,7 @@ namespace MusicWrap.UI.ViewModels.Library
             {
                 AlbumId = albumId,
                 DominantColor = selectedAlbum.DominantColor,
+                ImagePath = selectedAlbum.BlurredImagePath,
                 ForegroundColor = selectedAlbum.ForegroundColor
             });
             newList.AddRange(albums.Skip(insertIndex));
@@ -388,6 +399,7 @@ namespace MusicWrap.UI.ViewModels.Library
             public int Year { get; set; }
             public string ArtistNames { get; set; } = string.Empty;
             public string? ImagePath { get; set; }
+            public string? BlurredImagePath { get; set; }
             public string DominantColor { get; set; } = "#808080";
             public string ForegroundColor { get; set; } = "#FFFFFF";
 
@@ -410,6 +422,7 @@ namespace MusicWrap.UI.ViewModels.Library
         public class TrackListPlaceholder
         {
             public int AlbumId { get; set; }
+            public string? ImagePath { get; set; }
             public string DominantColor { get; set; } = "#1a1a1a";
             public string ForegroundColor { get; set; } = "#ffffff";
         }
