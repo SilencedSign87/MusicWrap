@@ -43,10 +43,15 @@ namespace MusicWrap.UI.ViewModels.Library
 
         [ObservableProperty] private bool isLoading;
 
+        [ObservableProperty] private bool isLoadingIndeterminate = true;
+
+        [ObservableProperty] private double loadingProgressValue = 0;
+
         private CancellationTokenSource? _imageCts;
 
         private bool _isInitializing;
         private int _loadEntriesRequestId;
+        private readonly IProgress<ScanProgress> _scanProgress;
 
         // Services
         private readonly MusicLibrary _library;
@@ -61,6 +66,13 @@ namespace MusicWrap.UI.ViewModels.Library
             _LibraryCache = libraryCache;
             _player = player;
             IsLoading = false;
+
+            _scanProgress = new Progress<ScanProgress>(progress =>
+            {
+                LoadingProgressValue = progress.TotalFiles > 0
+                    ? (double)progress.FilesProcessed / progress.TotalFiles * 100d
+                    : 0d;
+            });
 
             _isInitializing = true;
 
@@ -127,7 +139,22 @@ namespace MusicWrap.UI.ViewModels.Library
         [RelayCommand]
         private async Task RescanAllDirectories()
         {
-            await _scanner.ScanAllDirectories(null, null);
+            IsLoading = true;
+            IsLoadingIndeterminate = false;
+            LoadingProgressValue = 0;
+
+            try
+            {
+                await _scanner.ScanAllDirectories(_scanProgress, null);
+                _LibraryCache.InvalidateCache();
+                await LoadEntriesAsync();
+            }
+            finally
+            {
+                IsLoading = false;
+                IsLoadingIndeterminate = true;
+                LoadingProgressValue = 0;
+            }
         }
 
         [RelayCommand]
@@ -146,9 +173,22 @@ namespace MusicWrap.UI.ViewModels.Library
                     _scanner.AddDirectory(selectedPath, true);
                 }
 
-                await _scanner.ScanAllDirectories(null, null);
+                IsLoading = true;
+                IsLoadingIndeterminate = false;
+                LoadingProgressValue = 0;
 
-                await LoadEntriesAsync();
+                try
+                {
+                    await _scanner.ScanAllDirectories(_scanProgress, null);
+                    _LibraryCache.InvalidateCache();
+                    await LoadEntriesAsync();
+                }
+                finally
+                {
+                    IsLoading = false;
+                    IsLoadingIndeterminate = true;
+                    LoadingProgressValue = 0;
+                }
             }
         }
 
@@ -165,8 +205,22 @@ namespace MusicWrap.UI.ViewModels.Library
                 var selectedFiles = dialog.FileNames;
                 if (selectedFiles is null || selectedFiles.Length == 0) return;
 
-                await _scanner.ScanFiles(selectedFiles, null, null);
-                await LoadEntriesAsync();
+                IsLoading = true;
+                IsLoadingIndeterminate = false;
+                LoadingProgressValue = 0;
+
+                try
+                {
+                    await _scanner.ScanFiles(selectedFiles, _scanProgress, null);
+                    _LibraryCache.InvalidateCache();
+                    await LoadEntriesAsync();
+                }
+                finally
+                {
+                    IsLoading = false;
+                    IsLoadingIndeterminate = true;
+                    LoadingProgressValue = 0;
+                }
             }
 
         }
@@ -205,15 +259,27 @@ namespace MusicWrap.UI.ViewModels.Library
             var listBySnapshot = ListBy;
             var ascendingSnapshot = Ascending;
 
-            DateTime timeStart = DateTime.Now;
-            var loadedEntries = await _LibraryCache.GetEntriesAsync(listBySnapshot, ascendingSnapshot);
+            IsLoading = true;
+            IsLoadingIndeterminate = true;
 
-            if (requestId != Volatile.Read(ref _loadEntriesRequestId)) return;
+            try
+            {
+                DateTime timeStart = DateTime.Now;
+                var loadedEntries = await _LibraryCache.GetEntriesAsync(listBySnapshot, ascendingSnapshot);
 
-            ApplyGrouping(loadedEntries, ascendingSnapshot);
+                if (requestId != Volatile.Read(ref _loadEntriesRequestId)) return;
 
-            DateTime timeEnd = DateTime.Now;
-            Debug.WriteLine($"Loaded {loadedEntries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
+                ApplyGrouping(loadedEntries, ascendingSnapshot);
+
+                DateTime timeEnd = DateTime.Now;
+                Debug.WriteLine($"Loaded {loadedEntries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
+            }
+            finally
+            {
+                IsLoading = false;
+                IsLoadingIndeterminate = true;
+                LoadingProgressValue = 0;
+            }
         }
 
         private void ApplyGrouping(IReadOnlyList<LibraryEntry> entries, bool ascendingSnapshot)

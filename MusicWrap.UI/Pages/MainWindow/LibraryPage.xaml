@@ -89,7 +89,7 @@
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="12"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
@@ -104,7 +104,7 @@
                 </MenuItem>
                 <MenuItem Header="View" Icon="{ex:Icon Glyph=E7B3}">
                     <MenuItem Header="Albums" 
-                              Command="{Binding RescanAllDirectoriesCommand}" 
+                              Command="{Binding SetViewModeCommand}" 
                               CommandParameter="Album"
                               IsCheckable="True" 
                               IsChecked="{Binding IsAlbumView, Mode=OneWay}"
@@ -152,7 +152,13 @@
                 </MenuItem>
             </Menu>
             <Border Grid.Row="1" Padding="4" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <ProgressBar IsIndeterminate="True"/>
+                <ProgressBar
+                    Minimum="0"
+                    Maximum="100"
+                    Foreground="{StaticResource AccentBrush80}" 
+                    Background="#111111" 
+                    Value="{Binding LoadingProgressValue}"
+                    IsIndeterminate="{Binding IsLoadingIndeterminate}"/>
             </Border>
             <ListView
                     x:Name="EntriesListView"
