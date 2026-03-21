@@ -11,9 +11,11 @@ using System.Windows.Input;
 
 namespace MusicWrap.Data.Library.Application
 {
+
     public interface ILibraryIndexer
     {
         void IndexFileAsync(string filePath);
+        ExternalTrackIndexResult IndexExternalTrack(ExternalTrackIndexRequest request);
     }
     public class LibraryIndexer : ILibraryIndexer
     {
@@ -166,6 +168,80 @@ namespace MusicWrap.Data.Library.Application
                 _library.Tracks.Add(track);
             }
 
+        }
+
+        public ExternalTrackIndexResult IndexExternalTrack(ExternalTrackIndexRequest request)
+        {
+            if (request is null) throw new ArgumentNullException(nameof(request));
+            if (string.IsNullOrWhiteSpace(request.SourceUri)) throw new ArgumentException("SourceUri is required.", nameof(request));
+            if (string.IsNullOrWhiteSpace(request.ExternalId)) throw new ArgumentException("ExternalId is required.", nameof(request));
+            if (string.IsNullOrWhiteSpace(request.Title)) throw new ArgumentException("Title is required.", nameof(request));
+
+            lock (_lock)
+            {
+                var existing = _library.Tracks.FirstOrDefault(t =>
+                    t.Origin == request.Origin &&
+                    string.Equals(t.ExternalId, request.ExternalId, StringComparison.OrdinalIgnoreCase));
+
+                if (existing is not null)
+                {
+                    return new ExternalTrackIndexResult
+                    {
+                        Created = false,
+                        TrackId = existing.Id,
+                        CoverId = existing.CoverId
+                    };
+                }
+
+                int artistId = GetOrCreateArtist(
+                    string.IsNullOrWhiteSpace(request.ArtistName) ? "Unknown Artist" : request.ArtistName);
+
+                int coverId = 0;
+                if (request.ThumbnailBytes is { Length: > 0 } &&
+                    !string.IsNullOrWhiteSpace(request.ThumbnailMimeType))
+                {
+                    coverId = GetOrCreateCoverAsset(request.ThumbnailBytes, request.ThumbnailMimeType!);
+                }
+
+                int albumId = GetOrCreateAlbum(
+                    string.IsNullOrWhiteSpace(request.AlbumName) ? "Unknown Album" : request.AlbumName,
+                    [artistId],
+                    [artistId],
+                    request.Year,
+                    coverId);
+
+                var track = new Track
+                {
+                    Id = _library.GenerateTrackId(),
+                    Path = string.Empty,
+                    Title = request.Title.Trim(),
+                    ArtistIds = [artistId],
+                    AlbumId = albumId,
+                    GenreIds = [],
+                    Duration = Math.Max(0, request.DurationSeconds),
+                    FileSize = 0,
+                    LastWriteTime = DateTime.UtcNow.Ticks,
+                    Disk = 0,
+                    TrackNumber = 0,
+                    SamplingRate = 0,
+                    Bitrate = 0,
+                    Channels = 0,
+                    BitDeph = 0,
+                    SourceUri = request.SourceUri.Trim(),
+                    ExternalId = request.ExternalId.Trim(),
+                    Origin = request.Origin,
+                    CoverId = coverId
+                };
+
+                _library.Tracks.Add(track);
+
+                return new ExternalTrackIndexResult
+                {
+                    Created = true,
+                    TrackId = track.Id,
+                    CoverId = coverId
+                };
+            }
         }
 
         #region  Internal
@@ -639,5 +715,29 @@ namespace MusicWrap.Data.Library.Application
         };
 
         #endregion
+    }
+
+    public sealed class ExternalTrackIndexRequest
+    {
+        public required TrackOrigin Origin { get; init; } = TrackOrigin.Youtube;
+        public required string SourceUri { get; init; }
+        public required string ExternalId { get; init; }
+
+        public required string Title { get; init; }
+        public string ArtistName { get; init; } = "Unknown Artist";
+        public string AlbumName { get; init; } = "Unknown Album";
+
+        public int Year { get; init; } = 0;
+        public int DurationSeconds { get; init; } = 0;
+
+        public byte[]? ThumbnailBytes { get; init; }
+        public string? ThumbnailMimeType { get; init; }
+    }
+
+    public sealed class ExternalTrackIndexResult
+    {
+        public bool Created { get; init; }
+        public int TrackId { get; init; }
+        public int CoverId { get; init; }
     }
 }

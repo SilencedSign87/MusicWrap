@@ -50,8 +50,6 @@ namespace MusicWrap.UI.Services
         private Dictionary<int, string> _artistNamesByAlbumId = [];
         private Dictionary<int, string> _artistNameById = [];
 
-        public const string AllEntryType = "all";
-        public const int AllEntryId = -1;
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
         public LibraryCacheService(MusicLibrary library, IUserSettingsRepository userSettingsRepository, UserSettings userSettings)
@@ -162,7 +160,6 @@ namespace MusicWrap.UI.Services
                     _ => _albumCache = ConstructAlbumEntries(),
                 };
             });
-            entries = EnsureAllLibraryAlbum(entries);
 
             switch (viewType)
             {
@@ -529,52 +526,6 @@ namespace MusicWrap.UI.Services
             }
 
             return _albumIdsByDecade.TryGetValue(decade, out albumIds);
-        }
-
-        private static LibraryEntry CreateAllAlbumsEntry()
-        {
-            return new LibraryEntry
-            {
-                Id = AllEntryId,
-                Type = AllEntryType,
-                ImagePath = null,
-                Title = "All Albums",
-                Description = "Search across your library",
-                GroupKey = "",
-            };
-        }
-
-        private static LibraryEntry[] EnsureAllLibraryAlbum(LibraryEntry[] entries)
-        {
-            if (entries.Length > 0 && entries[0].Id == AllEntryId && entries[0].Type == AllEntryType)
-                return entries;
-
-            int existingIndex = -1;
-            for (int i = 0; i < entries.Length; i++)
-            {
-                var e = entries[i];
-                if (e.Id == AllEntryId && e.Type == AllEntryType)
-                {
-                    existingIndex = i;
-                    break;
-                }
-            }
-            if (existingIndex == -1)
-            {
-                var result = new LibraryEntry[entries.Length + 1];
-                result[0] = CreateAllAlbumsEntry();
-                Array.Copy(entries, 0, result, 1, entries.Length);
-                return result;
-            }
-            var reordered = new LibraryEntry[entries.Length];
-            reordered[0] = entries[existingIndex];
-            int w = 1;
-            for (int i = 0; i < entries.Length; i++)
-            {
-                if (i == existingIndex) continue;
-                reordered[w++] = entries[i];
-            }
-            return reordered;
         }
 
     }

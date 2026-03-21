@@ -6,12 +6,10 @@
 
     <!-- Base button -->
     <Style x:Key="BaseButton" TargetType="Button">
-        <Setter Property="Height" Value="auto" />
-        <Setter Property="Width" Value="auto" />
         <Setter Property="Padding" Value="12,6" />
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="14"/>
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="Template">
@@ -44,7 +42,6 @@
         <Setter Property="Background" Value="{StaticResource BackgroundControlDefault}" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource ControlElevationBorderBrush}"/>
-        <Setter Property="BorderThickness" Value="1"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
                 <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
@@ -58,10 +55,9 @@
 
     <!-- Accent button -->
     <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Background" Value="{StaticResource AccentBrush110}" />
+        <Setter Property="Background" Value="{StaticResource AccentBrush100}" />
         <Setter Property="Foreground" Value="{StaticResource TextOnAccentSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource AccentBrush100}"/>
-        <Setter Property="BorderThickness" Value="1"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
                 <Setter Property="Background" Value="{StaticResource AccentBrush110}"/>
@@ -75,7 +71,6 @@
         <Setter Property="Background" Value="{StaticResource BackgroundControlTransparent}" />
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
     <!-- Transparent button -->
@@ -83,7 +78,6 @@
         <Setter Property="Background" Value="{StaticResource BackgroundControlTransparent}" />
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="1"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
                 <Setter Property="Foreground" Value="{StaticResource AccentBrush100}"/>
@@ -96,7 +90,6 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="1"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
                 <Setter Property="Background" Value="Red"/>

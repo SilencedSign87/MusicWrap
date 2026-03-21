@@ -53,12 +53,6 @@ namespace MusicWrap.UI.Pages.MainWindow
                 vm.CollapseAlbum();
                 return;
             }
-            bool isAllEntry = selected.Id == LibraryCacheService.AllEntryId && string.Equals(selected.Type, LibraryCacheService.AllEntryType, StringComparison.OrdinalIgnoreCase);
-
-            if (isAllEntry) {
-                vm.CollapseAlbum();
-                return;
-            }
 
             // For Album view, auto-expand the single album
             if (vm.IsAlbumView && vm.AlbumsForSelectedEntry.Count > 0)

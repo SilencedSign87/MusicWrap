@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:MusicWrap.UI"
         xmlns:pages="clr-namespace:MusicWrap.UI.Pages"
         xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:mw="clr-namespace:MusicWrap.UI.Pages.MainWindow"
         mc:Ignorable="d"
         Icon="/Resources/icon.ico"
@@ -68,7 +69,7 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8"
+                                CornerRadius="0"
                                 >
                             <ContentPresenter HorizontalAlignment="Center"
                                 VerticalAlignment="Center"/>
@@ -79,11 +80,11 @@
             <Style.Triggers>
                 <!-- Hover -->
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource BackgroundLayer}"/>
+                    <Setter Property="Background" Value="{StaticResource BackgroundLayerAlt}"/>
                 </Trigger>
                 <!-- Pressed -->
                 <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="{StaticResource BackgroundLayerAlt}"/>
+                    <Setter Property="Background" Value="{StaticResource BackgroundLayer}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -97,7 +98,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-      
+
     </Window.Resources>
 
     <!--Window-->
@@ -106,7 +107,7 @@
         >
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="48" />
+                <RowDefinition Height="32" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
@@ -116,18 +117,16 @@
                     <ColumnDefinition />
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Column="0" HorizontalAlignment="Left" Margin="4">
+                <StackPanel Orientation="Horizontal" Grid.Column="0" HorizontalAlignment="Left">
                     <Image
                         Source="/Resources/MusicUI.png"
                         Width="20"
                         Height="20"
-                        Margin="8,0"
+                        Margin="8,4,4,4"
                         RenderOptions.BitmapScalingMode="HighQuality"
                         />
-
-
                     <TabControl
-                        Margin="0,4"
+                        Margin="0,2"
                         SelectionChanged="TabControl_SelectionChanged"
                         WindowChrome.IsHitTestVisibleInChrome="True"
                         Padding="0"
@@ -159,27 +158,33 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="3">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xECAA;" FontFamily="Segoe Fluent Icons" FontSize="16" />
+                                    <TextBlock Text="Services" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </TabItem.Header>
+                        </TabItem>
+                        <TabItem Style="{StaticResource CustomTabItem}" TabIndex="4">
+                            <TabItem.Header>
+                                <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xF61F;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                                     <TextBlock Text="Audio Console" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
                         </TabItem>
                     </TabControl>
-                    <Border Margin="4" Width="1" Background="#333">
-                    </Border>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <controls:CommandPaletteInput VerticalAlignment="Center" Width="250" Margin="2"/>
+                    <!--<Border Margin="0,4" Width="1" Background="#333">
+                    </Border>-->
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">
                         <TextBlock Text="&#xe713;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenMiniPlayer" ToolTip="MiniPlayer">
                         <TextBlock Text="&#xee49;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
-                    <Border Margin="4" Width="1" Background="#333">
+                    <Border Margin="0,4" Width="1" Background="#333">
                     </Border>
-
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
-
-
                 </StackPanel>
 
             </Grid>

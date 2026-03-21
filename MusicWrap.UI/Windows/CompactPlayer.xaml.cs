@@ -25,6 +25,7 @@ namespace MusicWrap.UI.Windows
         private const int _playerWidth = 275;
         private const int _compactHeight = 370;
         private const int _expandedHeight = 700;
+        private Window? _searcherWindow;
 
         public CompactPlayer()
         {
@@ -32,7 +33,19 @@ namespace MusicWrap.UI.Windows
             InitializeWindowSize();
             _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
             DataContext = _viewModel;
+
+            Closed += CompactPlayer_Closed;
         }
+
+        private void CompactPlayer_Closed(object? sender, EventArgs e)
+        {
+            Closed -= CompactPlayer_Closed;
+            if (_searcherWindow != null)
+            {
+                _searcherWindow.Close();
+            }
+        }
+
         private void InitializeWindowSize()
         {
             Width = _playerWidth;
@@ -108,7 +121,17 @@ namespace MusicWrap.UI.Windows
 
         private void MoreButton_Click(object sender, RoutedEventArgs e)
         {
-            // TODO: launch window to browse the library
+            if (_searcherWindow != null)
+            {
+                _searcherWindow.Activate();
+                return;
+            }
+            _searcherWindow = new LibrarySearcherWindow
+            {
+                Owner = this
+            };
+            _searcherWindow.Show();
+            _searcherWindow.Closed += (s, args) => _searcherWindow = null;
         }
 
         private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)

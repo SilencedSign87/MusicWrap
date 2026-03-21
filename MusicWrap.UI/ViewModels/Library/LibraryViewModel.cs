@@ -27,8 +27,6 @@ namespace MusicWrap.UI.ViewModels.Library
     {
         [ObservableProperty] private string listBy = "Artist"; // Album, Artist, Genre, Decade
 
-        [ObservableProperty] private bool isAllAlbumsSelected = false;
-
         [ObservableProperty] private bool ascending = true;
 
         [ObservableProperty] private IReadOnlyList<LibraryEntry> entries = [];
@@ -113,7 +111,6 @@ namespace MusicWrap.UI.ViewModels.Library
             _imageCts?.Cancel(); // cancel previous image loading if any
             _imageCts = null;
 
-            IsAllAlbumsSelected = false;
             if (value == null)
             {
                 // clear previous images
@@ -122,13 +119,6 @@ namespace MusicWrap.UI.ViewModels.Library
                     item.CoverImage = null;
                 }
 
-                AlbumsForSelectedEntry = [];
-                return;
-            }
-            if (value.Id == LibraryCacheService.AllEntryId && value.Type == LibraryCacheService.AllEntryType)
-            {
-                IsAllAlbumsSelected = true;
-                CollapseAlbum();
                 AlbumsForSelectedEntry = [];
                 return;
             }

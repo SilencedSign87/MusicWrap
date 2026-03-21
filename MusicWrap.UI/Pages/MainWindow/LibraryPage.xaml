@@ -284,7 +284,6 @@
                     </ItemsControl>
                 </Grid>
             </ScrollViewer>
-            <pages:LibraryExplorerPage Visibility="{Binding IsAllAlbumsSelected, Converter={StaticResource BooleanToVisibilityConverter}}"/>
         </Grid>
     </Grid>
 </UserControl>

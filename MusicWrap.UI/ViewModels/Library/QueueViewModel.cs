@@ -18,10 +18,10 @@ namespace MusicWrap.UI.ViewModels.Library
         private ObservableCollection<QueueData> queueDataList = [];
 
         // Lookups
-        private readonly Dictionary<int, Track> _trackById;
-        private readonly Dictionary<int, CoverAsset> _coverById;
-        private readonly Dictionary<int, string> _artistNameById;
-        private readonly Dictionary<int, BitmapImage?> _albumArtByCoverId = [];
+        private Dictionary<int, Track> _trackById = [];
+        private Dictionary<int, CoverAsset> _coverById = [];
+        private Dictionary<int, string> _artistNameById = [];
+        private Dictionary<int, BitmapImage?> _albumArtByCoverId = [];
 
         private const int AlbumArtCacheLimit = 256;
         private readonly LinkedList<int> _albumArtLru = [];
@@ -37,9 +37,7 @@ namespace MusicWrap.UI.ViewModels.Library
             _player = player;
 
             QueueDataList = [];
-            _trackById = _library.Tracks.ToDictionary(t => t.Id);
-            _coverById = _library.CoverAssets.ToDictionary(c => c.Id);
-            _artistNameById = _library.Artists.ToDictionary(a => a.Id, a => a.Name);
+            RefreshLookups();
 
             var currentQueue = _player.GetQueue();
             LoadQueueData(currentQueue);
@@ -49,6 +47,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private void _player_QueueChanged(object? sender, int[] e)
         {
+            RefreshLookups();
             LoadQueueData(e);
         }
 
@@ -242,6 +241,17 @@ namespace MusicWrap.UI.ViewModels.Library
                 _albumArtNodeByCoverId.Remove(coverId);
                 _albumArtByCoverId.Remove(coverId);
             }
+        }
+
+        private void RefreshLookups()
+        {
+            var tracks = _library.Tracks.ToArray();
+            var covers = _library.CoverAssets.ToArray();
+            var artists = _library.Artists.ToArray();
+
+            _trackById = tracks.ToDictionary(t => t.Id);
+            _coverById = covers.ToDictionary(c => c.Id);
+            _artistNameById = artists.ToDictionary(a => a.Id, a => a.Name);
         }
 
     }

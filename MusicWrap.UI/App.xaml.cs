@@ -9,6 +9,7 @@ using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Controls;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Services;
@@ -201,6 +202,7 @@ namespace MusicWrap.UI
             services.AddSingleton<QueueViewModel>();
             services.AddSingleton<DeviceViewModel>();
             services.AddSingleton<PlayerViewModel>();
+            services.AddSingleton<CommandPaletteViewModel>();
 
             return services.BuildServiceProvider();
         }

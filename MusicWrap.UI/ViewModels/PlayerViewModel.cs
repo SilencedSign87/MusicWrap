@@ -75,6 +75,8 @@ namespace MusicWrap.UI.ViewModels
         private string? currentTrackDominantColorHex;
         [ObservableProperty]
         private string? currentTrackForegroundColorHex;
+        [ObservableProperty]
+        private string? currentTrackBluredImage;
 
         [ObservableProperty]
         private double currentPosition = 0;
@@ -431,6 +433,7 @@ namespace MusicWrap.UI.ViewModels
             // Get cover
             int coverId = track.CoverId;
             string? coverPath = null;
+            string? blurredCover = null;
 
             if (coverId == 0)
             {
@@ -449,6 +452,7 @@ namespace MusicWrap.UI.ViewModels
                     ArtworkPath = coverPath;
                     CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
                     CurrentTrackForegroundColorHex = coverAsset.ForegroundColorHex;
+                    blurredCover = Path.Combine(CoversBasePath, coverAsset.BlurFileName!);
                 }
             }
             else
@@ -461,6 +465,7 @@ namespace MusicWrap.UI.ViewModels
                        "album",
                        300
                    )!;
+            CurrentTrackBluredImage = blurredCover;
         }
 
         private static string FormatTime(double seconds)

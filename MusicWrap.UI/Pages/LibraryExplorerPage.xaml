@@ -11,9 +11,6 @@
             <RowDefinition Height="72" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" Background="{DynamicResource LayerFillColorDefaultBrush}" Orientation="Horizontal">
-            <TextBox Grid.Column="1" Margin="16" Width="200" AutomationProperties.Name="Search library..." VerticalAlignment="Center"/>
-        </StackPanel>
         <ListView Grid.Row="1">
 
         </ListView>

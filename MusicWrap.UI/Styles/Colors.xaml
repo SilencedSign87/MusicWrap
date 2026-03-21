@@ -29,7 +29,7 @@
     <SolidColorBrush x:Key="BackgroundControlDisable" Color="#FFFFFF" Opacity="0.0419" />
     
     <!-- Floating -->
-    <SolidColorBrush x:Key="BackgroundFloating" Color="#2C2C2C" Opacity="0.96" />
+    <SolidColorBrush x:Key="BackgroundFloating" Color="#2b2b2b" />
 
     <!-- Stroke -->
     <SolidColorBrush x:Key="StrokeSurface" Color="#757575" Opacity="0.4"/>

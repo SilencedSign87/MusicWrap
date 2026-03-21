@@ -31,7 +31,18 @@ namespace MusicWrap.Data.Library.Models
         [Key(13)] public int Channels;
         [Key(14)] public int BitDeph;
 
+        // External services
+        [Key(15)] public string? SourceUri; // complete url
+        [Key(16)] public string? ExternalId; // id in the external service
+        [Key(20)] public TrackOrigin Origin = TrackOrigin.Local; 
+
         [Key(100)] public int CoverId;
 
+    }
+
+    public enum TrackOrigin
+    {
+        Local = 0,
+        Youtube = 1,
     }
 }

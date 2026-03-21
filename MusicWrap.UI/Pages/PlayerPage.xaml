@@ -11,24 +11,29 @@
              d:DesignHeight="80" 
              d:DesignWidth="1200"
              d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
-             Foreground="White"
+             Foreground="white"
              >
-    <Border 
-        Padding="4,0,4,4"
-        Background="{StaticResource BackgroundLayer}"
-            >
+    <Border>
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/>
                 <RowDefinition />
             </Grid.RowDefinitions>
+            <Rectangle
+                Grid.RowSpan="2"
+                Panel.ZIndex="-1"
+                Fill="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}"
+                Opacity="0.25"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                />
             <!-- Duration slider -->
             <Grid Grid.Row="0">
                 <controls:WaveformPlayerControl
                     WaveformData="{Binding Waveform}"
                     Position="{Binding CurrentPosition}"
                     Duration="{Binding Duration}"
-                    DominantColorHex="{Binding CurrentTrackDominantColorHex}"
+                    DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
                     SeekStarted="WaveformPlayerControl_SeekStarted"
                     SeekEnded="WaveformPlayerControl_SeekEnded"
                     SeekCanceled="WaveformPlayerControl_SeekCanceled"
@@ -86,19 +91,24 @@
                 <!--Controls-->
                 <Grid Grid.Column="1" Margin="8,0" HorizontalAlignment="Stretch">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button x:Name="RepeadButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
+                        <Button x:Name="RepeadButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}"
+                                >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
                         </Button>
-                        <Button x:Name="PrevButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Previous track" Command="{Binding PreviousCommand}">
+                        <Button x:Name="PrevButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Previous track" Command="{Binding PreviousCommand}"
+                                >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
                         </Button>
-                        <Button x:Name="PlayButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" Command="{Binding PlayPauseCommand}">
+                        <Button x:Name="PlayButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" Command="{Binding PlayPauseCommand}"
+                                >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="20"/>
                         </Button>
-                        <Button x:Name="NextButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Next track" Command="{Binding NextCommand}">
+                        <Button x:Name="NextButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Next track" Command="{Binding NextCommand}"
+                                >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
                         </Button>
-                        <Button x:Name="DJButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
+                        <Button x:Name="DJButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}"
+                                >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding DjButtonIcon}" FontSize="14"/>
                         </Button>
                     </StackPanel>
@@ -107,7 +117,8 @@
                 <!--Volume-->
                 <StackPanel Orientation="Horizontal" Grid.Column="2" Margin="0,0,8,0" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
-                        <Button Style="{StaticResource SubtleButton}" Width="32" Height="32" Padding="1"  Command="{Binding ToggleMuteCommand}">
+                        <Button Style="{StaticResource SubtleButton}" Width="32" Height="32" Padding="1"  Command="{Binding ToggleMuteCommand}"
+                                >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="16"/>
                         </Button>
                         <Slider Minimum="0" 
@@ -118,6 +129,7 @@
                                 IsMoveToPointEnabled="True"
                                 VerticalAlignment="Center"
                                 SmallChange="0.01"
+                                Foreground="{StaticResource AccentBrush100}"
                                 LargeChange="0.1"/>
                     </StackPanel>
                 </StackPanel>
