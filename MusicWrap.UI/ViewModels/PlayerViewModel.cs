@@ -463,7 +463,7 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackImage = ImageHelper.LoadThumbnail(
                        coverPath,
                        "album",
-                       300
+                       275
                    )!;
             CurrentTrackBluredImage = blurredCover;
         }

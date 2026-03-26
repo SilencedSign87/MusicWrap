@@ -11,12 +11,14 @@ using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Text;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -35,7 +37,8 @@ namespace MusicWrap.UI.ViewModels.Library
 
         [ObservableProperty] private LibraryEntry? selectedEntry;
 
-        [ObservableProperty] private List<object> albumsForSelectedEntry = [];
+        //[ObservableProperty] private List<object> albumsForSelectedEntry = [];
+        [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
 
         [ObservableProperty] private int? expandedAlbumId = null;
 
@@ -50,6 +53,7 @@ namespace MusicWrap.UI.ViewModels.Library
         private bool _isInitializing;
         private int _loadEntriesRequestId;
         private readonly IProgress<ScanProgress> _scanProgress;
+        const int albumWidth = 150;
 
         // Services
         private readonly MusicLibrary _library;
@@ -113,13 +117,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
             if (value == null)
             {
-                // clear previous images
-                foreach (var item in AlbumsForSelectedEntry.OfType<AlbumData>())
-                {
-                    item.CoverImage = null;
-                }
-
-                AlbumsForSelectedEntry = [];
+                GridRows.Clear();
                 return;
             }
 
@@ -327,27 +325,9 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private void LoadAlbumsForEntry(LibraryEntry entry)
         {
-            var summaries = _LibraryCache.GetAlbumsForEntry(entry);
-
-            var albums = summaries.Select(s => new AlbumData
-            {
-                Id = s.Id,
-                Title = s.Title,
-                Year = s.Year,
-                ArtistNames = s.ArtistNames,
-                ImagePath = s.ImagePath,
-                BlurredImagePath = s.BluredImagePath,
-                CoverImage = null, // will be loaded asynchronously
-                DominantColor = s.DominantColorHex,
-                ForegroundColor = s.ForegroundColorHex,
-            }).ToList();
-
-            AlbumsForSelectedEntry = [.. albums.Cast<object>()];
-
+            // Wait for the view to provide the real viewport width before building rows.
+            GridRows.Clear();
             ExpandedAlbumId = null;
-            _imageCts = new CancellationTokenSource();
-
-            _ = LoadCoverImagesAsync(albums, _imageCts.Token);
         }
         private static async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)
         {
@@ -368,7 +348,7 @@ namespace MusicWrap.UI.ViewModels.Library
                                 var bmp = new BitmapImage();
                                 bmp.BeginInit();
                                 bmp.CacheOption = BitmapCacheOption.OnLoad;
-                                bmp.DecodePixelWidth = 200;
+                                bmp.DecodePixelWidth = 150;
                                 bmp.UriSource = new Uri(album.ImagePath!, UriKind.Absolute);
                                 bmp.EndInit();
                                 bmp.Freeze();
@@ -397,56 +377,171 @@ namespace MusicWrap.UI.ViewModels.Library
         }
         public void ExpandAlbum(int albumId, int currentAvailableWidth = 1000)
         {
-            if (ExpandedAlbumId == albumId)
+            var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
+            if (row == null) return;
+
+            if (row.ExpandedAlbumId == albumId)
             {
-                CollapseAlbum();
+                row.ExpandedAlbumId = null;
+                row.ExpandedImagePath = null;
+                ExpandedAlbumId = null;
                 return;
             }
 
-            CollapseAlbum();
-
-            // Find the album index and calculate row end
-            var albums = AlbumsForSelectedEntry.OfType<AlbumData>().ToList();
-            var albumIndex = albums.FindIndex(a => a.Id == albumId);
-
-            if (albumIndex == -1) return;
-
-            // Get the album's colors
-            var selectedAlbum = albums[albumIndex];
-
-
-            const int albumWidth = 200;
-            int albumsPerRow = Math.Max(1, (int)(currentAvailableWidth / albumWidth));
-
-
-            int rowNumber = albumIndex / albumsPerRow;
-            int insertIndex = Math.Min((rowNumber + 1) * albumsPerRow, albums.Count);
-
-            var newList = new List<object>(albums.Take(insertIndex));
-            newList.Add(new TrackListPlaceholder
+            foreach (var r in GridRows)
             {
-                AlbumId = albumId,
-                DominantColor = selectedAlbum.DominantColor,
-                ImagePath = selectedAlbum.BlurredImagePath,
-                ForegroundColor = selectedAlbum.ForegroundColor
-            });
-            newList.AddRange(albums.Skip(insertIndex));
+                r.ExpandedAlbumId = null;
+                r.ExpandedImagePath = null;
+            }
 
-            AlbumsForSelectedEntry = newList;
+            var album = row.Albums.First(a => a.Id == albumId);
+            row.ExpandedAlbumId = albumId;
+            row.ExpandedImagePath = album.BlurredImagePath;
+            row.ExpandedDominantColor = album.DominantColor;
+            row.ExpandedForegroundColor = album.ForegroundColor;
+
             ExpandedAlbumId = albumId;
         }
 
         public void CollapseAlbum()
         {
-            if (ExpandedAlbumId == null) return;
-
-            // Remove placeholder
-            AlbumsForSelectedEntry = [.. AlbumsForSelectedEntry.Where(item => item is not TrackListPlaceholder)];
-
+            foreach (var row in GridRows)
+            {
+                row.ExpandedAlbumId = null;
+                row.ExpandedImagePath = null;
+            }
             ExpandedAlbumId = null;
         }
 
+        public void RebuildRows(int containerWidth)
+        {
+            const int minTileWidth = 150;
+            const int gutter = 16;
+            const int minColumns = 1;
+
+            if (SelectedEntry == null)
+            {
+                GridRows.Clear();
+                return;
+            }
+
+            int tileFootprint = minTileWidth + gutter;
+            int columns = Math.Max(minColumns, Math.Max(1, containerWidth) / tileFootprint);
+            int? expandedAlbumIdSnapshot = ExpandedAlbumId;
+
+            var albums = _LibraryCache.GetAlbumsForEntry(SelectedEntry)
+                        .Select(s => new AlbumData
+                        {
+                            Id = s.Id,
+                            Title = s.Title,
+                            Year = s.Year,
+                            ArtistNames = s.ArtistNames,
+                            ImagePath = s.ImagePath,
+                            BlurredImagePath = s.BluredImagePath,
+                            CoverImage = null,
+                            DominantColor = s.DominantColorHex,
+                            ForegroundColor = s.ForegroundColorHex,
+                        }).ToList();
+            var rows = new ObservableCollection<AlbumGridRowModel>();
+            for (int i = 0; i < albums.Count; i += columns)
+            {
+                var rowAlbums = albums.Skip(i).Take(columns).ToList();
+                rows.Add(new AlbumGridRowModel
+                {
+                    Albums = rowAlbums,
+                    ColumnCount = columns
+                });
+            }
+            GridRows = rows;
+            ExpandedAlbumId = null;
+
+            if (expandedAlbumIdSnapshot.HasValue)
+            {
+                var expandedRow = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == expandedAlbumIdSnapshot.Value));
+                if (expandedRow != null)
+                {
+                    var expandedAlbum = expandedRow.Albums.First(a => a.Id == expandedAlbumIdSnapshot.Value);
+                    expandedRow.ExpandedAlbumId = expandedAlbum.Id;
+                    expandedRow.ExpandedImagePath = expandedAlbum.BlurredImagePath;
+                    expandedRow.ExpandedDominantColor = expandedAlbum.DominantColor;
+                    expandedRow.ExpandedForegroundColor = expandedAlbum.ForegroundColor;
+                    ExpandedAlbumId = expandedAlbum.Id;
+                }
+            }
+
+            _imageCts = new CancellationTokenSource();
+            _ = LoadCoverImagesAsync(albums, _imageCts.Token);
+        }
+
         public MusicLibrary GetLibrary() => _library;
+
+        public class AlbumGridRowModel : INotifyPropertyChanged
+        {
+            public List<AlbumData> Albums { get; set; } = [];
+
+            private int? _expandedAlbumId;
+            public int? ExpandedAlbumId
+            {
+                get => _expandedAlbumId;
+                set
+                {
+                    if (_expandedAlbumId != value)
+                    {
+                        _expandedAlbumId = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedAlbumId)));
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedAlbum)));
+                    }
+                }
+            }
+
+            private string? _expandedImagePath;
+            public string? ExpandedImagePath
+            {
+                get => _expandedImagePath;
+                set
+                {
+                    if (_expandedImagePath != value)
+                    {
+                        _expandedImagePath = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedImagePath)));
+                    }
+                }
+            }
+
+            private string _expandedDominantColor = "#808080";
+            public string ExpandedDominantColor
+            {
+                get => _expandedDominantColor;
+                set
+                {
+                    if (_expandedDominantColor != value)
+                    {
+                        _expandedDominantColor = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedDominantColor)));
+                    }
+                }
+            }
+
+            private string _expandedForegroundColor = "#FFFFFF";
+            public string ExpandedForegroundColor
+            {
+                get => _expandedForegroundColor;
+                set
+                {
+                    if (_expandedForegroundColor != value)
+                    {
+                        _expandedForegroundColor = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedForegroundColor)));
+                    }
+                }
+            }
+
+            public AlbumData? ExpandedAlbum => Albums.FirstOrDefault(a => a.Id == ExpandedAlbumId);
+
+            public int ColumnCount { get; set; } = 1;
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+        }
 
         public class AlbumData : INotifyPropertyChanged
         {

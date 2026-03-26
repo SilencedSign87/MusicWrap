@@ -20,6 +20,8 @@
             <converters:HexToBrushConverter x:Key="HexToBrushConverter"/>
             <converters:TypeNameConverter x:Key="TypeNameConverter"/>
             <converters:DiskNumberToVisibilityConverter x:Key="DiskNumberToVisibilityConverter"/>
+            <converters:NullToVisibilityConverter x:Key="NullToCollapseConverter" />
+            <converters:SelectedAlbumBackgroundConverter x:Key="SelectedAlbumBackgroundConverter"/>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
 
         </ResourceDictionary>

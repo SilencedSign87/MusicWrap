@@ -32,7 +32,7 @@ namespace MusicWrap.UI.Helpers
 
             if (appContextBackdropData != null)
             {
-                disableFluentThemeWindowBackdrop = bool.Parse(Convert.ToString(appContextBackdropData));
+                disableFluentThemeWindowBackdrop = bool.TryParse(Convert.ToString(appContextBackdropData), out bool parsed) && parsed;
             }
 
             return disableFluentThemeWindowBackdrop;

@@ -15,6 +15,7 @@ using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.ViewModels.Library;
+using MusicWrap.UI.ViewModels.Playlist;
 using MusicWrap.UI.ViewModels.Settings;
 using MusicWrap.UI.Windows;
 using System.Configuration;
@@ -199,6 +200,7 @@ namespace MusicWrap.UI
             services.AddTransient<SettingsGeneralViewModel>();
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
+            services.AddTransient<PlaylistViewModel>();
             services.AddSingleton<QueueViewModel>();
             services.AddSingleton<DeviceViewModel>();
             services.AddSingleton<PlayerViewModel>();

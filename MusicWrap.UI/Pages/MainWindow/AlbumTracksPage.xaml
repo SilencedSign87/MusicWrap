@@ -23,7 +23,7 @@
         </Grid.RowDefinitions>
 
         <!-- Album Header -->
-        <StackPanel Grid.Row="0" Margin="0,8,0,16">
+        <StackPanel Grid.Row="0" Margin="0,8,0,8">
             <Grid Margin="0,0,24,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto"/>
@@ -41,12 +41,12 @@
                 </Button>
                 <TextBlock Text="{Binding AlbumTitle}" 
                            Grid.Column="1"
-                           FontSize="18" 
+                           FontSize="16" 
                            FontWeight="Bold"
                            Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
                            TextTrimming="CharacterEllipsis"/>
             </Grid>
-            <TextBlock FontSize="13" 
+            <TextBlock FontSize="12" 
                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
                        Opacity="0.7"
                        Margin="0,4,0,0">
@@ -88,15 +88,14 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border
-                                            Padding="8,6"
-                                            Margin="0,1"
-                                            CornerRadius="4"
+                                    <Grid
+                                            Margin="0,4"
                                             MouseLeftButtonDown="StartPlayingFromTrack"
                                             Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            Cursor="Hand">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
+                                        Cursor="Hand"
+                                        >
+                                        <Grid.Style>
+                                            <Style TargetType="Grid">
                                                 <Style.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter Property="Background" Value="#1f000000"/>
@@ -106,8 +105,8 @@
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
-                                        </Border.Style>
-                                        <Border.ContextMenu>
+                                        </Grid.Style>
+                                        <Grid.ContextMenu>
                                             <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" Placement="Right">
                                                 <MenuItem Header="Play Now" 
                                                           Command="{Binding PlayTrackCommand}"
@@ -149,12 +148,12 @@
                                                           Icon="{ex:Icon Glyph=E946}"
                                                           />
                                             </ContextMenu>
-                                        </Border.ContextMenu>
+                                        </Grid.ContextMenu>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="40"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="auto" MinWidth="50"/>
                                             </Grid.ColumnDefinitions>
 
                                             <!-- Track Number -->
@@ -168,30 +167,41 @@
                                                        Margin="0,0,12,0"/>
 
                                             <!-- Track Info -->
-                                            <StackPanel Grid.Column="1">
-                                                <TextBlock Text="{Binding Title}" 
-                                                           FontSize="14" 
-                                                           FontWeight="Medium"
-                                                           Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding ArtistNames}" 
-                                                           FontSize="12" 
-                                                           Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                                                           Opacity="0.6"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Margin="0,2,0,0"/>
-                                            </StackPanel>
+                                            <Grid Grid.Column="1" HorizontalAlignment="Stretch">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Grid.Row="0"
+                                                    Text="{Binding Title}" 
+                                                    FontSize="12" 
+                                                    FontWeight="Medium"
+                                                    Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    TextWrapping="NoWrap"
+                                                    />
+
+                                                <TextBlock Grid.Row="1"
+                                                    Text="{Binding ArtistNames}" 
+                                                    FontSize="12" 
+                                                    FontWeight="Light"
+                                                    Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                                                    Opacity="0.6"
+                                                    TextTrimming="CharacterEllipsis"
+                                                    TextWrapping="NoWrap"/>
+                                            </Grid>
 
                                             <!-- Duration -->
                                             <TextBlock Grid.Column="2"
                                                        Text="{Binding FormattedDuration}" 
-                                                       FontSize="13" 
+                                                       FontSize="12" 
                                                        Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
                                                        Opacity="0.6"
                                                        VerticalAlignment="Center"
                                                        Margin="16,0,0,0"/>
                                         </Grid>
-                                    </Border>
+                                    </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

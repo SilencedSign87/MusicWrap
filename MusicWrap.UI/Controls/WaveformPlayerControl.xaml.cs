@@ -74,8 +74,8 @@ namespace MusicWrap.UI.Controls
 
         #region Events
 
-        public event EventHandler SeekStarted;
-        public event EventHandler<double> SeekEnded;
+        public event EventHandler? SeekStarted;
+        public event EventHandler<double>? SeekEnded;
         public event EventHandler? SeekCanceled;
 
         #endregion

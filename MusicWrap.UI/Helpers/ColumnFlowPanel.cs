@@ -26,16 +26,48 @@ namespace MusicWrap.UI.Helpers
 
         protected override Size MeasureOverride(Size availableSize)
         {
+            //int columns = GetColumns(this);
+            //if (columns <= 0) columns = 1;
+
+            //int itemCount = InternalChildren.Count;
+            //int rows = itemCount > 0 ? (int)Math.Ceiling((double)itemCount / columns) : 0;
+
+            //// mesure child
+            //foreach (UIElement child in InternalChildren)
+            //{
+            //    child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            //}
+
+            //// calc max item size
+            //double maxWidth = 0;
+            //double maxHeight = 0;
+
+            //foreach (UIElement child in InternalChildren)
+            //{
+            //    maxWidth = Math.Max(maxWidth, child.DesiredSize.Width);
+            //    maxHeight = Math.Max(maxHeight, child.DesiredSize.Height);
+            //}
+
+            //double totalWidth = maxWidth * columns;
+            //double totalHeight = maxHeight * rows;
+
+            //return new Size(
+            //    double.IsInfinity(availableSize.Width) ? totalWidth : availableSize.Width,
+            //    double.IsInfinity(availableSize.Height) ? totalHeight : availableSize.Height
+            //);
             int columns = GetColumns(this);
             if (columns <= 0) columns = 1;
 
             int itemCount = InternalChildren.Count;
             int rows = itemCount > 0 ? (int)Math.Ceiling((double)itemCount / columns) : 0;
 
-            // mesure child
+            // Calcular ancho disponible por columna
+            double itemWidth = availableSize.Width / columns;
+
+            // Medir hijos con restricción de ancho
             foreach (UIElement child in InternalChildren)
             {
-                child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                child.Measure(new Size(itemWidth, double.PositiveInfinity));
             }
 
             // calc max item size

@@ -19,7 +19,7 @@
                 <!-- Image -->
                 <Image
                     Grid.Column="0"
-                    Width="40" Height="40"
+                    Width="42" Height="42"
                     Margin="4"
                     Source="{Binding AlbumArt}"
                     RenderOptions.BitmapScalingMode="LowQuality"

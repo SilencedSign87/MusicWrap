@@ -33,7 +33,7 @@
                     WaveformData="{Binding Waveform}"
                     Position="{Binding CurrentPosition}"
                     Duration="{Binding Duration}"
-                    DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
+                    DominantColorHex="#FFFFFF"
                     SeekStarted="WaveformPlayerControl_SeekStarted"
                     SeekEnded="WaveformPlayerControl_SeekEnded"
                     SeekCanceled="WaveformPlayerControl_SeekCanceled"

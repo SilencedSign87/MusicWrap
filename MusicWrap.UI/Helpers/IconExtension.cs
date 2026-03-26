@@ -34,7 +34,7 @@ namespace MusicWrap.UI.Helpers
                     HorizontalAlignment = HorizontalAlignment.Center
                 };
             }
-            return null;
+            return DependencyProperty.UnsetValue;
         }
     }
 }

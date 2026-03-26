@@ -16,15 +16,15 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace MusicWrap.UI.Pages.MainWindow
 {
-    /// <summary>
-    /// Lógica de interacción para LibraryPage.xaml
-    /// </summary>
     public partial class LibraryPage : UserControl
     {
         public LibraryViewModel vm;
+        private int _lastViewportWidth = -1;
+        private DispatcherTimer? _resizeThrottleTimer;
 
         public LibraryPage()
         {
@@ -35,6 +35,14 @@ namespace MusicWrap.UI.Pages.MainWindow
 
             // Subscribe to property changes
             vm.PropertyChanged += Vm_PropertyChanged;
+
+            // Initialize throttle timer (50ms to reduce excessive recalcs during drag resize)
+            _resizeThrottleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            _resizeThrottleTimer.Tick += (_, _) =>
+            {
+                _resizeThrottleTimer.Stop();
+                TryRebuildRowsForCurrentViewport();
+            };
         }
 
         private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -51,35 +59,38 @@ namespace MusicWrap.UI.Pages.MainWindow
             if (selected == null)
             {
                 vm.CollapseAlbum();
+                _lastViewportWidth = -1;
                 return;
             }
 
-            // For Album view, auto-expand the single album
-            if (vm.IsAlbumView && vm.AlbumsForSelectedEntry.Count > 0)
-            {
-                // Find the first AlbumData in the collection
-                var firstAlbum = vm.AlbumsForSelectedEntry
-                    .OfType<LibraryViewModel.AlbumData>()
-                    .FirstOrDefault();
+            TryRebuildRowsForCurrentViewport(true);
 
-                if (firstAlbum != null)
-                {
-                    vm.ExpandAlbum(firstAlbum.Id);
-                }
-            }
-            else
+            // Defer once so the viewport is measured and rows are rebuilt with final width.
+            Dispatcher.BeginInvoke(() =>
             {
-                // For other views, collapse any expanded tracks
-                vm.CollapseAlbum();
-            }
+                TryRebuildRowsForCurrentViewport(true);
+
+                if (vm.IsAlbumView && vm.GridRows.Count > 0)
+                    {
+                    var firstAlbum = vm.GridRows[0].Albums.FirstOrDefault();
+                    if (firstAlbum != null)
+                    {
+                        vm.ExpandAlbum(firstAlbum.Id, GetCurrentViewportWidth());
+                    }
+                }
+                else
+                {
+                    vm.CollapseAlbum();
+                }
+            }, DispatcherPriority.Loaded);
         }
 
         private void AlbumButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is int albumId)
+            if (sender is Button button && button.DataContext is LibraryViewModel.AlbumData albumData)
             {
                 // Use the new ViewModel method to expand/collapse
-                vm.ExpandAlbum(albumId, (int)AlbumWrapper.ActualWidth);
+                vm.ExpandAlbum(albumData.Id, GetCurrentViewportWidth());
             }
         }
 
@@ -90,22 +101,44 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void TracksContentPlaceholder_Loaded(object sender, RoutedEventArgs e)
         {
-            if (sender is ContentControl contentControl && contentControl.DataContext is LibraryViewModel.TrackListPlaceholder placeholder)
+            if (sender is ContentControl contentControl && contentControl.DataContext is LibraryViewModel.AlbumGridRowModel row)
             {
-                // Load tracks for the album with colors and player service
-                var library = vm.GetLibrary();
-                var playerService = App.Services.GetRequiredService<IMusicPlayerService>();
+                void RefreshTracksContent()
+                {
+                    if (row.ExpandedAlbumId == null)
+                    {
+                        contentControl.Content = null;
+                        return;
+                    }
 
-                var tracksViewModel = new AlbumTracksViewModel(
-                    library,
-                    playerService,
-                    placeholder.AlbumId,
-                    placeholder.DominantColor,
-                    placeholder.ForegroundColor
-                );
-                var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
+                    var library = vm.GetLibrary();
+                    var playerService = App.Services.GetRequiredService<IMusicPlayerService>();
 
-                contentControl.Content = tracksPage;
+                    var tracksViewModel = new AlbumTracksViewModel(
+                        library,
+                        playerService,
+                        row.ExpandedAlbumId.Value,
+                        row.ExpandedDominantColor,
+                        row.ExpandedForegroundColor
+                    );
+                    var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
+                    contentControl.Content = tracksPage;
+                }
+
+                RefreshTracksContent();
+
+                System.ComponentModel.PropertyChangedEventHandler onRowChanged = (_, args) =>
+                {
+                    if (args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedAlbumId) ||
+                        args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedDominantColor) ||
+                        args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedForegroundColor))
+                    {
+                        RefreshTracksContent();
+                    }
+                };
+
+                row.PropertyChanged += onRowChanged;
+                contentControl.Unloaded += (_, __) => row.PropertyChanged -= onRowChanged;
             }
         }
 
@@ -154,13 +187,75 @@ namespace MusicWrap.UI.Pages.MainWindow
             }
         }
 
-        private void Album_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void AlbumsViewport_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (sender is Button button && button.Tag is int albumId)
+            if (e.NewSize.Width > 0 && vm.SelectedEntry != null)
             {
-                // Use the new ViewModel method to expand/collapse
-                vm.PlayAlbum(albumId);
+                // Throttle resize events with 50ms timer: restart if already running
+                // (multiple rapid SizeChanged events will only result in one recalc after 50ms quiet)
+                if (_resizeThrottleTimer?.IsEnabled != true)
+                {
+                    _resizeThrottleTimer?.Start();
+                }
             }
+        }
+
+        private void AlbumsViewport_Loaded(object sender, RoutedEventArgs e)
+        {
+            TryRebuildRowsForCurrentViewport(true);
+        }
+
+        private void AlbumsViewport_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            // ViewportWidth can change when vertical scrollbar appears/disappears or after window state changes.
+            if (e.ViewportWidthChange != 0)
+            {
+                TryRebuildRowsForCurrentViewport();
+            }
+        }
+
+        private int GetCurrentViewportWidth()
+        {
+            if (AlbumsViewport.ViewportWidth > 0)
+            {
+                return (int)AlbumsViewport.ViewportWidth;
+            }
+
+            var padding = AlbumsViewport.Padding;
+            var estimated = AlbumsViewport.ActualWidth - padding.Left - padding.Right;
+            return Math.Max(1, (int)estimated);
+        }
+
+        private void RebuildRowsForCurrentViewport()
+        {
+            if (vm.SelectedEntry == null)
+            {
+                return;
+            }
+
+            vm.RebuildRows(GetCurrentViewportWidth());
+        }
+
+        private void TryRebuildRowsForCurrentViewport(bool force = false)
+        {
+            if (vm.SelectedEntry == null)
+            {
+                return;
+            }
+
+            int width = GetCurrentViewportWidth();
+            if (width <= 0)
+            {
+                return;
+            }
+
+            if (!force && width == _lastViewportWidth)
+            {
+                return;
+            }
+
+            _lastViewportWidth = width;
+            vm.RebuildRows(width);
         }
     }
 }

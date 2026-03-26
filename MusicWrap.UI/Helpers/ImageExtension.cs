@@ -8,7 +8,7 @@ namespace MusicWrap.UI.Helpers
 {
     public class ImageExtension : MarkupExtension
     {
-        public string Source { get; set; }
+        public string? Source { get; set; }
         public double Width { get; set; } = 16;
         public double Height { get; set; } = 16;
 
@@ -25,7 +25,7 @@ namespace MusicWrap.UI.Helpers
                     HorizontalAlignment = HorizontalAlignment.Center
                 };
             }
-            return null;
+            return DependencyProperty.UnsetValue;
         }
     }
 }

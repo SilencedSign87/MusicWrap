@@ -21,7 +21,7 @@ namespace MusicWrap.UI.Windows
     /// </summary>
     public partial class SettingsWindow : Window
     {
-        private string currentTab;
+        private string currentTab = string.Empty;
         private SettingsIndexViewModel viewModel => (SettingsIndexViewModel)DataContext;
         public SettingsWindow()
         {

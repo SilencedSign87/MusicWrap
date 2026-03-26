@@ -193,7 +193,7 @@ namespace MusicWrap.UI.ViewModels.Library
         }
         private BitmapImage? GetAlbumArt(int coverId)
         {
-            if (coverId == 0) return ImageHelper.GetDefaultAlbumImage(64);
+            if (coverId == 0) return ImageHelper.GetDefaultAlbumImage(42);
 
             if (_albumArtByCoverId.TryGetValue(coverId, out var cachedImage))
             {
@@ -207,7 +207,7 @@ namespace MusicWrap.UI.ViewModels.Library
                 path = Path.Combine(ImageHelper.BaseCoverPath, cover.FileName);
             }
 
-            var img = ImageHelper.LoadThumbnail(path, "album", 40);
+            var img = ImageHelper.LoadThumbnail(path, "album", 42);
             _albumArtByCoverId[coverId] = img;
             TouchAlbumArt(coverId);
             TrimAlbumArtCache();
