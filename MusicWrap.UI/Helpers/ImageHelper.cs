@@ -10,8 +10,8 @@ namespace MusicWrap.UI.Helpers
     public static class ImageHelper
     {
         private const int SmallImageThreshold = 80;
-        private const int SmallCacheLimit = 120;
-        private const int LargeCacheLimit = 40;
+        private const int SmallCacheLimit = 60;
+        private const int LargeCacheLimit = 10;
 
         private static readonly object _cacheLock = new();
 

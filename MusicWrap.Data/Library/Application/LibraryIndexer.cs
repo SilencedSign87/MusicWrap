@@ -513,7 +513,7 @@ namespace MusicWrap.Data.Library.Application
             try
             {
                 using var image = Image.Load<Rgba32>(imageBytes);
-                image.Mutate(x => x.Resize(64, 64));
+                image.Mutate(x => x.Resize(128, 128));
 
                 var counts = new Dictionary<Rgba32, int>();
                 int validPixels = 0;
@@ -602,7 +602,7 @@ namespace MusicWrap.Data.Library.Application
         }
         private static bool IsValidColor(Rgba32 color)
         {
-            return color.A > 25 && (color.R > 15 || color.G > 15 || color.B > 15);
+            return color.A > 25;
         }
         private static Rgba32 GetMostFrequentColor(Image<Rgba32> image)
         {
