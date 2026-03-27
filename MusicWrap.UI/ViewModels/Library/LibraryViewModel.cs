@@ -49,6 +49,7 @@ namespace MusicWrap.UI.ViewModels.Library
         [ObservableProperty] private double loadingProgressValue = 0;
 
         private CancellationTokenSource? _imageCts;
+        private string _activeSearchQuery = string.Empty;
 
         private bool _isInitializing;
         private int _loadEntriesRequestId;
@@ -220,6 +221,14 @@ namespace MusicWrap.UI.ViewModels.Library
             _ = LoadEntriesAsync();
         }
 
+        public void ApplySearchFilter(string? query)
+        {
+            _activeSearchQuery = query?.Trim() ?? string.Empty;
+            _ = LoadEntriesAsync();
+        }
+
+        public string ActiveSearchQuery => _activeSearchQuery;
+
         [RelayCommand]
         private void SetViewMode(string mode)
         {
@@ -257,7 +266,8 @@ namespace MusicWrap.UI.ViewModels.Library
 
                 if (requestId != Volatile.Read(ref _loadEntriesRequestId)) return;
 
-                ApplyGrouping(loadedEntries, ascendingSnapshot);
+                var filteredEntries = FilterEntries(loadedEntries, _activeSearchQuery);
+                ApplyGrouping(filteredEntries, ascendingSnapshot);
 
                 DateTime timeEnd = DateTime.Now;
                 Debug.WriteLine($"Loaded {loadedEntries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
@@ -272,6 +282,9 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private void ApplyGrouping(IReadOnlyList<LibraryEntry> entries, bool ascendingSnapshot)
         {
+            var selectedId = SelectedEntry?.Id;
+            var selectedType = SelectedEntry?.Type;
+
             var normalizedEntries = entries.Select(e =>
             new LibraryEntry
             {
@@ -302,6 +315,16 @@ namespace MusicWrap.UI.ViewModels.Library
                 );
 
             EntriesViewSource = viewSource;
+
+            if (selectedId.HasValue && !string.IsNullOrWhiteSpace(selectedType))
+            {
+                SelectedEntry = Entries.FirstOrDefault(e => e.Id == selectedId.Value && e.Type == selectedType);
+            }
+
+            if (SelectedEntry == null && Entries.Count > 0)
+            {
+                SelectedEntry = Entries[0];
+            }
         }
 
         private static string NormalizeGroupKey(string? key)
@@ -313,6 +336,96 @@ namespace MusicWrap.UI.ViewModels.Library
 
             var trimmed = key.Trim();
             return trimmed.Length == 0 ? "#" : trimmed.ToUpperInvariant();
+        }
+
+        private IReadOnlyList<LibraryEntry> FilterEntries(IReadOnlyList<LibraryEntry> entries, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return entries;
+
+            var q = query.Trim();
+            var albumById = _library.Albums.ToDictionary(a => a.Id);
+            var artistById = _library.Artists.ToDictionary(a => a.Id, a => a.Name);
+            var tracksByAlbumId = _library.Tracks
+                .GroupBy(t => t.AlbumId)
+                .ToDictionary(g => g.Key, g => g.ToArray());
+
+            return entries
+                .Where(entry => EntryMatchesQuery(entry, q, albumById, artistById, tracksByAlbumId))
+                .ToArray();
+        }
+
+        private bool EntryMatchesQuery(
+            LibraryEntry entry,
+            string query,
+            IReadOnlyDictionary<int, Album> albumById,
+            IReadOnlyDictionary<int, string> artistById,
+            IReadOnlyDictionary<int, Track[]> tracksByAlbumId)
+        {
+            if (entry.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            foreach (var albumId in GetRelatedAlbumIds(entry))
+            {
+                if (!albumById.TryGetValue(albumId, out var album))
+                    continue;
+
+                if (album.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                var artistNames = album.ArtistIds
+                    .Where(id => artistById.ContainsKey(id))
+                    .Select(id => artistById[id]);
+
+                if (artistNames.Any(name => name.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                    return true;
+
+                if (!tracksByAlbumId.TryGetValue(albumId, out var tracks))
+                    continue;
+
+                if (tracks.Any(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                    return true;
+
+                if (tracks
+                    .SelectMany(t => t.ArtistIds)
+                    .Distinct()
+                    .Where(id => artistById.ContainsKey(id))
+                    .Select(id => artistById[id])
+                    .Any(name => name.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private IEnumerable<int> GetRelatedAlbumIds(LibraryEntry entry)
+        {
+            return entry.Type switch
+            {
+                "Album" => [entry.Id],
+                "Artist" => _library.Albums.Where(a => a.ArtistIds.Contains(entry.Id)).Select(a => a.Id),
+                "Genre" => _library.Tracks
+                    .Where(t => t.GenreIds.Contains(entry.Id))
+                    .Select(t => t.AlbumId)
+                    .Distinct(),
+                "Decade" => GetAlbumIdsForDecade(entry.Title),
+                _ => []
+            };
+        }
+
+        private IEnumerable<int> GetAlbumIdsForDecade(string decadeTitle)
+        {
+            if (string.IsNullOrWhiteSpace(decadeTitle))
+                return [];
+
+            var clean = decadeTitle.Trim().TrimEnd('s', 'S');
+            if (!int.TryParse(clean, out var decadeStart))
+                return [];
+
+            var decadeEnd = decadeStart + 10;
+            return _library.Albums
+                .Where(a => a.Year >= decadeStart && a.Year < decadeEnd)
+                .Select(a => a.Id);
         }
 
         public void PlayAlbum(int albumId)
@@ -442,6 +555,12 @@ namespace MusicWrap.UI.ViewModels.Library
                             DominantColor = s.DominantColorHex,
                             ForegroundColor = s.ForegroundColorHex,
                         }).ToList();
+
+            if (!string.IsNullOrWhiteSpace(_activeSearchQuery))
+            {
+                albums = FilterAlbums(albums, _activeSearchQuery);
+            }
+
             var rows = new ObservableCollection<AlbumGridRowModel>();
             for (int i = 0; i < albums.Count; i += columns)
             {
@@ -471,6 +590,35 @@ namespace MusicWrap.UI.ViewModels.Library
 
             _imageCts = new CancellationTokenSource();
             _ = LoadCoverImagesAsync(albums, _imageCts.Token);
+        }
+
+        private List<AlbumData> FilterAlbums(List<AlbumData> albums, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return albums;
+
+            var q = query.Trim();
+            var artistById = _library.Artists.ToDictionary(a => a.Id, a => a.Name);
+
+            bool MatchesTrackOrTrackArtist(int albumId)
+            {
+                return _library.Tracks
+                    .Where(t => t.AlbumId == albumId)
+                    .Any(t =>
+                        t.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                        t.ArtistIds
+                            .Where(id => artistById.ContainsKey(id))
+                            .Select(id => artistById[id])
+                            .Any(name => name.Contains(q, StringComparison.OrdinalIgnoreCase))
+                    );
+            }
+
+            return albums
+                .Where(a =>
+                    a.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    a.ArtistNames.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                    MatchesTrackOrTrackArtist(a.Id))
+                .ToList();
         }
 
         public MusicLibrary GetLibrary() => _library;

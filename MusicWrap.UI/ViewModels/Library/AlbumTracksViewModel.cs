@@ -38,11 +38,19 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private readonly MusicLibrary _library;
         private readonly IMusicPlayerService _playerService;
+        private readonly string _searchQuery;
 
-        public AlbumTracksViewModel(MusicLibrary library, IMusicPlayerService playerService, int albumId, string dominantColor = "#1a1a1a", string foregroundColor = "#ffffff")
+        public AlbumTracksViewModel(
+            MusicLibrary library,
+            IMusicPlayerService playerService,
+            int albumId,
+            string dominantColor = "#1a1a1a",
+            string foregroundColor = "#ffffff",
+            string? searchQuery = null)
         {
             _library = library;
             _playerService = playerService;
+            _searchQuery = searchQuery?.Trim() ?? string.Empty;
             this.albumId = albumId;
             this.dominantColor = dominantColor;
             this.foregroundColor = foregroundColor;
@@ -164,6 +172,17 @@ namespace MusicWrap.UI.ViewModels.Library
                     ArtistNames = GetArtistNames(t.ArtistIds)
                 })
                 .ToList();
+
+            if (!string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                tracks = tracks
+                    .Where(t =>
+                        t.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                        t.ArtistNames.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                        AlbumTitle.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                        AlbumArtists.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
             // Group by disk
             DiskGroups = [.. tracks

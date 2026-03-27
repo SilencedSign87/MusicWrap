@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
              xmlns:local="clr-namespace:MusicWrap.UI.Controls"
-             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              mc:Ignorable="d" 
              x:Name="Root"
              d:DataContext="{d:DesignInstance Type=vm:CommandPaletteViewModel}"
@@ -14,7 +13,8 @@
         <TextBox x:Name="CommandInputText"
                  VerticalAlignment="Center"
                  HorizontalAlignment="Stretch"
-                 Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                 Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 KeyDown="CommandInputText_KeyDown" />
 
         <TextBlock Text="{Binding PlaceholderText, ElementName=Root}"
                    Margin="10,0,0,0"
@@ -36,153 +36,5 @@
                 </Style>
             </TextBlock.Style>
         </TextBlock>
-        <!-- Popup -->
-        <Popup
-            PlacementTarget="{Binding ElementName=CommandInputText}"
-            Placement="Bottom"
-            VerticalOffset="0"
-            StaysOpen="False"
-            AllowsTransparency="True"
-            IsOpen="{Binding IsPopupOpen, Mode=TwoWay}"
-            >
-            <Border Width="{Binding ActualWidth, ElementName=CommandInputText}"
-            Background="{StaticResource BackgroundFloating}"
-            BorderBrush="{StaticResource StrokeFloating}"
-            BorderThickness="1"
-            CornerRadius="8"
-            Padding="4">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="auto" />
-                    </Grid.RowDefinitions>
-                    <ScrollViewer MaxHeight="500" VerticalScrollBarVisibility="Auto" Grid.Row="0">
-                        <StackPanel>
-
-                            <!-- Tracks -->
-                            <StackPanel>
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasTrackResults}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <Border Padding="8" Background="{StaticResource BackgroundSmoke}" Margin="0,4,0,0" >
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE8D6;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center" />
-                                        <TextBlock Text="Tracks" FontWeight="Bold" Margin="4,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <ItemsControl ItemsSource="{Binding TrackResults}" >
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:SearchResultItem">
-                                            <MenuItem Header="{Binding Title }" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-
-                            <!-- Albums-->
-                            <StackPanel>
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasAlbumResults}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <Border Padding="8" Background="{StaticResource BackgroundSmoke}" Margin="0,4,0,0" >
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE93C;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center"  />
-                                        <TextBlock Text="Albums" FontWeight="Bold" Margin="4,0" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Border>
-
-                                <ItemsControl ItemsSource="{Binding AlbumResults}" >
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:SearchResultItem">
-                                            <MenuItem Header="{Binding Title }" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-
-                            <!-- Artists -->
-                            <StackPanel>
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasArtistResults}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <Border Padding="8" Background="{StaticResource BackgroundSmoke}" Margin="0,4,0,0" >
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE77B;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center"  />
-                                        <TextBlock Text="Artists" FontWeight="Bold" Margin="4,0" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Border>
-
-                                <ItemsControl ItemsSource="{Binding ArtistResults}" >
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:SearchResultItem">
-                                            <MenuItem Header="{Binding Title }" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-
-                            <!-- Playlist -->
-                            <StackPanel>
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding HasPlaylistResults}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
-
-                                <Border Padding="8" Background="{StaticResource BackgroundSmoke}" Margin="0,4,0,0" >
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE90B;" FontFamily="Segoe Fluent Icons"  VerticalAlignment="Center" />
-                                        <TextBlock Text="PLaylists" FontWeight="Bold" Margin="4,0" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Border>
-
-                                <ItemsControl ItemsSource="{Binding PlaylistResults}" >
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate DataType="vm:SearchResultItem">
-                                            <MenuItem Header="{Binding Title }" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </ScrollViewer>
-                    <StackPanel Grid.Row="1">
-                        <Separator Height="2" Margin="0" Padding="0"/>
-                        <MenuItem Header="View all results" Icon="{ex:Icon Glyph=E71E}"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Popup>
     </Grid>
 </UserControl>

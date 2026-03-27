@@ -20,7 +20,6 @@ namespace MusicWrap.UI.Controls
     /// </summary>
     public partial class CommandPaletteInput : UserControl
     {
-        private Window? _searchWindow;
         private CommandPaletteViewModel _viewModel;
         public static readonly DependencyProperty PlaceholderTextProperty =
          DependencyProperty.Register(
@@ -38,13 +37,19 @@ namespace MusicWrap.UI.Controls
             InitializeComponent();
             _viewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
             DataContext = _viewModel;
-
-            _viewModel.OpenFullSearchRequested -= _viewModel_OpenFullSearchRequested;
-            _viewModel.OpenFullSearchRequested += _viewModel_OpenFullSearchRequested;
         }
 
-        private void _viewModel_OpenFullSearchRequested(object? sender, EventArgs e)
+        private void CommandInputText_KeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key != Key.Enter)
+                return;
+
+            if (_viewModel.SubmitQueryCommand.CanExecute(null))
+            {
+                _viewModel.SubmitQueryCommand.Execute(null);
+            }
+
+            e.Handled = true;
         }
     }
 }

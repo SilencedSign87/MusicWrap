@@ -2,6 +2,7 @@
 using MusicWrap.Core;
 using MusicWrap.Data;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.ViewModels.Library;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,8 @@ namespace MusicWrap.UI.Pages.MainWindow
     public partial class LibraryPage : UserControl
     {
         public LibraryViewModel vm;
+        private readonly CommandPaletteViewModel _commandPaletteViewModel;
+        private bool _isCommandPaletteSubscribed;
         private int _lastViewportWidth = -1;
         private DispatcherTimer? _resizeThrottleTimer;
 
@@ -32,6 +35,10 @@ namespace MusicWrap.UI.Pages.MainWindow
 
             vm = App.Services.GetRequiredService<LibraryViewModel>();
             DataContext = vm;
+
+            _commandPaletteViewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
+            Loaded += LibraryPage_Loaded;
+            Unloaded += LibraryPage_Unloaded;
 
             // Subscribe to property changes
             vm.PropertyChanged += Vm_PropertyChanged;
@@ -43,6 +50,32 @@ namespace MusicWrap.UI.Pages.MainWindow
                 _resizeThrottleTimer.Stop();
                 TryRebuildRowsForCurrentViewport();
             };
+        }
+
+        private void LibraryPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_isCommandPaletteSubscribed)
+                return;
+
+            _commandPaletteViewModel.QuerySubmitted += CommandPaletteViewModel_QuerySubmitted;
+            _isCommandPaletteSubscribed = true;
+        }
+
+        private void LibraryPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (!_isCommandPaletteSubscribed)
+                return;
+
+            _commandPaletteViewModel.QuerySubmitted -= CommandPaletteViewModel_QuerySubmitted;
+            _isCommandPaletteSubscribed = false;
+        }
+
+        private void CommandPaletteViewModel_QuerySubmitted(object? sender, string query)
+        {
+            if (!IsVisible)
+                return;
+
+            vm.ApplySearchFilter(query);
         }
 
         private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -119,7 +152,8 @@ namespace MusicWrap.UI.Pages.MainWindow
                         playerService,
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,
-                        row.ExpandedForegroundColor
+                        row.ExpandedForegroundColor,
+                        vm.ActiveSearchQuery
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
                     contentControl.Content = tracksPage;
