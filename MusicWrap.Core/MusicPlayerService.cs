@@ -3,6 +3,7 @@ using System.Linq;
 using Un4seen.Bass;
 using System.Diagnostics;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.User.Models;
 using System.Net;
 
@@ -174,9 +175,13 @@ namespace MusicWrap.Core
         public RepeatMode RepeatMode { get; set; } = RepeatMode.None;
         public ContinueMode ContinueMode { get; set; } = ContinueMode.None;
 
-        public MusicPlayerService(MusicLibrary library)
+        // Providers
+        private readonly ITrackPlaybackResolver _trackPlaybackResolver;
+
+        public MusicPlayerService(MusicLibrary library, ITrackPlaybackResolver trackPlaybackResolver)
         {
             _library = library;
+            _trackPlaybackResolver = trackPlaybackResolver;
 
             _audioEngine = new AudioEngine();
 
@@ -582,19 +587,33 @@ namespace MusicWrap.Core
             }
             else
             {
-                if (_preloadedStream != 0)
+                if (!_trackPlaybackResolver.TryResolve(track, out var resolvedCurrent))
                 {
-                    FreeStream(_preloadedStream);
-                    _preloadedStream = 0;
+                    Debug.WriteLine($"[Audio Engine] Failed to resolve playback source for track: {track.Id}, {track.Origin}");
+                    Next();
+                    return;
                 }
-
-                _currentStream = _audioEngine.CreateDecodeStream(track.Path);
+                _currentStream = _audioEngine.CreateDecodeStream(resolvedCurrent.Input);
                 if (_currentStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
-                    Debug.WriteLine($"Failed to create stream for track {track.Path}, error code: {err}");
+                    Debug.WriteLine($"[Audio Engine] Failed to create decode stream for track {track.Path}, error code: {err}");
                     Next();
+                    return;
                 }
+                // if (_preloadedStream != 0)
+                // {
+                //     FreeStream(_preloadedStream);
+                //     _preloadedStream = 0;
+                // }
+
+                // _currentStream = _audioEngine.CreateDecodeStream(track.Path);
+                // if (_currentStream == 0)
+                // {
+                //     var err = _audioEngine.GetLastError();
+                //     Debug.WriteLine($"Failed to create stream for track {track.Path}, error code: {err}");
+                //     Next();
+                // }
             }
 
             // Remove previous stream if it exists
@@ -634,7 +653,8 @@ namespace MusicWrap.Core
             InvokeUI(() =>
             {
                 SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate });
-                TrackChanged?.Invoke(this, track.Path);
+                var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
+                TrackChanged?.Invoke(this, trackRef);
                 QueueChanged?.Invoke(this, snapshot);
             });
             BeginWaveformPipeline(track);
@@ -731,7 +751,8 @@ namespace MusicWrap.Core
                 {
                     InvokeUI(() =>
                     {
-                        TrackChanged?.Invoke(this, track.Path);
+                        var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
+                        TrackChanged?.Invoke(this, trackRef);
                         QueueChanged?.Invoke(this, snapshot);
                     });
                     BeginWaveformPipeline(track);
@@ -772,14 +793,30 @@ namespace MusicWrap.Core
                     _preloadedTrackId = 0;
                 }
 
-                // Create decode stream and prepare it (but don't add to mixer yet)
-                int nextStream = _audioEngine.CreateDecodeStream(nextTrack.Path);
+                if (!_trackPlaybackResolver.TryResolve(nextTrack, out var resolvedNext))
+                {
+                    Debug.WriteLine($"[Audio Engine] Failed to resolve playback source for preload of track {nextTrack.Path}");
+                    return;
+                }
+
+                int nextStream = _audioEngine.CreateDecodeStream(resolvedNext.Input);
                 if (nextStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
-                    Debug.WriteLine($"Failed to create preload stream for track {nextTrack.Path}, error code: {err}");
+                    Debug.WriteLine($"[Audio Engine] Failed to create decode stream for preload of track {nextTrack.Path}, error code: {err}");
                     return;
                 }
+
+
+                // // Create decode stream and prepare it (but don't add to mixer yet)
+                // int nextStream = _audioEngine.CreateDecodeStream(nextTrack.Path);
+                // if (nextStream == 0)
+                // {
+                //     var err = _audioEngine.GetLastError();
+                //     Debug.WriteLine($"Failed to create preload stream for track {nextTrack.Path}, error code: {err}");
+                //     return;
+                // }
+
                 _preloadedStream = nextStream;
                 _preloadedTrackId = nextTrackId;
                 _ = PreloadWaveformCacheAsync(nextTrack);

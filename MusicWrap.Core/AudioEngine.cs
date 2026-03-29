@@ -399,7 +399,7 @@ namespace MusicWrap.Core
 
             if (!_isWasapiInitialized && exclusive) // fallback
             {
-                Debug.WriteLine("WASAPI Exlusive failed, trying shared...");
+                Debug.WriteLine("[AudioEngine] WASAPI Exlusive failed, trying shared...");
                 _currentOutputMode = OutputMode.WasapiShared;
                 
                 _isWasapiInitialized = BassWasapi.BASS_WASAPI_Init(
@@ -422,7 +422,7 @@ namespace MusicWrap.Core
             }
             if (!_isWasapiInitialized)
             {
-                Debug.WriteLine("WASAPI Init failed with error: " + GetLastError());
+                Debug.WriteLine("[AudioEngine] WASAPI Init failed with error: " + GetLastError());
             }
             return _isWasapiInitialized;
         }

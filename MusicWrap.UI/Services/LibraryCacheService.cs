@@ -229,7 +229,7 @@ namespace MusicWrap.UI.Services
                 if (album.CoverId > 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
                 {
                     imagePath = Path.Combine(_coversPath, cover.FileName);
-                    bluredImagePath = Path.Combine(_coversPath, cover.BlurFileName);
+                    bluredImagePath = Path.Combine(_coversPath, cover.BlurFileName ?? string.Empty);
                     DominantColorHex = cover.DominantColorHex ?? "#808080";
                     ForegroundColorHex = cover.ForegroundColorHex ?? "#FFFFFF";
                 }
@@ -525,7 +525,7 @@ namespace MusicWrap.UI.Services
                 return false;
             }
 
-            return _albumIdsByDecade.TryGetValue(decade, out albumIds);
+            return _albumIdsByDecade.TryGetValue(decade, out albumIds!);
         }
 
     }

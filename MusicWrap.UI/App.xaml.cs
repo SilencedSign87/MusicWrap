@@ -1,6 +1,10 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
+using MusicWrap.Core.Sources.Contracts;
+using MusicWrap.Core.Sources.Providers.Local;
+using MusicWrap.Core.Sources.Providers.Youtube;
+using MusicWrap.Core.Sources.Providers.Runtime;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Application;
@@ -186,6 +190,12 @@ namespace MusicWrap.UI
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
             services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
+
+            // Providers
+            services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
+            services.AddSingleton<IYoutubeResolutionService, YoutubeResolutionService>();
+            services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
+            services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
 
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
