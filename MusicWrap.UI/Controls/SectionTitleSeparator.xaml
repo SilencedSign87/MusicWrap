@@ -1,0 +1,25 @@
+﻿<UserControl x:Class="MusicWrap.UI.Controls.SectionTitleSeparator"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Controls"
+             mc:Ignorable="d" 
+             x:Name="Root"
+             d:DesignHeight="100" d:DesignWidth="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Orientation="Horizontal" Grid.Column="0">
+            <TextBlock Text="{Binding IconGlyph, ElementName=Root}" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Title, ElementName=Root}" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <Border Grid.Column="1" Padding="8,0,0,0">
+            <Separator VerticalAlignment="Center" />
+        </Border>
+    </Grid>
+</UserControl>

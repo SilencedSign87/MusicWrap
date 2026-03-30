@@ -35,10 +35,19 @@ public sealed class YoutubeResolutionService : IYoutubeResolutionService
                                         .GetManifestAsync(videoId, cancellationToken)
                                         .ConfigureAwait(false);
 
+            // var audioStream = streamManifest
+            //     .GetAudioOnlyStreams()
+            //     .OrderByDescending(s => s.Bitrate)
+            //     .FirstOrDefault();
             var audioStream = streamManifest
-                .GetAudioOnlyStreams()
+            .GetAudioOnlyStreams()
+            .Where(s => string.Equals(s.Container.Name, "mp4", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(s => s.Bitrate)
+            .FirstOrDefault()
+            ?? streamManifest.GetAudioOnlyStreams()
                 .OrderByDescending(s => s.Bitrate)
                 .FirstOrDefault();
+
 
             if (audioStream is null)
             {

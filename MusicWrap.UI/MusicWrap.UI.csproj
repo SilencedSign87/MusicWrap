@@ -16,6 +16,7 @@
 		<None Remove="Resources\Icons\PauseIcon.png" />
 		<None Remove="Resources\Icons\PlayIcon.png" />
 		<None Remove="Resources\Icons\PreviousIcon.png" />
+		<None Remove="Resources\Icons\Youtube_Music_icon.png" />
 		<None Remove="Resources\SplashScreen.png" />
 	</ItemGroup>
 
@@ -26,6 +27,7 @@
 		<Resource Include="Resources\Icons\PauseIcon.png" />
 		<Resource Include="Resources\Icons\PlayIcon.png" />
 		<Resource Include="Resources\Icons\PreviousIcon.png" />
+		<Resource Include="Resources\Icons\Youtube_Music_icon.png" />
 		<Resource Include="Resources\MusicUI.png" />
 		<Resource Include="Resources\SplashScreen.png" />
 	</ItemGroup>

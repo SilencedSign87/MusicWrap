@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Pages.MainWindow;
+using MusicWrap.UI.Pages.Providers;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:DeviceViewModel}"
@@ -11,20 +12,7 @@
              d:DesignHeight="500" d:DesignWidth="300">
     <StackPanel Margin="16">
         <!-- Current Info -->
-
-        <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0">
-                <TextBlock  Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Current device information" VerticalAlignment="Center" />
-            </StackPanel>
-            <Border Grid.Column="1" Padding="8,0,0,0">
-                <Separator VerticalAlignment="Center" />
-            </Border>
-        </Grid>
+        <controls:SectionTitleSeparator Title="Current Device Information" IconGlyph="&#xe946;" Margin="0,8"/>
 
         <StackPanel Margin="0,0,0,16">
 
@@ -39,19 +27,7 @@
 
         </StackPanel>
 
-        <Grid  Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0">
-                <TextBlock  Text="&#xe713;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="Device settings" VerticalAlignment="Center" />
-            </StackPanel>
-            <Border Grid.Column="1" Padding="8,0,0,0">
-                <Separator VerticalAlignment="Center" />
-            </Border>
-        </Grid>
+        <controls:SectionTitleSeparator Title="Device Settings" IconGlyph="&#xe713;" Margin="0,8"/>
         <!-- Settings -->
         <StackPanel Margin="0,0,0,16">
 

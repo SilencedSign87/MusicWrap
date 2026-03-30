@@ -593,7 +593,23 @@ namespace MusicWrap.Core
                     Next();
                     return;
                 }
-                _currentStream = _audioEngine.CreateDecodeStream(resolvedCurrent.Input);
+
+                int createdStream;
+                switch (resolvedCurrent.Kind)
+                {
+                    case PlaybackSourceKind.LocalFile:
+                        createdStream = _audioEngine.CreateDecodeStream(resolvedCurrent.Input);
+                        break;
+                    case PlaybackSourceKind.RemoteUrl:
+                        createdStream = _audioEngine.CreateDecodeStreamFromUrl(resolvedCurrent.Input);
+                        break;
+                    default:
+                        Debug.WriteLine($"[Audio Engine] Unsupported playback source kind {resolvedCurrent.Kind} for track {track.Id}");
+                        Next();
+                        return;
+                }
+
+                _currentStream = createdStream;
                 if (_currentStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
@@ -601,19 +617,6 @@ namespace MusicWrap.Core
                     Next();
                     return;
                 }
-                // if (_preloadedStream != 0)
-                // {
-                //     FreeStream(_preloadedStream);
-                //     _preloadedStream = 0;
-                // }
-
-                // _currentStream = _audioEngine.CreateDecodeStream(track.Path);
-                // if (_currentStream == 0)
-                // {
-                //     var err = _audioEngine.GetLastError();
-                //     Debug.WriteLine($"Failed to create stream for track {track.Path}, error code: {err}");
-                //     Next();
-                // }
             }
 
             // Remove previous stream if it exists
@@ -799,7 +802,20 @@ namespace MusicWrap.Core
                     return;
                 }
 
-                int nextStream = _audioEngine.CreateDecodeStream(resolvedNext.Input);
+                int nextStream;
+
+                switch(resolvedNext.Kind){
+                    case PlaybackSourceKind.LocalFile:
+                        nextStream = _audioEngine.CreateDecodeStream(resolvedNext.Input);
+                        break;
+                    case PlaybackSourceKind.RemoteUrl:
+                        nextStream = _audioEngine.CreateDecodeStreamFromUrl(resolvedNext.Input);
+                        break;
+                    default:
+                        Debug.WriteLine($"[Audio Engine] Unsupported playback source kind {resolvedNext.Kind} for preload of track {nextTrack.Id}");
+                        return;
+                }
+
                 if (nextStream == 0)
                 {
                     var err = _audioEngine.GetLastError();

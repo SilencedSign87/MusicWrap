@@ -4,24 +4,14 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:MusicWrap.UI.Pages.Settings"
+      xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
       xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Settings"
       mc:Ignorable="d" 
-             d:Background="#1fffffff"
+      d:Background="#1fffffff"
+      d:DataContext="{d:DesignInstance Type=vm:SettingsGeneralViewModel}"
       d:DesignHeight="450" d:DesignWidth="800">
     <StackPanel Margin="16">
-        <Grid Margin="0,0,0,8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="0">
-                <TextBlock  Text="&#xE7E8;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                <TextBlock Text="App startup" VerticalAlignment="Center" />
-            </StackPanel>
-            <Border Grid.Column="1" Padding="8,0,0,0">
-                <Separator VerticalAlignment="Center" />
-            </Border>
-        </Grid>
+        <controls:SectionTitleSeparator Title="App startup" IconGlyph="&#xE7E8;" Margin="0,8"/>
 
         <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
             <RadioButton GroupName="start"
@@ -44,5 +34,6 @@
                  Margin="8,0"
                  IsChecked="{Binding StartClean, Mode=TwoWay}" />
         </WrapPanel>
+
     </StackPanel>
 </UserControl>

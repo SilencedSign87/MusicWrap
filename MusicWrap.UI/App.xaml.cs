@@ -20,6 +20,7 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.ViewModels.Library;
 using MusicWrap.UI.ViewModels.Playlist;
+using MusicWrap.UI.ViewModels.Providers;
 using MusicWrap.UI.ViewModels.Settings;
 using MusicWrap.UI.Windows;
 using System.Configuration;
@@ -193,7 +194,9 @@ namespace MusicWrap.UI
 
             // Providers
             services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
-            services.AddSingleton<IYoutubeResolutionService, YoutubeResolutionService>();
+            // services.AddSingleton<IYoutubeResolutionService, YoutubeResolutionService>();
+            services.AddSingleton<IYoutubeStagingService, YoutubeStagingService>();
+            services.AddSingleton<IYoutubeSearchService, YoutubeSearchService>();
             services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
             services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
 
@@ -211,6 +214,8 @@ namespace MusicWrap.UI
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
             services.AddTransient<PlaylistViewModel>();
+            services.AddTransient<SettingsYoutubeViewModel>();
+            services.AddTransient<YoutubeProviderViewModel>();
             services.AddSingleton<QueueViewModel>();
             services.AddSingleton<DeviceViewModel>();
             services.AddSingleton<PlayerViewModel>();

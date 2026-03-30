@@ -9,16 +9,15 @@ namespace MusicWrap.Core.Sources.Providers.Youtube
 {
     public sealed class YoutubeSourceProvider : ITrackSourceProvider
     {
-        private readonly IYoutubeResolutionService _resolutionService;
+        private readonly IYoutubeStagingService _staging;
 
-        public YoutubeSourceProvider(IYoutubeResolutionService resolutionService)
+
+        public YoutubeSourceProvider(IYoutubeStagingService stagingService)
         {
-            _resolutionService = resolutionService;
+            _staging = stagingService;
         }
-        public bool CanHandle(Track track)
-        {
-            return track.Origin == TrackOrigin.Youtube;
-        }
+
+        public bool CanHandle(Track track) => track.Origin == TrackOrigin.Youtube;
 
         public bool TryResolve(Track track, out ResolvedPlaybackSource source)
         {
@@ -30,49 +29,22 @@ namespace MusicWrap.Core.Sources.Providers.Youtube
 
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-                string? audioUrl;
-                try
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+                string? stagedPath = Task.Run(async () => await _staging.GetPlayableFileAsync(track.ExternalId!, cts.Token).ConfigureAwait(false), cts.Token).GetAwaiter().GetResult();
+                if (string.IsNullOrWhiteSpace(stagedPath))
                 {
-                    audioUrl = Task.Run(async () => await _resolutionService.TryResolveAudioUrlAsync(track.ExternalId!, cts.Token).ConfigureAwait(false), cts.Token).GetAwaiter().GetResult();
-                }
-                catch (OperationCanceledException)
-                {
-                    Debug.WriteLine($"[YT] YouTube resolve timeout for track {track.Id}");
-                    source = default!;
-                    return false;
-                }
-                if (string.IsNullOrWhiteSpace(audioUrl))
-                {
-                    Debug.WriteLine($"[YT] Failed to resolve audio URL for track {track.Id} with ExternalId {track.ExternalId}");
                     source = default!;
                     return false;
                 }
 
-                // var resolveTask = _resolutionService.TryResolveAudioUrlAsync(track.ExternalId);
-                // bool completed = resolveTask.Wait(TimeSpan.FromSeconds(50));
-
-                // if (!completed)
-                // {
-                //     Debug.WriteLine($"[YT] YouTube resolve timeout for track {track.Id}");
-                //     source = default!;
-                //     return false;
-                // }
-
-                // var audioUrl = resolveTask.Result;
-                if (string.IsNullOrWhiteSpace(audioUrl))
-                {
-                    Debug.WriteLine($"[YT] Failed to resolve audio URL for track {track.Id} with ExternalId {track.ExternalId}");
-                    source = default!;
-                    return false;
-                }
                 source = new ResolvedPlaybackSource
                 {
-                    Kind = PlaybackSourceKind.RemoteUrl,
-                    Input = audioUrl,
+                    Kind = PlaybackSourceKind.LocalFile,
+                    Input = stagedPath,
                     Display = track.Title
                 };
                 return true;
+
             }
             catch (Exception ex)
             {

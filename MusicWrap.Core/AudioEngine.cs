@@ -5,9 +5,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing.Interop;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Security.Permissions;
+using System.Security.Principal;
 using System.Text;
 using Un4seen.Bass;
+using Un4seen.Bass.AddOn.Flac;
 using Un4seen.Bass.AddOn.Mix;
 using Un4seen.BassWasapi;
 
@@ -51,6 +54,10 @@ namespace MusicWrap.Core
             // Configure buffer
             Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_BUFFER, 90);
             Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_UPDATEPERIOD, 5);
+            // Configure network timeouts
+            Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_NET_TIMEOUT, 7000);
+            Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_NET_READTIMEOUT, 7000);
+            Bass.BASS_SetConfig(BASSConfig.BASS_CONFIG_NET_PREBUF, 0);
 
             _isInitialized = Bass.BASS_Init(deviceIndex, sampleRate, BASSInit.BASS_DEVICE_DEFAULT, IntPtr.Zero);
             if (!_isInitialized) return false;
@@ -130,6 +137,25 @@ namespace MusicWrap.Core
         public int CreateDecodeStream(string filePath)
         {
             return Bass.BASS_StreamCreateFile(filePath, 0, 0, BASSFlag.BASS_STREAM_DECODE | BASSFlag.BASS_SAMPLE_FLOAT);
+        }
+        public int CreateDecodeStreamFromUrl(string url)
+        {
+            if (!_isInitialized) throw new InvalidOperationException("Audio engine not initialized.");
+            if (string.IsNullOrWhiteSpace(url)) return 0;
+
+            //nint UserAgentPtr = Marshal.StringToHGlobalAnsi("MusicWrap/1.0");
+            //Bass.BASS_SetConfigPtr(BASSConfig.BASS_CONFIG_NET_AGENT, UserAgentPtr);
+
+            var flags = BASSFlag.BASS_STREAM_DECODE | 
+                        BASSFlag.BASS_SAMPLE_FLOAT | 
+                        BASSFlag.BASS_STREAM_PRESCAN | 
+                        BASSFlag.BASS_STREAM_BLOCK;
+            var task = Task.Run(()=> Bass.BASS_StreamCreateURL(url, 0, flags, null, IntPtr.Zero));
+            if (!task.Wait(TimeSpan.FromSeconds(10))){
+                Debug.WriteLine($"[AudioEngine] Timeout creating stream from URL: {url}");
+                return 0;
+            }
+            return task.Result;
         }
         public bool AddToMixer(int mixerStream, int stream, BASSFlag flags = BASSFlag.BASS_DEFAULT)
         {
@@ -401,7 +427,7 @@ namespace MusicWrap.Core
             {
                 Debug.WriteLine("[AudioEngine] WASAPI Exlusive failed, trying shared...");
                 _currentOutputMode = OutputMode.WasapiShared;
-                
+
                 _isWasapiInitialized = BassWasapi.BASS_WASAPI_Init(
                     device,
                     sampleRate,
@@ -443,7 +469,7 @@ namespace MusicWrap.Core
             InitializeWasapiForCurrentMode(samplerate);
         }
         private int WasapiDataProc(IntPtr buffer, int length, IntPtr user)
-        {            
+        {
             if (_outputMixerStream == 0)
             {
                 return 0;

@@ -53,6 +53,7 @@ namespace MusicWrap.UI.Windows
                 "library" => new SettingsDirectoriesManagerPage(),
                 "player" => new DevicePage(),
                 "about" => new AboutPage(),
+                "youtube" => new SettingsYoutubeProviderPage(),
                 _ => new SettingsGeneralPage()
             };
 

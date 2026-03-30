@@ -1,5 +1,4 @@
 ﻿using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.ColorSpaces;
@@ -7,7 +6,7 @@ using SixLabors.ImageSharp.ColorSpaces.Conversion;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO;
-using System.Windows.Input;
+using TagLib;
 
 namespace MusicWrap.Data.Library.Application
 {
@@ -16,6 +15,8 @@ namespace MusicWrap.Data.Library.Application
     {
         void IndexFileAsync(string filePath);
         ExternalTrackIndexResult IndexExternalTrack(ExternalTrackIndexRequest request);
+        ExternalTrackIndexResult UpsertExternalTrack(ExternalTrackIndexRequest request, bool updateExistingMetadata);
+        bool TryAttachExternalTrackLocalFile(ExternalTrackLocalFileRequest request, out int trackId);
     }
     public class LibraryIndexer : ILibraryIndexer
     {
@@ -45,7 +46,7 @@ namespace MusicWrap.Data.Library.Application
         public void IndexFileAsync(string filePath)
         {
             var fileInfo = new FileInfo(filePath);
-            var LastModifiedUtc = File.GetLastWriteTimeUtc(filePath);
+            var LastModifiedUtc = System.IO.File.GetLastWriteTimeUtc(filePath);
             var fileSize = fileInfo.Length;
 
             // Check if track already exists
@@ -210,7 +211,7 @@ namespace MusicWrap.Data.Library.Application
                     request.Year,
                     coverId);
 
-                var track = new Track
+                var track = new Models.Track
                 {
                     Id = _library.GenerateTrackId(),
                     Path = string.Empty,
@@ -244,16 +245,117 @@ namespace MusicWrap.Data.Library.Application
             }
         }
 
+        public ExternalTrackIndexResult UpsertExternalTrack(ExternalTrackIndexRequest request, bool updateExistingMetadata)
+        {
+            if (request is null) throw new ArgumentNullException(nameof(request));
+
+            lock (_lock)
+            {
+                var existing = _library.Tracks.FirstOrDefault(t =>
+                                    t.Origin == request.Origin &&
+                                    string.Equals(t.ExternalId, request.ExternalId, StringComparison.OrdinalIgnoreCase));
+
+                if (existing is null)
+                {
+                    return IndexExternalTrack(request);
+                }
+
+                if (!updateExistingMetadata)
+                {
+                    return new ExternalTrackIndexResult
+                    {
+                        Created = false,
+                        TrackId = existing.Id,
+                        CoverId = existing.CoverId
+                    };
+                }
+
+                int artistId = GetOrCreateArtist(string.IsNullOrWhiteSpace(request.ArtistName) ? "Unknown Artist" : request.ArtistName);
+                int albumId = GetOrCreateAlbum(
+                    string.IsNullOrWhiteSpace(request.AlbumName) ? "Unknown Album" : request.AlbumName,
+                    [artistId],
+                    [artistId],
+                    request.Year,
+                    existing.CoverId);
+
+                existing.Title = request.Title.Trim();
+                existing.ArtistIds = [artistId];
+                existing.AlbumId = albumId;
+                existing.Duration = Math.Max(existing.Duration, request.DurationSeconds);
+
+                return new ExternalTrackIndexResult
+                {
+                    Created = false,
+                    TrackId = existing.Id,
+                    CoverId = existing.CoverId
+                };
+
+            }
+        }
+
+        public bool TryAttachExternalTrackLocalFile(ExternalTrackLocalFileRequest request, out int trackId)
+        {
+            trackId = 0;
+            if (request is null || string.IsNullOrWhiteSpace(request.ExternalId) || string.IsNullOrWhiteSpace(request.FilePath))
+                return false;
+            if (!System.IO.File.Exists(request.FilePath))
+                return false;
+
+            lock (_lock) {
+                var track = _library.Tracks.FirstOrDefault(t =>
+                    t.Origin == request.Origin &&
+                    string.Equals(t.ExternalId, request.ExternalId, StringComparison.OrdinalIgnoreCase));
+
+                if (track is null) return false;
+
+                track.Path = request.FilePath;
+
+                try
+                {
+                    using var tagFile = TagLib.File.Create(request.FilePath);
+                    track.SamplingRate = tagFile.Properties.AudioSampleRate;
+                    track.Bitrate = tagFile.Properties.AudioBitrate;
+                    track.Channels = tagFile.Properties.AudioChannels;
+                    track.BitDeph = tagFile.Properties.BitsPerSample;
+                    track.Duration = Math.Max(track.Duration, (int)tagFile.Properties.Duration.TotalSeconds);
+                    track.FileSize = new FileInfo(request.FilePath).Length;
+                    track.LastWriteTime = System.IO.File.GetLastWriteTimeUtc(request.FilePath).Ticks;
+
+                }
+                catch
+                {
+
+                }
+                trackId = track.Id;
+                return true;
+            }
+        }
+
         #region  Internal
+        private static string NormalizeKey(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            var chars = value
+                .Trim()
+                .ToLowerInvariant()
+                .Where(c => !char.IsWhiteSpace(c))
+                .ToArray();
+
+            return new string(chars);
+        }
         private int GetOrCreateArtist(string artistName)
         {
             // Normalizar nombre vacío (no debería llegar aquí, pero por seguridad)
             if (string.IsNullOrWhiteSpace(artistName))
                 artistName = "Unknown Artist";
 
+            string normalized = NormalizeKey(artistName);
+
             lock (_lock)
             {
-                var artist = _library.Artists.FirstOrDefault(a => string.Equals(a.Name, artistName, StringComparison.OrdinalIgnoreCase));
+                var artist = _library.Artists.FirstOrDefault(a => NormalizeKey(a.Name) == normalized);
 
                 if (artist != null)
                 {
@@ -264,7 +366,7 @@ namespace MusicWrap.Data.Library.Application
                     var newArtist = new Artist
                     {
                         Id = _library.GenerateArtistId(),
-                        Name = artistName
+                        Name = artistName.Trim()
                     };
                     _library.Artists.Add(newArtist);
                     return newArtist.Id;
@@ -345,8 +447,8 @@ namespace MusicWrap.Data.Library.Application
                 Directory.CreateDirectory(MusicWrapDirectories.CoverDirectory);
                 var filename = fingerprint.GetHashCode().ToString("X8") + ext;
                 var fullPath = Path.Combine(MusicWrapDirectories.CoverDirectory, filename);
-                if (!File.Exists(fullPath))
-                    File.WriteAllBytes(fullPath, imageBytes);
+                if (!System.IO.File.Exists(fullPath))
+                    System.IO.File.WriteAllBytes(fullPath, imageBytes);
 
                 var (domminantColor, foregroundColor) = ExtractColorsFromImage(imageBytes);
 
@@ -418,7 +520,7 @@ namespace MusicWrap.Data.Library.Application
                 var blurFileName = fingerprint.GetHashCode().ToString("X8") + ".blur.jpg";
                 var blurPath = Path.Combine(blurDirectory, blurFileName);
 
-                if (File.Exists(blurPath))
+                if (System.IO.File.Exists(blurPath))
                     return blurFileName;
 
                 using var image = Image.Load<Rgba32>(imageBytes);
@@ -674,7 +776,7 @@ namespace MusicWrap.Data.Library.Application
 
                 if (bestCandidate is null) return false;
 
-                imageBytes = File.ReadAllBytes(bestCandidate.FullName);
+                imageBytes = System.IO.File.ReadAllBytes(bestCandidate.FullName);
                 mimeType = GetMimeTypeFromExtension(bestCandidate.Extension);
 
                 return imageBytes.Length > 0;
@@ -732,6 +834,14 @@ namespace MusicWrap.Data.Library.Application
 
         public byte[]? ThumbnailBytes { get; init; }
         public string? ThumbnailMimeType { get; init; }
+    }
+
+    public sealed class ExternalTrackLocalFileRequest
+    {
+        public required TrackOrigin Origin { get; init; } = TrackOrigin.Youtube;
+        public required string ExternalId { get; init; }
+        public required string FilePath { get; init; }
+        public bool PreferExistingArtistAlbumMatch { get; init; } = true;
     }
 
     public sealed class ExternalTrackIndexResult
