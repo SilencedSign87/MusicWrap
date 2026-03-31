@@ -2,13 +2,16 @@ using MusicWrap.Core.Sources.Contracts;
 using System.Net.Http;
 using YouTubeMusicAPI.Client;
 using YouTubeMusicAPI.Models;
+using YouTubeMusicAPI.Models.Info;
 using YouTubeMusicAPI.Models.Search;
+using YoutubeExplode;
 
 namespace MusicWrap.Core.Sources.Providers.Youtube;
 
 public sealed class YoutubeSearchService : IYoutubeSearchService
 {
     private readonly YouTubeMusicClient _ytmClient = new("US", null, null, null, null, new HttpClient());
+    private readonly YoutubeClient _youtubeClient = new();
 
     public async Task<IReadOnlyList<YoutubeSearchItem>> SearchAsync(string query, YoutubeSearchKind kind, CancellationToken cancellationToken = default)
     {
@@ -100,7 +103,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     BrowseId = null,
                     Title = info.Name,
                     Subtitle = info.SubscribersInfo ?? string.Empty,
-                    ThumbnailUrl = SelectThumbnailUrl(info.Thumbnails)
+                    ThumbnailUrl = SelectThumbnailUrls(info.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(info.Thumbnails).HighRes
                 }
             ];
         }
@@ -126,7 +130,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     BrowseId = browseId,
                     Title = info.Name,
                     Subtitle = BuildAlbumInfoSubtitle(info),
-                    ThumbnailUrl = SelectThumbnailUrl(info.Thumbnails)
+                    ThumbnailUrl = SelectThumbnailUrls(info.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(info.Thumbnails).HighRes
                 }
             ];
         }
@@ -156,7 +161,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     BrowseId = browseId,
                     Title = info.Name,
                     Subtitle = BuildPlaylistSubtitle(info),
-                    ThumbnailUrl = SelectThumbnailUrl(info.Thumbnails)
+                    ThumbnailUrl = SelectThumbnailUrls(info.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(info.Thumbnails).HighRes
                 }
             ];
         }
@@ -182,7 +188,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     BrowseId = info.BrowseId,
                     Title = info.Name,
                     Subtitle = subtitle,
-                    ThumbnailUrl = SelectThumbnailUrl(info.Thumbnails)
+                    ThumbnailUrl = SelectThumbnailUrls(info.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(info.Thumbnails).HighRes
                 }
             ];
         }
@@ -214,7 +221,7 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
             case YoutubeSearchKind.Song:
             case YoutubeSearchKind.Video:
             default:
-                return BuildSingleGroup(selectedItem);
+                return await BuildSingleGroupAsync(selectedItem, cancellationToken);
         }
     }
 
@@ -297,7 +304,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 BrowseId = null,
                 Title = a.Name,
                 Subtitle = a.PopularityInfo,
-                ThumbnailUrl = SelectThumbnailUrl(a.Thumbnails)
+                ThumbnailUrl = SelectThumbnailUrls(a.Thumbnails).LowRes,
+                ThumbnailHighResUrl = SelectThumbnailUrls(a.Thumbnails).HighRes
             })
             .Where(i => !string.IsNullOrWhiteSpace(i.Id))
             .ToList();
@@ -334,7 +342,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                         Subtitle = string.IsNullOrWhiteSpace(r.SubscribersInfo)
                             ? "Related artist"
                             : r.SubscribersInfo,
-                        ThumbnailUrl = SelectThumbnailUrl(r.Thumbnails)
+                        ThumbnailUrl = SelectThumbnailUrls(r.Thumbnails).LowRes,
+                        ThumbnailHighResUrl = SelectThumbnailUrls(r.Thumbnails).HighRes
                     })
                     .ToArray();
 
@@ -364,7 +373,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 BrowseId = null,
                 Title = a.Name,
                 Subtitle = BuildAlbumSubtitle(a),
-                ThumbnailUrl = SelectThumbnailUrl(a.Thumbnails)
+                ThumbnailUrl = SelectThumbnailUrls(a.Thumbnails).LowRes,
+                ThumbnailHighResUrl = SelectThumbnailUrls(a.Thumbnails).HighRes
             })
             .Where(i => !string.IsNullOrWhiteSpace(i.Id))
             .ToArray();
@@ -383,7 +393,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 Id = s.Id ?? string.Empty,
                 Title = s.Name,
                 Subtitle = BuildSongSubtitle(s),
-                ThumbnailUrl = SelectThumbnailUrl(s.Thumbnails)
+                ThumbnailUrl = SelectThumbnailUrls(s.Thumbnails).LowRes,
+                ThumbnailHighResUrl = SelectThumbnailUrls(s.Thumbnails).HighRes
             })
             .Where(i => !string.IsNullOrWhiteSpace(i.Id))
             .ToArray();
@@ -402,7 +413,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 Id = v.Id ?? string.Empty,
                 Title = v.Name,
                 Subtitle = JoinArtists(v.Artists),
-                ThumbnailUrl = SelectThumbnailUrl(v.Thumbnails)
+                ThumbnailUrl = SelectThumbnailUrls(v.Thumbnails).LowRes,
+                ThumbnailHighResUrl = SelectThumbnailUrls(v.Thumbnails).HighRes
             })
             .Where(i => !string.IsNullOrWhiteSpace(i.Id))
             .ToArray();
@@ -421,7 +433,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 Id = p.Id ?? string.Empty,
                 Title = p.Name,
                 Subtitle = p.Creator?.Name ?? p.ViewsInfo ?? string.Empty,
-                ThumbnailUrl = SelectThumbnailUrl(p.Thumbnails)
+                ThumbnailUrl = SelectThumbnailUrls(p.Thumbnails).LowRes,
+                ThumbnailHighResUrl = SelectThumbnailUrls(p.Thumbnails).HighRes
             })
             .Where(i => !string.IsNullOrWhiteSpace(i.Id))
             .ToArray();
@@ -440,14 +453,33 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 Id = p.Id ?? string.Empty,
                 Title = p.Name,
                 Subtitle = p.Creator?.Name ?? p.ViewsInfo ?? string.Empty,
-                ThumbnailUrl = SelectThumbnailUrl(p.Thumbnails)
+                ThumbnailUrl = SelectThumbnailUrls(p.Thumbnails).LowRes,
+                ThumbnailHighResUrl = SelectThumbnailUrls(p.Thumbnails).HighRes
             })
             .Where(i => !string.IsNullOrWhiteSpace(i.Id))
             .ToArray();
     }
 
-    private static IReadOnlyList<YoutubeDetailGroup> BuildSingleGroup(YoutubeSearchItem selectedItem)
+    private async Task<IReadOnlyList<YoutubeDetailGroup>> BuildSingleGroupAsync(YoutubeSearchItem selectedItem, CancellationToken cancellationToken)
     {
+        int? releaseYear = null;
+        string artistName = TryExtractArtistFromSubtitle(selectedItem.Subtitle);
+
+        try
+        {
+            var video = await _youtubeClient.Videos.GetAsync(selectedItem.Id, cancellationToken).ConfigureAwait(false);
+            releaseYear = video.UploadDate.Year;
+
+            if (string.IsNullOrWhiteSpace(artistName))
+            {
+                artistName = video.Author.ChannelTitle ?? string.Empty;
+            }
+        }
+        catch
+        {
+            // Keep graceful fallback values.
+        }
+
         return
         [
             new YoutubeDetailGroup
@@ -455,7 +487,11 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 GroupId = selectedItem.Id,
                 Title = selectedItem.Title,
                 Subtitle = selectedItem.Subtitle,
+                ArtistName = artistName,
+                GroupType = selectedItem.Kind.ToString(),
+                ReleaseYear = releaseYear,
                 ThumbnailUrl = selectedItem.ThumbnailUrl,
+                ThumbnailHighResUrl = selectedItem.ThumbnailHighResUrl,
                 Tracks =
                 [
                     new YoutubeDetailTrack
@@ -469,6 +505,22 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
         ];
     }
 
+    private static string TryExtractArtistFromSubtitle(string subtitle)
+    {
+        if (string.IsNullOrWhiteSpace(subtitle))
+        {
+            return string.Empty;
+        }
+
+        int separatorIndex = subtitle.IndexOf(" - ", StringComparison.Ordinal);
+        if (separatorIndex > 0)
+        {
+            return subtitle[..separatorIndex].Trim();
+        }
+
+        return subtitle.Trim();
+    }
+
     private async Task<IReadOnlyList<YoutubeDetailGroup>> BuildArtistGroupsAsync(YoutubeSearchItem artistItem, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(artistItem.Id))
@@ -476,7 +528,18 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
             return [];
         }
 
-        var artistInfo = await _ytmClient.GetArtistInfoAsync(artistItem.Id, cancellationToken);
+        ArtistInfo? artistInfo = null;
+
+        try
+        {
+            artistInfo = await _ytmClient.GetArtistInfoAsync(artistItem.Id, cancellationToken);
+        }
+        // cancelation
+        catch (TaskCanceledException)
+        {
+            return [];
+        }
+
         if (artistInfo is null)
         {
             return [];
@@ -492,7 +555,11 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 GroupId = $"album::{a.Id}",
                 Title = a.Name,
                 Subtitle = BuildArtistAlbumSubtitle(artistItem.Title, a),
-                ThumbnailUrl = SelectThumbnailUrl(a.Thumbnails),
+                ArtistName = artistItem.Title,
+                GroupType = a.IsSingle ? "Single" : a.IsEp ? "EP" : "Album",
+                ReleaseYear = a.ReleaseYear > 0 ? a.ReleaseYear : null,
+                ThumbnailUrl = SelectThumbnailUrls(a.Thumbnails).LowRes,
+                ThumbnailHighResUrl = SelectThumbnailUrls(a.Thumbnails).HighRes,
                 Tracks = []
             })
             .ToArray();
@@ -517,7 +584,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 GroupId = $"tracks::{artistInfo.Id}",
                 Title = "Tracks",
                 Subtitle = artistItem.Title,
+                ArtistName = artistItem.Title,
+                GroupType = "Tracks",
                 ThumbnailUrl = artistItem.ThumbnailUrl,
+                ThumbnailHighResUrl = artistItem.ThumbnailHighResUrl,
                 Tracks = artistTracks
             });
         }
@@ -537,7 +607,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     GroupId = $"video::{video.Id}",
                     Title = video.Name,
                     Subtitle = BuildArtistVideoSubtitle(video),
-                    ThumbnailUrl = SelectThumbnailUrl(video.Thumbnails),
+                    ArtistName = JoinArtists(video.Artists),
+                    GroupType = "Video",
+                    ThumbnailUrl = SelectThumbnailUrls(video.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(video.Thumbnails).HighRes,
                     Tracks =
                     [
                         new YoutubeDetailTrack
@@ -565,7 +638,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     GroupId = albumItem.Id,
                     Title = albumItem.Title,
                     Subtitle = albumItem.Subtitle,
+                    ArtistName = string.Empty,
+                    GroupType = "Album",
                     ThumbnailUrl = albumItem.ThumbnailUrl,
+                    ThumbnailHighResUrl = albumItem.ThumbnailHighResUrl,
                     Tracks = []
                 }
             ];
@@ -584,7 +660,11 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     GroupId = albumInfo.Id,
                     Title = albumInfo.Name,
                     Subtitle = BuildAlbumInfoSubtitle(albumInfo),
-                    ThumbnailUrl = SelectThumbnailUrl(albumInfo.Thumbnails),
+                    ArtistName = JoinArtists(albumInfo.Artists),
+                    GroupType = albumInfo.IsSingle ? "Single" : albumInfo.IsEp ? "EP" : "Album",
+                    ReleaseYear = albumInfo.ReleaseYear > 0 ? albumInfo.ReleaseYear : null,
+                    ThumbnailUrl = SelectThumbnailUrls(albumInfo.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(albumInfo.Thumbnails).HighRes,
                     Tracks = tracks
                 }
             ];
@@ -601,7 +681,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 GroupId = albumItem.Id,
                 Title = albumItem.Title,
                 Subtitle = albumItem.Subtitle,
+                ArtistName = string.Empty,
+                GroupType = "Album",
                 ThumbnailUrl = albumItem.ThumbnailUrl,
+                ThumbnailHighResUrl = albumItem.ThumbnailHighResUrl,
                 Tracks = []
             }
         ];
@@ -618,7 +701,9 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     GroupId = playlistItem.Id,
                     Title = playlistItem.Title,
                     Subtitle = playlistItem.Subtitle,
+                    GroupType = "Playlist",
                     ThumbnailUrl = playlistItem.ThumbnailUrl,
+                    ThumbnailHighResUrl = playlistItem.ThumbnailHighResUrl,
                     Tracks = []
                 }
             ];
@@ -636,7 +721,9 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                         GroupId = playlistItem.Id,
                         Title = playlistItem.Title,
                         Subtitle = playlistItem.Subtitle,
+                        GroupType = "Playlist",
                         ThumbnailUrl = playlistItem.ThumbnailUrl,
+                        ThumbnailHighResUrl = playlistItem.ThumbnailHighResUrl,
                         Tracks = []
                     }
                 ];
@@ -652,7 +739,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     GroupId = playlistInfo.Id,
                     Title = playlistInfo.Name,
                     Subtitle = BuildPlaylistSubtitle(playlistInfo),
-                    ThumbnailUrl = SelectThumbnailUrl(playlistInfo.Thumbnails),
+                    ArtistName = playlistInfo.Creator?.Name ?? string.Empty,
+                    GroupType = "Playlist",
+                    ThumbnailUrl = SelectThumbnailUrls(playlistInfo.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(playlistInfo.Thumbnails).HighRes,
                     Tracks = playlistTracks
                 }
             ];
@@ -669,7 +759,9 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 GroupId = playlistItem.Id,
                 Title = playlistItem.Title,
                 Subtitle = playlistItem.Subtitle,
+                GroupType = "Playlist",
                 ThumbnailUrl = playlistItem.ThumbnailUrl,
+                ThumbnailHighResUrl = playlistItem.ThumbnailHighResUrl,
                 Tracks = []
             }
         ];
@@ -971,12 +1063,20 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
         return duration;
     }
 
-    private static string SelectThumbnailUrl(IEnumerable<Thumbnail> thumbnails)
+    private static (string LowRes, string HighRes) SelectThumbnailUrls(IEnumerable<Thumbnail> thumbnails)
     {
-        return thumbnails
-            .OrderByDescending(t => t.Width * t.Height)
+        var ordered = thumbnails
+            .OrderBy(t => t.Width * t.Height)
             .Select(t => t.Url)
-            .FirstOrDefault() ?? string.Empty;
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .ToArray();
+
+        if (ordered.Length == 0)
+        {
+            return (string.Empty, string.Empty);
+        }
+
+        return (ordered[0], ordered[^1]);
     }
 
     private static string FormatDuration(TimeSpan duration)

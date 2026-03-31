@@ -25,6 +25,7 @@ public sealed class YoutubeSearchItem
     public required string Title { get; init; }
     public string Subtitle { get; init; } = string.Empty;
     public string ThumbnailUrl { get; init; } = string.Empty;
+    public string ThumbnailHighResUrl { get; init; } = string.Empty;
 }
 
 public sealed class YoutubeDetailGroup
@@ -32,7 +33,11 @@ public sealed class YoutubeDetailGroup
     public required string GroupId { get; init; }
     public required string Title { get; init; }
     public string Subtitle { get; init; } = string.Empty;
+    public string ArtistName { get; init; } = string.Empty;
+    public string GroupType { get; init; } = string.Empty;
+    public int? ReleaseYear { get; init; }
     public string ThumbnailUrl { get; init; } = string.Empty;
+    public string ThumbnailHighResUrl { get; init; } = string.Empty;
     public required IReadOnlyList<YoutubeDetailTrack> Tracks { get; init; }
 }
 

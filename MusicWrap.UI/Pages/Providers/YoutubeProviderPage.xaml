@@ -126,7 +126,7 @@
                             </TextBlock.Style>
                         </TextBlock>
 
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer x:Name="DetailsScrollViewer" VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding Details}">
                                 <ItemsControl.Style>
                                     <Style TargetType="ItemsControl">
@@ -149,31 +149,76 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <StackPanel Grid.Column="0">
+                                                    <StackPanel.ContextMenu>
+                                                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                            <MenuItem Header="Add group to indexing" Click="GroupAddToIndexing_Click"/>
+                                                        </ContextMenu>
+                                                    </StackPanel.ContextMenu>
                                                     <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill" VerticalAlignment="Top" Margin="0,0,0,8"/>
 
                                                     <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                                    <TextBlock Text="{Binding Subtitle}" Opacity="0.75" FontSize="12" TextWrapping="Wrap" Margin="0,4" TextAlignment="Center"/>
+                                                    <TextBlock Opacity="0.75" FontSize="12" TextWrapping="Wrap" Margin="0,4" TextAlignment="Center">
+                                                        <Run Text="{Binding SubtitleArtistPart, Mode=OneWay}"/>
+                                                        <Run Text="{Binding SubtitleTypePart, Mode=OneWay}"/>
+                                                        <Run Text="{Binding SubtitleYearPart, Mode=OneWay}"/>
+                                                    </TextBlock>
 
                                                 </StackPanel>
 
-                                                <ItemsControl Grid.Column="2" ItemsSource="{Binding Tracks}">
-                                                    <ItemsControl.ItemTemplate>
+                                                <ListBox Grid.Column="2"
+                                                         ItemsSource="{Binding Tracks}"
+                                                         SelectionMode="Extended"
+                                                         SelectionChanged="TrackListBox_SelectionChanged"
+                                                         PreviewMouseWheel="TrackListBox_PreviewMouseWheel"
+                                                         HorizontalContentAlignment="Stretch"
+                                                         BorderThickness="0"
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                         ScrollViewer.CanContentScroll="False"
+                                                         Background="Transparent">
+                                                    <ListBox.ItemContainerStyle>
+                                                        <Style TargetType="ListBoxItem">
+                                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                            <Setter Property="Padding" Value="2" />
+                                                        </Style>
+                                                    </ListBox.ItemContainerStyle>
+                                                    <ListBox.ItemTemplate>
                                                         <DataTemplate DataType="{x:Type vm:YoutubeDetailTrackNode}">
-                                                            <MenuItem>
-                                                                <MenuItem.Header>
-                                                                    <Grid>
-                                                                        <Grid.ColumnDefinitions>
-                                                                            <ColumnDefinition Width="*" />
-                                                                            <ColumnDefinition Width="Auto" />
-                                                                        </Grid.ColumnDefinitions>
-                                                                        <TextBlock Grid.Column="0" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                                                        <TextBlock Grid.Column="1" Text="{Binding Subtitle}" Opacity="0.75" Margin="8,0,0,0" />
-                                                                    </Grid>
-                                                                </MenuItem.Header>
-                                                            </MenuItem>
+                                                            <Grid Margin="2,1" ClipToBounds="True" HorizontalAlignment="Stretch"
+                                                                  Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                                                                <Grid.ContextMenu>
+                                                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                                        <MenuItem Header="Add track to indexing"
+                                                                                  Click="TrackAddToIndexing_Click"
+                                                                                  CommandParameter="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                                    </ContextMenu>
+                                                                </Grid.ContextMenu>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="34" />
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="64" />
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <TextBlock Grid.Column="0"
+                                                                           Text="{Binding Index}"
+                                                                           Opacity="0.65"
+                                                                           VerticalAlignment="Center" />
+
+                                                                <TextBlock Grid.Column="1"
+                                                                           Text="{Binding TitleWithSubtitle}"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           TextWrapping="NoWrap"
+                                                                           VerticalAlignment="Center" />
+
+                                                                <TextBlock Grid.Column="2"
+                                                                           Text="{Binding Duration}"
+                                                                           Opacity="0.75"
+                                                                           TextAlignment="Right"
+                                                                           VerticalAlignment="Center" />
+                                                            </Grid>
                                                         </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
+                                                    </ListBox.ItemTemplate>
+                                                </ListBox>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>

@@ -1,7 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Sources.Contracts;
+using MusicWrap.UI.Models;
+using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 
 namespace MusicWrap.UI.ViewModels.Providers;
 
@@ -123,19 +127,31 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
             Details.Clear();
             foreach (var detail in detailItems)
             {
+                var trackNodes = detail.Tracks
+                    .Select((t, idx) =>
+                    {
+                        var (subtitle, duration) = SplitSubtitleAndDuration(t.Subtitle);
+                        return new YoutubeDetailTrackNode
+                        {
+                            Id = t.Id,
+                            Index = idx + 1,
+                            Title = t.Title,
+                            Subtitle = subtitle,
+                            Duration = duration
+                        };
+                    });
+
                 Details.Add(new YoutubeDetailGroupNode
                 {
                     GroupId = detail.GroupId,
                     Title = detail.Title,
                     Subtitle = detail.Subtitle,
+                    ArtistName = detail.ArtistName,
+                    GroupType = detail.GroupType,
+                    ReleaseYear = detail.ReleaseYear,
                     ThumbnailUrl = detail.ThumbnailUrl,
-                    Tracks = new ObservableCollection<YoutubeDetailTrackNode>(
-                        detail.Tracks.Select(t => new YoutubeDetailTrackNode
-                        {
-                            Id = t.Id,
-                            Title = t.Title,
-                            Subtitle = t.Subtitle
-                        }))
+                    ThumbnailHighResUrl = detail.ThumbnailHighResUrl,
+                    Tracks = new ObservableCollection<YoutubeDetailTrackNode>(trackNodes)
                 });
             }
 
@@ -159,6 +175,48 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
         SearchResults.Clear();
         Details.Clear();
         EmptyStateText = "Type a query in CommandPalette and press Enter.";
+    }
+
+    public bool AddTrackToIndexing(YoutubeDetailTrackNode? track, YoutubeDetailGroupNode? group = null)
+    {
+        if (track is null)
+        {
+            return false;
+        }
+
+        return AddTracksToIndexing([track], group) > 0;
+    }
+
+    public int AddTracksToIndexing(IEnumerable<YoutubeDetailTrackNode>? tracks, YoutubeDetailGroupNode? group = null)
+    {
+        if (tracks is null)
+        {
+            return 0;
+        }
+
+        var indexingViewModel = App.Services.GetRequiredService<IndexingViewModel>();
+        int added = 0;
+
+        foreach (var track in tracks)
+        {
+            var stagedTrack = BuildStagedTrack(track, group, indexingViewModel.StagedTracks.Count + 1);
+            if (indexingViewModel.TryAddStagedTrack(stagedTrack))
+            {
+                added++;
+            }
+        }
+
+        return added;
+    }
+
+    public int AddGroupToIndexing(YoutubeDetailGroupNode? group)
+    {
+        if (group is null || group.Tracks.Count == 0)
+        {
+            return 0;
+        }
+
+        return AddTracksToIndexing(group.Tracks, group);
     }
 
     private async Task HydrateArtistAlbumsProgressivelyAsync(int loadVersion, CancellationToken cancellationToken)
@@ -198,14 +256,82 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
             albumGroup.Tracks.Clear();
             foreach (var track in tracks)
             {
+                var (subtitle, duration) = SplitSubtitleAndDuration(track.Subtitle);
                 albumGroup.Tracks.Add(new YoutubeDetailTrackNode
                 {
                     Id = track.Id,
+                    Index = albumGroup.Tracks.Count + 1,
                     Title = track.Title,
-                    Subtitle = track.Subtitle
+                    Subtitle = subtitle,
+                    Duration = duration
                 });
             }
         }
+    }
+
+    private static (string Subtitle, string Duration) SplitSubtitleAndDuration(string subtitle)
+    {
+        if (string.IsNullOrWhiteSpace(subtitle))
+        {
+            return (string.Empty, string.Empty);
+        }
+
+        string text = subtitle.Trim();
+
+        var onlyDuration = Regex.Match(text, @"^(?:#?\d+\s*-\s*)?(\d{1,2}:\d{2}(?::\d{2})?)$");
+        if (onlyDuration.Success)
+        {
+            return (string.Empty, onlyDuration.Groups[1].Value);
+        }
+
+        var endDuration = Regex.Match(text, @"^(.*?)(?:\s*[•-]\s*)(\d{1,2}:\d{2}(?::\d{2})?)$");
+        if (endDuration.Success)
+        {
+            string cleanSubtitle = endDuration.Groups[1].Value.Trim();
+            string duration = endDuration.Groups[2].Value;
+            return (cleanSubtitle, duration);
+        }
+
+        return (text, string.Empty);
+    }
+
+    private static StagedTrackNode BuildStagedTrack(YoutubeDetailTrackNode track, YoutubeDetailGroupNode? group, int index)
+    {
+        string artist = !string.IsNullOrWhiteSpace(group?.ArtistName)
+            ? group.ArtistName
+            : ExtractArtist(track.Subtitle, group?.Subtitle);
+        string album = group?.Title ?? string.Empty;
+
+        return new StagedTrackNode
+        {
+            ExternalId = track.Id,
+            Index = index,
+            Title = track.Title,
+            Artist = artist,
+            Album = album,
+            Year = group?.ReleaseYear ?? 0,
+            Duration = track.Duration,
+            ThumbnailUrl = group?.ThumbnailUrl ?? string.Empty,
+            ThumbnailHighResUrl = group?.ThumbnailHighResUrl ?? group?.ThumbnailUrl ?? string.Empty,
+            TrackNumber = track.Index,
+            DiscNumber = 1
+        };
+    }
+
+    private static string ExtractArtist(string trackSubtitle, string? groupSubtitle)
+    {
+        if (!string.IsNullOrWhiteSpace(trackSubtitle))
+        {
+            var separatorIndex = trackSubtitle.IndexOf(" - ", StringComparison.Ordinal);
+            if (separatorIndex > 0)
+            {
+                return trackSubtitle[..separatorIndex].Trim();
+            }
+
+            return trackSubtitle.Trim();
+        }
+
+        return groupSubtitle?.Trim() ?? string.Empty;
     }
 
     private void CancelDetailsLoad()
@@ -350,13 +476,55 @@ public sealed class YoutubeDetailGroupNode
     public required string GroupId { get; init; }
     public required string Title { get; init; }
     public string Subtitle { get; init; } = string.Empty;
+    public string ArtistName { get; init; } = string.Empty;
+    public string GroupType { get; init; } = string.Empty;
+    public int? ReleaseYear { get; init; }
     public string ThumbnailUrl { get; init; } = string.Empty;
+    public string ThumbnailHighResUrl { get; init; } = string.Empty;
     public required ObservableCollection<YoutubeDetailTrackNode> Tracks { get; init; }
+
+    public string SubtitleArtistPart => ArtistName;
+
+    public string SubtitleTypePart
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(GroupType))
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(ArtistName)
+                ? GroupType
+                : $" • {GroupType}";
+        }
+    }
+
+    public string SubtitleYearPart
+    {
+        get
+        {
+            if (ReleaseYear is null || ReleaseYear <= 0)
+            {
+                return string.Empty;
+            }
+
+            bool hasPrevious = !string.IsNullOrWhiteSpace(ArtistName)
+                || !string.IsNullOrWhiteSpace(GroupType);
+
+            return hasPrevious
+                ? $" • {ReleaseYear.Value}"
+                : ReleaseYear.Value.ToString();
+        }
+    }
 }
 
 public sealed class YoutubeDetailTrackNode
 {
     public required string Id { get; init; }
+    public required int Index { get; init; }
     public required string Title { get; init; }
     public string Subtitle { get; init; } = string.Empty;
+    public string Duration { get; init; } = string.Empty;
+    public string TitleWithSubtitle => string.IsNullOrWhiteSpace(Subtitle) ? Title : $"{Title}  •  {Subtitle}";
 }

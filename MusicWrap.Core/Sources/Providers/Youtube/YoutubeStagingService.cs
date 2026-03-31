@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.ComponentModel;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.User.Models;
@@ -54,11 +55,11 @@ public class YoutubeStagingService : IYoutubeStagingService
             }
 
             // transcode to flac using ffmpeg
-            bool ok = await RunFfmpegAsync(inputPath, outputPath, cancellationToken).ConfigureAwait(false);
+            await RunFfmpegAsync(inputPath, outputPath, cancellationToken).ConfigureAwait(false);
 
             try { File.Delete(inputPath); } catch { /* best effort cleanup */ }
 
-            if (!ok || !File.Exists(outputPath))
+            if (!File.Exists(outputPath))
                 return null;
         }
         lock (_lock)
@@ -68,7 +69,7 @@ public class YoutubeStagingService : IYoutubeStagingService
         return outputPath;
     }
 
-    private async Task<bool> RunFfmpegAsync(string inputPath, string outputPath, CancellationToken cancellationToken)
+    private async Task RunFfmpegAsync(string inputPath, string outputPath, CancellationToken cancellationToken)
     {
         string ffmpegExe = ResolveFfmpegPath();
         var psi = new ProcessStartInfo
@@ -83,20 +84,49 @@ public class YoutubeStagingService : IYoutubeStagingService
 
         using var process = new Process { StartInfo = psi };
 
-        if (!process.Start())
+        try
         {
-            return false;
+            if (!process.Start())
+            {
+                throw new YoutubeStagingException("No se pudo iniciar ffmpeg.", isFfmpegConfigurationError: true);
+            }
+        }
+        catch (Win32Exception ex)
+        {
+            throw new YoutubeStagingException(
+                "ffmpeg no esta configurado o no se encontro. Configura la ruta de ffmpeg en Settings > Youtube.",
+                isFfmpegConfigurationError: true,
+                innerException: ex);
         }
 
         await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        return process.ExitCode == 0;
+        if (process.ExitCode != 0)
+        {
+            string stderr = await process.StandardError.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            string stdout = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+            string details = string.IsNullOrWhiteSpace(stderr) ? stdout : stderr;
+            throw new YoutubeStagingException($"ffmpeg fallo al convertir audio a FLAC. {details}".Trim());
+        }
     }
+
     private string ResolveFfmpegPath()
     {
-        if (_settings.UseCustomFfmpegPath &&
-        !string.IsNullOrWhiteSpace(_settings.CustomFfmpegPath) &&
-        File.Exists(_settings.CustomFfmpegPath))
+        if (_settings.UseCustomFfmpegPath)
         {
+            if (string.IsNullOrWhiteSpace(_settings.CustomFfmpegPath))
+            {
+                throw new YoutubeStagingException(
+                    "No hay ruta de ffmpeg configurada. Configura ffmpeg en Settings > Youtube.",
+                    isFfmpegConfigurationError: true);
+            }
+
+            if (!File.Exists(_settings.CustomFfmpegPath))
+            {
+                throw new YoutubeStagingException(
+                    $"La ruta configurada de ffmpeg no existe: {_settings.CustomFfmpegPath}",
+                    isFfmpegConfigurationError: true);
+            }
+
             return _settings.CustomFfmpegPath;
         }
 

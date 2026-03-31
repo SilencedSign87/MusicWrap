@@ -1,6 +1,7 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
+using MusicWrap.Core.Metadata;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Core.Sources.Providers.Local;
 using MusicWrap.Core.Sources.Providers.Youtube;
@@ -9,6 +10,7 @@ using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.Providers.Youtube;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User;
@@ -191,12 +193,15 @@ namespace MusicWrap.UI
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
             services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
+            services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
 
             // Providers
             services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
-            // services.AddSingleton<IYoutubeResolutionService, YoutubeResolutionService>();
+            services.AddSingleton<IYoutubeResolutionService, YoutubeResolutionService>();
             services.AddSingleton<IYoutubeStagingService, YoutubeStagingService>();
             services.AddSingleton<IYoutubeSearchService, YoutubeSearchService>();
+            services.AddSingleton<IYoutubeLibraryIndexingService, YoutubeLibraryIndexingService>();
+            services.AddSingleton<IYoutubeIndexingWorkflowService, YoutubeIndexingWorkflowService>();
             services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
             services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
 
@@ -207,6 +212,7 @@ namespace MusicWrap.UI
             services.AddTransient<MainWindow>();
             services.AddTransient<CompactPlayer>();
             services.AddTransient<SettingsWindow>();
+            services.AddTransient<IndexingWindow>();
 
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
@@ -216,6 +222,7 @@ namespace MusicWrap.UI
             services.AddTransient<PlaylistViewModel>();
             services.AddTransient<SettingsYoutubeViewModel>();
             services.AddTransient<YoutubeProviderViewModel>();
+            services.AddSingleton<IndexingViewModel>();
             services.AddSingleton<QueueViewModel>();
             services.AddSingleton<DeviceViewModel>();
             services.AddSingleton<PlayerViewModel>();
