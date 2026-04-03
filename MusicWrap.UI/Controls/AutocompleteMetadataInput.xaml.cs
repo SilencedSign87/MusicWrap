@@ -17,6 +17,7 @@ namespace MusicWrap.UI.Controls
     {
         private readonly IMetadataAutocompleteService _autocompleteService;
         private bool _isUpdating;
+        private bool _hasUserInteraction;
 
         public AutocompleteMetadataInput()
         {
@@ -129,7 +130,23 @@ namespace MusicWrap.UI.Controls
         {
             if (_isUpdating) return;
 
+            if (!_hasUserInteraction)
+            {
+                CloseSuggestionsPopup();
+                return;
+            }
+
             UpdateSuggestions();
+        }
+
+        private void SearchTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            _hasUserInteraction = true;
+        }
+
+        private void SearchTextBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            _hasUserInteraction = true;
         }
 
         private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -172,11 +189,43 @@ namespace MusicWrap.UI.Controls
 
         private void SearchTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key is Key.Back or Key.Delete or Key.Space)
+            {
+                _hasUserInteraction = true;
+            }
+
             // Suppress arrow key sounds when navigating suggestions
             if (e.Key == Key.Up || e.Key == Key.Down)
             {
                 e.Handled = false; // Allow the KeyDown event to handle it
             }
+        }
+
+        private void SearchTextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            CloseSuggestionsPopup();
+        }
+
+        private void UserControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible)
+            {
+                return;
+            }
+
+            CloseSuggestionsPopup();
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            CloseSuggestionsPopup();
+        }
+
+        private void CloseSuggestionsPopup()
+        {
+            _isUpdating = true;
+            IsOpen = false;
+            _isUpdating = false;
         }
 
         private void SuggestionsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)

@@ -92,7 +92,7 @@
                                             Margin="0,4"
                                             MouseLeftButtonDown="StartPlayingFromTrack"
                                             Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        Cursor="Hand"
+                                            Cursor="Hand"
                                         >
                                         <Grid.Style>
                                             <Style TargetType="Grid">
@@ -129,7 +129,7 @@
                                                 <MenuItem Header="Add to playlist" Icon="{ex:Icon Glyph=ED0E}"/>
 
                                                 <Separator/>
-                                                <MenuItem Header="Edit Track" 
+                                                <MenuItem Header="Edit track" 
                                                           Command="{Binding EditTrackCommand}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           Icon="{ex:Icon Glyph=E70F}"
@@ -140,12 +140,6 @@
                                                           Command="{Binding ShowInExplorerCommand}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           Icon="{ex:Icon Glyph=E8B7}"
-                                                          />
-
-                                                <MenuItem Header="Properties" 
-                                                          Command="{Binding ShowPropertiesCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          Icon="{ex:Icon Glyph=E946}"
                                                           />
                                             </ContextMenu>
                                         </Grid.ContextMenu>

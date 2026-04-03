@@ -143,6 +143,7 @@
                     <TextBlock Text="Title" Foreground="#aaaaaa" FontSize="11" Margin="0,0,0,4" FontWeight="SemiBold"/>
                     <TextBox
                         Text="{Binding SelectedTitleValue, UpdateSourceTrigger=PropertyChanged}"
+                        Style="{StaticResource BaseTextInput}"
                         FontSize="12"/>
 
                     <TextBlock Text="Artist" Foreground="#aaaaaa" FontSize="11" Margin="0,0,0,4" FontWeight="SemiBold"/>
@@ -173,26 +174,31 @@
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="Track Number" Foreground="#aaaaaa" FontSize="11" Margin="0,0,0,4" FontWeight="SemiBold"/>
                             <TextBox
+                                Style="{StaticResource BaseTextInput}"
                                 Text="{Binding SelectedTrackNumberValue, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="Disc Number" Foreground="#aaaaaa" FontSize="11" Margin="0,0,0,4" FontWeight="SemiBold"/>
                             <TextBox
+                                Style="{StaticResource BaseTextInput}"
                                 Text="{Binding SelectedDiscNumberValue, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
                     </Grid>
 
                     <TextBlock Text="Year" Foreground="#aaaaaa" FontSize="11" Margin="0,0,0,4" FontWeight="SemiBold"/>
                     <TextBox
+                        Style="{StaticResource BaseTextInput}"
                         Text="{Binding SelectedYearValue, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <TextBlock Text="Duration" Foreground="#aaaaaa" FontSize="11" Margin="0,0,0,4" FontWeight="SemiBold"/>
                     <TextBox
+                        Style="{StaticResource BaseTextInput}"
                         Text="{Binding SelectedDurationValue, Mode=OneWay}"
                         IsReadOnly="True"/>
 
                     <TextBlock
+                        Margin="0,8"
                         Text="If selected tracks differ on a field, '-- Various Values --' is shown. Editing the field applies to all selected tracks."
                         Foreground="#888888"
                         TextWrapping="Wrap"
@@ -229,13 +235,14 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Margin="8,0"
+                            Style="{StaticResource OutlineButton}"
                             Command="{Binding ClearAllStagedTracksCommand}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE74D;" VerticalAlignment="Center"/>
                             <TextBlock Text="Clear entries" Margin="4,0"/>
                         </StackPanel>
                     </Button>
-                    <Button Style="{DynamicResource AccentButtonStyle}"
+                    <Button Style="{StaticResource AccentButton}"
                             Command="{Binding SaveAllStagedTracksCommand}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE74E;" VerticalAlignment="Center"/>

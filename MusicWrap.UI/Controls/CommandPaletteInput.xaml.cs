@@ -39,17 +39,12 @@ namespace MusicWrap.UI.Controls
             DataContext = _viewModel;
         }
 
-        private void CommandInputText_KeyDown(object sender, KeyEventArgs e)
+        private void CommandInput_EnterPressed(object sender, RoutedEventArgs e)
         {
-            if (e.Key != Key.Enter)
-                return;
-
             if (_viewModel.SubmitQueryCommand.CanExecute(null))
             {
                 _viewModel.SubmitQueryCommand.Execute(null);
             }
-
-            e.Handled = true;
         }
     }
 }

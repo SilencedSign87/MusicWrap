@@ -9,32 +9,18 @@
              x:Name="Root"
              d:DataContext="{d:DesignInstance Type=vm:CommandPaletteViewModel}"
              d:DesignHeight="100" d:DesignWidth="300">
-    <Grid>
-        <TextBox x:Name="CommandInputText"
-                 VerticalAlignment="Center"
-                 HorizontalAlignment="Stretch"
-                 Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                 KeyDown="CommandInputText_KeyDown" />
-
-        <TextBlock Text="{Binding PlaceholderText, ElementName=Root}"
-                   Margin="10,0,0,0"
-                   VerticalAlignment="Center"
-                   Foreground="#80FFFFFF"
-                   IsHitTestVisible="False">
-            <TextBlock.Style>
-                <Style TargetType="TextBlock">
-                    <Setter Property="Visibility" Value="Collapsed" />
-                    <Style.Triggers>
-                        <MultiDataTrigger>
-                            <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding Text, ElementName=CommandInputText}" Value="" />
-                                <Condition Binding="{Binding IsKeyboardFocused, ElementName=CommandInputText}" Value="False" />
-                            </MultiDataTrigger.Conditions>
-                            <Setter Property="Visibility" Value="Visible" />
-                        </MultiDataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBlock.Style>
-        </TextBlock>
-    </Grid>
+    <local:CompactInputField x:Name="CommandInput"
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Stretch"
+                             Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
+                             EnterPressed="CommandInput_EnterPressed">
+        <local:CompactInputField.BeforeContent>
+            <TextBlock Text="&#xE721;"
+                       FontFamily="Segoe Fluent Icons"
+                       FontSize="12"
+                       Foreground="#90FFFFFF"
+                       VerticalAlignment="Center"/>
+        </local:CompactInputField.BeforeContent>
+    </local:CompactInputField>
 </UserControl>

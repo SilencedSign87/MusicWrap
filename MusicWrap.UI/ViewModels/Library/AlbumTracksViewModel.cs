@@ -3,6 +3,8 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.UI.Services;
+using MusicWrap.UI.Windows;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,16 +40,19 @@ namespace MusicWrap.UI.ViewModels.Library
 
         private readonly MusicLibrary _library;
         private readonly IMusicPlayerService _playerService;
+        private readonly IEditMetadataService _editMetadataService;
         private readonly string _searchQuery;
 
         public AlbumTracksViewModel(
             MusicLibrary library,
             IMusicPlayerService playerService,
+            IEditMetadataService editMetadataService,
             int albumId,
             string dominantColor = "#1a1a1a",
             string foregroundColor = "#ffffff",
             string? searchQuery = null)
         {
+            _editMetadataService = editMetadataService;
             _library = library;
             _playerService = playerService;
             _searchQuery = searchQuery?.Trim() ?? string.Empty;
@@ -118,7 +123,7 @@ namespace MusicWrap.UI.ViewModels.Library
         [RelayCommand]
         private void EditTrack(int track)
         {
-            // TODO: Show edit metadata window
+            _editMetadataService.OpenMetadataWindow(track, MetadataEntityType.Track);
         }
 
         [RelayCommand]

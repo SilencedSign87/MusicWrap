@@ -1,18 +1,19 @@
 ﻿using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using MusicWrap.Core;
 using MusicWrap.Core.Metadata;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Core.Sources.Providers.Local;
-using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Core.Sources.Providers.Runtime;
+using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.Data.Providers.Youtube;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
+using MusicWrap.Data.Providers.Youtube;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Controls;
@@ -25,6 +26,7 @@ using MusicWrap.UI.ViewModels.Playlist;
 using MusicWrap.UI.ViewModels.Providers;
 using MusicWrap.UI.ViewModels.Settings;
 using MusicWrap.UI.Windows;
+using Serilog;
 using System.Configuration;
 using System.Data;
 using System.Windows;
@@ -45,10 +47,19 @@ namespace MusicWrap.UI
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            // configure logger
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.File(System.IO.Path.Combine(MusicWrapDirectories.LogsDirectory, "log-.txt"), rollingInterval: RollingInterval.Day)
+                .CreateLogger();
+
+            Log.Information("Application starting up");
+
             base.OnStartup(e);
 
             // Recreate app data folders if they were deleted between runs.
             MusicWrapDirectories.EnsureCreated();
+
 
             SplashScreen splash = new("Resources/SplashScreen.png");
             splash.Show(autoClose: false, topMost: true);
@@ -87,8 +98,9 @@ namespace MusicWrap.UI
                     TrySaveLibrary();
                 }
             }
-            catch
+            catch (Exception ex) 
             {
+                Log.Error(ex, "Error while saving data on exit");
             }
             finally
             {
@@ -97,6 +109,9 @@ namespace MusicWrap.UI
                 {
                     disposable.Dispose();
                 }
+
+                Log.Information("Application exiting");
+                Log.CloseAndFlush();
                 base.OnExit(e);
             }
         }
@@ -180,6 +195,12 @@ namespace MusicWrap.UI
         {
             var services = new ServiceCollection();
 
+            services.AddLogging(loggingBuilder =>
+            {
+                loggingBuilder.ClearProviders();
+                loggingBuilder.AddSerilog(dispose: true);
+            });
+
             //Data layer
             services.AddSingleton<ILibraryRepository, LibraryRepository>();
             services.AddSingleton(sp => sp.GetRequiredService<ILibraryRepository>().Load());// Provide Music library
@@ -194,6 +215,7 @@ namespace MusicWrap.UI
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
             services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
             services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
+            services.AddSingleton<IEditMetadataService, EditMetadataService>();
 
             // Providers
             services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
@@ -368,7 +390,7 @@ namespace MusicWrap.UI
                 return 0;
             }
         }
-        
+
         private void AttachSaveHooks()
         {
             if (_saveHooksAttached) return;

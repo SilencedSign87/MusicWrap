@@ -6,12 +6,13 @@
 
     <!-- Base button -->
     <Style x:Key="BaseButton" TargetType="Button">
-        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Padding" Value="8,4" />
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -19,7 +20,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4"
+                            CornerRadius="0"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter
                             HorizontalAlignment="Center"
@@ -71,6 +72,18 @@
         <Setter Property="Background" Value="{StaticResource BackgroundControlTransparent}" />
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    
+    <!--Outline Button-->
+    <Style x:Key="OutlineButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
+        <Setter Property="Background" Value="{StaticResource BackgroundControlTransparent}" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource StrokeSurface}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <!-- Transparent button -->

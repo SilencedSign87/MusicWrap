@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
 using MusicWrap.UI.ViewModels.Library;
+using MusicWrap.UI.Windows;
 using System;
 using System.Collections.Generic;
 using System.Text;

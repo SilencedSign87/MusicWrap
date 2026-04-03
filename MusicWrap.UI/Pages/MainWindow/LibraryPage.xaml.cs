@@ -146,10 +146,12 @@ namespace MusicWrap.UI.Pages.MainWindow
 
                     var library = vm.GetLibrary();
                     var playerService = App.Services.GetRequiredService<IMusicPlayerService>();
+                    var editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
 
                     var tracksViewModel = new AlbumTracksViewModel(
                         library,
                         playerService,
+                        editMetadataService,
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,

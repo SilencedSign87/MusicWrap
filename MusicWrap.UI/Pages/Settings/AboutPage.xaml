@@ -39,34 +39,36 @@
         <StackPanel Grid.Row="1" Margin="0,16,0,0">
             <TextBlock Text="Credits:"/>
             <Separator Margin="0,4"/>
-            <ListBox
+            <ItemsControl
                 ItemsSource="{Binding Credits}"
-                SelectionMode="Single"
+                Background="{StaticResource BackgroundSmoke}"
                 >
-                <ListBox.ItemTemplate>
+                <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:Credits">
-                        <Grid HorizontalAlignment="Stretch">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="48"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="48"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0">
-                                <TextBlock Text="{Binding IconGlyph}" FontFamily="Segoe Fluent Icons" FontSize="24" VerticalAlignment="Center"/>
-                            </Border>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"/>
-                                <TextBlock Text="{Binding Description}" FontSize="12" Opacity="0.7"/>
-                            </StackPanel>
-                            <Border Grid.Column="2">
-                                <Button Style="{StaticResource SubtleButton}" Padding="8" HorizontalAlignment="Center" VerticalAlignment="Center" Click="Button_Click">
-                                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8A7;"/>
-                                </Button>
-                            </Border>
-                        </Grid>
+                        <Border Padding="12,8">
+                            <Grid HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="48"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="48"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0">
+                                    <TextBlock Text="{Binding IconGlyph}" FontFamily="Segoe Fluent Icons" FontSize="24" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Opacity="0.7"/>
+                                </StackPanel>
+                                <Border Grid.Column="2">
+                                    <Button Style="{StaticResource SubtleButton}" Padding="8" HorizontalAlignment="Center" VerticalAlignment="Center" Click="Button_Click">
+                                        <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8A7;"/>
+                                    </Button>
+                                </Border>
+                            </Grid>
+                        </Border>
                     </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </StackPanel>
     </Grid>
 </UserControl>

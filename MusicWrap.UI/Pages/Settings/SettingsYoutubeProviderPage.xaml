@@ -8,6 +8,8 @@
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:SettingsYoutubeViewModel}"
+             d:Foreground="white"
+             d:Background="#080808"
              d:DesignHeight="800" d:DesignWidth="400">
 
     <StackPanel Margin="16">
@@ -22,19 +24,31 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
-            <TextBox
+            <!--<TextBox
 Grid.Column="0"
 Text="{Binding CustomFfmpegPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 IsEnabled="{Binding UseCustomFfmpegPath}"
-ToolTip="Path to ffmpeg.exe" />
+ToolTip="Path to ffmpeg.exe" />-->
+            <controls:CompactInputField
+                Grid.Column="0"
+                Text="{Binding CustomFfmpegPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                IsEnabled="{Binding UseCustomFfmpegPath}"
+                PlaceholderText="Path to FFmpeg.exe"
+                >
+                <controls:CompactInputField.BeforeContent>
+                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xED25;"/>
+                </controls:CompactInputField.BeforeContent>
+                
+            </controls:CompactInputField>
 
             <Button
-Grid.Column="1"
-Margin="8,0,0,0"
-Padding="10,4"
-Content="Browse..."
-Command="{Binding BrowseForFfmpegPathCommand}"
-IsEnabled="{Binding UseCustomFfmpegPath}" />
+                Grid.Column="1"
+                Margin="8,0,0,0"
+                Padding="10,4"
+                Content="Browse..."
+                Style="{StaticResource DefaultButton}"
+                Command="{Binding BrowseForFfmpegPathCommand}"
+                IsEnabled="{Binding UseCustomFfmpegPath}" />
         </Grid>
 
         <Border Margin="8,0,0,16" Padding="8" CornerRadius="6" Background="#14000000">
