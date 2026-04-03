@@ -19,8 +19,11 @@ namespace MusicWrap.UI.ViewModels.Settings
         [ObservableProperty] private bool _restoreQueueAndIndexOnly;
         [ObservableProperty] private bool _restoreQueueOnly;
         [ObservableProperty] private bool _startClean;
+        [ObservableProperty] private bool _minimizeToTray;
+        [ObservableProperty] private bool _exitAppOnClose;
         [ObservableProperty] private bool _useCustomFfmpegPath;
         [ObservableProperty] private string _customFfmpegPath = string.Empty;
+        private bool _updatingCloseBehavior;
 
         public SettingsGeneralViewModel(UserSettings settings, ISaveCoordinator saveCoordinator)
         {
@@ -64,6 +67,8 @@ namespace MusicWrap.UI.ViewModels.Settings
             RestoreQueueAndIndexOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueAndIndexOnly;
             RestoreQueueOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueOnly;
             StartClean = _settings.StartupBehavior == StartupBehavior.StartClean;
+            MinimizeToTray = _settings.KeepAppInTray;
+            ExitAppOnClose = !_settings.KeepAppInTray;
             UseCustomFfmpegPath = _settings.UseCustomFfmpegPath;
             CustomFfmpegPath = _settings.CustomFfmpegPath ?? string.Empty;
         }
@@ -97,6 +102,19 @@ namespace MusicWrap.UI.ViewModels.Settings
             _settings.StartupBehavior = StartupBehavior.StartClean;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
+
+        partial void OnMinimizeToTrayChanged(bool value)
+        {
+            if (_updatingCloseBehavior || !value) return;
+            SetCloseBehavior(true);
+        }
+
+        partial void OnExitAppOnCloseChanged(bool value)
+        {
+            if (_updatingCloseBehavior || !value) return;
+            SetCloseBehavior(false);
+        }
+
         partial void OnUseCustomFfmpegPathChanged(bool value)
         {
             _settings.UseCustomFfmpegPath = value;
@@ -105,6 +123,23 @@ namespace MusicWrap.UI.ViewModels.Settings
         partial void OnCustomFfmpegPathChanged(string value)
         {
             _settings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+
+        private void SetCloseBehavior(bool keepInTray)
+        {
+            _updatingCloseBehavior = true;
+            try
+            {
+                MinimizeToTray = keepInTray;
+                ExitAppOnClose = !keepInTray;
+            }
+            finally
+            {
+                _updatingCloseBehavior = false;
+            }
+
+            _settings.KeepAppInTray = keepInTray;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion

@@ -39,14 +39,18 @@ namespace MusicWrap.UI
     public partial class App : Application
     {
         public static Window? CurrentWindow { get; private set; }
+        public static bool IsShuttingDown { get; private set; }
+        public static bool IsWindowTransitioning => _windowTransitionDepth > 0;
         public static IServiceProvider Services { get; private set; } = default!;
-        private TaskbarIcon? _trayIcon;
+        private static int _windowTransitionDepth;
         private IMusicPlayerService? _player;
         private ISaveCoordinator? _saveCoordinator;
         private bool _saveHooksAttached;
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            IsShuttingDown = false;
+
             // configure logger
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
@@ -72,18 +76,13 @@ namespace MusicWrap.UI
 
         private void _trayIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
         {
-            if (CurrentWindow is not null)
-            {
-                if (CurrentWindow.WindowState == WindowState.Minimized)
-                    CurrentWindow.WindowState = WindowState.Normal;
-                CurrentWindow.Activate();
-                CurrentWindow.Show();
-            }
+            ShowOrRestoreCurrentWindow();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
-            TrayIconManager.DisposeTrayIcon();
+            IsShuttingDown = true;
+
             try
             {
                 var save = Services.GetService<ISaveCoordinator>();
@@ -97,8 +96,13 @@ namespace MusicWrap.UI
                 {
                     TrySaveLibrary();
                 }
+                var trayService = Services.GetService<ITrayService>();
+                if (trayService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 Log.Error(ex, "Error while saving data on exit");
             }
@@ -118,10 +122,19 @@ namespace MusicWrap.UI
 
         public static void ShowMain()
         {
-            var main = Services.GetRequiredService<MainWindow>();
-            main.Show();
+            if (CurrentWindow is MainWindow existingMain && TryShowWindow(existingMain))
+            {
+                return;
+            }
 
-            CurrentWindow?.Close();
+            if (IsWindowUsable(CurrentWindow))
+            {
+                CloseForWindowTransition(CurrentWindow!);
+            }
+
+            var main = Services.GetRequiredService<MainWindow>();
+            TrackCurrentWindow(main);
+            main.Show();
 
             CheckMemory();
 
@@ -130,14 +143,48 @@ namespace MusicWrap.UI
 
         public static void ShowCompactPlayer()
         {
-            var player = Services.GetRequiredService<CompactPlayer>();
-            player.Show();
+            if (CurrentWindow is CompactPlayer existingCompact && TryShowWindow(existingCompact))
+            {
+                return;
+            }
 
-            CurrentWindow?.Close();
+            if (IsWindowUsable(CurrentWindow))
+            {
+                CloseForWindowTransition(CurrentWindow!);
+            }
+
+            var player = Services.GetRequiredService<CompactPlayer>();
+            TrackCurrentWindow(player);
+            player.Show();
 
             CheckMemory();
 
             CurrentWindow = player;
+        }
+
+        public static void ShowOrRestoreCurrentWindow()
+        {
+            if (!TryShowWindow(CurrentWindow))
+            {
+                ShowMain();
+            }
+        }
+
+        public static void RequestShutdown()
+        {
+            IsShuttingDown = true;
+            Current?.Shutdown();
+        }
+
+        public static bool ShouldKeepAppInTray()
+        {
+            if (Services is null)
+            {
+                return false;
+            }
+
+            var settings = Services.GetService<UserSettings>();
+            return settings?.KeepAppInTray == true;
         }
 
         #region Internal
@@ -201,6 +248,8 @@ namespace MusicWrap.UI
                 loggingBuilder.AddSerilog(dispose: true);
             });
 
+            services.AddSingleton<ITrayService, TrayService>();
+
             //Data layer
             services.AddSingleton<ILibraryRepository, LibraryRepository>();
             services.AddSingleton(sp => sp.GetRequiredService<ILibraryRepository>().Load());// Provide Music library
@@ -259,10 +308,10 @@ namespace MusicWrap.UI
             try
             {
                 // Force load
-
                 Services.GetRequiredService<MusicLibrary>();
                 var userSettings = Services.GetRequiredService<UserSettings>();
                 var player = Services.GetRequiredService<IMusicPlayerService>();
+                var trayService = Services.GetRequiredService<ITrayService>();
 
                 // Apply persisted audio preferences before restoring playback/caching state.
                 if (userSettings.PreferredDeviceIndex >= 0 && userSettings.PreferredDeviceIndex != player.CurrentDeviceIndex)
@@ -288,8 +337,12 @@ namespace MusicWrap.UI
                 var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
                 await LibraryCache.InitializeAsync(listBy, ascending);
 
-                _trayIcon = TrayIconManager.GetTrayIcon();
-                _trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
+                if (trayService is not null)
+                {
+                    trayService.Initialize();
+                    //_trayIcon = TrayIconManager.GetTrayIcon();
+                    //_trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
+                }
 
                 windowToShow = TryRestorePlaybackSession();
 
@@ -460,6 +513,60 @@ namespace MusicWrap.UI
             GC.WaitForPendingFinalizers();
             GC.Collect();
 #endif
+        }
+
+        private static bool TryShowWindow(Window? window)
+        {
+            if (!IsWindowUsable(window))
+            {
+                return false;
+            }
+
+            if (window!.WindowState == WindowState.Minimized)
+            {
+                window.WindowState = WindowState.Normal;
+            }
+
+            if (!window.IsVisible)
+            {
+                window.Show();
+            }
+
+            window.Activate();
+            window.Focus();
+            return true;
+        }
+
+        private static bool IsWindowUsable(Window? window)
+        {
+            return window is not null
+                && window.IsLoaded
+                && !window.Dispatcher.HasShutdownStarted
+                && !window.Dispatcher.HasShutdownFinished;
+        }
+
+        private static void TrackCurrentWindow(Window window)
+        {
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(CurrentWindow, window))
+                {
+                    CurrentWindow = null;
+                }
+            };
+        }
+
+        private static void CloseForWindowTransition(Window window)
+        {
+            _windowTransitionDepth++;
+            try
+            {
+                window.Close();
+            }
+            finally
+            {
+                _windowTransitionDepth--;
+            }
         }
         #endregion
     }

@@ -5,6 +5,7 @@
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              xmlns:helpers="clr-namespace:MusicWrap.UI.Helpers"
              ThemeMode="Dark"
+             ShutdownMode="OnExplicitShutdown"
              >
     <Application.Resources>
 

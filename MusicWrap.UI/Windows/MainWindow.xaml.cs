@@ -4,6 +4,7 @@ using MusicWrap.Core;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Pages.Providers;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -43,6 +44,7 @@ namespace MusicWrap.UI.Windows
             InitializeComponent();
 
             StateChanged += MainWindow_StateChanged;
+            Closing += MainWindow_Closing;
 
             _player = App.Services.GetRequiredService<IMusicPlayerService>();
             _player.PlaybackStateChanged += _player_PlaybackStateChanged;
@@ -94,6 +96,15 @@ namespace MusicWrap.UI.Windows
 
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
+            if (WindowState == WindowState.Minimized)
+            {
+                if (App.ShouldKeepAppInTray())
+                {
+                    Hide();
+                }
+                return;
+            }
+
             if (WindowState == WindowState.Maximized)
             {
                 //RestoreIconFont.Text = "\xE923";
@@ -106,6 +117,23 @@ namespace MusicWrap.UI.Windows
                 //RestoreButton.ToolTip = "Maximize";
                 BorderWindow.Padding = new Thickness(0);
             }
+        }
+
+        private void MainWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            if (App.IsShuttingDown || App.IsWindowTransitioning)
+            {
+                return;
+            }
+
+            if (App.ShouldKeepAppInTray())
+            {
+                e.Cancel = true;
+                Hide();
+                return;
+            }
+
+            App.RequestShutdown();
         }
 
         private void CloseButtonClick(object sender, RoutedEventArgs e)

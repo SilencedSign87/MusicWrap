@@ -2,6 +2,7 @@
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -35,6 +36,8 @@ namespace MusicWrap.UI.Windows
             DataContext = _viewModel;
 
             Closed += CompactPlayer_Closed;
+            Closing += CompactPlayer_Closing;
+            StateChanged += CompactPlayer_StateChanged;
         }
 
         private void CompactPlayer_Closed(object? sender, EventArgs e)
@@ -96,6 +99,34 @@ namespace MusicWrap.UI.Windows
         private void MinimizeClick(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
+        }
+
+        private void CompactPlayer_StateChanged(object? sender, EventArgs e)
+        {
+            if (WindowState == WindowState.Minimized)
+            {
+                if (App.ShouldKeepAppInTray())
+                {
+                    Hide();
+                }
+            }
+        }
+
+        private void CompactPlayer_Closing(object? sender, CancelEventArgs e)
+        {
+            if (App.IsShuttingDown || App.IsWindowTransitioning)
+            {
+                return;
+            }
+
+            if (App.ShouldKeepAppInTray())
+            {
+                e.Cancel = true;
+                Hide();
+                return;
+            }
+
+            App.RequestShutdown();
         }
 
         private void VolumeButton_Click(object sender, RoutedEventArgs e)

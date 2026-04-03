@@ -24,6 +24,9 @@ namespace MusicWrap.Data.User.Models
         [Key(11)] public string YoutubeLibraryRootPath { get; set; } = string.Empty;
         [Key(12)] public string YoutubePathTemplate { get; set; } = "{artist}/{album}/{trackNumber} - {title}";
 
+        // Misc settings
+        [Key(13)] public bool KeepAppInTray { get; set; } = false;
+
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
 
     }

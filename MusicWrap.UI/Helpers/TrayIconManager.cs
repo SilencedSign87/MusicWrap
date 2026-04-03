@@ -22,6 +22,7 @@ namespace MusicWrap.UI.Helpers
                 ToolTipText = "Music Wrap",
                 ContextMenu = CreateContextMenu(),
             };
+
             return _trayIcon;
         }
 
