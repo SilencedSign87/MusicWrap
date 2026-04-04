@@ -28,7 +28,13 @@
         <Style x:Key="CompactPlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}" >
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
-            <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            <Setter Property="Foreground" Value="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=background}"/>
+                    <Setter Property="Background" Value="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style x:Key="CompactClosePlayerButton" TargetType="Button" BasedOn="{StaticResource CloseButton}" >
             <Setter Property="Width" Value="32"/>
@@ -97,18 +103,6 @@
 
                             />
                         </Grid>
-                        <!--<Slider Grid.Column="1" 
-                            Minimum="0" 
-                            x:Name="PlayerSlider"
-                            IsMoveToPointEnabled="True"
-                            Maximum="{Binding Duration}" 
-                            Value="{Binding CurrentPosition, Mode=OneWay}"
-                            VerticalAlignment="Center" 
-                            Margin="8,0" 
-                            Height="32"
-                            PreviewMouseLeftButtonDown="PlayerSlider_PreviewMouseLeftButtonDown"
-                            PreviewMouseLeftButtonUp="PlayerSlider_PreviewMouseLeftButtonUp"
-                            />-->
                         <TextBlock Grid.Column="2" 
                             Text="{Binding FormattedDuration}" 
                             FontWeight="Light" 
@@ -117,31 +111,31 @@
                     </Grid>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button x:Name="MoreButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Search in library" Click="MoreButton_Click">
+                        <Button x:Name="MoreButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Search in library" Click="MoreButton_Click">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE721;" FontSize="12"/>
                         </Button>
-                        <Button x:Name="RepeadButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
+                        <Button x:Name="RepeadButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="12"/>
                         </Button>
-                        <Button x:Name="PrevButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Previous track"
+                        <Button x:Name="PrevButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Previous track"
                             Command="{Binding PreviousCommand}"
                             >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="12"/>
                         </Button>
-                        <Button x:Name="PlayButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32"
+                        <Button x:Name="PlayButton" Style="{StaticResource CompactPlayerButton}" Padding="0"
                             Command="{Binding PlayPauseCommand}"
                             >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="16"/>
                         </Button>
-                        <Button x:Name="NextButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Next track"
+                        <Button x:Name="NextButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Next track"
                             Command="{Binding NextCommand}"
                             >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="12"/>
                         </Button>
-                        <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
+                        <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding DjButtonIcon}" FontSize="12"/>
                         </Button>
-                        <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" Width="32" Height="32" ToolTip="Volume">
+                        <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Volume">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe767;" FontSize="12"/>
                         </Button>
                     </StackPanel>
@@ -185,21 +179,21 @@
                 </Grid>
                 <Grid Grid.Row="1">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" ToolTip="Open main player" Click="HandleOpenMainPlayer" Width="32" Height="32">
+                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" ToolTip="Open main player" Click="HandleOpenMainPlayer">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEE47;" FontSize="14" />
                         </Button>
-                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" ToolTip="Show Queue" Click="HandleOpenQueue" Width="32" Height="32">
+                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" ToolTip="Show Queue" Click="HandleOpenQueue">
                             <TextBlock x:Name="QueueFontIcon" FontFamily="Segoe Fluent Icons" Text="&#xe70d;" FontSize="14" />
                         </Button>
-                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" Click="HandleToggleAllwayOnTop" Width="32" Height="32">
+                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" Click="HandleToggleAllwayOnTop">
                             <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="14" />
                         </Button>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Style="{StaticResource CompactPlayerButton}" Click="MinimizeClick" Padding="8" Width="32" Height="32" ToolTip="Minimize">
+                        <Button Style="{StaticResource CompactPlayerButton}" Click="MinimizeClick" Padding="8" ToolTip="Minimize">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE921;" FontSize="11" />
                         </Button>
-                        <Button Style="{StaticResource CompactClosePlayerButton}" Padding="8" Click="HandleCloseApp" Width="32" Height="32" ToolTip="Close">
+                        <Button Style="{StaticResource CompactClosePlayerButton}" Padding="8" Click="HandleCloseApp" ToolTip="Close">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8bb;" FontSize="11" />
                         </Button>
                     </StackPanel>

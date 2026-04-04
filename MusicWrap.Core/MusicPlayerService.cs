@@ -6,6 +6,7 @@ using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.User.Models;
 using System.Net;
+using Microsoft.Extensions.Logging;
 
 namespace MusicWrap.Core
 {
@@ -81,6 +82,7 @@ namespace MusicWrap.Core
     {
         private readonly MusicLibrary _library;
         private readonly AudioEngine _audioEngine;
+        private readonly ILogger<MusicPlayerService> _logger;
 
         private readonly List<int> _queue = [];
 
@@ -178,10 +180,11 @@ namespace MusicWrap.Core
         // Providers
         private readonly ITrackPlaybackResolver _trackPlaybackResolver;
 
-        public MusicPlayerService(MusicLibrary library, ITrackPlaybackResolver trackPlaybackResolver)
+        public MusicPlayerService(MusicLibrary library, ITrackPlaybackResolver trackPlaybackResolver, ILogger<MusicPlayerService> logger)
         {
             _library = library;
             _trackPlaybackResolver = trackPlaybackResolver;
+            _logger = logger;
 
             _audioEngine = new AudioEngine();
 
@@ -589,7 +592,7 @@ namespace MusicWrap.Core
             {
                 if (!_trackPlaybackResolver.TryResolve(track, out var resolvedCurrent))
                 {
-                    Debug.WriteLine($"[Audio Engine] Failed to resolve playback source for track: {track.Id}, {track.Origin}");
+                    _logger.LogWarning("Failed to resolve playback source for track: {TrackId}, {TrackOrigin}", track.Id, track.Origin);
                     Next();
                     return;
                 }
@@ -604,7 +607,7 @@ namespace MusicWrap.Core
                         createdStream = _audioEngine.CreateDecodeStreamFromUrl(resolvedCurrent.Input);
                         break;
                     default:
-                        Debug.WriteLine($"[Audio Engine] Unsupported playback source kind {resolvedCurrent.Kind} for track {track.Id}");
+                        _logger.LogWarning("Unsupported playback source kind {PlaybackSourceKind} for track {TrackId}, {TrackOrigin}", resolvedCurrent.Kind, track.Id, track.Origin);
                         Next();
                         return;
                 }
@@ -613,7 +616,7 @@ namespace MusicWrap.Core
                 if (_currentStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
-                    Debug.WriteLine($"[Audio Engine] Failed to create decode stream for track {track.Path}, error code: {err}");
+                    _logger.LogWarning("Failed to create decode stream for track {TrackId}, {TrackOrigin}, error code: {ErrorCode}", track.Id, track.Origin, err);
                     Next();
                     return;
                 }
@@ -798,7 +801,7 @@ namespace MusicWrap.Core
 
                 if (!_trackPlaybackResolver.TryResolve(nextTrack, out var resolvedNext))
                 {
-                    Debug.WriteLine($"[Audio Engine] Failed to resolve playback source for preload of track {nextTrack.Path}");
+                    _logger.LogWarning("Failed to resolve playback source for preload of track : {TrackId}, {TrackOrigin}, {TrackPath}", nextTrack.Id, nextTrack.Origin, nextTrack.Path);
                     return;
                 }
 
@@ -812,26 +815,16 @@ namespace MusicWrap.Core
                         nextStream = _audioEngine.CreateDecodeStreamFromUrl(resolvedNext.Input);
                         break;
                     default:
-                        Debug.WriteLine($"[Audio Engine] Unsupported playback source kind {resolvedNext.Kind} for preload of track {nextTrack.Id}");
+                        _logger.LogWarning("Unsupported playback source kind {PlaybackSourceKind} for preload of track {TrackId}, {TrackOrigin}, {TrackPath}", resolvedNext.Kind, nextTrack.Id, nextTrack.Origin, nextTrack.Path);
                         return;
                 }
 
                 if (nextStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
-                    Debug.WriteLine($"[Audio Engine] Failed to create decode stream for preload of track {nextTrack.Path}, error code: {err}");
+                    _logger.LogWarning("Failed to create decode stream for preload of track {TrackId}, {TrackOrigin}, {TrackPath}, error code: {ErrorCode}", nextTrack.Id, nextTrack.Origin, nextTrack.Path, err);
                     return;
                 }
-
-
-                // // Create decode stream and prepare it (but don't add to mixer yet)
-                // int nextStream = _audioEngine.CreateDecodeStream(nextTrack.Path);
-                // if (nextStream == 0)
-                // {
-                //     var err = _audioEngine.GetLastError();
-                //     Debug.WriteLine($"Failed to create preload stream for track {nextTrack.Path}, error code: {err}");
-                //     return;
-                // }
 
                 _preloadedStream = nextStream;
                 _preloadedTrackId = nextTrackId;

@@ -317,6 +317,19 @@ namespace MusicWrap.UI.ViewModels
                     break;
             }
         }
+
+        private void SyncPredictionBaselineToEngine(bool updateUiPosition)
+        {
+            var now = DateTime.UtcNow;
+            var enginePosition = _playerService.CurrentPosition;
+            _lastEnginePosition = enginePosition;
+            _lastEnginePositionAtUTC = now;
+            if (updateUiPosition && !_isSeekingPosition)
+            {
+                CurrentPosition = Math.Clamp(enginePosition, 0, Duration > 0 ? Duration : enginePosition);
+                UpdateFormattedPosition(CurrentPosition);
+            }
+        }
         private void OnPlaybackStateChanged(object? sender, PlaybackState state)
         {
             Application.Current?.Dispatcher.Invoke(() =>
@@ -324,6 +337,15 @@ namespace MusicWrap.UI.ViewModels
                 IsPlaying = state == PlaybackState.Playing;
                 IsPaused = state == PlaybackState.Paused;
                 UpdatePlaybackState(IsPlaying);
+
+                if (state == PlaybackState.Playing)
+                {
+                    SyncPredictionBaselineToEngine(updateUiPosition: true);
+                }
+                else
+                {
+                    SyncPredictionBaselineToEngine(updateUiPosition: true);
+                }
             });
         }
 
@@ -480,7 +502,13 @@ namespace MusicWrap.UI.ViewModels
 
         private void UiPositionTimerOnTick(object? sender, EventArgs e)
         {
-            if (!IsPlaying || _isSeekingPosition || Duration <= 0) return;
+            if (_isSeekingPosition || Duration <= 0) return;
+
+            if (!IsPlaying || _playerService.IsPaused || !_playerService.IsPlaying)
+            {
+                return;
+            }
+
 
             var elapsed = (DateTime.UtcNow - _lastEnginePositionAtUTC).TotalSeconds;
             var predicted = _lastEnginePosition + elapsed;

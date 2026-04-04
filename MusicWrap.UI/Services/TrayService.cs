@@ -1,12 +1,8 @@
-﻿using CommunityToolkit.Mvvm.Input;
-using Hardcodet.Wpf.TaskbarNotification;
-using MusicWrap.UI.Windows;
+﻿using MusicWrap.UI.Windows;
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Drawing;
 using System.Windows;
-using System.Windows.Controls;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Forms = System.Windows.Forms;
 
 namespace MusicWrap.UI.Services
 {
@@ -19,39 +15,49 @@ namespace MusicWrap.UI.Services
     }
     class TrayService : ITrayService, IDisposable
     {
-        private TaskbarIcon? _trayIcon;
+        private Forms.NotifyIcon? _trayIcon;
+        private Icon? _icon;
         private TrayFlyoutWindow? _flyout;
 
         public void Initialize()
         {
-            var iconStream = Application.GetResourceStream(new Uri("pack://application:,,,/Resources/icon.ico"))!.Stream;
-
-            _trayIcon ??= new TaskbarIcon
+            if (_trayIcon is not null)
             {
-                Icon = new System.Drawing.Icon(iconStream),
-                ToolTipText = "Music Wrap",
-                ContextMenu = CreateContextMenu(),
+                return;
+            }
+
+            using var iconStream = Application.GetResourceStream(new Uri("pack://application:,,,/Resources/icon.ico"))!.Stream;
+            _icon = new Icon(iconStream);
+
+            _trayIcon = new Forms.NotifyIcon
+            {
+                Icon = _icon,
+                Text = "Music Wrap",
+                Visible = true,
+                ContextMenuStrip = CreateContextMenu(),
             };
 
-            _trayIcon.TrayMouseDoubleClick += (s, e) => App.ShowOrRestoreCurrentWindow();
-            _trayIcon.LeftClickCommand = new RelayCommand(() => ToggleFlyout());
+            _trayIcon.MouseClick += OnTrayMouseClick;
         }
+
+        private void OnTrayMouseClick(object? sender, Forms.MouseEventArgs e)
+        {
+            if (e.Button == Forms.MouseButtons.Left)
+            {
+                Application.Current.Dispatcher.Invoke(ToggleFlyout);
+            }
+        }
+
         public void ShowFlyout()
         {
             if (_flyout == null || !_flyout.IsLoaded)
                 _flyout = new TrayFlyoutWindow();
 
-            var area = SystemParameters.WorkArea;
-
-            _flyout.Left = area.Right - _flyout.Width - 10;
-            _flyout.Top = area.Bottom - _flyout.Height - 10;
-
-            _flyout.Show();
-            _flyout.Activate();
+            _flyout.ShowFlyout();
         }
         public void HideFlyout()
         {
-            _flyout?.Hide();
+            _flyout?.AnimateClose();
         }
         public void ToggleFlyout()
         {
@@ -62,18 +68,12 @@ namespace MusicWrap.UI.Services
         }
 
         #region Internal 
-        private static ContextMenu CreateContextMenu()
+        private static Forms.ContextMenuStrip CreateContextMenu()
         {
-
-            var contextMenu = new ContextMenu();
-
-            contextMenu.Items.Add(new System.Windows.Controls.MenuItem
-            {
-                Header = "Open",
-                Command = new RelayCommand(() => App.ShowOrRestoreCurrentWindow())
-            });
-            contextMenu.Items.Add(new System.Windows.Controls.Separator());
-            contextMenu.Items.Add(new MenuItem { Header = "Exit", Command = new RelayCommand(() => App.RequestShutdown()) });
+            var contextMenu = new Forms.ContextMenuStrip();
+            contextMenu.Items.Add("Open", null, (_, _) => App.ShowOrRestoreCurrentWindow());
+            contextMenu.Items.Add(new Forms.ToolStripSeparator());
+            contextMenu.Items.Add("Exit", null, (_, _) => App.RequestShutdown());
 
             return contextMenu;
         }
@@ -88,9 +88,14 @@ namespace MusicWrap.UI.Services
 
             if (_trayIcon != null)
             {
+                _trayIcon.MouseClick -= OnTrayMouseClick;
+                _trayIcon.Visible = false;
                 _trayIcon.Dispose();
                 _trayIcon = null;
             }
+
+            _icon?.Dispose();
+            _icon = null;
         }
         #endregion
     }

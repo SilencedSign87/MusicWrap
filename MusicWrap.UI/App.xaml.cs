@@ -27,6 +27,7 @@ using MusicWrap.UI.ViewModels.Providers;
 using MusicWrap.UI.ViewModels.Settings;
 using MusicWrap.UI.Windows;
 using Serilog;
+using Serilog.Enrichers;
 using System.Configuration;
 using System.Data;
 using System.Windows;
@@ -38,6 +39,8 @@ namespace MusicWrap.UI
     /// </summary>
     public partial class App : Application
     {
+        private static Mutex? _singleInstanceMutex;
+        private const string SingleInstanceMutexName = "MusicWrap.SingleInstance";
         public static Window? CurrentWindow { get; private set; }
         public static bool IsShuttingDown { get; private set; }
         public static bool IsWindowTransitioning => _windowTransitionDepth > 0;
@@ -49,28 +52,54 @@ namespace MusicWrap.UI
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
+            if (!createdNew)
+            {
+                Shutdown();
+                return;
+            }
+
             IsShuttingDown = false;
 
-            // configure logger
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                .WriteTo.File(System.IO.Path.Combine(MusicWrapDirectories.LogsDirectory, "log-.txt"), rollingInterval: RollingInterval.Day)
+                .Enrich.FromLogContext()
+                .Enrich.WithThreadId()
+                .Enrich.WithMachineName()
+                .Enrich.WithEnvironmentUserName()
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}")
+                .WriteTo.File(
+                    path: System.IO.Path.Combine(MusicWrapDirectories.LogsDirectory, "log-.txt"),
+                    rollingInterval: RollingInterval.Day,
+                    outputTemplate:
+                    "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] [{SourceContext}] " +
+                    "[Machine:{MachineName}] [User:{EnvironmentUserName}] [Thread:{ThreadId}] " +
+                    "{Message:lj}{NewLine}{Exception}"
+                )
                 .CreateLogger();
 
             Log.Information("Application starting up");
 
             base.OnStartup(e);
 
-            // Recreate app data folders if they were deleted between runs.
-            MusicWrapDirectories.EnsureCreated();
+            try
+            {
+
+                // Recreate app data folders if they were deleted between runs.
+                MusicWrapDirectories.EnsureCreated();
 
 
-            SplashScreen splash = new("Resources/SplashScreen.png");
-            splash.Show(autoClose: false, topMost: true);
+                SplashScreen splash = new("Resources/SplashScreen.png");
+                splash.Show(autoClose: false, topMost: true);
 
-            Services = ConfigureServices();
+                Services = ConfigureServices();
 
-            InitializeServicesAsync(splash);
+                InitializeServicesAsync(splash);
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Fatal error during application startup");
+            }
 
         }
 
