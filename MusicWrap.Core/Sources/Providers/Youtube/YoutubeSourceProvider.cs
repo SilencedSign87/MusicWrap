@@ -3,6 +3,7 @@ using MusicWrap.Data.Library.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace MusicWrap.Core.Sources.Providers.Youtube
@@ -21,6 +22,17 @@ namespace MusicWrap.Core.Sources.Providers.Youtube
 
         public bool TryResolve(Track track, out ResolvedPlaybackSource source)
         {
+            if (!string.IsNullOrWhiteSpace(track.Path) && File.Exists(track.Path))
+            {
+                source = new ResolvedPlaybackSource
+                {
+                    Kind = PlaybackSourceKind.LocalFile,
+                    Input = track.Path,
+                    Display = track.Title
+                };
+                return true;
+            }
+
             if (string.IsNullOrWhiteSpace(track.ExternalId))
             {
                 source = default!;

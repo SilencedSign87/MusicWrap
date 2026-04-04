@@ -28,6 +28,17 @@ public class YoutubeStagingService : IYoutubeStagingService
     {
         if (string.IsNullOrWhiteSpace(videoId)) return null;
 
+        string outputFile = Path.Combine(_cacheDir, $"{videoId}.flac");
+
+        if (File.Exists(outputFile))
+        {
+             lock (_lock)
+             {
+                 _ready[videoId] = outputFile;
+             }
+             return outputFile;
+        }
+
         lock (_lock)
         {
             if (_ready.TryGetValue(videoId, out var existing) && File.Exists(existing))
