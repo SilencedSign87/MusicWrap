@@ -93,7 +93,7 @@
                 <RowDefinition/>
             </Grid.RowDefinitions>
 
-            <Menu Grid.Row="0">
+            <Menu Grid.Row="0" VerticalAlignment="Center">
                 <MenuItem Header="Library" Icon="{ex:Icon Glyph=E8F1}">
                     <MenuItem Header="Rescan directories" Icon="{ex:Icon Glyph=E895}" Command="{Binding RescanAllDirectoriesCommand}"/>
                     <Separator/>

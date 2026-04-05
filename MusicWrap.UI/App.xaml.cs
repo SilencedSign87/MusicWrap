@@ -13,6 +13,7 @@ using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
+using MusicWrap.Data.Playlist;
 using MusicWrap.Data.Providers.Youtube;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
@@ -286,12 +287,15 @@ namespace MusicWrap.UI
             services.AddSingleton(sp => sp.GetRequiredService<IPlaybackRepository>().Load()); // Provide Queue settings
             services.AddSingleton<IUserSettingsRepository, UserSettingsRepository>();
             services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
+            services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
+            services.AddSingleton(sp=>sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
 
             // Services
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
             services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
+            services.AddSingleton<IPlaylistManagerCoordinator, PlaylistManagerCoordinator>();
             services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
             services.AddSingleton<IEditMetadataService, EditMetadataService>();
 
@@ -313,6 +317,7 @@ namespace MusicWrap.UI
             services.AddTransient<CompactPlayer>();
             services.AddTransient<SettingsWindow>();
             services.AddTransient<IndexingWindow>();
+            services.AddTransient<PlaylistManagerWindow>();
 
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
@@ -320,6 +325,7 @@ namespace MusicWrap.UI
             services.AddTransient<LibraryViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
             services.AddTransient<PlaylistViewModel>();
+            services.AddTransient<PlaylistManagerViewModel>();
             services.AddTransient<SettingsYoutubeViewModel>();
             services.AddTransient<YoutubeProviderViewModel>();
             services.AddSingleton<IndexingViewModel>();

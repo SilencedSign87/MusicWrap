@@ -125,6 +125,10 @@ namespace MusicWrap.UI.Windows
             Hide();
             App.ShowOrRestoreCurrentWindow();
         }
+        private void ExitApp(object sender, RoutedEventArgs e)
+        {
+            App.Current.Shutdown();
+        }
         private void VolumeButton_Click(object sender, RoutedEventArgs e)
         {
             VolumePopup.IsOpen = true;
@@ -151,5 +155,6 @@ namespace MusicWrap.UI.Windows
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
     }
 }

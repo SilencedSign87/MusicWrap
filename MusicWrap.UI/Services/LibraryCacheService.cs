@@ -22,6 +22,9 @@ namespace MusicWrap.UI.Services
         Task InitializeAsync(string initialView, bool ascending);
         Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(string viewType, bool ascending);
         IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry);
+        string GetArtistNamesForAlbum(int albumId);
+        string GetArtistNamesForTrack(int trackId);
+        string? FindCover(IEnumerable<int> AlbumIds, IEnumerable<int>? trackIds = null);
         int[] GetTrackQueueForAlbum(int albumId);
         void SaveToDisk();
         void InvalidateCache();
@@ -62,7 +65,6 @@ namespace MusicWrap.UI.Services
             BuildIndexes();
         }
 
-        #region Interface Methods
         private void LoadFromDisk()
         {
             lock (_diskLock)
@@ -87,6 +89,24 @@ namespace MusicWrap.UI.Services
                 }
             }
         }
+        #region Interface Methods
+
+        public string GetArtistNamesForAlbum(int albumId)
+        {
+            EnsureIndexes();
+            return _artistNamesByAlbumId.TryGetValue(albumId, out var name) ? name : "Unknown Artist";
+        }
+        public string GetArtistNamesForTrack(int trackId)
+        {
+            EnsureIndexes();
+            var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+            if (track is null) return "Unknown Artist";
+
+            var album = _albumById.TryGetValue(track.AlbumId, out var alb) ? alb : null;
+            if (album is null) return "Unknown Artist";
+
+            return _artistNamesByAlbumId.TryGetValue(album.Id, out var name) ? name : "Unknown Artist";
+         }
 
         public void SaveToDisk()
         {
@@ -418,7 +438,7 @@ namespace MusicWrap.UI.Services
             return "#"; // numbers
         }
 
-        private string? FindCover(IEnumerable<int> AlbumIds, IEnumerable<int>? trackIds = null)
+        public string? FindCover(IEnumerable<int> AlbumIds, IEnumerable<int>? trackIds = null)
         {
             foreach (var albumId in AlbumIds)
             {

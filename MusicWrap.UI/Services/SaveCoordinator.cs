@@ -3,6 +3,8 @@ using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
+using MusicWrap.Data.Playlist;
+using MusicWrap.Data.Playlist.Models;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Windows;
@@ -20,6 +22,7 @@ namespace MusicWrap.UI.Services
         Playback = 2,
         Library = 4,
         Cache = 8,
+        Playlist = 16,
     }
     public interface ISaveCoordinator
     {
@@ -32,6 +35,7 @@ namespace MusicWrap.UI.Services
         private static readonly TimeSpan PlaybackDebounce = TimeSpan.FromMilliseconds(1200);
         private static readonly TimeSpan LibraryDebounce = TimeSpan.FromMilliseconds(3500);
         private static readonly TimeSpan CacheDebounce = TimeSpan.FromMilliseconds(2500);
+        private static readonly TimeSpan PlaylistDebounce = TimeSpan.FromMilliseconds(2500);
         private static readonly TimeSpan WorkerTick = TimeSpan.FromMilliseconds(250);
 
         private readonly object _lock = new();
@@ -46,12 +50,15 @@ namespace MusicWrap.UI.Services
         private readonly UserSettings _userSettings;
         private readonly IMusicPlayerService _player;
         private readonly ILibraryCacheService _libraryCacheService;
+        private readonly PlaylistData _playlistData;
+        private readonly IPlaylistRepository _playlistRepository;
 
         private SaveKind _pending;
         private DateTime _nextSettingsUtc = DateTime.MinValue;
         private DateTime _nextPlaybackUtc = DateTime.MinValue;
         private DateTime _nextLibraryUtc = DateTime.MinValue;
         private DateTime _nextCacheUtc = DateTime.MinValue;
+        private DateTime _nextPlaylistUtc = DateTime.MinValue;
 
         public SaveCoordinator(
          ILibraryRepository libraryRepository,
@@ -60,8 +67,13 @@ namespace MusicWrap.UI.Services
          IUserSettingsRepository userSettingsRepository,
          UserSettings userSettings,
          IMusicPlayerService player,
-         ILibraryCacheService libraryCacheService)
+         ILibraryCacheService libraryCacheService,
+         IPlaylistRepository playlistRepository,
+         PlaylistData playlistData
+            )
         {
+            _playlistRepository = playlistRepository;
+            _playlistData = playlistData;
             _libraryRepository = libraryRepository;
             _library = library;
             _playbackRepository = playbackRepository;
@@ -87,6 +99,7 @@ namespace MusicWrap.UI.Services
                 if ((kind & SaveKind.Playback) != 0) _nextPlaybackUtc = now + PlaybackDebounce;
                 if ((kind & SaveKind.Library) != 0) _nextLibraryUtc = now + LibraryDebounce;
                 if ((kind & SaveKind.Cache) != 0) _nextCacheUtc = now + CacheDebounce;
+                if ((kind & SaveKind.Playlist) != 0) _nextPlaylistUtc = now + PlaylistDebounce;
             }
         }
 
@@ -95,7 +108,7 @@ namespace MusicWrap.UI.Services
             SaveKind toSave;
             lock (_lock)
             {
-                toSave = _pending | SaveKind.Settings | SaveKind.Playback | SaveKind.Library | SaveKind.Cache;
+                toSave = _pending | SaveKind.Settings | SaveKind.Playback | SaveKind.Library | SaveKind.Cache | SaveKind.Playlist;
                 _pending = SaveKind.None;
             }
 
@@ -150,6 +163,11 @@ namespace MusicWrap.UI.Services
                     due |= SaveKind.Cache;
                     _pending &= ~SaveKind.Cache;
                 }
+                if ((_pending & SaveKind.Playlist) != 0 && nowUtc >= _nextPlaylistUtc)
+                {
+                    due |= SaveKind.Playlist;
+                    _pending &= ~SaveKind.Playlist;
+                }
 
                 return due;
             }
@@ -193,6 +211,15 @@ namespace MusicWrap.UI.Services
                         _userSettingsRepository.Save(_userSettings);
                     }
                     catch { }
+                }
+                if ((kinds & SaveKind.Playlist) != 0)
+                {
+                    try
+                    {
+                        _playlistRepository.Save(_playlistData);
+                    }
+                    catch { }
+
                 }
             }
             finally

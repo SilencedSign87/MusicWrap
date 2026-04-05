@@ -53,20 +53,6 @@ namespace MusicWrap.UI.Windows
             NavigateToTab(0);
             PlayPauseButton.ImageSource = _playIcon;
 
-            TrackExpander.Expanded += TrackExpander_Expanded;
-            //DeviceExpander.Expanded += DeviceExpander_Expanded;
-        }
-
-        private void TrackExpander_Expanded(object sender, RoutedEventArgs e)
-        {
-            //if (DeviceExpander.IsExpanded)
-            //    DeviceExpander.IsExpanded = false;
-        }
-
-        private void DeviceExpander_Expanded(object sender, RoutedEventArgs e)
-        {
-            if (TrackExpander.IsExpanded)
-                TrackExpander.IsExpanded = false;
         }
 
 
@@ -96,25 +82,12 @@ namespace MusicWrap.UI.Windows
 
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
-            if (WindowState == WindowState.Minimized)
-            {
-                if (App.ShouldKeepAppInTray())
-                {
-                    Hide();
-                }
-                return;
-            }
-
             if (WindowState == WindowState.Maximized)
             {
-                //RestoreIconFont.Text = "\xE923";
-                //RestoreButton.ToolTip = "Restore";
                 BorderWindow.Padding = new Thickness(8);
             }
             else
             {
-                //RestoreIconFont.Text = "\xE922";
-                //RestoreButton.ToolTip = "Maximize";
                 BorderWindow.Padding = new Thickness(0);
             }
         }

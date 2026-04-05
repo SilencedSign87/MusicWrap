@@ -9,6 +9,7 @@
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="White"/>
@@ -58,11 +59,14 @@
     <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="Background" Value="{StaticResource AccentBrush100}" />
         <Setter Property="Foreground" Value="{StaticResource TextOnAccentSecondaryBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush100}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
                 <Setter Property="Background" Value="{StaticResource AccentBrush110}"/>
                 <Setter Property="Foreground" Value="{StaticResource TextOnAccentPrimaryBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="true">
+                <Setter Property="Background" Value="{StaticResource AccentBrush120}"/>
             </Trigger>
         </Style.Triggers>
     </Style>

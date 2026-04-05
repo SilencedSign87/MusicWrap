@@ -126,8 +126,11 @@
                                                           Icon="{ex:Icon Glyph=E142}"
                                                           />
                                                 <Separator/>
-                                                <MenuItem Header="Add to playlist" Icon="{ex:Icon Glyph=ED0E}"/>
-
+                                                <MenuItem Header="Add to playlist" 
+                                                          Icon="{ex:Icon Glyph=ED0E}" 
+                                                          Command="{Binding AddToPlaylistCommand}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          />
                                                 <Separator/>
                                                 <MenuItem Header="Edit track" 
                                                           Command="{Binding EditTrackCommand}"

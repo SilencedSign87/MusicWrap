@@ -52,6 +52,13 @@
             <ColumnDefinition Width="4"/>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+        <Grid.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Open" Click="OpenMainWindow"/>
+                <Separator/>
+                <MenuItem Header="Exit" Click="ExitApp"/>
+            </ContextMenu>
+        </Grid.ContextMenu>
 
         <Image
                 Grid.Column="0"

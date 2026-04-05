@@ -4,7 +4,6 @@ using MusicWrap.Core;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Windows;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -41,12 +40,14 @@ namespace MusicWrap.UI.ViewModels.Library
         private readonly MusicLibrary _library;
         private readonly IMusicPlayerService _playerService;
         private readonly IEditMetadataService _editMetadataService;
+        private readonly IPlaylistManagerCoordinator _playlistManagerCoordinator;
         private readonly string _searchQuery;
 
         public AlbumTracksViewModel(
             MusicLibrary library,
             IMusicPlayerService playerService,
             IEditMetadataService editMetadataService,
+            IPlaylistManagerCoordinator playlistManagerCoordinator,
             int albumId,
             string dominantColor = "#1a1a1a",
             string foregroundColor = "#ffffff",
@@ -56,6 +57,7 @@ namespace MusicWrap.UI.ViewModels.Library
             _library = library;
             _playerService = playerService;
             _searchQuery = searchQuery?.Trim() ?? string.Empty;
+            _playlistManagerCoordinator = playlistManagerCoordinator;
             this.albumId = albumId;
             this.dominantColor = dominantColor;
             this.foregroundColor = foregroundColor;
@@ -71,7 +73,8 @@ namespace MusicWrap.UI.ViewModels.Library
                 .ThenBy(t => t.TrackNumber)
                 .ThenBy(t => t.Title)
                 .FirstOrDefault();
-            if (firstTrack != null) {
+            if (firstTrack != null)
+            {
                 PlayTrackCommand.Execute(firstTrack.Id);
             }
         }
@@ -104,7 +107,8 @@ namespace MusicWrap.UI.ViewModels.Library
             var currentQueue = _playerService.GetQueue() ?? [];
             // insert track after the currently playing track
             var newQueue = new List<int>();
-            foreach (var trackItem in currentQueue) { 
+            foreach (var trackItem in currentQueue)
+            {
                 newQueue.Add(trackItem);
                 if (trackItem == _playerService.CurrentTrackId)
                 {
@@ -142,11 +146,16 @@ namespace MusicWrap.UI.ViewModels.Library
                 );
             }
         }
+        [RelayCommand]
+        private void AddToPlaylist(int track)
+        {
+            _playlistManagerCoordinator.AddToManager(new[] { track });
+        }
 
         [RelayCommand]
         private void ShowProperties(int track)
         {
-            
+
         }
         private void LoadAlbumAndTracks()
         {
@@ -156,10 +165,10 @@ namespace MusicWrap.UI.ViewModels.Library
 
             AlbumTitle = album.Title;
             AlbumYear = album.Year;
-            
+
             // Get album artists
             var artists = _library.Artists.Where(a => album.ArtistIds.Contains(a.Id)).Select(a => a.Name);
-            AlbumArtists= string.Join(", ", artists);
+            AlbumArtists = string.Join(", ", artists);
 
             // Get and group tracks by disk
             var tracks = _library.Tracks

@@ -37,7 +37,6 @@ namespace MusicWrap.UI.Windows
 
             Closed += CompactPlayer_Closed;
             Closing += CompactPlayer_Closing;
-            StateChanged += CompactPlayer_StateChanged;
         }
 
         private void CompactPlayer_Closed(object? sender, EventArgs e)
@@ -99,17 +98,6 @@ namespace MusicWrap.UI.Windows
         private void MinimizeClick(object sender, RoutedEventArgs e)
         {
             WindowState = WindowState.Minimized;
-        }
-
-        private void CompactPlayer_StateChanged(object? sender, EventArgs e)
-        {
-            if (WindowState == WindowState.Minimized)
-            {
-                if (App.ShouldKeepAppInTray())
-                {
-                    Hide();
-                }
-            }
         }
 
         private void CompactPlayer_Closing(object? sender, CancelEventArgs e)

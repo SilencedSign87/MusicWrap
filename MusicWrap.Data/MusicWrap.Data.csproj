@@ -18,4 +18,8 @@
     <Folder Include="Providers\Youtube\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Playlist\Models\PlaylistItem.cs" />
+  </ItemGroup>
+
 </Project>
