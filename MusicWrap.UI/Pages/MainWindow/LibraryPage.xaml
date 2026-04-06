@@ -288,7 +288,7 @@
                                 <ItemsControl Grid.Row="0" ItemsSource="{Binding Albums}" HorizontalAlignment="Stretch" Width="{Binding RelativeSource={RelativeSource AncestorType=ScrollViewer}, Path=ViewportWidth}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
-                                            <UniformGrid Columns="{Binding ColumnCount}" />
+                                            <UniformGrid Columns="{Binding DataContext.LayoutColumns, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>

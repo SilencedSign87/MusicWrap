@@ -29,6 +29,11 @@ namespace MusicWrap.UI.Pages.MainWindow
         private int _lastViewportWidth = -1;
         private DispatcherTimer? _resizeThrottleTimer;
 
+        private int _lastColumns = -1;
+        private const int MinTileWidth = 150;
+        private const int Gutter = 16;
+        private const int MinColumns = 1;
+
         public LibraryPage()
         {
             InitializeComponent();
@@ -48,7 +53,7 @@ namespace MusicWrap.UI.Pages.MainWindow
             _resizeThrottleTimer.Tick += (_, _) =>
             {
                 _resizeThrottleTimer.Stop();
-                TryRebuildRowsForCurrentViewport();
+                UpdateColumnsForViewportWidth();
             };
         }
 
@@ -93,15 +98,17 @@ namespace MusicWrap.UI.Pages.MainWindow
             {
                 vm.CollapseAlbum();
                 _lastViewportWidth = -1;
+                _lastColumns = -1;
                 return;
             }
 
-            TryRebuildRowsForCurrentViewport(true);
+            //TryRebuildRowsForCurrentViewport(true);
+            UpdateColumnsForViewportWidth();
 
             // Defer once so the viewport is measured and rows are rebuilt with final width.
             Dispatcher.BeginInvoke(() =>
             {
-                TryRebuildRowsForCurrentViewport(true);
+                UpdateColumnsForViewportWidth(true);
 
                 if (vm.IsAlbumView && vm.GridRows.Count > 0)
                     {
@@ -234,7 +241,8 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void AlbumsViewport_Loaded(object sender, RoutedEventArgs e)
         {
-            TryRebuildRowsForCurrentViewport(true);
+            //TryRebuildRowsForCurrentViewport(true);
+            UpdateColumnsForViewportWidth();
         }
 
         private void AlbumsViewport_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -242,7 +250,8 @@ namespace MusicWrap.UI.Pages.MainWindow
             // ViewportWidth can change when vertical scrollbar appears/disappears or after window state changes.
             if (e.ViewportWidthChange != 0)
             {
-                TryRebuildRowsForCurrentViewport();
+                //TryRebuildRowsForCurrentViewport();
+                UpdateColumnsForViewportWidth();
             }
         }
 
@@ -258,36 +267,44 @@ namespace MusicWrap.UI.Pages.MainWindow
             return Math.Max(1, (int)estimated);
         }
 
-        private void RebuildRowsForCurrentViewport()
-        {
-            if (vm.SelectedEntry == null)
-            {
-                return;
-            }
+        //private void TryRebuildRowsForCurrentViewport(bool force = false)
+        //{
+        //    if (vm.SelectedEntry == null)
+        //    {
+        //        return;
+        //    }
 
-            vm.RebuildRows(GetCurrentViewportWidth());
+        //    int width = GetCurrentViewportWidth();
+        //    if (width <= 0)
+        //    {
+        //        return;
+        //    }
+
+        //    if (!force && width == _lastViewportWidth)
+        //    {
+        //        return;
+        //    }
+
+        //    _lastViewportWidth = width;
+        //    vm.RebuildRows(width);
+        //}
+
+        private int CalculateColumns(int width)
+        {
+            int tileFootprint = MinTileWidth + Gutter;
+            return Math.Max(MinColumns, Math.Max(1, width) / tileFootprint);
         }
-
-        private void TryRebuildRowsForCurrentViewport(bool force = false)
+        private void UpdateColumnsForViewportWidth(bool force = false)
         {
-            if (vm.SelectedEntry == null)
-            {
-                return;
-            }
+            if (vm.SelectedEntry == null) return;
 
             int width = GetCurrentViewportWidth();
-            if (width <= 0)
-            {
-                return;
-            }
+            if (width <= 0) return;
+            int columns = CalculateColumns(width);
+            if (!force && columns == _lastColumns) return;
 
-            if (!force && width == _lastViewportWidth)
-            {
-                return;
-            }
-
-            _lastViewportWidth = width;
-            vm.RebuildRows(width);
+            _lastColumns = columns;
+            vm.SetLayoutColumns(columns);
         }
     }
 }

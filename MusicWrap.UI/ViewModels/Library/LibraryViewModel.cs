@@ -47,6 +47,9 @@ namespace MusicWrap.UI.ViewModels.Library
         [ObservableProperty] private bool isLoadingIndeterminate = true;
 
         [ObservableProperty] private double loadingProgressValue = 0;
+        [ObservableProperty] private int layoutColumns = 1;
+
+        private List<AlbumData> _visibleAlbums = [];
 
         private CancellationTokenSource? _imageCts;
         private string _activeSearchQuery = string.Empty;
@@ -118,11 +121,14 @@ namespace MusicWrap.UI.ViewModels.Library
 
             if (value == null)
             {
+                _visibleAlbums.Clear();
                 GridRows.Clear();
+                ExpandedAlbumId = null;
                 return;
             }
 
-            LoadAlbumsForEntry(value);
+            RefreshVisibleAlbumsData();
+            //LoadAlbumsForEntry(value);
         }
 
         [RelayCommand]
@@ -224,9 +230,56 @@ namespace MusicWrap.UI.ViewModels.Library
         public void ApplySearchFilter(string? query)
         {
             _activeSearchQuery = query?.Trim() ?? string.Empty;
+            RefreshVisibleAlbumsData();
             _ = LoadEntriesAsync();
         }
 
+        public void SetLayoutColumns(int columns)
+        {
+            columns = Math.Max(1, columns);
+            if (LayoutColumns != columns)
+            {
+                LayoutColumns = columns;
+                ReflowRowsFromVisibleAlbums();
+            }
+        }
+
+        private void RefreshVisibleAlbumsData()
+        {
+            if (SelectedEntry == null)
+            {
+                _visibleAlbums.Clear();
+                GridRows.Clear();
+                ExpandedAlbumId = null;
+                return;
+            }
+            var albums = _LibraryCache.GetAlbumsForEntry(SelectedEntry)
+                        .Select(s => new AlbumData
+                        {
+                            Id = s.Id,
+                            Title = s.Title,
+                            Year = s.Year,
+                            ArtistNames = s.ArtistNames,
+                            ImagePath = s.ImagePath,
+                            BlurredImagePath = s.BluredImagePath,
+                            CoverImage = null,
+                            DominantColor = s.DominantColorHex,
+                            ForegroundColor = s.ForegroundColorHex,
+                        }).ToList();
+            if (!string.IsNullOrWhiteSpace(_activeSearchQuery))
+            {
+                albums = FilterAlbums(albums, _activeSearchQuery);
+            }
+            _visibleAlbums = albums;
+            ReflowRowsFromVisibleAlbums();
+            _imageCts?.Cancel();
+            _imageCts = new CancellationTokenSource();
+            var pending = _visibleAlbums.Where(a => a.ImagePath is not null && a.CoverImage is null).ToList();
+            if (pending.Count > 0)
+            {
+                _ = LoadCoverImagesAsync(pending, _imageCts.Token);
+            }
+        }
         public string ActiveSearchQuery => _activeSearchQuery;
 
         [RelayCommand]
@@ -526,58 +579,92 @@ namespace MusicWrap.UI.ViewModels.Library
             ExpandedAlbumId = null;
         }
 
-        public void RebuildRows(int containerWidth)
+        //public void RebuildRows(int containerWidth)
+        //{
+        //    const int minTileWidth = 150;
+        //    const int gutter = 16;
+        //    const int minColumns = 1;
+
+        //    if (SelectedEntry == null)
+        //    {
+        //        GridRows.Clear();
+        //        return;
+        //    }
+
+        //    int tileFootprint = minTileWidth + gutter;
+        //    int columns = Math.Max(minColumns, Math.Max(1, containerWidth) / tileFootprint);
+        //    int? expandedAlbumIdSnapshot = ExpandedAlbumId;
+
+        //    var albums = _LibraryCache.GetAlbumsForEntry(SelectedEntry)
+        //                .Select(s => new AlbumData
+        //                {
+        //                    Id = s.Id,
+        //                    Title = s.Title,
+        //                    Year = s.Year,
+        //                    ArtistNames = s.ArtistNames,
+        //                    ImagePath = s.ImagePath,
+        //                    BlurredImagePath = s.BluredImagePath,
+        //                    CoverImage = null,
+        //                    DominantColor = s.DominantColorHex,
+        //                    ForegroundColor = s.ForegroundColorHex,
+        //                }).ToList();
+
+        //    if (!string.IsNullOrWhiteSpace(_activeSearchQuery))
+        //    {
+        //        albums = FilterAlbums(albums, _activeSearchQuery);
+        //    }
+
+        //    var rows = new ObservableCollection<AlbumGridRowModel>();
+        //    for (int i = 0; i < albums.Count; i += columns)
+        //    {
+        //        var rowAlbums = albums.Skip(i).Take(columns).ToList();
+        //        rows.Add(new AlbumGridRowModel
+        //        {
+        //            Albums = rowAlbums,
+        //            ColumnCount = columns
+        //        });
+        //    }
+        //    GridRows = rows;
+        //    ExpandedAlbumId = null;
+
+        //    if (expandedAlbumIdSnapshot.HasValue)
+        //    {
+        //        var expandedRow = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == expandedAlbumIdSnapshot.Value));
+        //        if (expandedRow != null)
+        //        {
+        //            var expandedAlbum = expandedRow.Albums.First(a => a.Id == expandedAlbumIdSnapshot.Value);
+        //            expandedRow.ExpandedAlbumId = expandedAlbum.Id;
+        //            expandedRow.ExpandedImagePath = expandedAlbum.BlurredImagePath;
+        //            expandedRow.ExpandedDominantColor = expandedAlbum.DominantColor;
+        //            expandedRow.ExpandedForegroundColor = expandedAlbum.ForegroundColor;
+        //            ExpandedAlbumId = expandedAlbum.Id;
+        //        }
+        //    }
+
+        //    _imageCts = new CancellationTokenSource();
+        //    _ = LoadCoverImagesAsync(albums, _imageCts.Token);
+        //}
+
+        private void ReflowRowsFromVisibleAlbums()
         {
-            const int minTileWidth = 150;
-            const int gutter = 16;
-            const int minColumns = 1;
-
-            if (SelectedEntry == null)
-            {
-                GridRows.Clear();
-                return;
-            }
-
-            int tileFootprint = minTileWidth + gutter;
-            int columns = Math.Max(minColumns, Math.Max(1, containerWidth) / tileFootprint);
+            var columns = Math.Max(1, LayoutColumns);
             int? expandedAlbumIdSnapshot = ExpandedAlbumId;
 
-            var albums = _LibraryCache.GetAlbumsForEntry(SelectedEntry)
-                        .Select(s => new AlbumData
-                        {
-                            Id = s.Id,
-                            Title = s.Title,
-                            Year = s.Year,
-                            ArtistNames = s.ArtistNames,
-                            ImagePath = s.ImagePath,
-                            BlurredImagePath = s.BluredImagePath,
-                            CoverImage = null,
-                            DominantColor = s.DominantColorHex,
-                            ForegroundColor = s.ForegroundColorHex,
-                        }).ToList();
-
-            if (!string.IsNullOrWhiteSpace(_activeSearchQuery))
-            {
-                albums = FilterAlbums(albums, _activeSearchQuery);
-            }
-
             var rows = new ObservableCollection<AlbumGridRowModel>();
-            for (int i = 0; i < albums.Count; i += columns)
+            for (int i = 0; i < _visibleAlbums.Count; i += columns)
             {
-                var rowAlbums = albums.Skip(i).Take(columns).ToList();
                 rows.Add(new AlbumGridRowModel
                 {
-                    Albums = rowAlbums,
-                    ColumnCount = columns
+                    Albums = _visibleAlbums.Skip(i).Take(columns).ToList(),
                 });
             }
+
             GridRows = rows;
             ExpandedAlbumId = null;
 
-            if (expandedAlbumIdSnapshot.HasValue)
-            {
+            if (expandedAlbumIdSnapshot.HasValue) {
                 var expandedRow = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == expandedAlbumIdSnapshot.Value));
-                if (expandedRow != null)
+                if (expandedRow is not null)
                 {
                     var expandedAlbum = expandedRow.Albums.First(a => a.Id == expandedAlbumIdSnapshot.Value);
                     expandedRow.ExpandedAlbumId = expandedAlbum.Id;
@@ -587,9 +674,6 @@ namespace MusicWrap.UI.ViewModels.Library
                     ExpandedAlbumId = expandedAlbum.Id;
                 }
             }
-
-            _imageCts = new CancellationTokenSource();
-            _ = LoadCoverImagesAsync(albums, _imageCts.Token);
         }
 
         private List<AlbumData> FilterAlbums(List<AlbumData> albums, string query)
@@ -686,7 +770,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
             public AlbumData? ExpandedAlbum => Albums.FirstOrDefault(a => a.Id == ExpandedAlbumId);
 
-            public int ColumnCount { get; set; } = 1;
+            //public int ColumnCount { get; set; } = 1;
 
             public event PropertyChangedEventHandler? PropertyChanged;
         }

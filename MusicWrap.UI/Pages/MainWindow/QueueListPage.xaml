@@ -69,6 +69,7 @@
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
                     <Setter Property="Margin" Value="0"/>
+                    <Setter Property="Padding" Value="0"/>
                     <Setter Property="BorderThickness" Value="0"/>
                     <Setter Property="Height" Value="auto"/>
                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
