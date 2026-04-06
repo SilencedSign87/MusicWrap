@@ -5,7 +5,7 @@
          xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
          xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
          xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
-         xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+         xmlns:uimodels="clr-namespace:MusicWrap.UI.Controls.Models"
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          mc:Ignorable="d" 
          d:DataContext="{d:DesignInstance Type=vm:AlbumTracksViewModel}"
@@ -35,7 +35,7 @@
                         Background="Transparent"
                         BorderThickness="0"
                         ToolTip="{Binding AlbumPlayTooltip}" 
-                        Command="{Binding PlayPauseAlbumCommand}"
+                        Click="PlayPauseAlbum_Click"
                         >
                     <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
                 </Button>
@@ -72,7 +72,22 @@
                                    Visibility="{Binding DiskNumber, Converter={StaticResource DiskNumberToVisibilityConverter}}"/>
 
                         <!-- Tracks in this disk -->
-                        <ItemsControl ItemsSource="{Binding Tracks}"
+                        <uimodels:TracksView
+                            ItemsSource="{Binding Tracks}"
+                            VisualMode="CompactNoCover"
+                            IndexMode="TrackNumber"
+                            UseColumnFlowPanel="True"
+                            SelectionMode="Extended"
+                            SelectedTrackIds="{Binding DataContext.SelectedTrackIds, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            >
+                            <uimodels:TracksView.ColumnFlowColumns>
+                                <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,600">
+                                    <Binding Path="Tracks.Count"/>
+                                    <Binding RelativeSource="{RelativeSource Self}" Path="ActualWidth"/>
+                                </MultiBinding>
+                            </uimodels:TracksView.ColumnFlowColumns>
+                        </uimodels:TracksView>
+                        <!--<ItemsControl ItemsSource="{Binding Tracks}"
                                       Name="TracksItemsControl">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -153,7 +168,7 @@
                                                 <ColumnDefinition Width="auto" MinWidth="50"/>
                                             </Grid.ColumnDefinitions>
 
-                                            <!-- Track Number -->
+                                            --><!-- Track Number --><!--
                                             <TextBlock Grid.Column="0"
                                                        Text="{Binding TrackNumberDisplay}" 
                                                        FontSize="13" 
@@ -163,7 +178,7 @@
                                                        HorizontalAlignment="Right"
                                                        Margin="0,0,12,0"/>
 
-                                            <!-- Track Info -->
+                                            --><!-- Track Info --><!--
                                             <Grid Grid.Column="1" HorizontalAlignment="Stretch">
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto"/>
@@ -189,7 +204,7 @@
                                                     TextWrapping="NoWrap"/>
                                             </Grid>
 
-                                            <!-- Duration -->
+                                            --><!-- Duration --><!--
                                             <TextBlock Grid.Column="2"
                                                        Text="{Binding FormattedDuration}" 
                                                        FontSize="12" 
@@ -201,7 +216,7 @@
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        </ItemsControl>-->
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

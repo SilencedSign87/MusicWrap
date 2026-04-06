@@ -24,7 +24,7 @@
             <converters:NullToVisibilityConverter x:Key="NullToCollapseConverter" />
             <converters:SelectedAlbumBackgroundConverter x:Key="SelectedAlbumBackgroundConverter"/>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-
+            <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
         </ResourceDictionary>
 
     </Application.Resources>

@@ -1,19 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
+using MusicWrap.Data.Library;
 using MusicWrap.UI.ViewModels.Library;
-using MusicWrap.UI.Windows;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using System.Linq;
+using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.UI.Pages.MainWindow
 {
@@ -23,19 +16,37 @@ namespace MusicWrap.UI.Pages.MainWindow
     public partial class AlbumTracksPage : UserControl
     {
         private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicLibrary _library;
+
         public AlbumTracksPage()
         {
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
-            //DataContext = App.Services.GetRequiredService<AlbumTracksViewModel>();
+            _library = App.Services.GetRequiredService<MusicLibrary>();
         }
 
-        private void StartPlayingFromTrack(object sender, MouseButtonEventArgs e)
+        private void PlayPauseAlbum_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Grid border && border.DataContext is AlbumTracksViewModel.TrackItem trackItem && DataContext is AlbumTracksViewModel vm)
+            if (DataContext is not AlbumTracksViewModel vm)
             {
-                vm.PlayTrackCommand.Execute(trackItem.Id);
+                return;
             }
+
+            var trackIds = _library.Tracks
+                .Where(t => t.AlbumId == vm.AlbumId)
+                .OrderBy(t => t.Disk)
+                .ThenBy(t => t.TrackNumber)
+                .ThenBy(t => t.Title)
+                .Select(t => t.Id)
+                .ToList();
+
+            if (trackIds.Count == 0)
+            {
+                return;
+            }
+
+            _musicPlayerService.SetQueue(trackIds);
+            _musicPlayerService.PlayTrack(trackIds[0]);
         }
     }
 }
