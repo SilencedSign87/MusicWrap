@@ -72,7 +72,7 @@ namespace MusicWrap.Data.Playlist
             return new PlaylistData
             {
                 Version = 1,
-                Playlists = Array.Empty<Models.Playlist>()
+                Playlists = []
             };
         }
         private void BackupCorrupted()

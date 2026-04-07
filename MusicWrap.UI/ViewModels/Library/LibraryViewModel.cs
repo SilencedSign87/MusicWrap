@@ -57,7 +57,6 @@ namespace MusicWrap.UI.ViewModels.Library
         private bool _isInitializing;
         private int _loadEntriesRequestId;
         private readonly IProgress<ScanProgress> _scanProgress;
-        const int albumWidth = 150;
 
         // Services
         private readonly MusicLibrary _library;

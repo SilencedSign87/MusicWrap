@@ -164,12 +164,12 @@
                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
                  Background="Transparent" BorderThickness="0">
             <ListView.ContextMenu>
-                <ContextMenu>
+                <ContextMenu Opened="ContextMenu_Opened">
                     <MenuItem Header="Play Now" Icon="{ex:Icon Glyph=E768}" x:Name="PlayNowButton" Click="PlayNowButton_Click" />
                     <MenuItem Header="Play Next" Icon="{ex:Icon Glyph=E893}" x:Name="PlayNextButton" Click="PlayNextButton_Click" />
                     <Separator/>
                     <MenuItem Header="Add to Queue" Icon="{ex:Icon Glyph=E710}" x:Name="AddQueueButton" Click="AddQueueButton_Click" />
-                    <MenuItem Header="Add to playlist" Icon="{ex:Icon Glyph=E142}" x:Name="AddToPlaylist" Click="AddToPlaylist_Click" />
+                    <local:TrackToPlaylistMenu x:Name="TrackToPlaylistMenuItem"/>
                     <Separator/>
                     <MenuItem Header="Edit track" Icon="{ex:Icon Glyph=E70F}" x:Name="EditButton" Click="EditButton_Click" />
                     <MenuItem Header="Remove track" Icon="{ex:Icon Glyph=E74D}" x:Name="RemoveButton" Click="RemoveButton_Click" />

@@ -20,7 +20,6 @@ namespace MusicWrap.UI.Controls.Models
     public partial class TracksView : UserControl
     {
         private readonly IMusicPlayerService _musicPlayerService;
-        private readonly IPlaylistManagerCoordinator _playlistCoordinator;
         private readonly IEditMetadataService _editMetadataService;
         private readonly MusicLibrary _library;
 
@@ -28,7 +27,6 @@ namespace MusicWrap.UI.Controls.Models
         {
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
-            _playlistCoordinator = App.Services.GetRequiredService<IPlaylistManagerCoordinator>();
             _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
             _library = App.Services.GetRequiredService<MusicLibrary>();
 
@@ -164,7 +162,9 @@ namespace MusicWrap.UI.Controls.Models
                 return;
             }
 
-            _musicPlayerService.SetQueue([row.Id]);
+            var alltracks = TracksList.Items.OfType<TrackRowItem>().Select(t => t.Id).ToList();
+
+            _musicPlayerService.SetQueue(alltracks);
             _musicPlayerService.PlayTrack(row.Id);
         }
 
@@ -260,7 +260,7 @@ namespace MusicWrap.UI.Controls.Models
                 return;
             }
 
-            _playlistCoordinator.AddToManager(selectedTrackIds.ToArray());
+            //_playlistCoordinator.AddToManager(selectedTrackIds.ToArray());
         }
 
         private void EditButton_Click(object sender, RoutedEventArgs e)
@@ -337,6 +337,11 @@ namespace MusicWrap.UI.Controls.Models
             }
 
             return null;
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            TrackToPlaylistMenuItem.TrackIds = GetSelectedTrackIds();
         }
     }
 }

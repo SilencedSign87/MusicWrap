@@ -295,7 +295,6 @@ namespace MusicWrap.UI
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
             services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
-            services.AddSingleton<IPlaylistManagerCoordinator, PlaylistManagerCoordinator>();
             services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
             services.AddSingleton<IEditMetadataService, EditMetadataService>();
 
@@ -308,6 +307,7 @@ namespace MusicWrap.UI
             services.AddSingleton<IYoutubeIndexingWorkflowService, YoutubeIndexingWorkflowService>();
             services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
             services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
+            services.AddSingleton<IPlaylistService, PlaylistService>();
 
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
@@ -317,7 +317,6 @@ namespace MusicWrap.UI
             services.AddTransient<CompactPlayer>();
             services.AddTransient<SettingsWindow>();
             services.AddTransient<IndexingWindow>();
-            services.AddTransient<PlaylistManagerWindow>();
 
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
