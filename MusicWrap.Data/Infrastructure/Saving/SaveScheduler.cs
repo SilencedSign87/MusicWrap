@@ -1,4 +1,3 @@
-﻿using MusicWrap.Core;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
@@ -7,12 +6,8 @@ using MusicWrap.Data.Playlist;
 using MusicWrap.Data.Playlist.Models;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Windows;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace MusicWrap.UI.Services
+namespace MusicWrap.Data.Infrastructure.Saving
 {
     [Flags]
     public enum SaveKind
@@ -24,12 +19,26 @@ namespace MusicWrap.UI.Services
         Cache = 8,
         Playlist = 16,
     }
+
     public interface ISaveCoordinator
     {
         void Enqueue(SaveKind kind);
         Task FlushAsync(CancellationToken ct = default);
     }
-    public class SaveCoordinator : ISaveCoordinator
+
+    public interface ISaveStateProvider
+    {
+        PlaybackQueueSnapshot BuildPlaybackSnapshot();
+        float GetCurrentVolume();
+        LastWindowMode GetCurrentWindowMode();
+    }
+
+    public interface ILibraryCacheStore
+    {
+        void Save();
+    }
+
+    public sealed class SaveScheduler : ISaveCoordinator, IDisposable
     {
         private static readonly TimeSpan SettingsDebounce = TimeSpan.FromMilliseconds(800);
         private static readonly TimeSpan PlaybackDebounce = TimeSpan.FromMilliseconds(1200);
@@ -48,10 +57,10 @@ namespace MusicWrap.UI.Services
         private readonly IPlaybackRepository _playbackRepository;
         private readonly IUserSettingsRepository _userSettingsRepository;
         private readonly UserSettings _userSettings;
-        private readonly IMusicPlayerService _player;
-        private readonly ILibraryCacheService _libraryCacheService;
-        private readonly PlaylistData _playlistData;
         private readonly IPlaylistRepository _playlistRepository;
+        private readonly PlaylistData _playlistData;
+        private readonly ISaveStateProvider _saveStateProvider;
+        private readonly ILibraryCacheStore _libraryCacheStore;
 
         private SaveKind _pending;
         private DateTime _nextSettingsUtc = DateTime.MinValue;
@@ -60,34 +69,36 @@ namespace MusicWrap.UI.Services
         private DateTime _nextCacheUtc = DateTime.MinValue;
         private DateTime _nextPlaylistUtc = DateTime.MinValue;
 
-        public SaveCoordinator(
-         ILibraryRepository libraryRepository,
-         MusicLibrary library,
-         IPlaybackRepository playbackRepository,
-         IUserSettingsRepository userSettingsRepository,
-         UserSettings userSettings,
-         IMusicPlayerService player,
-         ILibraryCacheService libraryCacheService,
-         IPlaylistRepository playlistRepository,
-         PlaylistData playlistData
-            )
+        public SaveScheduler(
+            ILibraryRepository libraryRepository,
+            MusicLibrary library,
+            IPlaybackRepository playbackRepository,
+            IUserSettingsRepository userSettingsRepository,
+            UserSettings userSettings,
+            IPlaylistRepository playlistRepository,
+            PlaylistData playlistData,
+            ISaveStateProvider saveStateProvider,
+            ILibraryCacheStore libraryCacheStore)
         {
-            _playlistRepository = playlistRepository;
-            _playlistData = playlistData;
             _libraryRepository = libraryRepository;
             _library = library;
             _playbackRepository = playbackRepository;
             _userSettingsRepository = userSettingsRepository;
             _userSettings = userSettings;
-            _player = player;
-            _libraryCacheService = libraryCacheService;
+            _playlistRepository = playlistRepository;
+            _playlistData = playlistData;
+            _saveStateProvider = saveStateProvider;
+            _libraryCacheStore = libraryCacheStore;
 
             _worker = Task.Run(() => WorkerLoopAsync(_cts.Token));
         }
 
         public void Enqueue(SaveKind kind)
         {
-            if (kind == SaveKind.None) return;
+            if (kind == SaveKind.None)
+            {
+                return;
+            }
 
             var now = DateTime.UtcNow;
 
@@ -129,11 +140,14 @@ namespace MusicWrap.UI.Services
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+            }
             catch
             {
-
             }
         }
+
         private SaveKind DequeueDueKinds(DateTime nowUtc)
         {
             lock (_lock)
@@ -163,6 +177,7 @@ namespace MusicWrap.UI.Services
                     due |= SaveKind.Cache;
                     _pending &= ~SaveKind.Cache;
                 }
+
                 if ((_pending & SaveKind.Playlist) != 0 && nowUtc >= _nextPlaylistUtc)
                 {
                     due |= SaveKind.Playlist;
@@ -172,54 +187,72 @@ namespace MusicWrap.UI.Services
                 return due;
             }
         }
+
         private async Task PersistAsync(SaveKind kinds, CancellationToken ct)
         {
-            if (kinds == SaveKind.None) return;
+            if (kinds == SaveKind.None)
+            {
+                return;
+            }
 
             await _saveGate.WaitAsync(ct);
             try
             {
                 if ((kinds & SaveKind.Cache) != 0)
                 {
-                    try { _libraryCacheService.SaveToDisk(); } catch { }
+                    try
+                    {
+                        _libraryCacheStore.Save();
+                    }
+                    catch
+                    {
+                    }
                 }
 
                 if ((kinds & SaveKind.Library) != 0)
                 {
-                    try { _libraryRepository.Save(_library); } catch { }
+                    try
+                    {
+                        _libraryRepository.Save(_library);
+                    }
+                    catch
+                    {
+                    }
                 }
 
                 if ((kinds & SaveKind.Playback) != 0)
                 {
                     try
                     {
-                        var snapshot = BuildPlaybackSnapshot();
-                        _playbackRepository.Save(snapshot);
+                        _playbackRepository.Save(_saveStateProvider.BuildPlaybackSnapshot());
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
 
                 if ((kinds & SaveKind.Settings) != 0)
                 {
                     try
                     {
-                        _userSettings.PreferredVolume = Math.Clamp(_player.Volume, 0f, 1f);
-                        _userSettings.LastWindowMode = App.CurrentWindow is CompactPlayer
-                            ? LastWindowMode.CompactPlayer
-                            : LastWindowMode.MainPlayer;
-
+                        _userSettings.PreferredVolume = Math.Clamp(_saveStateProvider.GetCurrentVolume(), 0f, 1f);
+                        _userSettings.LastWindowMode = _saveStateProvider.GetCurrentWindowMode();
                         _userSettingsRepository.Save(_userSettings);
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
+
                 if ((kinds & SaveKind.Playlist) != 0)
                 {
                     try
                     {
                         _playlistRepository.Save(_playlistData);
                     }
-                    catch { }
-
+                    catch
+                    {
+                    }
                 }
             }
             finally
@@ -227,22 +260,18 @@ namespace MusicWrap.UI.Services
                 _saveGate.Release();
             }
         }
-        private PlaybackQueueSnapshot BuildPlaybackSnapshot()
-        {
-            return new PlaybackQueueSnapshot
-            {
-                TrackIds = _player.GetQueue(),
-                CurrentIndex = _player.CurrentQueueIndex,
-                PositionInSeconds = _player.CurrentPosition,
-                RepeatMode = (int)_player.RepeatMode,
-                ContinueMode = (int)_player.ContinueMode,
-                PlaybackState = _player.IsPlaying ? 1 : (_player.IsPaused ? 2 : 0)
-            };
-        }
+
         public void Dispose()
         {
             _cts.Cancel();
-            try { _worker.GetAwaiter().GetResult(); } catch { }
+            try
+            {
+                _worker.GetAwaiter().GetResult();
+            }
+            catch
+            {
+            }
+
             _saveGate.Dispose();
             _cts.Dispose();
         }

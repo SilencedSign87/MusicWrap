@@ -11,7 +11,7 @@ using System.Windows.Threading;
 using System.Windows.Media.Imaging;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Infrastructure;
-using MusicWrap.UI.Services;
+using MusicWrap.Data.Infrastructure.Saving;
 
 namespace MusicWrap.UI.ViewModels
 {

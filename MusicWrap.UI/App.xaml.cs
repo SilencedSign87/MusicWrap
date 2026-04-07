@@ -8,6 +8,7 @@ using MusicWrap.Core.Sources.Providers.Local;
 using MusicWrap.Core.Sources.Providers.Runtime;
 using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
@@ -47,9 +48,8 @@ namespace MusicWrap.UI
         public static bool IsWindowTransitioning => _windowTransitionDepth > 0;
         public static IServiceProvider Services { get; private set; } = default!;
         private static int _windowTransitionDepth;
-        private IMusicPlayerService? _player;
         private ISaveCoordinator? _saveCoordinator;
-        private bool _saveHooksAttached;
+        private ISaveOrchestration? _saveOrchestration;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -118,7 +118,7 @@ namespace MusicWrap.UI
                 var save = Services.GetService<ISaveCoordinator>();
                 if (save is not null)
                 {
-                    save.Enqueue(SaveKind.Cache | SaveKind.Library | SaveKind.Playback | SaveKind.Settings);
+                    save.Enqueue(SaveKind.Cache | SaveKind.Library | SaveKind.Playback | SaveKind.Settings | SaveKind.Playlist);
                     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                     save.FlushAsync(cts.Token).GetAwaiter().GetResult();
                 }
@@ -138,10 +138,14 @@ namespace MusicWrap.UI
             }
             finally
             {
-                DetachSaveHooks();
                 if (_saveCoordinator is IDisposable disposable)
                 {
                     disposable.Dispose();
+                }
+
+                if (_saveOrchestration is IDisposable orchestrationDisposable)
+                {
+                    orchestrationDisposable.Dispose();
                 }
 
                 Log.Information("Application exiting");
@@ -294,7 +298,10 @@ namespace MusicWrap.UI
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
-            services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
+            services.AddSingleton<ILibraryCacheStore, LibraryCacheStoreAdapter>();
+            services.AddSingleton<ISaveOrchestration, SaveOrchestration>();
+            services.AddSingleton<ISaveStateProvider>(sp => (ISaveStateProvider)sp.GetRequiredService<ISaveOrchestration>());
+            services.AddSingleton<ISaveCoordinator, SaveScheduler>();
             services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
             services.AddSingleton<IEditMetadataService, EditMetadataService>();
 
@@ -379,8 +386,8 @@ namespace MusicWrap.UI
                 }
 
                 windowToShow = TryRestorePlaybackSession();
-
-                AttachSaveHooks();
+                _saveCoordinator = Services.GetRequiredService<ISaveCoordinator>();
+                _saveOrchestration = Services.GetRequiredService<ISaveOrchestration>();
             }
             catch
             {
@@ -476,68 +483,6 @@ namespace MusicWrap.UI
             {
                 return 0;
             }
-        }
-
-        private void AttachSaveHooks()
-        {
-            if (_saveHooksAttached) return;
-            _player = Services.GetService<IMusicPlayerService>();
-            _saveCoordinator = Services.GetService<ISaveCoordinator>();
-
-            if (_player is null || _saveCoordinator is null) return;
-
-            _player.QueueChanged += OnQueueChanged;
-            _player.PlaybackStateChanged += OnPlaybackStateChanged;
-            _player.TrackChanged += OnTrackChanged;
-            _player.DeviceIndexChanged += OnDeviceIndexChanged;
-            _player.SampleRateChanged += OnSampleRateChanged;
-            _player.OutputModeChanged += OnOutputModeChanged;
-
-            _saveHooksAttached = true;
-        }
-        private void DetachSaveHooks()
-        {
-            if (!_saveHooksAttached) return;
-            if (_player is not null)
-            {
-                _player.QueueChanged -= OnQueueChanged;
-                _player.PlaybackStateChanged -= OnPlaybackStateChanged;
-                _player.TrackChanged -= OnTrackChanged;
-                _player.DeviceIndexChanged -= OnDeviceIndexChanged;
-                _player.SampleRateChanged -= OnSampleRateChanged;
-                _player.OutputModeChanged -= OnOutputModeChanged;
-            }
-            _saveHooksAttached = false;
-        }
-
-        private void OnOutputModeChanged(object? sender, OutputMode e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Settings);
-        }
-
-        private void OnSampleRateChanged(object? sender, SampleRateChangedEventArgs e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Settings);
-        }
-
-        private void OnDeviceIndexChanged(object? sender, int e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Settings);
-        }
-
-        private void OnTrackChanged(object? sender, string e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Playback);
-        }
-
-        private void OnPlaybackStateChanged(object? sender, PlaybackState e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Playback);
-        }
-
-        private void OnQueueChanged(object? sender, int[] e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Playback);
         }
 
         private static void CheckMemory()
