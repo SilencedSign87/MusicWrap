@@ -215,6 +215,9 @@
                 Value="{Binding IndexingProgressValue}"
                 Visibility="{Binding IsSaving, Converter={StaticResource BooleanToVisibilityConverter}}"
                 IsIndeterminate="True"
+                Foreground="{StaticResource AccentBrush80}"
+                Background="#111111"
+                Focusable="False"
                 />
         </Border>
 

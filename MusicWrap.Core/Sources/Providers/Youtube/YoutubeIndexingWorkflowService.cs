@@ -20,6 +20,7 @@ public sealed class YoutubeIndexingWorkflowService : IYoutubeIndexingWorkflowSer
     public async Task<YoutubeBatchIndexResult> IndexTracksAsync(
         IReadOnlyList<YoutubeIndexingRequest> tracks,
         Action<int, int>? onProgress = null,
+        Action<YoutubeIndexingProgress>? onDetailedProgress = null,
         CancellationToken cancellationToken = default)
     {
         if (tracks is null || tracks.Count == 0)
@@ -39,12 +40,30 @@ public sealed class YoutubeIndexingWorkflowService : IYoutubeIndexingWorkflowSer
 
             try
             {
+                // Report downloading phase
+                onDetailedProgress?.Invoke(new YoutubeIndexingProgress
+                {
+                    TrackTitle = track.Title,
+                    Phase = "downloading",
+                    CurrentTrackIndex = i + 1,
+                    TotalTracks = tracks.Count
+                });
+
                 var localSourcePath = await _youtubeStagingService
                     .GetPlayableFileAsync(track.ExternalId, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (!string.IsNullOrWhiteSpace(localSourcePath))
                 {
+                    // Report indexing phase
+                    onDetailedProgress?.Invoke(new YoutubeIndexingProgress
+                    {
+                        TrackTitle = track.Title,
+                        Phase = "indexing",
+                        CurrentTrackIndex = i + 1,
+                        TotalTracks = tracks.Count
+                    });
+
                     var result = await _youtubeLibraryIndexingService
                         .IndexResolvedTrackAsync(track, localSourcePath, cancellationToken)
                         .ConfigureAwait(false);
@@ -70,6 +89,7 @@ public sealed class YoutubeIndexingWorkflowService : IYoutubeIndexingWorkflowSer
                 failed++;
             }
 
+            // Legacy progress callback
             onProgress?.Invoke(i + 1, tracks.Count);
         }
 

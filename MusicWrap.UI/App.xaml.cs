@@ -244,22 +244,11 @@ namespace MusicWrap.UI
                 var player = Services.GetService<IMusicPlayerService>();
                 if (playbackRepository is not null && player is not null)
                 {
-                    var isCompactLastSession = CurrentWindow is CompactPlayer;
-
-                    var snapshot = new PlaybackQueueSnapshot
-                    {
-                        TrackIds = player.GetQueue(),
-                        CurrentIndex = player.CurrentQueueIndex,
-                        PositionInSeconds = player.CurrentPosition,
-                        RepeatMode = (int)player.RepeatMode,
-                        ContinueMode = (int)player.ContinueMode,
-                        PlaybackState = player.IsPlaying ? 1 : (player.IsPaused ? 2 : 0)
-                    };
-
-                    playbackRepository.Save(snapshot);
+                    playbackRepository.Save(player.BuildPlaybackSnapshot());
 
                     if (userSettings is not null && userSettingsRepository is not null)
                     {
+                        var isCompactLastSession = CurrentWindow is CompactPlayer;
                         userSettings.LastWindowMode = isCompactLastSession ? LastWindowMode.CompactPlayer : LastWindowMode.MainPlayer;
                         userSettings.PreferredVolume = player.Volume;
                         userSettingsRepository.Save(userSettings);
@@ -354,22 +343,6 @@ namespace MusicWrap.UI
                 var player = Services.GetRequiredService<IMusicPlayerService>();
                 var trayService = Services.GetRequiredService<ITrayService>();
 
-                // Apply persisted audio preferences before restoring playback/caching state.
-                if (userSettings.PreferredDeviceIndex >= 0 && userSettings.PreferredDeviceIndex != player.CurrentDeviceIndex)
-                {
-                    player.ChangeOutputDevice(userSettings.PreferredDeviceIndex);
-                }
-
-                player.ChangeOutputMode(userSettings.PreferredOutputMode);
-
-                int preferredSampleRate = (int)userSettings.PreferredSampleRate;
-                if (preferredSampleRate != player.CurrentSampleRate)
-                {
-                    player.ChangeSampleRate(preferredSampleRate);
-                }
-
-                player.SetVolume(Math.Clamp(userSettings.PreferredVolume, 0f, 1f));
-
                 var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)
                     ? "Artist"
                     : userSettings.LibraryListBy;
@@ -385,7 +358,8 @@ namespace MusicWrap.UI
                     //_trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
                 }
 
-                windowToShow = TryRestorePlaybackSession();
+                player.LoadInitialState(userSettings);
+                windowToShow = (int)userSettings.LastWindowMode;
                 _saveCoordinator = Services.GetRequiredService<ISaveCoordinator>();
                 _saveOrchestration = Services.GetRequiredService<ISaveOrchestration>();
             }
@@ -406,82 +380,6 @@ namespace MusicWrap.UI
                     ShowMain();
 
                 }
-            }
-        }
-
-        private static int TryRestorePlaybackSession()
-        {
-            try
-            {
-                int playerMode = 0;
-                var userSettings = Services.GetService<UserSettings>();
-                if (userSettings is not null)
-                {
-                    playerMode = (int)userSettings.LastWindowMode;
-                }
-
-                var playbackRepository = Services.GetService<IPlaybackRepository>();
-                var player = Services.GetService<IMusicPlayerService>();
-                if (playbackRepository is null || player is null) return playerMode;
-
-                var startupBehavior = userSettings?.StartupBehavior ?? StartupBehavior.RestoreQueueOnly;
-                if (startupBehavior == StartupBehavior.StartClean) return playerMode;
-
-                var snapshot = playbackRepository.Load();
-                if (snapshot.TrackIds.Length == 0) return playerMode;
-
-                var library = Services.GetService<MusicLibrary>();
-                if (library is null) return playerMode;
-
-                var validIds = new HashSet<int>(library.Tracks.Select(t => t.Id));
-                var queue = snapshot.TrackIds.Where(id => validIds.Contains(id)).ToArray();
-                if (queue.Length == 0) return playerMode;
-
-                player.SetQueue(queue, false);
-                player.RepeatMode = (RepeatMode)snapshot.RepeatMode;
-                player.ContinueMode = (ContinueMode)snapshot.ContinueMode;
-
-                int index = snapshot.CurrentIndex;
-                if (index < 0 || index >= queue.Length) index = 0;
-
-                switch (startupBehavior)
-                {
-                    case StartupBehavior.RestoreQueueOnly:
-                        player.Stop();
-                        break;
-
-                    case StartupBehavior.RestoreQueueAndIndexOnly:
-                        player.SetSilentIndex(index);
-                        player.Stop();
-                        break;
-
-                    case StartupBehavior.ResumePlayback:
-                        player.SetVolume(0f);
-                        player.PlayIndex(index);
-
-                        var position = Math.Clamp(snapshot.PositionInSeconds, 0, player.Duration);
-                        player.Seek(position);
-
-                        switch (snapshot.PlaybackState)
-                        {
-                            case 0: player.Stop(); break;
-                            case 1: player.Play(); break;
-                            case 2: player.Pause(); break;
-                            default: player.Pause(); break;
-                        }
-                        break;
-                }
-
-                if (userSettings is not null)
-                {
-                    player.SetVolume(Math.Clamp(userSettings.PreferredVolume, 0f, 1f));
-                }
-
-                return playerMode;
-            }
-            catch
-            {
-                return 0;
             }
         }
 

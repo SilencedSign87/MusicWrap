@@ -464,7 +464,8 @@ public sealed partial class IndexingViewModel : ObservableObject
         SaveAllStagedTracksCommand.NotifyCanExecuteChanged();
 
         var stagedTracksToSave = StagedTracks.ToArray();
-        IndexingProgressMaximum = Math.Max(1, stagedTracksToSave.Length);
+        // Progress now accounts for 2 steps per track (downloading + indexing)
+        IndexingProgressMaximum = Math.Max(1, stagedTracksToSave.Length * 2);
         IndexingProgressValue = 0;
 
         int saved = 0;
@@ -492,10 +493,20 @@ public sealed partial class IndexingViewModel : ObservableObject
 
             var batchResult = await _youtubeIndexingWorkflowService.IndexTracksAsync(
                 requests,
-                (processed, total) =>
+                // Legacy progress callback (for backward compatibility)
+                onProgress: (processed, total) =>
                 {
-                    IndexingProgressMaximum = Math.Max(1, total);
-                    IndexingProgressValue = processed;
+                    // Simple counting: 1 to total
+                },
+                // Detailed progress callback with track and phase information
+                onDetailedProgress: progress =>
+                {
+                    IndexingProgressMaximum = progress.TotalTracks * 2;
+                    // Calculate step count: track index * 2 + phase offset
+                    int stepOffset = progress.Phase.Equals("indexing", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                    IndexingProgressValue = (progress.CurrentTrackIndex - 1) * 2 + stepOffset + 1;
+                    // Display detailed status message
+                    SaveStatusMessage = progress.StatusMessage;
                 });
 
             saved = batchResult.Saved;

@@ -131,13 +131,17 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
                     .Select((t, idx) =>
                     {
                         var (subtitle, duration) = SplitSubtitleAndDuration(t.Subtitle);
+                        string effectiveDuration = !string.IsNullOrWhiteSpace(t.Duration) ? t.Duration : duration;
                         return new YoutubeDetailTrackNode
                         {
                             Id = t.Id,
                             Index = idx + 1,
                             Title = t.Title,
+                            Artist = t.Artist,
+                            Album = t.Album,
+                            Genre = t.Genre,
                             Subtitle = subtitle,
-                            Duration = duration
+                            Duration = effectiveDuration
                         };
                     });
 
@@ -199,6 +203,8 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
 
         foreach (var track in tracks)
         {
+            // Note: YoutubeDetailTrackNode contains all data from YoutubeDetailTrack
+            // We pass it directly to BuildStagedTrack to avoid creating intermediate model
             var stagedTrack = BuildStagedTrack(track, group, indexingViewModel.StagedTracks.Count + 1);
             if (indexingViewModel.TryAddStagedTrack(stagedTrack))
             {
@@ -257,13 +263,17 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
             foreach (var track in tracks)
             {
                 var (subtitle, duration) = SplitSubtitleAndDuration(track.Subtitle);
+                string effectiveDuration = !string.IsNullOrWhiteSpace(track.Duration) ? track.Duration : duration;
                 albumGroup.Tracks.Add(new YoutubeDetailTrackNode
                 {
                     Id = track.Id,
                     Index = albumGroup.Tracks.Count + 1,
                     Title = track.Title,
+                    Artist = track.Artist,
+                    Album = track.Album,
+                    Genre = track.Genre,
                     Subtitle = subtitle,
-                    Duration = duration
+                    Duration = effectiveDuration
                 });
             }
         }
@@ -297,10 +307,13 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
 
     private static StagedTrackNode BuildStagedTrack(YoutubeDetailTrackNode track, YoutubeDetailGroupNode? group, int index)
     {
-        string artist = !string.IsNullOrWhiteSpace(group?.ArtistName)
-            ? group.ArtistName
-            : ExtractArtist(track.Subtitle, group?.Subtitle);
-        string album = group?.Title ?? string.Empty;
+        string artist = !string.IsNullOrWhiteSpace(track.Artist)
+            ? track.Artist
+            : (!string.IsNullOrWhiteSpace(group?.ArtistName) ? group.ArtistName : ExtractArtist(track.Subtitle, group?.Subtitle));
+
+        string album = !string.IsNullOrWhiteSpace(track.Album)
+            ? track.Album
+            : (group?.GroupType.Equals("Album", StringComparison.OrdinalIgnoreCase) == true ? group.Title : string.Empty);
 
         return new StagedTrackNode
         {
@@ -309,6 +322,7 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
             Title = track.Title,
             Artist = artist,
             Album = album,
+            Genre = track.Genre,
             Year = group?.ReleaseYear ?? 0,
             Duration = track.Duration,
             ThumbnailUrl = group?.ThumbnailUrl ?? string.Empty,
@@ -524,6 +538,9 @@ public sealed class YoutubeDetailTrackNode
     public required string Id { get; init; }
     public required int Index { get; init; }
     public required string Title { get; init; }
+    public string Artist { get; init; } = string.Empty;
+    public string Album { get; init; } = string.Empty;
+    public string Genre { get; init; } = string.Empty;
     public string Subtitle { get; init; } = string.Empty;
     public string Duration { get; init; } = string.Empty;
     public string TitleWithSubtitle => string.IsNullOrWhiteSpace(Subtitle) ? Title : $"{Title}  •  {Subtitle}";

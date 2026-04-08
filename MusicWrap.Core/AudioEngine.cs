@@ -1,4 +1,5 @@
-﻿using MusicWrap.Data.User.Models;
+﻿using Microsoft.Extensions.Logging;
+using MusicWrap.Data.User.Models;
 using SixLabors.ImageSharp.Metadata;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace MusicWrap.Core
 {
     public class AudioEngine : IDisposable
     {
+
         private bool _isInitialized;
         private bool _isWasapiInitialized;
         private int _flacPluginHandle;
@@ -38,7 +40,6 @@ namespace MusicWrap.Core
         public OutputMode CurrentOutputMode => _currentOutputMode;
         public int CurrentOutputSampleRate => _currentOutputSampleRate;
         public int CurrentOutputChannels => _currentOutputChannels;
-
 
         public bool Initialize(int deviceIndex = -1, int sampleRate = 44100, OutputMode outputmode = OutputMode.WasapiShared)
         {

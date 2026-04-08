@@ -22,9 +22,6 @@ namespace MusicWrap.UI.Services
             _player = player;
             _services = services;
 
-            _player.QueueChanged += OnQueueChanged;
-            _player.PlaybackStateChanged += OnPlaybackStateChanged;
-            _player.TrackChanged += OnTrackChanged;
             _player.DeviceIndexChanged += OnDeviceIndexChanged;
             _player.SampleRateChanged += OnSampleRateChanged;
             _player.OutputModeChanged += OnOutputModeChanged;
@@ -32,15 +29,7 @@ namespace MusicWrap.UI.Services
 
         public PlaybackQueueSnapshot BuildPlaybackSnapshot()
         {
-            return new PlaybackQueueSnapshot
-            {
-                TrackIds = _player.GetQueue(),
-                CurrentIndex = _player.CurrentQueueIndex,
-                PositionInSeconds = _player.CurrentPosition,
-                RepeatMode = (int)_player.RepeatMode,
-                ContinueMode = (int)_player.ContinueMode,
-                PlaybackState = _player.IsPlaying ? 1 : (_player.IsPaused ? 2 : 0)
-            };
+            return _player.BuildPlaybackSnapshot();
         }
 
         public float GetCurrentVolume()
@@ -57,9 +46,6 @@ namespace MusicWrap.UI.Services
 
         public void Dispose()
         {
-            _player.QueueChanged -= OnQueueChanged;
-            _player.PlaybackStateChanged -= OnPlaybackStateChanged;
-            _player.TrackChanged -= OnTrackChanged;
             _player.DeviceIndexChanged -= OnDeviceIndexChanged;
             _player.SampleRateChanged -= OnSampleRateChanged;
             _player.OutputModeChanged -= OnOutputModeChanged;
@@ -78,21 +64,6 @@ namespace MusicWrap.UI.Services
         private void OnDeviceIndexChanged(object? sender, int e)
         {
             Enqueue(SaveKind.Settings);
-        }
-
-        private void OnTrackChanged(object? sender, string e)
-        {
-            Enqueue(SaveKind.Playback);
-        }
-
-        private void OnPlaybackStateChanged(object? sender, PlaybackState e)
-        {
-            Enqueue(SaveKind.Playback);
-        }
-
-        private void OnQueueChanged(object? sender, int[] e)
-        {
-            Enqueue(SaveKind.Playback);
         }
 
         private void Enqueue(SaveKind kind)

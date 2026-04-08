@@ -4,6 +4,9 @@ using Un4seen.Bass;
 using System.Diagnostics;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Sources.Contracts;
+using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.Data.Player;
+using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User.Models;
 using System.Net;
 using Microsoft.Extensions.Logging;
@@ -77,12 +80,19 @@ namespace MusicWrap.Core
         void ChangeSampleRate(int sampleRate);
         void ChangeOutputMode(OutputMode mode);
         (int Index, string Name)[] GetAvailableDevices();
+        PlaybackQueueSnapshot BuildPlaybackSnapshot();
+        void LoadInitialState(UserSettings settings);
     }
     public class MusicPlayerService : IMusicPlayerService, IDisposable
     {
         private readonly MusicLibrary _library;
         private readonly AudioEngine _audioEngine;
         private readonly ILogger<MusicPlayerService> _logger;
+        private readonly IPlaybackRepository _playbackRepository;
+        private readonly IServiceProvider _serviceProvider;
+
+        private const int MaxErrorCount = 5;
+        private int _errorCount;
 
         private readonly List<int> _queue = [];
 
@@ -135,7 +145,9 @@ namespace MusicWrap.Core
         public bool IsPlaying => _playbackState == PlaybackState.Playing;
         public bool IsPaused => _playbackState == PlaybackState.Paused;
         public double CurrentPosition => _currentStream != 0 ? _audioEngine.GetMixerPosition(_currentStream) : 0.0;
-        public double Duration => _currentStream != 0 ? _audioEngine.GetDuration(_currentStream) : 0.0;
+        public double Duration => _currentTrackDuration;
+
+        private double _currentTrackDuration;
 
         private const double PositionTimerPlayingIntervalMs = 50;
         private const double PositionTimerIdleIntervalMs = 500;
@@ -148,6 +160,8 @@ namespace MusicWrap.Core
         private int _waveformVersion = 0;
 
         private DateTime _suppressPositionUntilUtc = DateTime.MinValue;
+
+        private bool _isRestoringInitialState;
 
         public float Volume
         {
@@ -174,21 +188,62 @@ namespace MusicWrap.Core
         }
 
         public int QueueCount => _queue.Count;
-        public RepeatMode RepeatMode { get; set; } = RepeatMode.None;
-        public ContinueMode ContinueMode { get; set; } = ContinueMode.None;
+        private RepeatMode _repeatMode = RepeatMode.None;
+        public RepeatMode RepeatMode
+        {
+            get => _repeatMode;
+            set
+            {
+                if (_repeatMode == value)
+                {
+                    return;
+                }
+
+                _repeatMode = value;
+                EnqueuePlaybackSave();
+            }
+        }
+
+        private ContinueMode _continueMode = ContinueMode.None;
+        public ContinueMode ContinueMode
+        {
+            get => _continueMode;
+            set
+            {
+                if (_continueMode == value)
+                {
+                    return;
+                }
+
+                _continueMode = value;
+                EnqueuePlaybackSave();
+            }
+        }
 
         // Providers
         private readonly ITrackPlaybackResolver _trackPlaybackResolver;
 
-        public MusicPlayerService(MusicLibrary library, ITrackPlaybackResolver trackPlaybackResolver, ILogger<MusicPlayerService> logger)
+        public MusicPlayerService(
+            MusicLibrary library,
+            ITrackPlaybackResolver trackPlaybackResolver,
+            IPlaybackRepository playbackRepository,
+            IServiceProvider serviceProvider,
+            ILogger<MusicPlayerService> logger)
         {
             _library = library;
             _trackPlaybackResolver = trackPlaybackResolver;
+            _playbackRepository = playbackRepository;
+            _serviceProvider = serviceProvider;
             _logger = logger;
 
             _audioEngine = new AudioEngine();
 
-            _audioEngine.Initialize(CurrentDeviceIndex, 44100, CurrentOutputMode);
+            var result = _audioEngine.Initialize(CurrentDeviceIndex, 44100, CurrentOutputMode);
+            if (!result)
+            {
+                var err = _audioEngine.GetLastError();
+                _logger.LogCritical("Failed to initialize audio engine with device index {DeviceIndex}, error code: {ErrorCode}", CurrentDeviceIndex, err);
+            }
 
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
@@ -233,6 +288,7 @@ namespace MusicWrap.Core
 
             _audioEngine.Play(_mixerStream, false);
             SetPlaybackState(PlaybackState.Playing);
+            EnqueuePlaybackSave();
         }
 
         public void Pause()
@@ -242,6 +298,7 @@ namespace MusicWrap.Core
 
             _audioEngine.Pause(_mixerStream);
             SetPlaybackState(PlaybackState.Paused);
+            EnqueuePlaybackSave();
         }
 
         public void Stop()
@@ -249,6 +306,7 @@ namespace MusicWrap.Core
             if (_currentStream != 0) _audioEngine.RemoveFromMixer(_currentStream);
             FreeStream(_currentStream);
             _currentStream = 0;
+            _currentTrackDuration = 0.0;
 
             if (_preloadedStream != 0) FreeStream(_preloadedStream);
             _preloadedStream = 0;
@@ -265,6 +323,7 @@ namespace MusicWrap.Core
             _mixerChannels = 2;
 
             SetPlaybackState(PlaybackState.Stopped);
+            EnqueuePlaybackSave();
         }
 
         public void Next()
@@ -324,6 +383,7 @@ namespace MusicWrap.Core
 
                 //var pos = _audioEngine.GetMixerPosition(_currentStream);
                 InvokeUI(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek
+                EnqueuePlaybackSave();
             }
         }
 
@@ -347,18 +407,21 @@ namespace MusicWrap.Core
                 return;
 
             _currentIndex = index;
+            EnqueuePlaybackSave();
         }
 
         public void AddToQueue(int TrackId)
         {
             _queue.Add(TrackId);
             NotifyQueueChanged();
+            EnqueuePlaybackSave();
         }
 
         public void AddToQueue(IEnumerable<int> TrackIds)
         {
             _queue.AddRange(TrackIds);
             NotifyQueueChanged();
+            EnqueuePlaybackSave();
         }
 
         public void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false)
@@ -387,6 +450,7 @@ namespace MusicWrap.Core
             _currentIndex = newIndex;
 
             NotifyQueueChanged();
+            EnqueuePlaybackSave();
         }
 
         public void RemoveFromQueue(int index)
@@ -409,6 +473,7 @@ namespace MusicWrap.Core
             }
 
             NotifyQueueChanged();
+            EnqueuePlaybackSave();
         }
 
         public void ClearQueue()
@@ -417,6 +482,7 @@ namespace MusicWrap.Core
             _queue.Clear();
             _currentIndex = -1;
             NotifyQueueChanged();
+            EnqueuePlaybackSave();
         }
 
         public int[] GetQueue()
@@ -435,6 +501,7 @@ namespace MusicWrap.Core
 
             _currentIndex = index;
             StartPlaybackOfCurrent();
+            EnqueuePlaybackSave();
         }
 
         public void ChangeOutputDevice(int deviceIndex)
@@ -447,9 +514,15 @@ namespace MusicWrap.Core
 
             Stop();
 
-            CurrentDeviceIndex = deviceIndex;
             int sr = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
-            _audioEngine.Reinitialize(CurrentDeviceIndex, sr, CurrentOutputMode);
+            bool appliedPreferred = TryReinitializeOutput(deviceIndex, sr, CurrentOutputMode);
+            if (!appliedPreferred && !TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
+            {
+                return;
+            }
+
+            CurrentDeviceIndex = appliedPreferred ? deviceIndex : -1;
+            CurrentOutputMode = _audioEngine.GetCurrentOutputMode();
 
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
@@ -460,7 +533,8 @@ namespace MusicWrap.Core
                     Seek(position);
                 }
             }
-            InvokeUI(() => DeviceIndexChanged?.Invoke(this, deviceIndex));
+            InvokeUI(() => DeviceIndexChanged?.Invoke(this, CurrentDeviceIndex));
+            EnqueuePlaybackSave();
         }
 
         public void ChangeSampleRate(int sampleRate)
@@ -471,9 +545,20 @@ namespace MusicWrap.Core
             var position = CurrentPosition;
 
             Stop();
-            CurrentSampleRate = sampleRate;
-            int sr = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
-            _audioEngine.Reinitialize(CurrentDeviceIndex, sr, CurrentOutputMode);
+            int currentSampleRate = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
+            int targetSampleRate = sampleRate > 0 ? sampleRate : currentSampleRate;
+            bool appliedPreferred = TryReinitializeOutput(CurrentDeviceIndex, targetSampleRate, CurrentOutputMode);
+            if (!appliedPreferred && !TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
+            {
+                return;
+            }
+
+            CurrentSampleRate = appliedPreferred ? sampleRate : -1;
+            CurrentOutputMode = _audioEngine.GetCurrentOutputMode();
+            if (!appliedPreferred)
+            {
+                CurrentDeviceIndex = -1;
+            }
 
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
@@ -484,9 +569,10 @@ namespace MusicWrap.Core
 
             InvokeUI(() => SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs
             {
-                PreferedSampleRate = sampleRate,
-                EffectiveSampleRate = sampleRate > 0 ? sampleRate : 0
+                PreferedSampleRate = CurrentSampleRate,
+                EffectiveSampleRate = _audioEngine.CurrentOutputSampleRate
             }));
+            EnqueuePlaybackSave();
         }
 
         public void ChangeOutputMode(OutputMode outputMode)
@@ -496,9 +582,19 @@ namespace MusicWrap.Core
             bool shouldResume = IsPlaying;
             double position = CurrentPosition;
             Stop();
-            CurrentOutputMode = outputMode;
             int sr = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
-            _audioEngine.Reinitialize(CurrentDeviceIndex, sr, CurrentOutputMode);
+            bool appliedPreferred = TryReinitializeOutput(CurrentDeviceIndex, sr, outputMode);
+            if (!appliedPreferred && !TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
+            {
+                return;
+            }
+
+            CurrentOutputMode = _audioEngine.GetCurrentOutputMode();
+            if (!appliedPreferred)
+            {
+                CurrentDeviceIndex = -1;
+                CurrentSampleRate = -1;
+            }
             if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
             {
                 _mixerStream = 0;
@@ -509,7 +605,8 @@ namespace MusicWrap.Core
                 }
             }
 
-            InvokeUI(() => OutputModeChanged?.Invoke(this, outputMode));
+            InvokeUI(() => OutputModeChanged?.Invoke(this, CurrentOutputMode));
+            EnqueuePlaybackSave();
         }
 
         public (int Index, string Name)[] GetAvailableDevices()
@@ -517,6 +614,173 @@ namespace MusicWrap.Core
             return [.. _audioEngine
                 .GetOutputDevices()
                 .Select(d => (d.Index, d.Info.name))];
+        }
+
+        public PlaybackQueueSnapshot BuildPlaybackSnapshot()
+        {
+            return new PlaybackQueueSnapshot
+            {
+                TrackIds = GetQueue(),
+                CurrentIndex = CurrentQueueIndex,
+                PositionInSeconds = CurrentPosition,
+                RepeatMode = (int)RepeatMode,
+                ContinueMode = (int)ContinueMode,
+                PlaybackState = IsPlaying ? 1 : (IsPaused ? 2 : 0)
+            };
+        }
+
+        public void LoadInitialState(UserSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            _isRestoringInitialState = true;
+            try
+            {
+                ApplyPreferredAudioSettings(settings);
+                Volume = Math.Clamp(settings.PreferredVolume, 0f, 1f);
+
+                var startupBehavior = settings.StartupBehavior;
+                if (startupBehavior == StartupBehavior.StartClean)
+                {
+                    _playbackRepository.Clear();
+                    ClearQueue();
+                    return;
+                }
+
+                var snapshot = _playbackRepository.Load();
+                if (snapshot.TrackIds == null || snapshot.TrackIds.Length == 0)
+                {
+                    ClearQueue();
+                    return;
+                }
+
+                var validIds = new HashSet<int>(_library.Tracks.Select(t => t.Id));
+                var queue = snapshot.TrackIds.Where(validIds.Contains).ToArray();
+                if (queue.Length == 0)
+                {
+                    _playbackRepository.Clear();
+                    ClearQueue();
+                    return;
+                }
+
+                SetQueue(queue, false);
+                RepeatMode = (RepeatMode)snapshot.RepeatMode;
+                ContinueMode = (ContinueMode)snapshot.ContinueMode;
+
+                int index = snapshot.CurrentIndex;
+                if (index < 0 || index >= queue.Length)
+                {
+                    index = 0;
+                }
+
+                switch (startupBehavior)
+                {
+                    case StartupBehavior.RestoreQueueOnly:
+                        Stop();
+                        break;
+                    case StartupBehavior.RestoreQueueAndIndexOnly:
+                        SetSilentIndex(index);
+                        Stop();
+                        break;
+                    case StartupBehavior.ResumePlayback:
+                    {
+                        SetSilentIndex(index);
+                        LoadIndex(index, autoplay: false);
+
+                        var position = Math.Clamp(snapshot.PositionInSeconds, 0, Duration);
+                        if (position > 0)
+                        {
+                            Seek(position);
+                        }
+
+                        switch (snapshot.PlaybackState)
+                        {
+                            case 1:
+                                Play();
+                                break;
+                            case 2:
+                                Pause();
+                                break;
+                            default:
+                                Stop();
+                                break;
+                        }
+                        break;
+                    }
+                    default:
+                        Stop();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to restore initial player state, starting clean");
+                ClearQueue();
+            }
+            finally
+            {
+                _isRestoringInitialState = false;
+            }
+
+            EnqueuePlaybackSave();
+        }
+
+        private void ApplyPreferredAudioSettings(UserSettings settings)
+        {
+            int requestedDevice = settings.PreferredDeviceIndex;
+            var availableDevices = GetAvailableDevices();
+            bool requestedDeviceExists = requestedDevice < 0 || availableDevices.Any(d => d.Index == requestedDevice);
+            int safeDevice = requestedDeviceExists ? requestedDevice : -1;
+
+            var preferredMode = settings.PreferredOutputMode;
+            int preferredSampleRate = (int)settings.PreferredSampleRate;
+            int safeSampleRate = preferredSampleRate > 0 ? preferredSampleRate : 44100;
+
+            bool appliedPreferred = TryReinitializeOutput(safeDevice, safeSampleRate, preferredMode);
+            if (!appliedPreferred)
+            {
+                _logger.LogError("Failed to apply preferred audio settings, falling back to default output");
+                if (!TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
+                {
+                    _logger.LogCritical("Failed to initialize fallback audio output");
+                }
+            }
+
+            CurrentDeviceIndex = appliedPreferred ? safeDevice : -1;
+            CurrentOutputMode = _audioEngine.GetCurrentOutputMode();
+            CurrentSampleRate = preferredSampleRate;
+        }
+
+        private bool TryReinitializeOutput(int deviceIndex, int sampleRate, OutputMode outputMode)
+        {
+            int initSampleRate = sampleRate > 0 ? sampleRate : 44100;
+            var ok = _audioEngine.Reinitialize(deviceIndex, initSampleRate, outputMode);
+            if (!ok)
+            {
+                var err = _audioEngine.GetLastError();
+                _logger.LogWarning(
+                    "Audio reinitialize failed for device {DeviceIndex}, sample rate {SampleRate}, mode {OutputMode}. Error: {ErrorCode}",
+                    deviceIndex,
+                    initSampleRate,
+                    outputMode,
+                    err);
+            }
+
+            return ok;
+        }
+
+        private void EnqueuePlaybackSave()
+        {
+            if (_isRestoringInitialState)
+            {
+                return;
+            }
+
+            var saveCoordinator = _serviceProvider.GetService(typeof(ISaveCoordinator)) as ISaveCoordinator;
+            saveCoordinator?.Enqueue(SaveKind.Playback);
         }
 
         public void Dispose()
@@ -545,6 +809,13 @@ namespace MusicWrap.Core
 
             if (track == null)
             {
+                _errorCount++;
+                if (_errorCount >= MaxErrorCount)
+                {
+                    _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
+                    Stop();
+                    return;
+                }
                 Next();
                 return;
             }
@@ -593,6 +864,13 @@ namespace MusicWrap.Core
                 if (!_trackPlaybackResolver.TryResolve(track, out var resolvedCurrent))
                 {
                     _logger.LogWarning("Failed to resolve playback source for track: {TrackId}, {TrackOrigin}", track.Id, track.Origin);
+                    _errorCount++;
+                    if (_errorCount >= MaxErrorCount)
+                    {
+                        _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
+                        Stop();
+                        return;
+                    }
                     Next();
                     return;
                 }
@@ -608,6 +886,13 @@ namespace MusicWrap.Core
                         break;
                     default:
                         _logger.LogWarning("Unsupported playback source kind {PlaybackSourceKind} for track {TrackId}, {TrackOrigin}", resolvedCurrent.Kind, track.Id, track.Origin);
+                        _errorCount++;
+                        if (_errorCount >= MaxErrorCount)
+                        {
+                            _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
+                            Stop();
+                            return;
+                        }
                         Next();
                         return;
                 }
@@ -617,6 +902,13 @@ namespace MusicWrap.Core
                 {
                     var err = _audioEngine.GetLastError();
                     _logger.LogWarning("Failed to create decode stream for track {TrackId}, {TrackOrigin}, error code: {ErrorCode}", track.Id, track.Origin, err);
+                    _errorCount++;
+                    if (_errorCount >= MaxErrorCount)
+                    {
+                        _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
+                        Stop();
+                        return;
+                    }
                     Next();
                     return;
                 }
@@ -635,6 +927,7 @@ namespace MusicWrap.Core
 
             // Setup preload for next track
             double duration = _audioEngine.GetDuration(_currentStream);
+            _currentTrackDuration = duration;
             const double preloadLeadSeconds = 0.75;
             if (duration > preloadLeadSeconds)
             {
@@ -664,6 +957,8 @@ namespace MusicWrap.Core
                 QueueChanged?.Invoke(this, snapshot);
             });
             BeginWaveformPipeline(track);
+            _errorCount = 0; // Reset error count on successful playback
+            EnqueuePlaybackSave();
         }
 
         private void SetPlaybackState(PlaybackState state)
@@ -704,6 +999,7 @@ namespace MusicWrap.Core
 
                 // Re-setup callbacks for the repeated track
                 double duration = _audioEngine.GetDuration(_currentStream);
+                _currentTrackDuration = duration;
                 const double preloadLeadSeconds = 0.75;
                 if (duration > preloadLeadSeconds)
                 {
@@ -807,7 +1103,8 @@ namespace MusicWrap.Core
 
                 int nextStream;
 
-                switch(resolvedNext.Kind){
+                switch (resolvedNext.Kind)
+                {
                     case PlaybackSourceKind.LocalFile:
                         nextStream = _audioEngine.CreateDecodeStream(resolvedNext.Input);
                         break;

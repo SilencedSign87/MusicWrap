@@ -11,7 +11,6 @@ using System.Windows.Threading;
 using System.Windows.Media.Imaging;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Infrastructure.Saving;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -19,7 +18,6 @@ namespace MusicWrap.UI.ViewModels
     {
         private readonly IMusicPlayerService _playerService;
         private readonly MusicLibrary _library;
-        private readonly ISaveCoordinator _saveCoordinator;
 
         private readonly DispatcherTimer _uiPositionTmer;
         private double _lastEnginePosition = 0;
@@ -114,11 +112,10 @@ namespace MusicWrap.UI.ViewModels
             Process.Start(new ProcessStartInfo(ArtworkPath) { UseShellExecute = true });
         }
 
-        public PlayerViewModel(IMusicPlayerService service, MusicLibrary library, ISaveCoordinator saveCoordinator)
+        public PlayerViewModel(IMusicPlayerService service, MusicLibrary library)
         {
             _playerService = service;
             _library = library;
-            _saveCoordinator = saveCoordinator;
 
 
             // Subscribe to player events
@@ -252,14 +249,12 @@ namespace MusicWrap.UI.ViewModels
                 _ => RepeatMode.None
             };
             UpdateRepeatModeIcon();
-            _saveCoordinator.Enqueue(SaveKind.Playback);
         }
         [RelayCommand]
         private void ToggleDJMode()
         {
             _playerService.ContinueMode = IsDJOn ? ContinueMode.None : ContinueMode.DJEnd;
             UpdateDJButtonIcon();
-            _saveCoordinator.Enqueue(SaveKind.Playback);
         }
 
         private void UpdateRepeatModeIcon()
