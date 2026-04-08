@@ -5,12 +5,15 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
+             xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Playlist"
              mc:Ignorable="d" 
              Foreground="White"
+             d:DataContext="{d:DesignInstance Type=vm:PlaylistViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300" MinWidth="200" MaxWidth="500" />
+            <ColumnDefinition Width="250" MinWidth="200" MaxWidth="400" />
             <ColumnDefinition Width="6" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
@@ -20,32 +23,143 @@
                 <RowDefinition />
             </Grid.RowDefinitions>
             <Menu Grid.Row="0">
-                <MenuItem Header="Sort" Icon="{ex:Icon Glyph=E8CB}">
+                <MenuItem Header="Playlists" Icon="{ex:Icon Glyph=EA37}">
+                    <MenuItem Header="New playlist" Icon="{ex:Icon Glyph=E710}" Command="{Binding NewPlaylistCommand}" />
+                    <MenuItem Header="Refresh" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}" />
+                </MenuItem>
+                <MenuItem Header="View" Icon="{ex:Icon Glyph=E890}">
                     <MenuItem Header="Title" IsCheckable="True" />
                     <MenuItem Header="Album" IsCheckable="True" />
                     <MenuItem Header="Artist" IsCheckable="True" />
                     <MenuItem Header="Date added" IsCheckable="True" />
                     <Separator />
                     <MenuItem Header="Ascending" 
-          IsCheckable="True" 
-          Icon="{ex:Icon Glyph=E74A, FontSize=12}"
-          />
+                        IsCheckable="True" 
+                        Icon="{ex:Icon Glyph=E74A, FontSize=12}"
+                        />
 
                     <MenuItem Header="Descending" 
-          IsCheckable="True" 
-          Icon="{ex:Icon Glyph=E74B, FontSize=12}"
-          />
+                        IsCheckable="True" 
+                        Icon="{ex:Icon Glyph=E74B, FontSize=12}"
+                        />
                     <Separator />
-                    <MenuItem Header="Compact view" IsCheckable="True" Icon="{ex:Icon Glyph=E700}" />
-                    <MenuItem Header="List View" IsCheckable="True" Icon="{ex:Icon Glyph=E8FD}" />
+                    <MenuItem Header="Compact view" 
+                              IsCheckable="True" 
+                              IsChecked="{Binding CompactMode, Mode=TwoWay}"
+                              Icon="{ex:Icon Glyph=E700}" />
+                    <MenuItem Header="List View" 
+                              IsCheckable="True" 
+                              IsChecked="{Binding CompactMode, Converter={StaticResource InverseBoolConverter}}"
+                              Icon="{ex:Icon Glyph=E8FD}" />
                 </MenuItem>
             </Menu>
+
+            <ListView
+                ItemsSource="{Binding Entries}"
+                SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                Grid.Row="1"
+                SelectionMode="Single"
+                HorizontalAlignment="Stretch"
+                >
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Height" Value="auto"/>
+                        <Setter Property="Padding" Value="4"/>
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="vm:PlaylistEntry">
+                        <Grid>
+                            <!-- Compact -->
+                            <StackPanel x:Name="CompactLayout"
+                            Orientation="Horizontal"
+                            Margin="0"
+                            ToolTipService.ToolTip="{Binding Title}"
+                            HorizontalAlignment="Stretch">
+                                <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
+                           Width="42"
+                           Height="42"
+                           Stretch="UniformToFill"
+                           RenderOptions.BitmapScalingMode="LowQuality" />
+                                <StackPanel Orientation="Vertical" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Description}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- List -->
+                            <StackPanel
+                                x:Name="ListLayout"
+                                Visibility="Collapsed"
+                                Orientation="Horizontal"
+                                >
+                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE90B;" VerticalAlignment="Center" Margin="8,0"/>
+                                <TextBlock
+                                    TextTrimming="CharacterEllipsis"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding Title}"
+                                    FontSize="14"
+                                    />
+                                <TextBlock
+                                    TextTrimming="CharacterEllipsis"
+                                    VerticalAlignment="Center"
+                                    FontSize="12"
+                                    Margin="8,0"
+                                    Opacity="0.6"
+                                    >
+                                    <Run Text="• " />
+                                    <Run Text="{Binding Description}" />
+                                </TextBlock>
+
+                                <TextBlock 
+                                    />
+                            </StackPanel>
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding DataContext.CompactMode, RelativeSource={RelativeSource AncestorType=ListView}}" Value="False">
+                                <Setter TargetName="CompactLayout" Property="Visibility" Value="Collapsed" />
+                                <Setter TargetName="ListLayout" Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+
+            </ListView>
 
         </Grid>
         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
         <Border Grid.Column="2" Background="{StaticResource BackgroundSmoke}">
-
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="150" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <Image 
+                        Width="150"
+                        Height="150"
+                        Source="{Binding SelectedEntry.ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=150}"
+                        />
+                    <StackPanel Margin="16">
+                        <TextBlock Text="{Binding SelectedEntry.Title}" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12"/>
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel
+                    Grid.Row="1" 
+                    >
+                    <controlsM:TracksView 
+                        ItemsSource="{Binding Tracks}" 
+                        VisualMode="WithCoverArt"
+                        IndexMode="ListIndex"
+                        UseColumnFlowPanel="False"
+                        SelectionMode="Extended"
+                                      />
+                </StackPanel>
+            </Grid>
         </Border>
-
     </Grid>
 </UserControl>

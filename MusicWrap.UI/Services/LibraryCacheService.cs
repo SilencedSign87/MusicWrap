@@ -4,6 +4,7 @@ using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ namespace MusicWrap.UI.Services
         Task InitializeAsync(string initialView, bool ascending);
         Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(string viewType, bool ascending);
         IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry);
+        List<TrackRowItem> TrackIdsToTrackRowItems(IEnumerable<int> trackIds);
         string GetArtistNamesForAlbum(int albumId);
         string GetArtistNamesForTrack(int trackId);
         string? FindCover(IEnumerable<int> AlbumIds, IEnumerable<int>? trackIds = null);
@@ -202,6 +204,32 @@ namespace MusicWrap.UI.Services
 
             SaveUserPreference(viewType, ascending);
             return entries;
+        }
+
+        public List<TrackRowItem> TrackIdsToTrackRowItems(IEnumerable<int> trackIds)
+        {
+            var trackRowItems = new List<TrackRowItem>();
+            int index = 1;
+            foreach (var trackId in trackIds)
+            {
+                var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+                if (track is null) continue;
+                var album = _albumById.TryGetValue(track.AlbumId, out var alb) ? alb : null;
+                var artistNames = album != null && _artistNamesByAlbumId.TryGetValue(album.Id, out var names) ? names : "Unknown Artist";
+                trackRowItems.Add(new TrackRowItem
+                {
+                    Id = track.Id,
+                    Title = track.Title,
+                    ArtistNames = artistNames,
+                    DiskNumber = track.Disk,
+                    CoverAssetPath = track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover) ? Path.Combine(_coversPath, cover.FileName) : null,
+                    DurationText = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),
+                    TrackNumber = track.TrackNumber,
+                    ListIndex = index
+                });
+                index++;
+            }
+            return trackRowItems;
         }
 
         public void InvalidateCache()

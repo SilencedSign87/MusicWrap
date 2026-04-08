@@ -82,7 +82,8 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="250" MinWidth="200" MaxWidth="350"/>
+            <ColumnDefinition Width="6"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <!-- Library entries list -->
@@ -175,7 +176,8 @@
                     VirtualizingPanel.CacheLength="2,2"
                     VirtualizingPanel.CacheLengthUnit="Page"
                     ScrollViewer.CanContentScroll="True"
-                    ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
                     Background="{StaticResource BackgroundLayer}"
                     >
                 <ListView.GroupStyle>
@@ -221,12 +223,11 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="LibraryEntry">
-                        <StackPanel 
-                            Orientation="Horizontal" 
+                        <Grid 
                             Margin="0"
                             ToolTipService.ToolTip="{Binding Title}"
                             HorizontalAlignment="Stretch">
-                            <StackPanel.ContextMenu>
+                            <Grid.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Play" Icon="{ex:Icon Glyph=E768}"/>
                                     <MenuItem Header="Play next" Icon="{ex:Icon Glyph=ECC8}"/>
@@ -236,33 +237,42 @@
                                     <Separator/>
                                     <MenuItem Header="Edit" Icon="{ex:Icon Glyph=E70F}"/>
                                 </ContextMenu>
-                            </StackPanel.ContextMenu>
+                            </Grid.ContextMenu>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="42"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
                             <Image
+                                Grid.Column="0"
                                 Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
                                 Width="42"
                                 Height="42"
                                 Stretch="UniformToFill"
                                 RenderOptions.BitmapScalingMode="LowQuality"
                                 />
-                            <StackPanel Orientation="Vertical" Margin="8,0,0,0" VerticalAlignment="Center" Width="175">
-                                <TextBlock Text="{Binding Title}" 
-                                           FontSize="14" 
+                            <Grid Grid.Column="2">
+                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                    <TextBlock Text="{Binding Title}" 
+                                           FontSize="12" 
                                            FontWeight="Normal"
                                            TextTrimming="CharacterEllipsis"
                                            />
-                                <TextBlock Text="{Binding Description}" 
-                                           FontSize="11" 
+                                    <TextBlock Text="{Binding Description}" 
+                                           FontSize="12" 
                                            Opacity="0.7"
                                            TextTrimming="CharacterEllipsis"
                                            />
-                            </StackPanel>
-                        </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
         </Grid>
+        <GridSplitter Grid.Column="1" />
         <!-- Selected content -->
-        <Grid Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
+        <Grid Grid.Column="2" Background="{StaticResource BackgroundSmoke}">
             <ScrollViewer x:Name="AlbumsViewport"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"

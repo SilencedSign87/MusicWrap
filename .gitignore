@@ -9,3 +9,4 @@ obj
 *.suo
 *.cache
 .github/
+*.lscache

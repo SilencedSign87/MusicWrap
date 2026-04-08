@@ -78,7 +78,6 @@
                             IndexMode="TrackNumber"
                             UseColumnFlowPanel="True"
                             SelectionMode="Extended"
-                            SelectedTrackIds="{Binding DataContext.SelectedTrackIds, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             >
                             <uimodels:TracksView.ColumnFlowColumns>
                                 <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,600">

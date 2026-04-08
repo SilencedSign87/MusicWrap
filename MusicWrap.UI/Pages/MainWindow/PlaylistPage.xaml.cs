@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.ViewModels.Playlist;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -21,6 +23,7 @@ namespace MusicWrap.UI.Pages.MainWindow
         public PlaylistPage()
         {
             InitializeComponent();
+            DataContext = App.Services.GetRequiredService<PlaylistViewModel>();
         }
     }
 }

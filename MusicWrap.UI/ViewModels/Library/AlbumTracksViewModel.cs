@@ -26,8 +26,6 @@ namespace MusicWrap.UI.ViewModels.Library
 
         [ObservableProperty] private List<DiskGroup> diskGroups = [];
 
-        [ObservableProperty] private List<int> selectedTrackIds = [];
-
         private readonly MusicLibrary _library;
         private readonly string _searchQuery;
 
