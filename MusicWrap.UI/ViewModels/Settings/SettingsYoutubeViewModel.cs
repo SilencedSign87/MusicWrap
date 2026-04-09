@@ -13,6 +13,8 @@ namespace MusicWrap.UI.ViewModels.Settings
     {
         [ObservableProperty] private bool _useCustomFfmpegPath;
         [ObservableProperty] private string _customFfmpegPath = string.Empty;
+        
+
 
         private readonly UserSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
@@ -54,12 +56,12 @@ namespace MusicWrap.UI.ViewModels.Settings
         #region Partials
         partial void OnUseCustomFfmpegPathChanged(bool value)
         {
-            _settings.UseCustomFfmpegPath = value;
+            _settings.FFMpegSettings.UseCustomFfmpegPath = value;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         partial void OnCustomFfmpegPathChanged(string value)
         {
-            _settings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
+            _settings.FFMpegSettings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion
@@ -67,8 +69,8 @@ namespace MusicWrap.UI.ViewModels.Settings
         #region Internal
         private void LoadFromSettings()
         {
-            UseCustomFfmpegPath = _settings.UseCustomFfmpegPath;
-            CustomFfmpegPath = _settings.CustomFfmpegPath ?? string.Empty;
+            UseCustomFfmpegPath = _settings.FFMpegSettings.UseCustomFfmpegPath;
+            CustomFfmpegPath = _settings.FFMpegSettings.CustomFfmpegPath ?? string.Empty;
         }
         #endregion
 

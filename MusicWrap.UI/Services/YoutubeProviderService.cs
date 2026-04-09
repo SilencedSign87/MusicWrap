@@ -35,7 +35,7 @@ namespace MusicWrap.UI.Services
             string cacheDir = Path.Combine(MusicWrapDirectories.CacheDirectory, "YoutubeAudio");
             if (!Directory.Exists(cacheDir)) 
                 return Task.FromResult(0);
-            if (string.IsNullOrWhiteSpace(_settings.YoutubeLibraryRootPath)||!Directory.Exists(_settings.YoutubeLibraryRootPath)) 
+            if (string.IsNullOrWhiteSpace(_settings.YoutubeSettings.YoutubeLibraryRootPath)||!Directory.Exists(_settings.YoutubeSettings.YoutubeLibraryRootPath)) 
                 return Task.FromResult(0);
 
             foreach(var track in _library.Tracks.Where(t=>t.Origin == TrackOrigin.Youtube && !string.IsNullOrWhiteSpace(t.ExternalId)))
@@ -76,9 +76,9 @@ namespace MusicWrap.UI.Services
             string title = string.IsNullOrWhiteSpace(track.Title) ? (track.ExternalId ?? "Unknown Track") : track.Title;
             string num = track.TrackNumber > 0 ? track.TrackNumber.ToString("D2") : "00";
 
-            string template = string.IsNullOrWhiteSpace(_settings.YoutubePathTemplate)
+            string template = string.IsNullOrWhiteSpace(_settings.YoutubeSettings.YoutubePathTemplate)
                 ? "{artist}/{album}/{trackNumber} - {title}"
-                : _settings.YoutubePathTemplate;
+                : _settings.YoutubeSettings.YoutubePathTemplate;
 
             string rel = template
                 .Replace("{artist}", Sanitize(artist), StringComparison.OrdinalIgnoreCase)
@@ -91,7 +91,7 @@ namespace MusicWrap.UI.Services
             if (!rel.EndsWith(".flac", StringComparison.OrdinalIgnoreCase))
                 rel += ".flac";
 
-            return Path.Combine(_settings.YoutubeLibraryRootPath, rel);
+            return Path.Combine(_settings.YoutubeSettings.YoutubeLibraryRootPath, rel);
         }
 
         private string ResolveArtistName(Track track)

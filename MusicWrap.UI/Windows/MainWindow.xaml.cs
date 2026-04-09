@@ -173,6 +173,7 @@ namespace MusicWrap.UI.Windows
                     1 => new PlaylistPage(),
                     2 => new FavoritesPage(),
                     3 => new ServicesPage(),
+                    4 => new NowPlayingPage(),
                     _ => new LibraryPage()
                 };
                 _pageCache[index] = page;

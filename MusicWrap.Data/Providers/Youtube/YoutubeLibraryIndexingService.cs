@@ -300,9 +300,9 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
 
     private string ResolveOutputRoot()
     {
-        if (!string.IsNullOrWhiteSpace(_userSettings.YoutubeLibraryRootPath))
+        if (!string.IsNullOrWhiteSpace(_userSettings.YoutubeSettings.YoutubeLibraryRootPath))
         {
-            return _userSettings.YoutubeLibraryRootPath;
+            return _userSettings.YoutubeSettings.YoutubeLibraryRootPath;
         }
 
         return IOPath.Combine(MusicWrapDirectories.LibraryDirectory, "Youtube");
@@ -315,9 +315,9 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
         string title = string.IsNullOrWhiteSpace(request.Title) ? request.ExternalId : request.Title;
         string trackNumber = request.TrackNumber > 0 ? request.TrackNumber.ToString("D2") : "00";
 
-        string template = string.IsNullOrWhiteSpace(_userSettings.YoutubePathTemplate)
+        string template = string.IsNullOrWhiteSpace(_userSettings.YoutubeSettings.YoutubePathTemplate)
             ? "{artist}/{album}/{trackNumber} - {title}"
-            : _userSettings.YoutubePathTemplate;
+            : _userSettings.YoutubeSettings.YoutubePathTemplate;
 
         string relativePath = template
             .Replace("{artist}", SanitizePathSegment(artist), StringComparison.OrdinalIgnoreCase)

@@ -122,23 +122,23 @@ public class YoutubeStagingService : IYoutubeStagingService
 
     private string ResolveFfmpegPath()
     {
-        if (_settings.UseCustomFfmpegPath)
+        if (_settings.FFMpegSettings.UseCustomFfmpegPath)
         {
-            if (string.IsNullOrWhiteSpace(_settings.CustomFfmpegPath))
+            if (string.IsNullOrWhiteSpace(_settings.FFMpegSettings.CustomFfmpegPath))
             {
                 throw new YoutubeStagingException(
                     "No hay ruta de ffmpeg configurada. Configura ffmpeg en Settings > Youtube.",
                     isFfmpegConfigurationError: true);
             }
 
-            if (!File.Exists(_settings.CustomFfmpegPath))
+            if (!File.Exists(_settings.FFMpegSettings.CustomFfmpegPath))
             {
                 throw new YoutubeStagingException(
-                    $"La ruta configurada de ffmpeg no existe: {_settings.CustomFfmpegPath}",
+                    $"La ruta configurada de ffmpeg no existe: {_settings.FFMpegSettings.CustomFfmpegPath}",
                     isFfmpegConfigurationError: true);
             }
 
-            return _settings.CustomFfmpegPath;
+            return _settings.FFMpegSettings.CustomFfmpegPath;
         }
 
         // fallback: PATH

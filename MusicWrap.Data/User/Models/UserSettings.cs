@@ -16,20 +16,36 @@ namespace MusicWrap.Data.User.Models
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
         [Key(6)] public string LibraryListBy { get; set; } = "Artist";
         [Key(7)] public bool LibraryAscending { get; set; } = false;
+        [Key(8)] public bool KeepAppInTray { get; set; } = false;
+
         // FFMpeg settings
-        [Key(8)] public bool UseCustomFfmpegPath { get; set; } = true;
-        [Key(9)] public string CustomFfmpegPath { get; set; } = string.Empty;
+        [Key(9)] public FFMpegSettings FFMpegSettings { get; set; } = new FFMpegSettings();
         // YouTube library settings
-        [Key(10)] public bool EnableYoutubeLibraryFolders { get; set; } = false;
-        [Key(11)] public string YoutubeLibraryRootPath { get; set; } = string.Empty;
-        [Key(12)] public string YoutubePathTemplate { get; set; } = "{artist}/{album}/{trackNumber} - {title}";
+        [Key(10)] public YoutubeSettings YoutubeSettings { get; set; } = new YoutubeSettings();
+
 
         // Misc settings
-        [Key(13)] public bool KeepAppInTray { get; set; } = false;
 
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
 
     }
+
+    [MessagePackObject]
+    public sealed class FFMpegSettings
+    {
+        [Key(1)] public bool UseCustomFfmpegPath { get; set; } = true;
+        [Key(2)] public string CustomFfmpegPath { get; set; } = string.Empty;
+    }
+
+    [MessagePackObject]
+    public sealed class YoutubeSettings
+    {
+        [Key(1)] public bool EnableYoutubeLibraryFolders { get; set; } = false;
+        [Key(2)] public string YoutubeLibraryRootPath { get; set; } = string.Empty;
+        [Key(3)] public string YoutubePathTemplate { get; set; } = "{artist}/{album}/{trackNumber} - {title}";
+        [Key(4)] public SuportedFFMpegAudioFormat PreferredAudioFormatForYoutube { get; set; } = SuportedFFMpegAudioFormat.Mp3;
+    }
+
     public enum LastWindowMode
     {
         MainPlayer = 0,
@@ -58,5 +74,17 @@ namespace MusicWrap.Data.User.Models
         RestoreQueueOnly = 1,
         RestoreQueueAndIndexOnly = 2,
         ResumePlayback = 3
+    }
+    public enum SuportedFFMpegAudioFormat
+    {
+        Mp3,
+        Aac,
+        Flac,
+        Wav,
+        Opus,
+        Vorbis,
+        Alac,
+        Ac3,
+        Eac3
     }
 }

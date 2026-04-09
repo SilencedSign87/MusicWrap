@@ -15,20 +15,14 @@
     <StackPanel Margin="16">
         <controls:SectionTitleSeparator Title="FFmpeg" IconGlyph="&#xE950;" Margin="0,8" />
         <CheckBox
-    Margin="8,0,0,8"
-    Content="Use custom ffmpeg.exe path"
-    IsChecked="{Binding UseCustomFfmpegPath, Mode=TwoWay}" />
+            Margin="8,0,0,8"
+            Content="Use custom ffmpeg.exe path"
+            IsChecked="{Binding UseCustomFfmpegPath, Mode=TwoWay}" />
         <Grid Margin="8,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-
-            <!--<TextBox
-Grid.Column="0"
-Text="{Binding CustomFfmpegPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-IsEnabled="{Binding UseCustomFfmpegPath}"
-ToolTip="Path to ffmpeg.exe" />-->
             <controls:CompactInputField
                 Grid.Column="0"
                 Text="{Binding CustomFfmpegPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -38,7 +32,7 @@ ToolTip="Path to ffmpeg.exe" />-->
                 <controls:CompactInputField.BeforeContent>
                     <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xED25;"/>
                 </controls:CompactInputField.BeforeContent>
-                
+
             </controls:CompactInputField>
 
             <Button
@@ -57,12 +51,28 @@ ToolTip="Path to ffmpeg.exe" />-->
                 <TextBlock Text="1. Download FFmpeg from the official website." />
                 <TextBlock Text="2. Extract it somewhere permanent." />
                 <TextBlock Text="3. Select ffmpeg.exe (usually in the bin folder)." />
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <StackPanel Orientation="Horizontal" Margin="0,16">
                     <Button Content="Open official download page"
-            Command="{Binding OpenffmpegDownloadPageCommand}"
-            Padding="10,4" />
+                            Style="{StaticResource TransparentButton}"
+                            Command="{Binding OpenffmpegDownloadPageCommand}"
+                            Padding="10,4" />
                 </StackPanel>
             </StackPanel>
         </Border>
+        <controls:SectionTitleSeparator Title="FFmpeg" IconGlyph="&#xE950;" Margin="0,8" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Preferred audio format:" Margin="0,0,8,0"/>
+            <ComboBox Grid.Column="1" Width="100">
+                <ComboBoxItem Content=".mp3" />
+                <ComboBoxItem Content=".m4a" />
+                <ComboBoxItem Content=".opus" />
+                <ComboBoxItem Content=".flac" />
+                <ComboBoxItem Content=".wav" />
+            </ComboBox>
+        </Grid>
     </StackPanel>
 </UserControl>

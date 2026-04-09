@@ -27,7 +27,6 @@ namespace MusicWrap.UI.Pages.MainWindow
         private readonly CommandPaletteViewModel _commandPaletteViewModel;
         private readonly ILibraryCacheService _libraryCacheService;
         private bool _isCommandPaletteSubscribed;
-        private int _lastViewportWidth = -1;
         private DispatcherTimer? _resizeThrottleTimer;
 
         private int _lastColumns = -1;
@@ -99,7 +98,6 @@ namespace MusicWrap.UI.Pages.MainWindow
             if (selected == null)
             {
                 vm.CollapseAlbum();
-                _lastViewportWidth = -1;
                 _lastColumns = -1;
                 return;
             }

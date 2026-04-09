@@ -69,8 +69,8 @@ namespace MusicWrap.UI.ViewModels.Settings
             StartClean = _settings.StartupBehavior == StartupBehavior.StartClean;
             MinimizeToTray = _settings.KeepAppInTray;
             ExitAppOnClose = !_settings.KeepAppInTray;
-            UseCustomFfmpegPath = _settings.UseCustomFfmpegPath;
-            CustomFfmpegPath = _settings.CustomFfmpegPath ?? string.Empty;
+            UseCustomFfmpegPath = _settings.FFMpegSettings.UseCustomFfmpegPath;
+            CustomFfmpegPath = _settings.FFMpegSettings.CustomFfmpegPath ?? string.Empty;
         }
         #endregion
 
@@ -117,12 +117,12 @@ namespace MusicWrap.UI.ViewModels.Settings
 
         partial void OnUseCustomFfmpegPathChanged(bool value)
         {
-            _settings.UseCustomFfmpegPath = value;
+            _settings.FFMpegSettings.UseCustomFfmpegPath = value;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         partial void OnCustomFfmpegPathChanged(string value)
         {
-            _settings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
+            _settings.FFMpegSettings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
 

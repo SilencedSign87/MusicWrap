@@ -167,7 +167,7 @@
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xF61F;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                                    <TextBlock Text="Audio Console" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Now playing" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
                         </TabItem>
