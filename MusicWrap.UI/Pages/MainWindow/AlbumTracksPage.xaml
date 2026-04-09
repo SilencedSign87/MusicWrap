@@ -37,7 +37,7 @@
                         ToolTip="{Binding AlbumPlayTooltip}" 
                         Click="PlayPauseAlbum_Click"
                         >
-                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
+                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="{Binding AlbumPlayGlyph}"/>
                 </Button>
                 <TextBlock Text="{Binding AlbumTitle}" 
                            Grid.Column="1"
@@ -74,6 +74,7 @@
                         <!-- Tracks in this disk -->
                         <uimodels:TracksView
                             ItemsSource="{Binding Tracks}"
+                            AllTrackIds="{Binding DataContext.AllTrackIds, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             VisualMode="CompactNoCover"
                             IndexMode="TrackNumber"
                             UseColumnFlowPanel="True"
@@ -86,136 +87,6 @@
                                 </MultiBinding>
                             </uimodels:TracksView.ColumnFlowColumns>
                         </uimodels:TracksView>
-                        <!--<ItemsControl ItemsSource="{Binding Tracks}"
-                                      Name="TracksItemsControl">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ex:ColumnFlowPanel>
-                                        <ex:ColumnFlowPanel.Columns>
-                                            <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,600">
-                                                <Binding RelativeSource="{RelativeSource FindAncestor, AncestorType=ItemsControl}" Path="Items.Count"/>
-                                                <Binding RelativeSource="{RelativeSource FindAncestor, AncestorType=ItemsControl}" Path="ActualWidth"/>
-                                            </MultiBinding>
-                                        </ex:ColumnFlowPanel.Columns>
-                                    </ex:ColumnFlowPanel>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid
-                                            Margin="0,4"
-                                            MouseLeftButtonDown="StartPlayingFromTrack"
-                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            Cursor="Hand"
-                                        >
-                                        <Grid.Style>
-                                            <Style TargetType="Grid">
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="#1f000000"/>
-                                                    </Trigger>
-                                                    <Trigger Property="IsMouseOver" Value="False">
-                                                        <Setter Property="Background" Value="Transparent"/>
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Grid.Style>
-                                        <Grid.ContextMenu>
-                                            <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}" Placement="Right">
-                                                <MenuItem Header="Play Now" 
-                                                          Command="{Binding PlayTrackCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}" 
-                                                          Icon="{ex:Icon Glyph=E768}"
-                                                          />
-
-                                                <MenuItem Header="Play Next" 
-                                                          Command="{Binding PlayNextCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          Icon="{ex:Icon Glyph=ECC8}"
-                                                          />
-
-                                                <MenuItem Header="Add to Queue" 
-                                                          Command="{Binding AddToQueueCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          Icon="{ex:Icon Glyph=E142}"
-                                                          />
-                                                <Separator/>
-                                                <MenuItem Header="Add to playlist" 
-                                                          Icon="{ex:Icon Glyph=ED0E}" 
-                                                          Command="{Binding AddToPlaylistCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          />
-                                                <Separator/>
-                                                <MenuItem Header="Edit track" 
-                                                          Command="{Binding EditTrackCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          Icon="{ex:Icon Glyph=E70F}"
-                                                          />
-
-                                                <Separator/>
-                                                <MenuItem Header="Show in File Explorer" 
-                                                          Command="{Binding ShowInExplorerCommand}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext.Id, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          Icon="{ex:Icon Glyph=E8B7}"
-                                                          />
-                                            </ContextMenu>
-                                        </Grid.ContextMenu>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="40"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="auto" MinWidth="50"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            --><!-- Track Number --><!--
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding TrackNumberDisplay}" 
-                                                       FontSize="13" 
-                                                       Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                                                       Opacity="0.6"
-                                                       VerticalAlignment="Center"
-                                                       HorizontalAlignment="Right"
-                                                       Margin="0,0,12,0"/>
-
-                                            --><!-- Track Info --><!--
-                                            <Grid Grid.Column="1" HorizontalAlignment="Stretch">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-
-                                                <TextBlock Grid.Row="0"
-                                                    Text="{Binding Title}" 
-                                                    FontSize="12" 
-                                                    FontWeight="Medium"
-                                                    Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    TextWrapping="NoWrap"
-                                                    />
-
-                                                <TextBlock Grid.Row="1"
-                                                    Text="{Binding ArtistNames}" 
-                                                    FontSize="12" 
-                                                    FontWeight="Light"
-                                                    Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                                                    Opacity="0.6"
-                                                    TextTrimming="CharacterEllipsis"
-                                                    TextWrapping="NoWrap"/>
-                                            </Grid>
-
-                                            --><!-- Duration --><!--
-                                            <TextBlock Grid.Column="2"
-                                                       Text="{Binding FormattedDuration}" 
-                                                       FontSize="12" 
-                                                       Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                                                       Opacity="0.6"
-                                                       VerticalAlignment="Center"
-                                                       Margin="16,0,0,0"/>
-                                        </Grid>
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>-->
                     </StackPanel>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>

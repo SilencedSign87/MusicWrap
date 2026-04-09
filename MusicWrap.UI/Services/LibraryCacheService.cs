@@ -221,6 +221,7 @@ namespace MusicWrap.UI.Services
                     Id = track.Id,
                     Title = track.Title,
                     ArtistNames = artistNames,
+                    AlbumName = album?.Title ?? "Unknow artists",
                     DiskNumber = track.Disk,
                     CoverAssetPath = track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover) ? Path.Combine(_coversPath, cover.FileName) : null,
                     DurationText = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),

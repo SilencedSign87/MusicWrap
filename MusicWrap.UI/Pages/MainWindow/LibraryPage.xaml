@@ -8,6 +8,7 @@
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
          xmlns:pages="clr-namespace:MusicWrap.UI.Pages"
+         xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
          xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
          mc:Ignorable="d" 
@@ -228,12 +229,12 @@
                             ToolTipService.ToolTip="{Binding Title}"
                             HorizontalAlignment="Stretch">
                             <Grid.ContextMenu>
-                                <ContextMenu>
+                                <ContextMenu Opened="LibraryContextMenu_Opened">
                                     <MenuItem Header="Play" Icon="{ex:Icon Glyph=E768}"/>
                                     <MenuItem Header="Play next" Icon="{ex:Icon Glyph=ECC8}"/>
                                     <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E90B}"/>
                                     <Separator/>
-                                    <MenuItem Header="Add to playlist" Icon="{ex:Icon Glyph=ED0E}"/>
+                                    <controlsM:TrackToPlaylistMenu x:Name="LibraryTrackToPlaylistMenu"/>
                                     <Separator/>
                                     <MenuItem Header="Edit" Icon="{ex:Icon Glyph=E70F}"/>
                                 </ContextMenu>

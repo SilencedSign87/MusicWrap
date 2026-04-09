@@ -11,6 +11,55 @@
              Foreground="White"
              d:DataContext="{d:DesignInstance Type=vm:PlaylistViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style x:Key="PlaylistCompactGrid" TargetType="DataGrid">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+            <Setter Property="RowHeight" Value="22"/>
+            <Setter Property="ColumnHeaderHeight" Value="24"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="EnableRowVirtualization" Value="True"/>
+            <Setter Property="EnableColumnVirtualization" Value="True"/>
+        </Style>
+
+        <Style x:Key="PlaylistCompactRow" TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentBrush100}"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextOnAccentPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="PlaylistCompactCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="6,2"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="PlaylistCompactHeader" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource StrokeDivider}"/>
+        </Style>
+    </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250" MinWidth="200" MaxWidth="400" />
@@ -151,13 +200,14 @@
                 <StackPanel
                     Grid.Row="1" 
                     >
-                    <controlsM:TracksView 
-                        ItemsSource="{Binding Tracks}" 
-                        VisualMode="WithCoverArt"
+                    <controlsM:TracksView
+                        ItemsSource="{Binding Tracks}"
+                        VisualMode="ListImage"
                         IndexMode="ListIndex"
-                        UseColumnFlowPanel="False"
                         SelectionMode="Extended"
-                                      />
+                        IsReorderEnabled="True"
+                        ReorderRequestedCommand="{Binding ReorderTrackCommand}"
+                        RemoveRequestedCommand="{Binding RemoveSelectedTracksCommand}"/>
                 </StackPanel>
             </Grid>
         </Border>

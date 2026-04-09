@@ -5,12 +5,14 @@ using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Diagnostics;
+using ICommand = System.Windows.Input.ICommand;
 
 namespace MusicWrap.UI.Controls.Models
 {
@@ -22,6 +24,11 @@ namespace MusicWrap.UI.Controls.Models
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly IEditMetadataService _editMetadataService;
         private readonly MusicLibrary _library;
+        private Point _dragStartPoint;
+        private TrackRowItem? _draggedItem;
+        private IEnumerable<TrackRowItem>? _itemsSource;
+        private INotifyCollectionChanged? _itemsSourceCollection;
+        private bool _playerEventsAttached;
 
         public TracksView()
         {
@@ -29,6 +36,11 @@ namespace MusicWrap.UI.Controls.Models
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
             _library = App.Services.GetRequiredService<MusicLibrary>();
+
+            Loaded += TracksView_Loaded;
+            Unloaded += TracksView_Unloaded;
+
+            RefreshPlaybackIndicator();
 
         }
 
@@ -39,12 +51,50 @@ namespace MusicWrap.UI.Controls.Models
                 nameof(ItemsSource),
                 typeof(IEnumerable<TrackRowItem>),
                 typeof(TracksView),
-                new PropertyMetadata(null));
+                new PropertyMetadata(null, ItemsSource_PropertyChanged));
 
         public IEnumerable<TrackRowItem>? ItemsSource
         {
             get => (IEnumerable<TrackRowItem>?)GetValue(ItemsSourceProperty);
             set => SetValue(ItemsSourceProperty, value);
+        }
+
+        private static void ItemsSource_PropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not TracksView tracksView)
+                return;
+
+            tracksView.UnsubscribeFromItemsSource();
+            tracksView._itemsSource = e.NewValue as IEnumerable<TrackRowItem>;
+            tracksView._itemsSourceCollection = tracksView._itemsSource as INotifyCollectionChanged;
+
+            if (tracksView._itemsSourceCollection != null)
+            {
+                tracksView._itemsSourceCollection.CollectionChanged += tracksView.ItemsSource_CollectionChanged;
+            }
+
+            tracksView.RefreshItemsSource();
+        }
+
+        private void ItemsSource_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            RefreshItemsSource();
+        }
+
+        private void RefreshItemsSource()
+        {
+            TracksList.ItemsSource = _itemsSource;
+        }
+
+        private void UnsubscribeFromItemsSource()
+        {
+            if (_itemsSourceCollection != null)
+            {
+                _itemsSourceCollection.CollectionChanged -= ItemsSource_CollectionChanged;
+            }
+
+            _itemsSourceCollection = null;
+            _itemsSource = null;
         }
 
         public static readonly DependencyProperty VisualModeProperty =
@@ -125,6 +175,110 @@ namespace MusicWrap.UI.Controls.Models
             set => SetValue(SelectedTrackIdsProperty, value);
         }
 
+        public static readonly DependencyProperty IsReorderEnabledProperty =
+            DependencyProperty.Register(
+                nameof(IsReorderEnabled),
+                typeof(bool),
+                typeof(TracksView),
+                new PropertyMetadata(false));
+
+        public bool IsReorderEnabled
+        {
+            get => (bool)GetValue(IsReorderEnabledProperty);
+            set => SetValue(IsReorderEnabledProperty, value);
+        }
+
+        public static readonly DependencyProperty ReorderRequestedCommandProperty =
+            DependencyProperty.Register(
+                nameof(ReorderRequestedCommand),
+                typeof(ICommand),
+                typeof(TracksView),
+                new PropertyMetadata(null));
+
+        public ICommand? ReorderRequestedCommand
+        {
+            get => (ICommand?)GetValue(ReorderRequestedCommandProperty);
+            set => SetValue(ReorderRequestedCommandProperty, value);
+        }
+
+        public static readonly DependencyProperty RemoveRequestedCommandProperty =
+            DependencyProperty.Register(
+                nameof(RemoveRequestedCommand),
+                typeof(ICommand),
+                typeof(TracksView),
+                new PropertyMetadata(null));
+
+        public ICommand? RemoveRequestedCommand
+        {
+            get => (ICommand?)GetValue(RemoveRequestedCommandProperty);
+            set => SetValue(RemoveRequestedCommandProperty, value);
+        }
+
+        public static readonly DependencyProperty TrackActivatedCommandProperty =
+            DependencyProperty.Register(
+                nameof(TrackActivatedCommand),
+                typeof(ICommand),
+                typeof(TracksView),
+                new PropertyMetadata(null));
+
+        public ICommand? TrackActivatedCommand
+        {
+            get => (ICommand?)GetValue(TrackActivatedCommandProperty);
+            set => SetValue(TrackActivatedCommandProperty, value);
+        }
+
+        public static readonly DependencyProperty CurrentTrackIdProperty =
+            DependencyProperty.Register(
+                nameof(CurrentTrackId),
+                typeof(int),
+                typeof(TracksView),
+                new PropertyMetadata(0));
+
+        public int CurrentTrackId
+        {
+            get => (int)GetValue(CurrentTrackIdProperty);
+            set => SetValue(CurrentTrackIdProperty, value);
+        }
+
+        public static readonly DependencyProperty IsPlaybackActiveProperty =
+            DependencyProperty.Register(
+                nameof(IsPlaybackActive),
+                typeof(bool),
+                typeof(TracksView),
+                new PropertyMetadata(false));
+
+        public bool IsPlaybackActive
+        {
+            get => (bool)GetValue(IsPlaybackActiveProperty);
+            set => SetValue(IsPlaybackActiveProperty, value);
+        }
+
+        public static readonly DependencyProperty IsMouseWheelScrollEnabledProperty =
+            DependencyProperty.Register(
+                nameof(IsMouseWheelScrollEnabled),
+                typeof(bool),
+                typeof(TracksView),
+                new PropertyMetadata(false));
+
+        public bool IsMouseWheelScrollEnabled
+        {
+            get => (bool)GetValue(IsMouseWheelScrollEnabledProperty);
+            set => SetValue(IsMouseWheelScrollEnabledProperty, value);
+        }
+
+        public static readonly DependencyProperty AllTrackIdsProperty =
+            DependencyProperty.Register(
+                nameof(AllTrackIds),
+                typeof(IEnumerable<int>),
+                typeof(TracksView),
+                new PropertyMetadata(null));
+
+        public IEnumerable<int>? AllTrackIds
+        {
+            get => (IEnumerable<int>?)GetValue(AllTrackIdsProperty);
+            set => SetValue(AllTrackIdsProperty, value);
+        }
+
         #endregion
 
         private void TracksList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -162,6 +316,12 @@ namespace MusicWrap.UI.Controls.Models
                 return;
             }
 
+            if (TrackActivatedCommand?.CanExecute(row.Id) == true)
+            {
+                TrackActivatedCommand.Execute(row.Id);
+                return;
+            }
+
             var alltracks = TracksList.Items.OfType<TrackRowItem>().Select(t => t.Id).ToList();
 
             _musicPlayerService.SetQueue(alltracks);
@@ -170,6 +330,11 @@ namespace MusicWrap.UI.Controls.Models
 
         private void TracksList_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
+            if (IsMouseWheelScrollEnabled)
+            {
+                return;
+            }
+
             // avoid scroll lock
             e.Handled = true;
 
@@ -276,7 +441,16 @@ namespace MusicWrap.UI.Controls.Models
 
         private void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
-            // Not supported yet for library tracks.
+            var selectedTrackIds = GetSelectedTrackIds();
+            if (selectedTrackIds.Count == 0)
+            {
+                return;
+            }
+
+            if (RemoveRequestedCommand?.CanExecute(selectedTrackIds) == true)
+            {
+                RemoveRequestedCommand.Execute(selectedTrackIds);
+            }
         }
 
         private void ShowExternal_Click(object sender, RoutedEventArgs e)
@@ -341,7 +515,136 @@ namespace MusicWrap.UI.Controls.Models
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            TrackToPlaylistMenuItem.TrackIds = GetSelectedTrackIds();
+            // Use AllTrackIds if provided (e.g., for album context), otherwise use selected tracks
+            var trackIds = AllTrackIds != null ? AllTrackIds.ToList() : GetSelectedTrackIds();
+            TrackToPlaylistMenuItem.TrackIds = trackIds;
+        }
+
+        private void TracksList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!IsReorderEnabled)
+            {
+                return;
+            }
+
+            _dragStartPoint = e.GetPosition(TracksList);
+            _draggedItem = FindAncestor<ListViewItem>(e.OriginalSource as DependencyObject)?.DataContext as TrackRowItem;
+        }
+
+        private void TracksList_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!IsReorderEnabled || e.LeftButton != MouseButtonState.Pressed || _draggedItem is null)
+            {
+                return;
+            }
+
+            var current = e.GetPosition(TracksList);
+            var delta = _dragStartPoint - current;
+            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            DragDrop.DoDragDrop(TracksList, _draggedItem, DragDropEffects.Move);
+        }
+
+        private void TracksList_DragOver(object sender, DragEventArgs e)
+        {
+            if (!IsReorderEnabled)
+            {
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
+                return;
+            }
+
+            e.Effects = e.Data.GetDataPresent(typeof(TrackRowItem))
+                ? DragDropEffects.Move
+                : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void TracksList_Drop(object sender, DragEventArgs e)
+        {
+            if (!IsReorderEnabled)
+            {
+                return;
+            }
+
+            if (!e.Data.GetDataPresent(typeof(TrackRowItem)))
+            {
+                return;
+            }
+
+            var source = e.Data.GetData(typeof(TrackRowItem)) as TrackRowItem;
+            var targetRow = FindAncestor<ListViewItem>(e.OriginalSource as DependencyObject);
+            var target = targetRow?.DataContext as TrackRowItem;
+
+            if (source is null || targetRow is null || target is null || source.Id == target.Id)
+            {
+                return;
+            }
+
+            var position = e.GetPosition(targetRow);
+            var placeAfter = position.Y > (targetRow.ActualHeight / 2d);
+
+            var request = new TrackReorderRequest(source.Id, target.Id, placeAfter);
+            if (ReorderRequestedCommand?.CanExecute(request) == true)
+            {
+                ReorderRequestedCommand.Execute(request);
+            }
+
+            _draggedItem = null;
+        }
+
+        private void TracksView_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (_playerEventsAttached)
+            {
+                return;
+            }
+
+            _musicPlayerService.TrackChanged += MusicPlayerService_TrackChanged;
+            _musicPlayerService.PlaybackStateChanged += MusicPlayerService_PlaybackStateChanged;
+            _playerEventsAttached = true;
+
+            RefreshPlaybackIndicator();
+        }
+
+        private void TracksView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (!_playerEventsAttached)
+            {
+                UnsubscribeFromItemsSource();
+                return;
+            }
+
+            _musicPlayerService.TrackChanged -= MusicPlayerService_TrackChanged;
+            _musicPlayerService.PlaybackStateChanged -= MusicPlayerService_PlaybackStateChanged;
+            _playerEventsAttached = false;
+            UnsubscribeFromItemsSource();
+        }
+
+        private void MusicPlayerService_TrackChanged(object? sender, string e)
+        {
+            RefreshPlaybackIndicator();
+        }
+
+        private void MusicPlayerService_PlaybackStateChanged(object? sender, PlaybackState e)
+        {
+            RefreshPlaybackIndicator();
+        }
+
+        private void RefreshPlaybackIndicator()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(RefreshPlaybackIndicator);
+                return;
+            }
+
+            CurrentTrackId = _musicPlayerService.CurrentTrackId;
+            IsPlaybackActive = _musicPlayerService.IsPlaying;
         }
     }
 }

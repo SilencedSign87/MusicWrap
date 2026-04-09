@@ -24,10 +24,17 @@ namespace MusicWrap.UI.ViewModels.Library
 
         [ObservableProperty] private string albumPlayTooltip = "Play Album";
 
+        [ObservableProperty] private string albumPlayGlyph = "\uE768";
+
+        [ObservableProperty] private bool isAlbumPlaying;
+
         [ObservableProperty] private List<DiskGroup> diskGroups = [];
+
+        [ObservableProperty] private List<int> allTrackIds = [];
 
         private readonly MusicLibrary _library;
         private readonly string _searchQuery;
+        private HashSet<int> _albumTrackIds = [];
 
         public AlbumTracksViewModel(
             MusicLibrary library,
@@ -57,43 +64,56 @@ namespace MusicWrap.UI.ViewModels.Library
             var artists = _library.Artists.Where(a => album.ArtistIds.Contains(a.Id)).Select(a => a.Name);
             AlbumArtists = string.Join(", ", artists);
 
-            // Get and group tracks by disk
-            var tracks = _library.Tracks
+            // Get ALL track IDs ordered by disk/track number (unfiltered)
+            var allTrackIds = _library.Tracks
                 .Where(t => t.AlbumId == AlbumId)
                 .OrderBy(t => t.Disk)
                 .ThenBy(t => t.TrackNumber)
                 .ThenBy(t => t.Title)
-                .Select(t => new TrackRowItem
-                {
-                    Id = t.Id,
-                    Title = t.Title,
-                    DurationText = TimeSpan.FromSeconds(t.Duration).ToString(@"mm\:ss"),
-                    TrackNumber = t.TrackNumber,
-                    DiskNumber = t.Disk,
-                    ArtistNames = GetArtistNames(t.ArtistIds),
-                    CoverAssetPath = null
-                })
+                .Select(t => t.Id)
                 .ToList();
 
+            // Store all track IDs for context menu use
+            AllTrackIds = allTrackIds;
+            _albumTrackIds = allTrackIds.ToHashSet();
+
+            // Filter by search query (if any)
+            var displayTrackIds = allTrackIds;
             if (!string.IsNullOrWhiteSpace(_searchQuery))
             {
-                tracks = [.. tracks
-                    .Where(t =>
-                        t.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                        t.ArtistNames.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                        AlbumTitle.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
-                        AlbumArtists.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase))
+                displayTrackIds = [.. allTrackIds
+                    .Where(trackId => 
+                    {
+                        var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+                        if (track == null) return false;
+                        
+                        return track.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                               GetArtistNames(track.ArtistIds).Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                               AlbumTitle.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                               AlbumArtists.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase);
+                    })
                     ];
             }
 
-            // Group by disk
-            DiskGroups = [.. tracks
-                .GroupBy(t => t.DiskNumber)
+            // Group filtered track IDs by disk
+            DiskGroups = [.. displayTrackIds
+                .GroupBy(trackId => _library.Tracks.FirstOrDefault(t => t.Id == trackId)?.Disk ?? 0)
                 .Select(g => new DiskGroup
                 {
                     DiskNumber = g.Key,
                     DiskTitle = g.Key > 0 ? $"Disc {g.Key}" : "Tracks",
-                    Tracks = [.. g]
+                    Tracks = [.. g
+                        .Select(trackId => _library.Tracks.FirstOrDefault(t => t.Id == trackId))
+                        .Where(track => track != null)
+                        .Select(track => new TrackRowItem
+                        {
+                            Id = track!.Id,
+                            Title = track.Title,
+                            ArtistNames = GetArtistNames(track.ArtistIds),
+                            DurationText = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),
+                            TrackNumber = track.TrackNumber,
+                            DiskNumber = track.Disk
+                        })]
                 })];
         }
 
@@ -101,6 +121,18 @@ namespace MusicWrap.UI.ViewModels.Library
         {
             var artists = _library.Artists.Where(a => artistIds.Contains(a.Id)).Select(a => a.Name);
             return string.Join(", ", artists);
+        }
+
+        public bool ContainsTrack(int trackId)
+        {
+            return trackId > 0 && _albumTrackIds.Contains(trackId);
+        }
+
+        public void UpdatePlaybackState(int currentTrackId, bool isPlaying)
+        {
+            IsAlbumPlaying = isPlaying && ContainsTrack(currentTrackId);
+            AlbumPlayTooltip = IsAlbumPlaying ? "Pause Album" : "Play Album";
+            AlbumPlayGlyph = IsAlbumPlaying ? "\uE769" : "\uE768";
         }
 
         public class DiskGroup

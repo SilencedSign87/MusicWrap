@@ -95,6 +95,19 @@ namespace MusicWrap.UI.Pages.MainWindow
             }
         }
 
+        private void AlbumContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            // Find and set track IDs on the TrackToPlaylistMenu in the context menu
+            if (sender is ContextMenu contextMenu)
+            {
+                var trackToPlaylistMenu = contextMenu.Items.OfType<MusicWrap.UI.Controls.Models.TrackToPlaylistMenu>().FirstOrDefault();
+                if (trackToPlaylistMenu != null)
+                {
+                    trackToPlaylistMenu.TrackIds = [.. TracksId];
+                }
+            }
+        }
+
         private int[] GetAllAlbumTracksId(int albumId)
         {
             return [.. _library.Tracks.Where(t => t.AlbumId == albumId).Select(t => t.Id)];

@@ -7,7 +7,8 @@ namespace MusicWrap.UI.Controls.Models
     public enum TrackVisualMode
     {
         CompactNoCover = 0,
-        WithCoverArt = 1
+        WithCoverArt = 1,
+        ListImage = 2
     }
     public enum TrackIndexDisplayMode
     {
@@ -23,8 +24,15 @@ namespace MusicWrap.UI.Controls.Models
         public int TrackNumber { get; init; }
         public string Title { get; init; } = "";
         public string ArtistNames { get; init; } = "";
+        public string AlbumName { get; init; } = "";
         public string DurationText { get; init; } = "";
         public string? CoverAssetPath { get; init; }
         public string TrackNumberDisplay => TrackNumber > 0 ? TrackNumber.ToString() : "";
     }
+
+    public sealed record TrackReorderRequest(
+        int SourceTrackId,
+        int TargetTrackId,
+        bool PlaceAfterTarget
+    );
 }

@@ -25,6 +25,7 @@ namespace MusicWrap.UI.Pages.MainWindow
     {
         public LibraryViewModel vm;
         private readonly CommandPaletteViewModel _commandPaletteViewModel;
+        private readonly ILibraryCacheService _libraryCacheService;
         private bool _isCommandPaletteSubscribed;
         private int _lastViewportWidth = -1;
         private DispatcherTimer? _resizeThrottleTimer;
@@ -39,6 +40,7 @@ namespace MusicWrap.UI.Pages.MainWindow
             InitializeComponent();
 
             vm = App.Services.GetRequiredService<LibraryViewModel>();
+            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
             DataContext = vm;
 
             _commandPaletteViewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
@@ -305,6 +307,72 @@ namespace MusicWrap.UI.Pages.MainWindow
 
             _lastColumns = columns;
             vm.SetLayoutColumns(columns);
+        }
+
+        private void LibraryContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+                return;
+
+            // Get the entry from the visual tree (the Grid containing this context menu)
+            var grid = contextMenu.PlacementTarget as Grid;
+            if (grid?.DataContext is not MusicWrap.UI.Services.LibraryEntry entry)
+                return;
+
+            // Get track IDs based on entry type
+            var library = vm.GetLibrary();
+            List<int> trackIds = [];
+
+            switch (entry.Type)
+            {
+                case "Album":
+                    trackIds = [.. library.Tracks
+                        .Where(t => t.AlbumId == entry.Id)
+                        .OrderBy(t => t.Disk)
+                        .ThenBy(t => t.TrackNumber)
+                        .ThenBy(t => t.Title)
+                        .Select(t => t.Id)];
+                    break;
+
+                case "Artist":
+                    var artistAlbumIds = library.Albums
+                        .Where(a => a.ArtistIds.Contains(entry.Id))
+                        .Select(a => a.Id)
+                        .ToHashSet();
+                    trackIds = [.. library.Tracks
+                        .Where(t => artistAlbumIds.Contains(t.AlbumId))
+                        .OrderBy(t => t.Disk)
+                        .ThenBy(t => t.TrackNumber)
+                        .ThenBy(t => t.Title)
+                        .Select(t => t.Id)];
+                    break;
+
+                case "Genre":
+                    trackIds = [.. library.Tracks
+                        .Where(t => t.GenreIds.Contains(entry.Id))
+                        .OrderBy(t => t.TrackNumber)
+                        .ThenBy(t => t.Title)
+                        .Select(t => t.Id)];
+                    break;
+
+                case "Decade":
+                    if (int.TryParse(entry.Title.TrimEnd('s'), out int decade))
+                    {
+                        trackIds = [.. library.Tracks
+                            .Where(t => (library.Albums.FirstOrDefault(a => a.Id == t.AlbumId)?.Year / 10) * 10 == decade)
+                            .OrderBy(t => t.TrackNumber)
+                            .ThenBy(t => t.Title)
+                            .Select(t => t.Id)];
+                    }
+                    break;
+            }
+
+            // Find and set track IDs on the TrackToPlaylistMenu in the context menu
+            var trackToPlaylistMenu = contextMenu.Items.OfType<MusicWrap.UI.Controls.Models.TrackToPlaylistMenu>().FirstOrDefault();
+            if (trackToPlaylistMenu != null)
+            {
+                trackToPlaylistMenu.TrackIds = trackIds;
+            }
         }
     }
 }

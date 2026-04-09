@@ -56,7 +56,7 @@ namespace MusicWrap.UI.Services
                 bool ok = _indexer.TryAttachExternalTrackLocalFile(new ExternalTrackLocalFileRequest
                 {
                     Origin = TrackOrigin.Youtube,
-                    ExternalId = track.ExternalId,
+                    ExternalId = track.ExternalId!,
                     FilePath = destPath,
                     PreferExistingArtistAlbumMatch = true
                 }, out _);

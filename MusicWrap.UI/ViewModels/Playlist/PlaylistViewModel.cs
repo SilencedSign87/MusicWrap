@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Playlist.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Helpers;
@@ -23,13 +24,15 @@ namespace MusicWrap.UI.ViewModels.Playlist
         [ObservableProperty] ObservableCollection<TrackRowItem> tracks = [];
 
         private readonly PlaylistData _playlist;
+        private readonly ISaveCoordinator _saveCoordinator;
         private readonly ILibraryCacheService _libraryCacheService;
         private NewPlaylistWindow? _newPlaylistWindow;
 
-        public PlaylistViewModel(PlaylistData playlist, ILibraryCacheService cache)
+        public PlaylistViewModel(PlaylistData playlist, ILibraryCacheService cache, ISaveCoordinator saveCoordinator)
         {
             _playlist = playlist;
             _libraryCacheService = cache;
+            _saveCoordinator = saveCoordinator;
 
             ConstructEntries();
         }
@@ -55,6 +58,59 @@ namespace MusicWrap.UI.ViewModels.Playlist
         private void Refresh()
         {
             ConstructEntries();
+        }
+        [RelayCommand]
+        private void ReorderTrack(TrackReorderRequest request)
+        {
+            if (SelectedEntry is null) return;
+
+            var playlist = _playlist.Playlists.FirstOrDefault(p => p.Id == SelectedEntry.id);
+            if (playlist is null) return;
+
+            var sourceIndex = playlist.Items.FindIndex(i => i.TrackId == request.SourceTrackId);
+            var targetIndex = playlist.Items.FindIndex(i => i.TrackId == request.TargetTrackId);
+            if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) return;
+
+            var moved = playlist.Items[sourceIndex];
+            playlist.Items.RemoveAt(sourceIndex);
+
+            if (sourceIndex < targetIndex) targetIndex--;
+
+            var insertIndex = request.PlaceAfterTarget ? targetIndex + 1 : targetIndex;
+            insertIndex = Math.Clamp(insertIndex, 0, playlist.Items.Count);
+            playlist.Items.Insert(insertIndex, moved);
+
+            playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
+
+            LoadPlaylistTracks();
+            _saveCoordinator.Enqueue(SaveKind.Playlist);
+        }
+
+        [RelayCommand]
+        private void RemoveSelectedTracks(List<int> trackIds)
+        {
+            if (SelectedEntry is null || trackIds.Count == 0)
+            {
+                return;
+            }
+
+            var playlist = _playlist.Playlists.FirstOrDefault(p => p.Id == SelectedEntry.id);
+            if (playlist is null)
+            {
+                return;
+            }
+
+            var removeSet = trackIds.ToHashSet();
+            var removedAny = playlist.Items.RemoveAll(item => removeSet.Contains(item.TrackId)) > 0;
+            if (!removedAny)
+            {
+                return;
+            }
+
+            playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
+
+            LoadPlaylistTracks();
+            _saveCoordinator.Enqueue(SaveKind.Playlist);
         }
         #endregion
 
@@ -100,10 +156,10 @@ namespace MusicWrap.UI.ViewModels.Playlist
             if (selectedPlaylist != null)
             {
                 var ids = selectedPlaylist.Items.Select(i => i.TrackId).ToList();
-                var tracksRows = _libraryCacheService.TrackIdsToTrackRowItems(ids);
-                foreach (var track in tracksRows)
+                var trackRows = _libraryCacheService.TrackIdsToTrackRowItems(ids);
+                foreach (var row in trackRows)
                 {
-                    Tracks.Add(track);
+                    Tracks.Add(row);
                 }
             }
         }

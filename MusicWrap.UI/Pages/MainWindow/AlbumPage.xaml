@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
+             xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumData}"
@@ -22,15 +23,14 @@
             Padding="0"
             >
         <Border.ContextMenu>
-            <ContextMenu Placement="Right">
-                <MenuItem Header="Play album" Click="PlayAlbum" Icon="{ex:Icon Glyph=E768}"/>
-                <MenuItem Header="Play album next" Click="AddAlbumToNext" Icon="{ex:Icon Glyph=ECC8}"/>
-                <MenuItem Header="Add to queue" Click="AddToQueue" Icon="{ex:Icon Glyph=E90B}"/>
+            <ContextMenu Placement="Right" Opened="AlbumContextMenu_Opened">
+                <MenuItem Header="Play album now" Click="PlayAlbum" Icon="{ex:Icon Glyph=E768}"/>
+                <MenuItem Header="Play album next" Click="AddAlbumToNext" Icon="{ex:Icon Glyph=E893}"/>
                 <Separator/>
-                <MenuItem Header="Add to playlist" x:Name="ListSelectorMenuItem" Icon="{ex:Icon Glyph=ED0E}"/>
+                <MenuItem Header="Add to queue" Click="AddToQueue" Icon="{ex:Icon Glyph=E710}"/>
+                <controlsM:TrackToPlaylistMenu x:Name="AlbumTrackToPlaylistMenu"/>
                 <Separator/>
                 <MenuItem Header="Edit album" Icon="{ex:Icon Glyph=E70F}"/>
-                <MenuItem Header="Properties" Icon="{ex:Icon Glyph=E946}"/>
             </ContextMenu>
         </Border.ContextMenu>
         <Grid>

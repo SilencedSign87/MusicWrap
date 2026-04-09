@@ -17,18 +17,35 @@ namespace MusicWrap.UI.Pages.MainWindow
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly MusicLibrary _library;
+        private bool _playerEventsAttached;
 
         public AlbumTracksPage()
         {
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _library = App.Services.GetRequiredService<MusicLibrary>();
+
+            Loaded += AlbumTracksPage_Loaded;
+            Unloaded += AlbumTracksPage_Unloaded;
+            DataContextChanged += AlbumTracksPage_DataContextChanged;
         }
 
         private void PlayPauseAlbum_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is not AlbumTracksViewModel vm)
             {
+                return;
+            }
+
+            if (vm.IsAlbumPlaying)
+            {
+                _musicPlayerService.Pause();
+                return;
+            }
+
+            if (vm.ContainsTrack(_musicPlayerService.CurrentTrackId) && _musicPlayerService.IsPaused)
+            {
+                _musicPlayerService.Play();
                 return;
             }
 
@@ -47,6 +64,70 @@ namespace MusicWrap.UI.Pages.MainWindow
 
             _musicPlayerService.SetQueue(trackIds);
             _musicPlayerService.PlayTrack(trackIds[0]);
+        }
+
+        private void AlbumTracksPage_Loaded(object sender, RoutedEventArgs e)
+        {
+            AttachPlayerEvents();
+            RefreshPlaybackState();
+        }
+
+        private void AlbumTracksPage_Unloaded(object sender, RoutedEventArgs e)
+        {
+            DetachPlayerEvents();
+        }
+
+        private void AlbumTracksPage_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            RefreshPlaybackState();
+        }
+
+        private void AttachPlayerEvents()
+        {
+            if (_playerEventsAttached)
+            {
+                return;
+            }
+
+            _musicPlayerService.TrackChanged += MusicPlayerService_TrackChanged;
+            _musicPlayerService.PlaybackStateChanged += MusicPlayerService_PlaybackStateChanged;
+            _playerEventsAttached = true;
+        }
+
+        private void DetachPlayerEvents()
+        {
+            if (!_playerEventsAttached)
+            {
+                return;
+            }
+
+            _musicPlayerService.TrackChanged -= MusicPlayerService_TrackChanged;
+            _musicPlayerService.PlaybackStateChanged -= MusicPlayerService_PlaybackStateChanged;
+            _playerEventsAttached = false;
+        }
+
+        private void MusicPlayerService_TrackChanged(object? sender, string e)
+        {
+            RefreshPlaybackState();
+        }
+
+        private void MusicPlayerService_PlaybackStateChanged(object? sender, PlaybackState e)
+        {
+            RefreshPlaybackState();
+        }
+
+        private void RefreshPlaybackState()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(RefreshPlaybackState);
+                return;
+            }
+
+            if (DataContext is AlbumTracksViewModel vm)
+            {
+                vm.UpdatePlaybackState(_musicPlayerService.CurrentTrackId, _musicPlayerService.IsPlaying);
+            }
         }
     }
 }

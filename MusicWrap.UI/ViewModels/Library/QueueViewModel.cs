@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
@@ -15,10 +17,14 @@ namespace MusicWrap.UI.ViewModels.Library
     {
 
         [ObservableProperty]
+        private ObservableCollection<TrackRowItem> queueTrackRows = [];
+
+        [ObservableProperty]
         private ObservableCollection<QueueData> queueDataList = [];
 
         // Lookups
         private Dictionary<int, Track> _trackById = [];
+        private Dictionary<int, string> _albumTitleById = [];
         private Dictionary<int, CoverAsset> _coverById = [];
         private Dictionary<int, string> _artistNameById = [];
         private Dictionary<int, BitmapImage?> _albumArtByCoverId = [];
@@ -54,7 +60,7 @@ namespace MusicWrap.UI.ViewModels.Library
         private void LoadQueueData(int[] currentQueue)
         {
             var validQueue = currentQueue.Where(id => _trackById.ContainsKey(id)).ToArray();
-            var currentTrackId = _player.CurrentTrackId;
+            QueueTrackRows.Clear();
 
             while (QueueDataList.Count > validQueue.Length)
                 QueueDataList.RemoveAt(QueueDataList.Count - 1);
@@ -63,7 +69,24 @@ namespace MusicWrap.UI.ViewModels.Library
             {
                 var trackId = validQueue[i];
                 var track = _trackById[trackId];
+                var coverPath = track.CoverId != 0 && _coverById.TryGetValue(track.CoverId, out var cover)
+                    ? Path.Combine(ImageHelper.BaseCoverPath, cover.FileName)
+                    : null;
 
+                QueueTrackRows.Add(new TrackRowItem
+                {
+                    Id = trackId,
+                    ListIndex = i + 1,
+                    DiskNumber = track.Disk,
+                    TrackNumber = track.TrackNumber,
+                    Title = track.Title,
+                    ArtistNames = BuildArtistString(track.ArtistIds),
+                    AlbumName = _albumTitleById.TryGetValue(track.AlbumId, out var albumTitle) ? albumTitle : "Unknown Album",
+                    DurationText = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),
+                    CoverAssetPath = coverPath
+                });
+
+                // Build legacy QueueData for compatibility
                 QueueData row;
 
                 if (i < QueueDataList.Count)
@@ -85,9 +108,10 @@ namespace MusicWrap.UI.ViewModels.Library
                     row.DurationString = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss");
                     row.AlbumArt = GetAlbumArt(track.CoverId);
                 }
-                row.IsPlaying = trackId == currentTrackId;
+                row.IsPlaying = trackId == _player.CurrentTrackId;
             }
         }
+        [RelayCommand]
         public void RemoveSelectedTracksFromQueue(List<int> trackIDs)
         {
             var removeSet = new HashSet<int>(trackIDs);
@@ -100,6 +124,45 @@ namespace MusicWrap.UI.ViewModels.Library
             }
             _player.SetQueue(filtered, true);
         }
+
+        [RelayCommand]
+        private void ReorderTrack(TrackReorderRequest request)
+        {
+            var currentQueue = _player.GetQueue();
+            if (currentQueue.Length == 0)
+            {
+                return;
+            }
+
+            var sourceIndex = Array.IndexOf(currentQueue, request.SourceTrackId);
+            var targetIndex = Array.IndexOf(currentQueue, request.TargetTrackId);
+            if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex)
+            {
+                return;
+            }
+
+            var queue = currentQueue.ToList();
+            var movedTrackId = queue[sourceIndex];
+            queue.RemoveAt(sourceIndex);
+
+            if (sourceIndex < targetIndex)
+            {
+                targetIndex--;
+            }
+
+            var insertIndex = request.PlaceAfterTarget ? targetIndex + 1 : targetIndex;
+            insertIndex = Math.Clamp(insertIndex, 0, queue.Count);
+            queue.Insert(insertIndex, movedTrackId);
+
+            _player.SetQueue(queue, true);
+        }
+
+        [RelayCommand]
+        private void ActivateTrack(int trackID)
+        {
+            _player.PlayTrack(trackID);
+        }
+
         public void PlayTrack(int trackID)
         {
             PlayTracks(new List<int> { trackID });
@@ -246,10 +309,12 @@ namespace MusicWrap.UI.ViewModels.Library
         private void RefreshLookups()
         {
             var tracks = _library.Tracks.ToArray();
+            var albums = _library.Albums.ToArray();
             var covers = _library.CoverAssets.ToArray();
             var artists = _library.Artists.ToArray();
 
             _trackById = tracks.ToDictionary(t => t.Id);
+            _albumTitleById = albums.ToDictionary(a => a.Id, a => a.Title);
             _coverById = covers.ToDictionary(c => c.Id);
             _artistNameById = artists.ToDictionary(a => a.Id, a => a.Name);
         }
