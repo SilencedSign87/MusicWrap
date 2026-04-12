@@ -47,11 +47,6 @@ namespace MusicWrap.UI.Pages.MainWindow
             }
         }
 
-        private void AlbumPage_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            Debug.WriteLine("AlbumPage DataContext changed: " + (e.NewValue?.GetType().Name ?? "null")); // DATACONTEXT : ALbumData
-        }
-
         private void PlayAlbum(object sender, RoutedEventArgs e)
         {
             //Debug.WriteLine("Trying to play album");

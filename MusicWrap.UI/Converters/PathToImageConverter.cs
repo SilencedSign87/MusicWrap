@@ -1,4 +1,6 @@
-﻿using MusicWrap.UI.Helpers;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Helpers;
+using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -12,20 +14,23 @@ namespace MusicWrap.UI.Converters
 {
     public class PathToImageConverter : IValueConverter
     {
+        private static IImageService _imageService => App.Services.GetRequiredService<IImageService>();
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            int size = 64;
-            if (parameter is string sizeStr && int.TryParse(sizeStr, out int parsedSize) && parsedSize > 0)
+            ParseParameter(parameter, out var size, out var variant, out var hasExplicitVariant);
+
+            if (value is not string fileName || string.IsNullOrWhiteSpace(fileName))
             {
-                size = parsedSize;
+                return _imageService.GetDefaultImage(size, hasExplicitVariant ? variant : ImageVariant.Original);
             }
 
-            if (value is not string path || string.IsNullOrWhiteSpace(path))
+            if (hasExplicitVariant)
             {
-                return ImageHelper.GetDefaultAlbumImage(size);
+                return _imageService.Load(fileName, variant, size);
             }
 
-            return ImageHelper.LoadThumbnail(path, "album", size);
+            return _imageService.LoadForSize(fileName, size);
+
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -35,7 +40,71 @@ namespace MusicWrap.UI.Converters
 
         public static void ClearCache()
         {
-            ImageHelper.ClearCache();
+            App.Services.GetRequiredService<IImageService>().ClearCache();
+        }
+
+        private static void ParseParameter(object? parameter, out int size, out ImageVariant variant, out bool hasExplicitVariant)
+        {
+            size = 64;
+            variant = ImageVariant.Original;
+            hasExplicitVariant = false;
+
+            if (parameter is int intValue && intValue > 0)
+            {
+                size = intValue;
+                return;
+            }
+
+            if (parameter is not string text || string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            var tokens = text.Split(new[] { ':', ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var raw in tokens)
+            {
+                var token = raw.Trim();
+
+                if (int.TryParse(token, out var parsedSize) && parsedSize > 0)
+                {
+                    size = parsedSize;
+                    continue;
+                }
+
+                if (token.Equals("small", StringComparison.OrdinalIgnoreCase))
+                {
+                    variant = ImageVariant.Small;
+                    hasExplicitVariant = true;
+                    continue;
+                }
+
+                if (token.Equals("medium", StringComparison.OrdinalIgnoreCase))
+                {
+                    variant = ImageVariant.Medium;
+                    hasExplicitVariant = true;
+                    continue;
+                }
+
+                if (token.Equals("large", StringComparison.OrdinalIgnoreCase))
+                {
+                    variant = ImageVariant.Large;
+                    hasExplicitVariant = true;
+                    continue;
+                }
+
+                if (token.Equals("original", StringComparison.OrdinalIgnoreCase))
+                {
+                    variant = ImageVariant.Original;
+                    hasExplicitVariant = true;
+                    continue;
+                }
+
+                if (token.Equals("blur", StringComparison.OrdinalIgnoreCase))
+                {
+                    variant = ImageVariant.Blur;
+                    hasExplicitVariant = true;
+                }
+            }
         }
 
     }

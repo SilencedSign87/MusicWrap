@@ -20,7 +20,7 @@
         >
     <Window.Background>
         <ImageBrush 
-         ImageSource="{Binding CurrentTrackBluredImage , Converter={StaticResource PathToImageConverter}, ConverterParameter=350}" 
+         ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:350}" 
          RenderOptions.BitmapScalingMode="HighQuality"
          Stretch="UniformToFill"/>
     </Window.Background>
@@ -62,7 +62,7 @@
 
         <Image
                 Grid.Column="0"
-                Source="{Binding CurrentTrackImage}"
+                Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:100}"
                 RenderOptions.BitmapScalingMode="LowQuality"
                 />
 

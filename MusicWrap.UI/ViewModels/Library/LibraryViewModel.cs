@@ -63,11 +63,13 @@ namespace MusicWrap.UI.ViewModels.Library
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryCacheService _LibraryCache;
         private readonly IMusicPlayerService _player;
+        private readonly IImageService _imageService;
 
-        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, UserSettings settings, IMusicPlayerService player)
+        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, UserSettings settings, IMusicPlayerService player, IImageService imageService)
         {
             _library = library;
             _scanner = scanner;
+            _imageService = imageService;
             _LibraryCache = libraryCache;
             _player = player;
             IsLoading = false;
@@ -494,7 +496,7 @@ namespace MusicWrap.UI.ViewModels.Library
             GridRows.Clear();
             ExpandedAlbumId = null;
         }
-        private static async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)
+        private async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)
         {
             using var sem = new SemaphoreSlim(3); // limit concurrent image loading
 
@@ -506,25 +508,16 @@ namespace MusicWrap.UI.ViewModels.Library
                     try
                     {
                         if (ct.IsCancellationRequested) return;
-                        var image = await Task.Run(() =>
-                        {
-                            try
-                            {
-                                var bmp = new BitmapImage();
-                                bmp.BeginInit();
-                                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                                bmp.DecodePixelWidth = 150;
-                                bmp.UriSource = new Uri(album.ImagePath!, UriKind.Absolute);
-                                bmp.EndInit();
-                                bmp.Freeze();
-                                return (BitmapSource)bmp;
-                            }
-                            catch { return null; }
-                        }, ct).ConfigureAwait(false);
 
-                        if (image is not null && !ct.IsCancellationRequested)
+                        var bmp = await _imageService.LoadAsync(
+                            album.ImagePath,
+                            ImageVariant.Medium,
+                            150,
+                            ct).ConfigureAwait(false);
+
+                        if (bmp is not null && !ct.IsCancellationRequested)
                         {
-                            album.CoverImage = image;
+                            album.CoverImage = bmp;
                         }
                     }
                     catch (OperationCanceledException) { }
@@ -536,7 +529,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
             try
             {
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).ConfigureAwait(false);
             }
             catch (OperationCanceledException) { }
         }

@@ -227,7 +227,7 @@ namespace MusicWrap.UI.Services
                     ArtistNames = artistNames,
                     AlbumName = album?.Title ?? "Unknow artists",
                     DiskNumber = track.Disk,
-                    CoverAssetPath = track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover) ? Path.Combine(_coversPath, cover.FileName) : null,
+                    CoverAssetPath = track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover) ? cover.FileName : null,
                     DurationText = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),
                     TrackNumber = track.TrackNumber,
                     ListIndex = index
@@ -287,8 +287,8 @@ namespace MusicWrap.UI.Services
 
                 if (album.CoverId > 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
                 {
-                    imagePath = Path.Combine(_coversPath, cover.FileName);
-                    bluredImagePath = Path.Combine(_coversPath, cover.BlurFileName ?? string.Empty);
+                    imagePath = cover.FileName;
+                    bluredImagePath = cover.FileName;
                     DominantColorHex = cover.DominantColorHex ?? "#808080";
                     ForegroundColorHex = cover.ForegroundColorHex ?? "#FFFFFF";
                 }
@@ -363,7 +363,7 @@ namespace MusicWrap.UI.Services
                 string? imagePath = null;
                 if (_coverLookUp.TryGetValue(albums[i].CoverId, out var cover))
                 {
-                    imagePath = Path.Combine(_coversPath, cover.FileName);
+                    imagePath = cover.FileName;
                 }
 
                 entries[w++] = new LibraryEntry
@@ -395,9 +395,6 @@ namespace MusicWrap.UI.Services
 
                 var imagePath = FindCover(albumsId);
 
-                if (imagePath != null)
-                    imagePath = Path.Combine(_coversPath, imagePath);
-
                 entries[w++] = new LibraryEntry
                 {
                     Id = artists[i].Id,
@@ -424,9 +421,6 @@ namespace MusicWrap.UI.Services
                 if (!_albumIdsByGenreId.TryGetValue(genres[i].Id, out var albums) || albums.Length == 0) continue;
 
                 var imagePath = FindCover(albums);
-
-                if (imagePath != null)
-                    imagePath = Path.Combine(_coversPath, imagePath);
 
                 entries[w++] = new LibraryEntry
                 {
@@ -457,8 +451,6 @@ namespace MusicWrap.UI.Services
                 var albums = decadeKvp.Value;
 
                 var imagePath = FindCover(albums);
-                if (imagePath != null)
-                    imagePath = Path.Combine(_coversPath, imagePath);
 
                 entries[w++] = new LibraryEntry
                 {

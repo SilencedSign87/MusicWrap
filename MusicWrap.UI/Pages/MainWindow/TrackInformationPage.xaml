@@ -53,7 +53,7 @@
 
             <Image
                     HorizontalAlignment="Stretch"
-                    Source="{Binding CurrentTrackImage}"
+                    Source="{Binding CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
                     RenderOptions.BitmapScalingMode="HighQuality"
                     Stretch="UniformToFill"
                     />

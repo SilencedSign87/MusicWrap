@@ -12,6 +12,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<None Remove="Resources\BlurDefault.jpg" />
 		<None Remove="Resources\DefaultTrack.png" />
 		<None Remove="Resources\icon.ico" />
 		<None Remove="Resources\Icons\NextIcon.png" />
@@ -23,6 +24,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Resource Include="Resources\BlurDefault.jpg" />
 		<Resource Include="Resources\DefaultTrack.png" />
 		<Resource Include="Resources\icon.ico" />
 		<Resource Include="Resources\Icons\NextIcon.png" />

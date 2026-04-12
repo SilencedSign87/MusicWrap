@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using System.Windows.Media.Imaging;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.UI.Services;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -68,14 +69,11 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string currentTrackChannels = "";
         [ObservableProperty]
-        private BitmapImage? currentTrackImage;
+        private string currentTrackImagePath = "";
         [ObservableProperty]
         private string? currentTrackDominantColorHex;
         [ObservableProperty]
         private string? currentTrackForegroundColorHex;
-        [ObservableProperty]
-        private string? currentTrackBluredImage;
-
         [ObservableProperty]
         private double currentPosition = 0;
 
@@ -105,17 +103,18 @@ namespace MusicWrap.UI.ViewModels
         private bool _isSeekingPosition = false;
         private string ArtworkPath = "";
 
-        private static readonly string CoversBasePath = MusicWrapDirectories.CoverDirectory;
+        private readonly IImageService _imageService;
 
         public void OpenArtworkOnDefaultApp()
         {
             Process.Start(new ProcessStartInfo(ArtworkPath) { UseShellExecute = true });
         }
 
-        public PlayerViewModel(IMusicPlayerService service, MusicLibrary library)
+        public PlayerViewModel(IMusicPlayerService service, MusicLibrary library, IImageService imageService)
         {
             _playerService = service;
             _library = library;
+            _imageService = imageService;
 
 
             // Subscribe to player events
@@ -415,7 +414,7 @@ namespace MusicWrap.UI.ViewModels
             {
                 CurrentTrackTitle = "No track playing";
                 CurrentTrackArtists = "";
-                CurrentTrackImage = ImageHelper.GetDefaultAlbumImage(275);
+                CurrentTrackImagePath = "";
                 return;
             }
 
@@ -430,7 +429,7 @@ namespace MusicWrap.UI.ViewModels
             {
                 CurrentTrackTitle = "Unknown track";
                 CurrentTrackArtists = "";
-                CurrentTrackImage = ImageHelper.GetDefaultAlbumImage(275);
+                CurrentTrackImagePath = "";
                 return;
             }
 
@@ -450,7 +449,6 @@ namespace MusicWrap.UI.ViewModels
             // Get cover
             int coverId = track.CoverId;
             string? coverPath = null;
-            string? blurredCover = null;
 
             if (coverId == 0)
             {
@@ -465,11 +463,17 @@ namespace MusicWrap.UI.ViewModels
                 var coverAsset = _library.CoverAssets.FirstOrDefault(c => c.Id == coverId);
                 if (coverAsset != null)
                 {
-                    coverPath = Path.Combine(CoversBasePath, coverAsset.FileName);
-                    ArtworkPath = coverPath;
+                    CurrentTrackImagePath = coverAsset.FileName;
+                    ArtworkPath = _imageService.ResolvePath(coverAsset.FileName, ImageVariant.Original) ?? string.Empty;
                     CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
                     CurrentTrackForegroundColorHex = coverAsset.ForegroundColorHex;
-                    blurredCover = Path.Combine(CoversBasePath, coverAsset.BlurFileName!);
+                }
+                else
+                {
+                    CurrentTrackImagePath = string.Empty;
+                    ArtworkPath = string.Empty;
+                    CurrentTrackDominantColorHex = null;
+                    CurrentTrackForegroundColorHex = null;
                 }
             }
             else
@@ -477,12 +481,6 @@ namespace MusicWrap.UI.ViewModels
                 CurrentTrackDominantColorHex = null;
                 CurrentTrackForegroundColorHex = null;
             }
-            CurrentTrackImage = ImageHelper.LoadThumbnail(
-                       coverPath,
-                       "album",
-                       275
-                   )!;
-            CurrentTrackBluredImage = blurredCover;
         }
 
         private static string FormatTime(double seconds)

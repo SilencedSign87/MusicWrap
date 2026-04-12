@@ -284,6 +284,7 @@ namespace MusicWrap.UI
             services.AddSingleton(sp=>sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
 
             // Services
+            services.AddSingleton<IImageService, ImageService>();
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();

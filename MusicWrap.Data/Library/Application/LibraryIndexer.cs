@@ -3,6 +3,7 @@ using MusicWrap.Data.Library.Models;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.ColorSpaces.Conversion;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO;
@@ -35,6 +36,12 @@ namespace MusicWrap.Data.Library.Application
             ".webp",
             ".bmp",
             ];
+
+        private const int SmallCoverSize = 50;
+        private const int MediumCoverSize = 150;
+        private const int LargeCoverSize = 300;
+        private const int BlurCoverSize = 512;
+
         private readonly MusicLibrary _library;
         private readonly object _lock = new();
 
@@ -79,7 +86,7 @@ namespace MusicWrap.Data.Library.Application
 
             }
 
-            // Track artist (con fallback a album artist)
+            // Track artist
             int[] trackArtists = [];
             if (tagFile.Tag.Performers.Length > 0)
             {
@@ -90,7 +97,7 @@ namespace MusicWrap.Data.Library.Application
                 }
             }
 
-            // Album artist (con fallback a track artist)
+            // Album artist
             int[] albumArtists = [];
             if (tagFile.Tag.AlbumArtists.Length > 0)
             {
@@ -101,20 +108,16 @@ namespace MusicWrap.Data.Library.Application
                 }
             }
 
-            // Fallbacks: asegurar que ambos tengan al menos un artista
             if (trackArtists.Length == 0 && albumArtists.Length > 0)
             {
-                // Track sin artistas -> usar album artists
                 trackArtists = albumArtists;
             }
             else if (albumArtists.Length == 0 && trackArtists.Length > 0)
             {
-                // Album sin artistas -> usar track artists
                 albumArtists = trackArtists;
             }
             else if (trackArtists.Length == 0 && albumArtists.Length == 0)
             {
-                // Ninguno tiene artistas -> usar "Unknown Artist"
                 var unknownArtistId = GetOrCreateArtist("Unknown Artist");
                 trackArtists = [unknownArtistId];
                 albumArtists = [unknownArtistId];
@@ -304,7 +307,8 @@ namespace MusicWrap.Data.Library.Application
             if (!System.IO.File.Exists(request.FilePath))
                 return false;
 
-            lock (_lock) {
+            lock (_lock)
+            {
                 var track = _library.Tracks.FirstOrDefault(t =>
                     t.Origin == request.Origin &&
                     string.Equals(t.ExternalId, request.ExternalId, StringComparison.OrdinalIgnoreCase));
@@ -436,6 +440,8 @@ namespace MusicWrap.Data.Library.Application
             var core = Convert.ToBase64String(buffer);
             var fingerprint = $"{length}:{core}";
 
+            string baseFileName;
+
             lock (_lock)
             {
                 var existing = _library.CoverAssets
@@ -448,27 +454,27 @@ namespace MusicWrap.Data.Library.Application
                     "image/jpeg" or "image/jpg" => ".jpg",
                     "image/png" => ".png",
                     "image/webp" => ".webp",
-                    _ => ".bin"
+                    _ => ".jpeg"
                 };
-                // create variants 
-                Directory.CreateDirectory(MusicWrapDirectories.CoverDirectory);
-                var filename = fingerprint.GetHashCode().ToString("X8") + ext;
-                var fullPath = Path.Combine(MusicWrapDirectories.CoverDirectory, filename);
-                if (!System.IO.File.Exists(fullPath))
-                    System.IO.File.WriteAllBytes(fullPath, imageBytes);
 
-                var (domminantColor, foregroundColor) = ExtractColorsFromImage(imageBytes);
+                baseFileName = fingerprint.GetHashCode().ToString("X8") + ext;
+            }
 
-                var blurFileName = EnsureBlurCover(imageBytes, fingerprint, filename, domminantColor);
+            var variants = EnsureImageVariants(imageBytes, baseFileName);
+
+            lock (_lock) {
+                var existing = _library.CoverAssets
+                    .FirstOrDefault(c => string.Equals(c.Fingerprint, fingerprint, StringComparison.Ordinal));
+
+                if (existing is not null) return existing.Id;
 
                 var asset = new CoverAsset
                 {
                     Id = _library.GenerateCoverId(),
-                    FileName = filename,
+                    FileName = variants.MainFileName,
                     Fingerprint = fingerprint,
-                    DominantColorHex = domminantColor,
-                    ForegroundColorHex = foregroundColor,
-                    BlurFileName = blurFileName,
+                    DominantColorHex = variants.DominantColorHex,
+                    ForegroundColorHex = variants.ForegroundColorHex,
                 };
 
                 _library.CoverAssets.Add(asset);
@@ -509,46 +515,119 @@ namespace MusicWrap.Data.Library.Application
             }
         }
 
-        private static string? EnsureBlurCover(byte[] imageBytes, string fingerprint, string originalFileName, string DominantColorHex)
+        private ImageVariantsResult EnsureImageVariants(byte[] imageBytes, string baseFileName)
         {
-            const int ImageWidth = 512;
-            const int ImageHeight = 512;
+            var result = new ImageVariantsResult
+            {
+                MainFileName = baseFileName,
+                SmallFileName = baseFileName,
+                MediumFileName = baseFileName,
+                LargeFileName = baseFileName,
+                BlurFileName = baseFileName
+            };
+
             try
             {
-                var dominantColor = new Rgba32(
-                    Convert.ToByte(DominantColorHex.Substring(1, 2), 16),
-                    Convert.ToByte(DominantColorHex.Substring(3, 2), 16),
-                    Convert.ToByte(DominantColorHex.Substring(5, 2), 16),
-                    255);
+                Directory.CreateDirectory(MusicWrapDirectories.CoverDirectory);
+                Directory.CreateDirectory(MusicWrapDirectories.SmallImageDirectory);
+                Directory.CreateDirectory(MusicWrapDirectories.MediumImageDirectory);
+                Directory.CreateDirectory(MusicWrapDirectories.LargeImageDirectory);
+                Directory.CreateDirectory(MusicWrapDirectories.BlurImageDirectory);
 
-                var blurDirectory = Path.Combine(MusicWrapDirectories.CoverDirectory, "Blur");
-                Directory.CreateDirectory(blurDirectory);
-
-                var blurFileName = fingerprint.GetHashCode().ToString("X8") + ".blur.jpg";
-                var blurPath = Path.Combine(blurDirectory, blurFileName);
-
-                if (System.IO.File.Exists(blurPath))
-                    return blurFileName;
-
-                using var image = Image.Load<Rgba32>(imageBytes);
-                image.Mutate(x => x.Resize(new ResizeOptions
+                // save original image
+                var mainPath = Path.Combine(MusicWrapDirectories.CoverDirectory, baseFileName);
+                if (!Directory.Exists(mainPath))
                 {
-                    Size = new Size(ImageWidth, ImageHeight),
+                    System.IO.File.WriteAllBytes(mainPath, imageBytes);
+                }
+
+                // decode image
+                using var sourceImage = Image.Load<Rgba32>(imageBytes);
+
+                (result.DominantColorHex, result.ForegroundColorHex) = ExtractColorsFromImage(imageBytes);
+
+                // save variants
+                var smallPath = Path.Combine(MusicWrapDirectories.SmallImageDirectory, baseFileName);
+                SaveImageVariant(sourceImage, smallPath, SmallCoverSize);
+
+                var mediumPath = Path.Combine(MusicWrapDirectories.MediumImageDirectory, baseFileName);
+                SaveImageVariant(sourceImage, mediumPath, MediumCoverSize);
+
+                var largePath = Path.Combine(MusicWrapDirectories.LargeImageDirectory, baseFileName);
+                SaveImageVariant(sourceImage, largePath, LargeCoverSize);
+
+                var blurPath = Path.Combine(MusicWrapDirectories.BlurImageDirectory, baseFileName);
+                SaveBlurVariant(sourceImage, blurPath, result.DominantColorHex);
+
+                return result;
+            }
+            catch { return result; }
+        }
+        private static void SaveImageVariant(Image<Rgba32> sourceImage, string outputPath, int maxSize)
+        {
+            try
+            {
+                if (System.IO.File.Exists(outputPath))
+                    return;
+
+                using var variant = sourceImage.Clone();
+                variant.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(maxSize, maxSize),
+                    Mode = ResizeMode.Max,
+                    Sampler = KnownResamplers.Lanczos3,
+                }));
+
+                var encoder = GetImageEncoder(outputPath);
+                variant.Save(outputPath, encoder);
+            }
+            catch { }
+        }
+        private static IImageEncoder GetImageEncoder(string filePath)
+        {
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            return ext switch
+            {
+                ".png" => new SixLabors.ImageSharp.Formats.Png.PngEncoder(),
+                ".webp" => new SixLabors.ImageSharp.Formats.Webp.WebpEncoder(),
+                _ => new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
+                {
+                    Quality = 90,
+                    ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.YCbCrRatio444
+                }
+            };
+        }
+
+        private static void SaveBlurVariant(Image<Rgba32> sourceImage, string outputPath, string dominantColorHex)
+        {
+            try
+            {
+                if (System.IO.File.Exists(outputPath))
+                    return;
+
+                var dominantColor = new Rgba32(
+                    Convert.ToByte(dominantColorHex.Substring(1, 2), 16),
+                    Convert.ToByte(dominantColorHex.Substring(3, 2), 16),
+                    Convert.ToByte(dominantColorHex.Substring(5, 2), 16),
+                    255);
+                using var blurImage = sourceImage.Clone();
+
+                blurImage.Mutate(x => x.Resize(new ResizeOptions
+                {
+                    Size = new Size(BlurCoverSize, BlurCoverSize),
                     Mode = ResizeMode.Max,
                     Sampler = KnownResamplers.Lanczos3,
                 })
-                .GaussianBlur(32f)
-                );
+                .GaussianBlur(32f));
 
-                // Create base image 
-                using var dominantLayer = new Image<Rgba32>(ImageWidth, ImageHeight, dominantColor);
+                using var dominantLayer = new Image<Rgba32>(blurImage.Width, blurImage.Height, dominantColor);
 
                 const float domFactor = 0.8f;
                 const float imgFactor = 1f - domFactor;
 
-                image.ProcessPixelRows(dominantLayer, (imgAccesor, domAccesor) =>
+                blurImage.ProcessPixelRows(dominantLayer, (imgAccesor, domAccesor) =>
                 {
-                    for (int y = 0; y < image.Height; y++)
+                    for (int y = 0; y < blurImage.Height; y++)
                     {
                         var imgRow = imgAccesor.GetRowSpan(y);
                         var domRow = domAccesor.GetRowSpan(y);
@@ -567,24 +646,18 @@ namespace MusicWrap.Data.Library.Application
                     }
                 });
 
-                //grain
+                AddNoiseGrain(blurImage, 0.08f, 3);
 
-                AddNoiseGrain(image, 0.08f, 3);
+                blurImage.Mutate(x => x.Brightness(0.98f).Saturate(0.9f).GaussianBlur(1.2f));
 
-                image.Mutate(x => x.Brightness(0.98f).Saturate(0.9f).GaussianBlur(1.2f));
-
-                image.SaveAsJpeg(blurPath, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
+                blurImage.SaveAsJpeg(outputPath, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
                 {
                     Quality = 99,
                     ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.YCbCrRatio444
                 });
 
-                return Path.Combine("Blur", blurFileName);
             }
-            catch
-            {
-                return null;
-            }
+            catch { }
         }
 
         private static void AddNoiseGrain(Image<Rgba32> image, float intensity, int grainSize)
@@ -713,32 +786,6 @@ namespace MusicWrap.Data.Library.Application
         {
             return color.A > 25;
         }
-        private static Rgba32 GetMostFrequentColor(Image<Rgba32> image)
-        {
-            var counts = new Dictionary<Rgba32, int>();
-
-            image.ProcessPixelRows(accessor =>
-            {
-                for (int y = 0; y < accessor.Height; y++)
-                {
-                    var row = accessor.GetRowSpan(y);
-
-                    for (int x = 0; x < row.Length; x++)
-                    {
-                        var q = QuantizeColor(row[x]);
-
-                        counts[q] = counts.TryGetValue(q, out var c)
-                            ? c + 1
-                            : 1;
-                    }
-                }
-            });
-
-            return counts
-                .OrderByDescending(x => x.Value)
-                .First()
-                .Key;
-        }
         private static string GetContrastColor(Rgba32 bg)
         {
             double r = bg.R / 255.0;
@@ -824,8 +871,20 @@ namespace MusicWrap.Data.Library.Application
         };
 
         #endregion
-    }
 
+        #region Private Classes
+        private sealed class ImageVariantsResult
+        {
+            public string MainFileName { get; set; } = string.Empty;
+            public string SmallFileName { get; set; } = string.Empty;
+            public string MediumFileName { get; set; } = string.Empty;
+            public string LargeFileName { get; set; } = string.Empty;
+            public string BlurFileName { get; set; } = string.Empty;
+            public string DominantColorHex { get; set; } = "#808080";
+            public string ForegroundColorHex { get; set; } = "#FFFFFF";
+        }
+        #endregion
+    }
     public sealed class ExternalTrackIndexRequest
     {
         public required TrackOrigin Origin { get; init; } = TrackOrigin.Youtube;

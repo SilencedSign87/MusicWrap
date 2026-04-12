@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Helpers;
+using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,11 +36,13 @@ namespace MusicWrap.UI.ViewModels.Library
         // Services
         private IMusicPlayerService _player = null!;
         private MusicLibrary _library = null!;
+        private readonly IImageService _imageService;
 
-        public QueueViewModel(IMusicPlayerService player, MusicLibrary library)
+        public QueueViewModel(IMusicPlayerService player, MusicLibrary library, IImageService imageService)
         {
             _library = library;
             _player = player;
+            _imageService = imageService;
 
             QueueDataList = [];
             RefreshLookups();
@@ -70,7 +72,7 @@ namespace MusicWrap.UI.ViewModels.Library
                 var trackId = validQueue[i];
                 var track = _trackById[trackId];
                 var coverPath = track.CoverId != 0 && _coverById.TryGetValue(track.CoverId, out var cover)
-                    ? Path.Combine(ImageHelper.BaseCoverPath, cover.FileName)
+                    ? cover.FileName
                     : null;
 
                 QueueTrackRows.Add(new TrackRowItem
@@ -256,7 +258,7 @@ namespace MusicWrap.UI.ViewModels.Library
         }
         private BitmapImage? GetAlbumArt(int coverId)
         {
-            if (coverId == 0) return ImageHelper.GetDefaultAlbumImage(42);
+            if (coverId == 0) return _imageService.GetDefaultImage(42);
 
             if (_albumArtByCoverId.TryGetValue(coverId, out var cachedImage))
             {
@@ -267,10 +269,10 @@ namespace MusicWrap.UI.ViewModels.Library
             string? path = null;
             if (_coverById.TryGetValue(coverId, out var cover))
             {
-                path = Path.Combine(ImageHelper.BaseCoverPath, cover.FileName);
+                path = cover.FileName;
             }
 
-            var img = ImageHelper.LoadThumbnail(path, "album", 42);
+            var img = _imageService.LoadForSize(path, 42);
             _albumArtByCoverId[coverId] = img;
             TouchAlbumArt(coverId);
             TrimAlbumArtCache();
