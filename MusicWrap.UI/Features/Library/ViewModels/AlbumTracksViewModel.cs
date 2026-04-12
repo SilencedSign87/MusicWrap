@@ -72,16 +72,20 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             AlbumYear = album?.Year ?? 0;
             AlbumArtists = _libraryCache.GetArtistNamesForAlbum(AlbumId);
 
-            var tracksId = _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
-            var trackRows = _libraryCache.TrackIdsToTrackRowItems(tracksId)
+            var allTrackIds = _libraryCache.GetTracksForAlbum(AlbumId);
+            var displayTrackIds = string.IsNullOrWhiteSpace(_searchQuery)
+                ? allTrackIds
+                : _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
+
+            var trackRows = _libraryCache.TrackIdsToTrackRowItems(displayTrackIds)
                 .OrderBy(t => t.DiskNumber)
                 .ThenBy(t => t.TrackNumber)
                 .ThenBy(t => t.Title)
                 .ToList();
 
             Tracks = new ObservableCollection<TrackRowItem>(trackRows);
-            AllTrackIds = trackRows.Select(t => t.Id).ToList();
-            _albumTrackIds = AllTrackIds.ToHashSet();
+            AllTrackIds = allTrackIds.ToList();
+            _albumTrackIds = allTrackIds.ToHashSet();
         }
 
         public bool ContainsTrack(int trackId)

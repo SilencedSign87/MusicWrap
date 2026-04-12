@@ -609,26 +609,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return albums;
 
             var q = query.Trim();
-            var artistById = _library.Artists.ToDictionary(a => a.Id, a => a.Name);
-
-            bool MatchesTrackOrTrackArtist(int albumId)
-            {
-                return _library.Tracks
-                    .Where(t => t.AlbumId == albumId)
-                    .Any(t =>
-                        t.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                        t.ArtistIds
-                            .Where(id => artistById.ContainsKey(id))
-                            .Select(id => artistById[id])
-                            .Any(name => name.Contains(q, StringComparison.OrdinalIgnoreCase))
-                    );
-            }
 
             return albums
                 .Where(a =>
                     a.Title.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                     a.ArtistNames.Contains(q, StringComparison.OrdinalIgnoreCase) ||
-                    MatchesTrackOrTrackArtist(a.Id))
+                    _LibraryCache.GetTracksForAlbum(a.Id, q).Length > 0)
                 .ToList();
         }
 

@@ -325,13 +325,39 @@ namespace MusicWrap.UI.Features.Library.Services
             var tracks = _library.Tracks.Where(t => t.AlbumId == albumId);
             if (!string.IsNullOrWhiteSpace(query))
             {
-                tracks = tracks.Where(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase));
+                var q = query.Trim();
+                tracks = tracks.Where(t => TrackMatchesQuery(t, q));
             }
             return [.. tracks
                 .OrderBy(t => t.Disk)
                 .ThenBy(t => t.TrackNumber)
                 .ThenBy(t => t.Title)
                 .Select(t => t.Id)];
+        }
+
+        private bool TrackMatchesQuery(Track track, string query)
+        {
+            if (track.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            // Artists
+            foreach (var artistId in track.ArtistIds)
+            {
+                if (_artistNameById.TryGetValue(artistId, out var artistName) &&
+                    artistName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            // Fallback to album's artist(s)
+            if (_artistNamesByAlbumId.TryGetValue(track.AlbumId, out var albumArtistNames) &&
+                albumArtistNames.Contains(query, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
         }
         #endregion
 
