@@ -42,10 +42,12 @@ namespace MusicWrap.UI.Services
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                string cacheFile = Path.Combine(cacheDir, $"{track.ExternalId}.flac");
+                string? cacheFile = ResolveCachedAudioPath(cacheDir, track.ExternalId!);
                 if (!File.Exists(cacheFile)) 
                     continue;
-                string destPath = BuildDestinationPath(track);
+
+                string extension = Path.GetExtension(cacheFile);
+                string destPath = BuildDestinationPath(track, extension);
                 Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
 
                 if (!File.Exists(destPath))
@@ -69,7 +71,7 @@ namespace MusicWrap.UI.Services
 
         }
 
-        private string BuildDestinationPath(Track track)
+        private string BuildDestinationPath(Track track, string extension)
         {
             string artist = ResolveArtistName(track);
             string album = ResolveAlbumTitle(track);
@@ -88,10 +90,30 @@ namespace MusicWrap.UI.Services
                 .Replace("{trackNumber}", num, StringComparison.OrdinalIgnoreCase);
 
             rel = rel.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
-            if (!rel.EndsWith(".flac", StringComparison.OrdinalIgnoreCase))
-                rel += ".flac";
+
+            string normalizedExtension = string.IsNullOrWhiteSpace(extension)
+                ? ".flac"
+                : extension.StartsWith('.') ? extension : $".{extension}";
+
+            if (Path.HasExtension(rel))
+            {
+                rel = Path.ChangeExtension(rel, normalizedExtension);
+            }
+            else
+            {
+                rel += normalizedExtension;
+            }
 
             return Path.Combine(_settings.YoutubeSettings.YoutubeLibraryRootPath, rel);
+        }
+
+        private static string? ResolveCachedAudioPath(string cacheDir, string externalId)
+        {
+            return Directory.EnumerateFiles(cacheDir, $"{externalId}.*", SearchOption.TopDirectoryOnly)
+                .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}{externalId}.src.", StringComparison.OrdinalIgnoreCase)
+                    && !Path.GetFileName(path).Contains(".src.", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
         }
 
         private string ResolveArtistName(Track track)

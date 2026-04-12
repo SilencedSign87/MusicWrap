@@ -281,7 +281,10 @@ namespace MusicWrap.Data.Library.Application
                 existing.Title = request.Title.Trim();
                 existing.ArtistIds = [artistId];
                 existing.AlbumId = albumId;
-                existing.Duration = Math.Max(existing.Duration, request.DurationSeconds);
+                if (request.DurationSeconds > 0)
+                {
+                    existing.Duration = request.DurationSeconds;
+                }
 
                 return new ExternalTrackIndexResult
                 {
@@ -317,7 +320,10 @@ namespace MusicWrap.Data.Library.Application
                     track.Bitrate = tagFile.Properties.AudioBitrate;
                     track.Channels = tagFile.Properties.AudioChannels;
                     track.BitDeph = tagFile.Properties.BitsPerSample;
-                    track.Duration = Math.Max(track.Duration, (int)tagFile.Properties.Duration.TotalSeconds);
+                    if (track.Duration <= 0)
+                    {
+                        track.Duration = (int)tagFile.Properties.Duration.TotalSeconds;
+                    }
                     track.FileSize = new FileInfo(request.FilePath).Length;
                     track.LastWriteTime = System.IO.File.GetLastWriteTimeUtc(request.FilePath).Ticks;
 

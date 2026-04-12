@@ -4,10 +4,12 @@ using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using System.Net.Http;
+using System.Globalization;
 using TagLib;
 using IOFile = System.IO.File;
 using IODirectory = System.IO.Directory;
 using IOPath = System.IO.Path;
+using Microsoft.Extensions.Logging;
 
 namespace MusicWrap.Data.Providers.Youtube;
 
@@ -35,7 +37,7 @@ public sealed class YoutubeIndexingTrackResult
 
 public interface IYoutubeLibraryIndexingService
 {
-    Task<YoutubeIndexingTrackResult> IndexResolvedTrackAsync(YoutubeIndexingRequest request, string sourceFlacPath, CancellationToken cancellationToken = default);
+    Task<YoutubeIndexingTrackResult> IndexResolvedTrackAsync(YoutubeIndexingRequest request, string sourceAudioPath, CancellationToken cancellationToken = default);
     void Persist();
 }
 
@@ -47,34 +49,47 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
     private readonly ILibraryRepository _libraryRepository;
     private readonly MusicLibrary _library;
     private readonly UserSettings _userSettings;
+    private readonly ILogger<YoutubeLibraryIndexingService> _logger;
 
     public YoutubeLibraryIndexingService(
         ILibraryIndexer libraryIndexer,
         ILibraryRepository libraryRepository,
+        ILogger<YoutubeLibraryIndexingService> logger,
         MusicLibrary library,
         UserSettings userSettings)
     {
+        _logger = logger;
         _libraryIndexer = libraryIndexer;
         _libraryRepository = libraryRepository;
         _library = library;
         _userSettings = userSettings;
     }
 
-    public async Task<YoutubeIndexingTrackResult> IndexResolvedTrackAsync(YoutubeIndexingRequest request, string sourceFlacPath, CancellationToken cancellationToken = default)
+    public async Task<YoutubeIndexingTrackResult> IndexResolvedTrackAsync(YoutubeIndexingRequest request, string sourceAudioPath, CancellationToken cancellationToken = default)
     {
         if (request is null)
         {
             return new YoutubeIndexingTrackResult { Success = false, Error = "Invalid input data." };
         }
 
-        if (string.IsNullOrWhiteSpace(request.ExternalId) || string.IsNullOrWhiteSpace(sourceFlacPath) || !IOFile.Exists(sourceFlacPath))
+        if (string.IsNullOrWhiteSpace(request.ExternalId) || string.IsNullOrWhiteSpace(sourceAudioPath) || !IOFile.Exists(sourceAudioPath))
         {
             return new YoutubeIndexingTrackResult { Success = false, Error = "Invalid input data." };
         }
 
+        if (IsAlreadyIndexedWithLocalFile(request.ExternalId, out string existingPath))
+        {
+            _logger.LogInformation("Skipping Youtube indexing for ExternalId {ExternalId} because file already exists at {ExistingPath}", request.ExternalId, existingPath);
+            return new YoutubeIndexingTrackResult { Success = true };
+        }
+
+        string? destinationPath = null;
+
         try
         {
             string resolvedArtistName = ResolveArtistName(request);
+            string destinationExtension = ResolveAudioExtension(sourceAudioPath);
+             int durationSeconds = ResolveDurationSeconds(sourceAudioPath, request.Duration, request.ExternalId);
 
             var (coverBytes, coverMimeType) = await TryDownloadCoverAsync(request.ThumbnailHighResUrl, request.ThumbnailUrl, cancellationToken).ConfigureAwait(false);
 
@@ -87,7 +102,7 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
                 ArtistName = string.IsNullOrWhiteSpace(resolvedArtistName) ? "Unknown Artist" : resolvedArtistName,
                 AlbumName = string.IsNullOrWhiteSpace(request.Album) ? "Unknown Album" : request.Album,
                 Year = Math.Max(0, request.Year),
-                DurationSeconds = ParseDurationSeconds(request.Duration),
+                DurationSeconds = durationSeconds,
                 ThumbnailBytes = coverBytes,
                 ThumbnailMimeType = coverMimeType
             }, updateExistingMetadata: true);
@@ -95,7 +110,7 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
             string outputRoot = ResolveOutputRoot();
             IODirectory.CreateDirectory(outputRoot);
 
-            string destinationPath = BuildDestinationPath(request, outputRoot);
+            destinationPath = BuildDestinationPath(request, outputRoot, destinationExtension);
             string? destinationDirectory = IOPath.GetDirectoryName(destinationPath);
             if (string.IsNullOrWhiteSpace(destinationDirectory))
             {
@@ -103,9 +118,9 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
             }
 
             IODirectory.CreateDirectory(destinationDirectory);
-            IOFile.Copy(sourceFlacPath, destinationPath, overwrite: true);
+            IOFile.Copy(sourceAudioPath, destinationPath, overwrite: true);
 
-            ApplyMetadataToFlac(destinationPath, request, resolvedArtistName, coverBytes, coverMimeType);
+            ApplyMetadataToAudio(destinationPath, request, resolvedArtistName, coverBytes, coverMimeType);
 
             bool attached = _libraryIndexer.TryAttachExternalTrackLocalFile(new ExternalTrackLocalFileRequest
             {
@@ -115,6 +130,11 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
                 PreferExistingArtistAlbumMatch = true
             }, out _);
 
+            if (!attached)
+            {
+                CleanupFilesOnFailure(request.ExternalId, sourceAudioPath, destinationPath);
+            }
+
             return new YoutubeIndexingTrackResult
             {
                 Success = attached,
@@ -123,6 +143,8 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
         }
         catch (Exception ex)
         {
+            CleanupFilesOnFailure(request.ExternalId, sourceAudioPath, destinationPath);
+            _logger.LogError(ex, "Error indexing Youtube track with ExternalId {ExternalId}", request.ExternalId);
             return new YoutubeIndexingTrackResult { Success = false, Error = ex.Message };
         }
     }
@@ -132,7 +154,7 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
         _libraryRepository.Save(_library);
     }
 
-    private static void ApplyMetadataToFlac(string filePath, YoutubeIndexingRequest request, string resolvedArtistName, byte[]? coverBytes, string? coverMimeType)
+    private static void ApplyMetadataToAudio(string filePath, YoutubeIndexingRequest request, string resolvedArtistName, byte[]? coverBytes, string? coverMimeType)
     {
         using var taggedFile = TagLib.File.Create(filePath);
         var tag = taggedFile.Tag;
@@ -157,6 +179,53 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
         }
 
         taggedFile.Save();
+    }
+
+    private bool IsAlreadyIndexedWithLocalFile(string externalId, out string existingPath)
+    {
+        existingPath = string.Empty;
+
+        var existing = _library.Tracks.FirstOrDefault(t =>
+            t.Origin == TrackOrigin.Youtube &&
+            string.Equals(t.ExternalId, externalId, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is null || string.IsNullOrWhiteSpace(existing.Path))
+        {
+            return false;
+        }
+
+        if (!IOFile.Exists(existing.Path))
+        {
+            return false;
+        }
+
+        existingPath = existing.Path;
+        return true;
+    }
+
+    private void CleanupFilesOnFailure(string externalId, string sourceAudioPath, string? destinationPath)
+    {
+        TryDeleteFile(sourceAudioPath, "source", externalId);
+
+        if (!string.IsNullOrWhiteSpace(destinationPath))
+        {
+            TryDeleteFile(destinationPath, "destination", externalId);
+        }
+    }
+
+    private void TryDeleteFile(string filePath, string role, string externalId)
+    {
+        try
+        {
+            if (IOFile.Exists(filePath))
+            {
+                IOFile.Delete(filePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to delete {Role} file {FilePath} after indexing error for ExternalId {ExternalId}", role, filePath, externalId);
+        }
     }
 
     private string ResolveArtistName(YoutubeIndexingRequest request)
@@ -218,9 +287,14 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
             return 0;
         }
 
-        if (TimeSpan.TryParse(duration, out var parsed))
+        duration = duration.Trim();
+
+        if (TimeSpan.TryParseExact(duration,
+            [@"m\:ss", @"mm\:ss", @"h\:mm\:ss", @"hh\:mm\:ss"],
+            CultureInfo.InvariantCulture,
+            out var exactParsed))
         {
-            return Math.Max(0, (int)parsed.TotalSeconds);
+            return Math.Max(0, (int)exactParsed.TotalSeconds);
         }
 
         var parts = duration.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -240,6 +314,42 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
         }
 
         return 0;
+    }
+
+    private int ResolveDurationSeconds(string sourceAudioPath, string? requestDuration, string externalId)
+    {
+        //int? fileDuration = TryReadDurationSecondsFromAudio(sourceAudioPath, externalId);
+        int requestedDuration = ParseDurationSeconds(requestDuration);
+        //if (fileDuration is > 0)
+        //{
+        //    if (requestedDuration > 0 && Math.Abs(requestedDuration - fileDuration.Value) >= 5)
+        //    {
+        //        _logger.LogInformation(
+        //            "Using file duration {FileDurationSeconds}s instead of request duration {RequestDurationSeconds}s for Youtube ExternalId {ExternalId}",
+        //            fileDuration.Value,
+        //            requestedDuration,
+        //            externalId);
+        //    }
+
+        //    return fileDuration.Value;
+        //}
+
+        return requestedDuration;
+    }
+
+    private int? TryReadDurationSecondsFromAudio(string filePath, string externalId)
+    {
+        try
+        {
+            using var taggedFile = TagLib.File.Create(filePath);
+            int durationSeconds = Math.Max(0, (int)taggedFile.Properties.Duration.TotalSeconds);
+            return durationSeconds;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Unable to read real audio duration from {FilePath} for Youtube ExternalId {ExternalId}", filePath, externalId);
+            return null;
+        }
     }
 
     private async Task<(byte[]? bytes, string? mimeType)> TryDownloadCoverAsync(string? preferredHighResUrl, string? fallbackThumbnailUrl, CancellationToken cancellationToken)
@@ -271,9 +381,9 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
 
                 return (bytes, mimeType);
             }
-            catch
+            catch (Exception ex)
             {
-                // Try next candidate URL.
+                _logger.LogWarning(ex, "Failed to download cover image from {Url}", candidateUrl);
             }
         }
 
@@ -308,7 +418,7 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
         return IOPath.Combine(MusicWrapDirectories.LibraryDirectory, "Youtube");
     }
 
-    private string BuildDestinationPath(YoutubeIndexingRequest request, string outputRoot)
+    private string BuildDestinationPath(YoutubeIndexingRequest request, string outputRoot, string audioExtension)
     {
         string artist = string.IsNullOrWhiteSpace(request.Artist) ? "Unknown Artist" : request.Artist;
         string album = string.IsNullOrWhiteSpace(request.Album) ? "Unknown Album" : request.Album;
@@ -329,12 +439,26 @@ public sealed class YoutubeLibraryIndexingService : IYoutubeLibraryIndexingServi
             .Replace("{year}", Math.Max(0, request.Year).ToString(), StringComparison.OrdinalIgnoreCase);
 
         relativePath = relativePath.Replace('\\', IOPath.DirectorySeparatorChar).Replace('/', IOPath.DirectorySeparatorChar);
-        if (!relativePath.EndsWith(".flac", StringComparison.OrdinalIgnoreCase))
+        string normalizedExtension = string.IsNullOrWhiteSpace(audioExtension)
+            ? ".flac"
+            : audioExtension.StartsWith('.') ? audioExtension : $".{audioExtension}";
+
+        if (IOPath.HasExtension(relativePath))
         {
-            relativePath += ".flac";
+            relativePath = IOPath.ChangeExtension(relativePath, normalizedExtension);
+        }
+        else
+        {
+            relativePath += normalizedExtension;
         }
 
         return IOPath.Combine(outputRoot, relativePath);
+    }
+
+    private static string ResolveAudioExtension(string filePath)
+    {
+        string extension = IOPath.GetExtension(filePath);
+        return string.IsNullOrWhiteSpace(extension) ? ".flac" : extension;
     }
 
     private static string InferImageMimeType(string url)

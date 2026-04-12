@@ -12,9 +12,9 @@ namespace MusicWrap.UI.ViewModels.Settings
     public partial class SettingsYoutubeViewModel : ObservableObject
     {
         [ObservableProperty] private bool _useCustomFfmpegPath;
-        [ObservableProperty] private string _customFfmpegPath = string.Empty;
-        
-
+        [ObservableProperty] private string _customFfmpegPath = string.Empty; 
+        [ObservableProperty] private List<string> _supportedFormats = Enum.GetNames(typeof(SuportedFFMpegAudioFormat)).ToList();
+        [ObservableProperty] private string _selectedFormat;
 
         private readonly UserSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
@@ -22,6 +22,7 @@ namespace MusicWrap.UI.ViewModels.Settings
         {
             _settings = settings;
             _saveCoordinator = saveCoordinator;
+            _selectedFormat = settings.YoutubeSettings.PreferredAudioFormatForYoutube.ToString();
 
             LoadFromSettings();
         }
@@ -62,6 +63,11 @@ namespace MusicWrap.UI.ViewModels.Settings
         partial void OnCustomFfmpegPathChanged(string value)
         {
             _settings.FFMpegSettings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+        partial void OnSelectedFormatChanged(string value)
+        {
+            _settings.YoutubeSettings.PreferredAudioFormatForYoutube = Enum.TryParse<SuportedFFMpegAudioFormat>(value, out var format) ? format : SuportedFFMpegAudioFormat.mp3;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion

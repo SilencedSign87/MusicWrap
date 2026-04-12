@@ -43,7 +43,7 @@ namespace MusicWrap.Data.User.Models
         [Key(1)] public bool EnableYoutubeLibraryFolders { get; set; } = false;
         [Key(2)] public string YoutubeLibraryRootPath { get; set; } = string.Empty;
         [Key(3)] public string YoutubePathTemplate { get; set; } = "{artist}/{album}/{trackNumber} - {title}";
-        [Key(4)] public SuportedFFMpegAudioFormat PreferredAudioFormatForYoutube { get; set; } = SuportedFFMpegAudioFormat.Mp3;
+        [Key(4)] public SuportedFFMpegAudioFormat PreferredAudioFormatForYoutube { get; set; } = SuportedFFMpegAudioFormat.mp3;
     }
 
     public enum LastWindowMode
@@ -77,14 +77,15 @@ namespace MusicWrap.Data.User.Models
     }
     public enum SuportedFFMpegAudioFormat
     {
-        Mp3,
-        Aac,
-        Flac,
-        Wav,
-        Opus,
-        Vorbis,
-        Alac,
-        Ac3,
-        Eac3
+        webm,
+        mp3,
+        aac,
+        flac,
+        wav,
+        opus,
+        vorbis,
+        alac,
+        ac3,
+        eac3
     }
 }
