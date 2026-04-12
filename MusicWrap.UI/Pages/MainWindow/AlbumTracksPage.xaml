@@ -15,7 +15,6 @@
          Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
          Background="Transparent">
     <UserControl.Resources>
-        <converters:DiskNumberToVisibilityConverter x:Key="DiskNumberToVisibilityConverter"/>
         <converters:ItemCountToColumnsConverter x:Key="ItemCountToColumnsConverter"/>
         <ContextMenu x:Key="AlbumTracksContextMenu"
                  Opened="AlbumTracksContextMenu_Opened"
@@ -72,42 +71,23 @@
             </TextBlock>
         </StackPanel>
 
-        <!-- Tracks List Grouped by Disk -->
-        <ItemsControl Grid.Row="1"
-                      ItemsSource="{Binding DiskGroups}">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Margin="0,0,0,24">
-                        <!-- Disk Header (only show if there are multiple disks) -->
-                        <TextBlock Text="{Binding DiskTitle}" 
-                                   FontSize="14" 
-                                   FontWeight="SemiBold"
-                                   Foreground="{Binding DataContext.ForegroundColor, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                                   Opacity="0.8"
-                                   Margin="0,0,0,8"
-                                   Visibility="{Binding DiskNumber, Converter={StaticResource DiskNumberToVisibilityConverter}}"/>
-
-                        <!-- Tracks in this disk -->
-                        <uimodels:TracksView
-                            ItemsSource="{Binding Tracks}"
-                            AllTrackIds="{Binding Source={x:Reference RootAlbumTracksPage}, Path=DataContext.AllTrackIds}"
-                            SelectedTrackIds="{Binding Source={x:Reference RootAlbumTracksPage}, Path=DataContext.SelectedTrackIds, Mode=TwoWay}"
-                            ContextMenu="{StaticResource AlbumTracksContextMenu}"
-                            VisualMode="CompactNoCover"
-                            IndexMode="TrackNumber"
-                            UseColumnFlowPanel="True"
-                            SelectionMode="Extended"
-                            >
-                            <uimodels:TracksView.ColumnFlowColumns>
-                                <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,600">
-                                    <Binding Path="Tracks.Count"/>
-                                    <Binding RelativeSource="{RelativeSource Self}" Path="ActualWidth"/>
-                                </MultiBinding>
-                            </uimodels:TracksView.ColumnFlowColumns>
-                        </uimodels:TracksView>
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <Grid Grid.Row="1" x:Name="AlbumTracksTracksHost">
+            <uimodels:TracksView ItemsSource="{Binding Tracks}"
+                                 AllTrackIds="{Binding AllTrackIds}"
+                                 SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
+                                 GroupByDisk="True"
+                                 UseColumnFlowPanel="True"
+                                 ContextMenu="{StaticResource AlbumTracksContextMenu}"
+                                 VisualMode="CompactNoCover"
+                                 IndexMode="TrackNumber"
+                                 SelectionMode="Extended">
+                <uimodels:TracksView.ColumnFlowColumns>
+                    <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,600">
+                        <Binding Path="Tracks.Count"/>
+                        <Binding ElementName="AlbumTracksTracksHost" Path="ActualWidth"/>
+                    </MultiBinding>
+                </uimodels:TracksView.ColumnFlowColumns>
+            </uimodels:TracksView>
+        </Grid>
     </Grid>
 </UserControl>

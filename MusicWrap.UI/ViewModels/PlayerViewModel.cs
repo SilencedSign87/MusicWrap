@@ -448,7 +448,6 @@ namespace MusicWrap.UI.ViewModels
 
             // Get cover
             int coverId = track.CoverId;
-            string? coverPath = null;
 
             if (coverId == 0)
             {

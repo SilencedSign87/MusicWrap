@@ -7,6 +7,7 @@ using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace MusicWrap.UI.ViewModels.Library
@@ -31,7 +32,7 @@ namespace MusicWrap.UI.ViewModels.Library
 
         [ObservableProperty] private bool isAlbumPlaying;
 
-        [ObservableProperty] private List<DiskGroup> diskGroups = [];
+        [ObservableProperty] private ObservableCollection<TrackRowItem> tracks = [];
 
         [ObservableProperty] private List<int> allTrackIds = [];
 
@@ -71,19 +72,15 @@ namespace MusicWrap.UI.ViewModels.Library
             AlbumArtists = _libraryCache.GetArtistNamesForAlbum(AlbumId);
 
             var tracksId = _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
-            AllTrackIds = tracksId.ToList();
+            var trackRows = _libraryCache.TrackIdsToTrackRowItems(tracksId)
+                .OrderBy(t => t.DiskNumber)
+                .ThenBy(t => t.TrackNumber)
+                .ThenBy(t => t.Title)
+                .ToList();
+
+            Tracks = new ObservableCollection<TrackRowItem>(trackRows);
+            AllTrackIds = trackRows.Select(t => t.Id).ToList();
             _albumTrackIds = AllTrackIds.ToHashSet();
-
-            var trackRows = _libraryCache.TrackIdsToTrackRowItems(tracksId);
-
-            var groupedByDisk = trackRows.GroupBy(t => t.DiskNumber).OrderBy(g => g.Key);
-
-            DiskGroups = [.. groupedByDisk.Select(g => new DiskGroup
-            {
-                DiskNumber = g.Key,
-                DiskTitle = g.Key > 0 ? $"Disk {g.Key}" : "Tracks",
-                Tracks = [.. g.OrderBy(t => t.TrackNumber)]
-            })];
         }
 
         public bool ContainsTrack(int trackId)
@@ -116,12 +113,6 @@ namespace MusicWrap.UI.ViewModels.Library
             _tracksContextMenuService.AddToQueue(SelectedTrackIds);
         }
 
-        public class DiskGroup
-        {
-            public int DiskNumber { get; set; }
-            public string DiskTitle { get; set; } = "";
-            public List<TrackRowItem> Tracks { get; set; } = [];
-        }
     }
 }
 

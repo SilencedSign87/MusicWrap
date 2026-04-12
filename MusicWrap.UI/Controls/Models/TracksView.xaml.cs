@@ -6,11 +6,13 @@ using MusicWrap.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Data;
 using ICommand = System.Windows.Input.ICommand;
 
 namespace MusicWrap.UI.Controls.Models
@@ -25,6 +27,7 @@ namespace MusicWrap.UI.Controls.Models
         private TrackRowItem? _draggedItem;
         private IEnumerable<TrackRowItem>? _itemsSource;
         private INotifyCollectionChanged? _itemsSourceCollection;
+        private CollectionViewSource? _collectionViewSource;
         private bool _playerEventsAttached;
 
         public TracksView()
@@ -78,7 +81,25 @@ namespace MusicWrap.UI.Controls.Models
 
         private void RefreshItemsSource()
         {
-            TracksList.ItemsSource = _itemsSource;
+            if (_itemsSource is null)
+            {
+                _collectionViewSource = null;
+                TracksList.ItemsSource = null;
+                return;
+            }
+
+            var viewSource = new CollectionViewSource
+            {
+                Source = _itemsSource
+            };
+
+            if (GroupByDisk)
+            {
+                viewSource.GroupDescriptions.Add(new PropertyGroupDescription(nameof(TrackRowItem.DiskNumber)));
+            }
+
+            _collectionViewSource = viewSource;
+            TracksList.ItemsSource = viewSource.View;
         }
 
         private void UnsubscribeFromItemsSource()
@@ -274,7 +295,28 @@ namespace MusicWrap.UI.Controls.Models
             set => SetValue(AllTrackIdsProperty, value);
         }
 
+        public static readonly DependencyProperty GroupByDiskProperty =
+            DependencyProperty.Register(
+                nameof(GroupByDisk),
+                typeof(bool),
+                typeof(TracksView),
+                new PropertyMetadata(false, GroupByDisk_PropertyChanged));
+
+        public bool GroupByDisk
+        {
+            get => (bool)GetValue(GroupByDiskProperty);
+            set => SetValue(GroupByDiskProperty, value);
+        }
+
         #endregion
+
+        private static void GroupByDisk_PropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is TracksView tracksView)
+            {
+                tracksView.RefreshItemsSource();
+            }
+        }
 
         private void TracksList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -317,7 +359,7 @@ namespace MusicWrap.UI.Controls.Models
                 return;
             }
 
-            var alltracks = TracksList.Items.OfType<TrackRowItem>().Select(t => t.Id).ToList();
+            var alltracks = _itemsSource?.Select(t => t.Id).ToList() ?? [];
 
             _musicPlayerService.SetQueue(alltracks);
             _musicPlayerService.PlayTrack(row.Id);
