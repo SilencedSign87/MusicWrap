@@ -5,6 +5,7 @@ using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Providers.Youtube;
 using MusicWrap.UI.Models;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Features.Library.Services;
 using System.Windows;
 
 namespace MusicWrap.UI.ViewModels;
@@ -703,3 +704,5 @@ public sealed partial class IndexingViewModel : ObservableObject
         }
     }
 }
+
+

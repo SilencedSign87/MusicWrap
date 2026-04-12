@@ -1,4 +1,4 @@
-﻿using Hardcodet.Wpf.TaskbarNotification;
+using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core;
@@ -20,14 +20,22 @@ using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Controls;
 using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Pages.MainWindow;
+using MusicWrap.UI.Features.Library.Views;
+using MusicWrap.UI.Features.Library.Components;
+using MusicWrap.UI.Features.Playback.Views;
+using MusicWrap.UI.Features.Playlist.Views;
+using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.ViewModels;
-using MusicWrap.UI.ViewModels.Library;
-using MusicWrap.UI.ViewModels.Playlist;
-using MusicWrap.UI.ViewModels.Providers;
-using MusicWrap.UI.ViewModels.Settings;
-using MusicWrap.UI.Windows;
+using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Features.Playback.ViewModels;
+using MusicWrap.UI.Features.Playlist.ViewModels;
+using MusicWrap.UI.Features.Providers.ViewModels;
+using MusicWrap.UI.Features.Settings.ViewModels;
+using MusicWrap.UI.Shell.Windows;
+using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.Shell.Tray;
 using Serilog;
 using Serilog.Enrichers;
 using System.Configuration;
@@ -451,3 +459,7 @@ namespace MusicWrap.UI
     }
 
 }
+
+
+
+

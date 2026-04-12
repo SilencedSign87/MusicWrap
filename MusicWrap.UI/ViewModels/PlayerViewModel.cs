@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core;
 using MusicWrap.Data.Library;
@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Features.Library.Services;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -527,3 +528,5 @@ namespace MusicWrap.UI.ViewModels
         }
     }
 }
+
+

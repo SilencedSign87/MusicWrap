@@ -1,4 +1,4 @@
-using MusicWrap.UI.ViewModels.Library;
+using MusicWrap.UI.Features.Library.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -21,3 +21,4 @@ namespace MusicWrap.UI.Selectors
         }
     }
 }
+
