@@ -20,6 +20,8 @@ namespace MusicWrap.UI.Services
 {
     public interface ILibraryCacheService
     {
+        Track? GetTrackById(int trackId);
+        int[] GetTracksForAlbum(int albumId, string? query = null);
         Task InitializeAsync(string initialView, bool ascending);
         Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(string viewType, bool ascending);
         IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry);
@@ -47,6 +49,8 @@ namespace MusicWrap.UI.Services
         private LibraryEntry[]? _genreCache;
         private LibraryEntry[]? _decadeCache;
 
+        private Dictionary<int, Track> _trackById = [];
+        private Dictionary<int, int[]> _trackIdsByAlbumId = [];
         private Dictionary<int, Album> _albumById = [];
         private Dictionary<int, int[]> _albumIdsByArtistId = [];
         private Dictionary<int, int[]> _albumIdsByGenreId = [];
@@ -240,6 +244,8 @@ namespace MusicWrap.UI.Services
             _genreCache = null;
             _decadeCache = null;
 
+            _trackById = [];
+            _trackIdsByAlbumId = [];
             _albumById = [];
             _albumIdsByArtistId = [];
             _albumIdsByGenreId = [];
@@ -249,7 +255,11 @@ namespace MusicWrap.UI.Services
             _artistNameById = [];
             _coverLookUp = [];
         }
-
+        public Track? GetTrackById(int trackId)
+        {
+            EnsureIndexes();
+            return _trackById.TryGetValue(trackId, out var track) ? track : null;
+        }
         public IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry)
         {
             EnsureIndexes();
@@ -310,6 +320,19 @@ namespace MusicWrap.UI.Services
                 .Select(t => t.Id)];
         }
 
+        public int[] GetTracksForAlbum(int albumId, string? query = null)
+        {
+            var tracks = _library.Tracks.Where(t => t.AlbumId == albumId);
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                tracks = tracks.Where(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase));
+            }
+            return [.. tracks
+                .OrderBy(t => t.Disk)
+                .ThenBy(t => t.TrackNumber)
+                .ThenBy(t => t.Title)
+                .Select(t => t.Id)];
+        }
         #endregion
 
         private void SaveUserPreference(string listBy, bool ascending)
@@ -534,7 +557,14 @@ namespace MusicWrap.UI.Services
 
         private void BuildIndexes()
         {
+            _trackById = _library.Tracks.ToDictionary(t => t.Id);
+
+            _trackIdsByAlbumId = _library.Tracks
+                .GroupBy(t => t.AlbumId)
+                .ToDictionary(g => g.Key, g => g.Select(t => t.Id).ToArray());
+
             _albumById = _library.Albums.ToDictionary(a => a.Id);
+
             _artistNameById = _library.Artists.ToDictionary(ar => ar.Id, ar => ar.Name);
 
             _trackCountByAlbumId = _library.Tracks

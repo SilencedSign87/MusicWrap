@@ -7,6 +7,7 @@
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d" 
+             x:Name="Root"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
         <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
@@ -18,7 +19,7 @@
 
         <ItemsPanelTemplate x:Key="ColumnFlowItemsPanel">
             <ex:ColumnFlowPanel 
-                ex:ColumnFlowPanel.Columns="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=ColumnFlowColumns}"
+                ex:ColumnFlowPanel.Columns="{Binding ElementName=Root, Path=ColumnFlowColumns}"
                 />
         </ItemsPanelTemplate>
 
@@ -29,10 +30,10 @@
             <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
             <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
             <Style.Triggers>
-                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=UseColumnFlowPanel}" Value="True">
+                <DataTrigger Binding="{Binding ElementName=Root, Path=UseColumnFlowPanel}" Value="True">
                     <Setter Property="ItemsPanel" Value="{StaticResource ColumnFlowItemsPanel}"/>
                 </DataTrigger>
-                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=IsMouseWheelScrollEnabled}" Value="True">
+                <DataTrigger Binding="{Binding ElementName=Root, Path=IsMouseWheelScrollEnabled}" Value="True">
                     <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
                 </DataTrigger>
             </Style.Triggers>
@@ -44,14 +45,14 @@
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=Foreground}"/>
+            <Setter Property="Foreground" Value="{Binding ElementName=Root, Path=Foreground}"/>
             <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
                         <Border
-                    x:Name="Root"
+                    x:Name="RootBorder"
                     Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
@@ -77,7 +78,7 @@
 
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="True"/>
+                        <Condition Binding="{Binding ElementName=Root, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="True"/>
                         <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
                     </MultiDataTrigger.Conditions>
                     <Setter Property="Background" Value="#FFFFFFFF"/>
@@ -86,7 +87,7 @@
 
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="False"/>
+                        <Condition Binding="{Binding ElementName=Root, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="False"/>
                         <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
                     </MultiDataTrigger.Conditions>
                     <Setter Property="Background" Value="#FF000000"/>
@@ -104,23 +105,19 @@
                     <ColumnDefinition Width="Auto" MinWidth="50"/>
                 </Grid.ColumnDefinitions>
 
-
-                <Grid
-                    Grid.Column="0"
-                    >
+                <Grid Grid.Column="0">
                     <TextBlock
                     FontFamily="Segoe Fluent Icons"
                     Text="&#xE995;"
                     FontSize="13"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Center"
-                    TextAlignment="Center"
-                           >
+                    TextAlignment="Center">
                         <TextBlock.Visibility>
                             <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
-                                <Binding RelativeSource="{RelativeSource AncestorType=local:TracksView}" Path="CurrentTrackId"/>
+                                <Binding ElementName="Root" Path="CurrentTrackId"/>
                                 <Binding Path="Id"/>
-                                <Binding RelativeSource="{RelativeSource AncestorType=local:TracksView}" Path="IsPlaybackActive"/>
+                                <Binding ElementName="Root" Path="IsPlaybackActive"/>
                             </MultiBinding>
                         </TextBlock.Visibility>
                     </TextBlock>
@@ -132,11 +129,11 @@
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Setter Property="Text" Value=""/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.ListIndex}">
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.ListIndex}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Text" Value="{Binding ListIndex}"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.TrackNumber}">
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.TrackNumber}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Text" Value="{Binding TrackNumberDisplay}"/>
                                 </DataTrigger>
@@ -152,7 +149,6 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-
                     <TextBlock Grid.Row="1" Text="{Binding ArtistNames}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                 </Grid>
 
@@ -174,8 +170,7 @@
                         Grid.Column="0"
                         Width="42"
                         Height="42"
-                        Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
-                        />
+                        Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}" />
 
                 <TextBlock Grid.Column="1"
                            FontFamily="Segoe Fluent Icons"
@@ -183,13 +178,12 @@
                            FontSize="13"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
-                           Margin="8,0,2,0"
-                           >
+                           Margin="8,0,2,0">
                     <TextBlock.Visibility>
                         <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
-                            <Binding RelativeSource="{RelativeSource AncestorType=local:TracksView}" Path="CurrentTrackId"/>
+                            <Binding ElementName="Root" Path="CurrentTrackId"/>
                             <Binding Path="Id"/>
-                            <Binding RelativeSource="{RelativeSource AncestorType=local:TracksView}" Path="IsPlaybackActive"/>
+                            <Binding ElementName="Root" Path="IsPlaybackActive"/>
                         </MultiBinding>
                     </TextBlock.Visibility>
                 </TextBlock>
@@ -200,11 +194,11 @@
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Setter Property="Text" Value=""/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.ListIndex}">
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.ListIndex}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Text" Value="{Binding ListIndex}"/>
                                 </DataTrigger>
-                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.TrackNumber}">
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.TrackNumber}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Text" Value="{Binding TrackNumberDisplay}"/>
                                 </DataTrigger>
@@ -220,7 +214,6 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-
                     <TextBlock Grid.Row="1" Text="{Binding ArtistNames}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                 </Grid>
 
@@ -249,19 +242,17 @@
                            Text="&#xE995;"
                            FontSize="11"
                            VerticalAlignment="Center"
-                           HorizontalAlignment="Center"
-                           >
+                           HorizontalAlignment="Center">
                     <TextBlock.Visibility>
                         <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
-                            <Binding RelativeSource="{RelativeSource AncestorType=local:TracksView}" Path="CurrentTrackId"/>
+                            <Binding ElementName="Root" Path="CurrentTrackId"/>
                             <Binding Path="Id"/>
-                            <Binding RelativeSource="{RelativeSource AncestorType=local:TracksView}" Path="IsPlaybackActive"/>
+                            <Binding ElementName="Root" Path="IsPlaybackActive"/>
                         </MultiBinding>
                     </TextBlock.Visibility>
                 </TextBlock>
 
                 <TextBlock Grid.Column="2" Text="{Binding ListIndex}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" FontSize="11" Opacity="0.7"/>
-
                 <TextBlock Grid.Column="3" Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Grid.Column="4" Text="{Binding ArtistNames}" VerticalAlignment="Center" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
                 <TextBlock Grid.Column="5" Text="{Binding AlbumName}" VerticalAlignment="Center" FontSize="12" Opacity="0.75" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
@@ -273,10 +264,10 @@
     <Grid>
         <ListView x:Name="TracksList" 
                  ItemContainerStyle="{StaticResource TrackItemContainerStyle}" 
-                 ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=ItemsSource}" 
-                 SelectionMode="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=SelectionMode}" 
-                 AllowDrop="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=IsReorderEnabled}"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ItemsSource="{Binding ElementName=Root, Path=ItemsSource}" 
+                 SelectionMode="{Binding ElementName=Root, Path=SelectionMode}" 
+                 AllowDrop="{Binding ElementName=Root, Path=IsReorderEnabled}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  SelectionChanged="TracksList_SelectionChanged"
                  MouseDoubleClick="TracksList_MouseDoubleClick" 
                  KeyDown="TracksList_KeyDown" 
@@ -291,10 +282,10 @@
                 <Style TargetType="ListView" BasedOn="{StaticResource TracksListBoxStyle}">
                     <Setter Property="ItemTemplate" Value="{StaticResource TrackCompactNoCoverTemplate}"/>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=VisualMode}" Value="{x:Static local:TrackVisualMode.WithCoverArt}">
+                        <DataTrigger Binding="{Binding ElementName=Root, Path=VisualMode}" Value="{x:Static local:TrackVisualMode.WithCoverArt}">
                             <Setter Property="ItemTemplate" Value="{StaticResource TrackWithCoverArtTemplate}"/>
                         </DataTrigger>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=VisualMode}" Value="{x:Static local:TrackVisualMode.ListImage}">
+                        <DataTrigger Binding="{Binding ElementName=Root, Path=VisualMode}" Value="{x:Static local:TrackVisualMode.ListImage}">
                             <Setter Property="ItemTemplate" Value="{StaticResource TrackListImageTemplate}"/>
                         </DataTrigger>
                     </Style.Triggers>
@@ -310,7 +301,7 @@
                     <Separator/>
                     <MenuItem Header="Edit track" Icon="{ex:Icon Glyph=E70F}" x:Name="EditButton" Click="EditButton_Click" />
                     <MenuItem Header="Remove track" Icon="{ex:Icon Glyph=E74D}" x:Name="RemoveButton" Click="RemoveButton_Click"
-                              IsEnabled="{Binding RelativeSource={RelativeSource AncestorType=local:TracksView}, Path=RemoveRequestedCommand, Converter={StaticResource NullToBoolConverter}}" />
+                              IsEnabled="{Binding ElementName=Root, Path=RemoveRequestedCommand, Converter={StaticResource NullToBoolConverter}}" />
                     <Separator/>
                     <MenuItem Header="Show in File Explorer" Icon="{ex:Icon Glyph=E8B7}" x:Name="ShowExternal" Click="ShowExternal_Click" />
                 </ContextMenu>

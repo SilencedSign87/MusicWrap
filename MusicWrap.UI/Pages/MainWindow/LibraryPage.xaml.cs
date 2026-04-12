@@ -102,14 +102,9 @@ namespace MusicWrap.UI.Pages.MainWindow
                 return;
             }
 
-            //TryRebuildRowsForCurrentViewport(true);
-            UpdateColumnsForViewportWidth();
-
             // Defer once so the viewport is measured and rows are rebuilt with final width.
             Dispatcher.BeginInvoke(() =>
             {
-                UpdateColumnsForViewportWidth(true);
-
                 if (vm.IsAlbumView && vm.GridRows.Count > 0)
                     {
                     var firstAlbum = vm.GridRows[0].Albums.FirstOrDefault();
@@ -152,9 +147,11 @@ namespace MusicWrap.UI.Pages.MainWindow
                     }
 
                     var library = vm.GetLibrary();
+                    var libCache = App.Services.GetRequiredService<ILibraryCacheService>();
 
                     var tracksViewModel = new AlbumTracksViewModel(
                         library,
+                        libCache,
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,
@@ -228,7 +225,7 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void AlbumsViewport_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (e.NewSize.Width > 0 && vm.SelectedEntry != null)
+            if (e.NewSize.Width > 0)
             {
                 // Throttle resize events with 50ms timer: restart if already running
                 // (multiple rapid SizeChanged events will only result in one recalc after 50ms quiet)
@@ -241,53 +238,24 @@ namespace MusicWrap.UI.Pages.MainWindow
 
         private void AlbumsViewport_Loaded(object sender, RoutedEventArgs e)
         {
-            //TryRebuildRowsForCurrentViewport(true);
-            UpdateColumnsForViewportWidth();
+            UpdateColumnsForViewportWidth(true);
         }
 
-        private void AlbumsViewport_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        private void AlbumsViewport_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // ViewportWidth can change when vertical scrollbar appears/disappears or after window state changes.
-            if (e.ViewportWidthChange != 0)
+            // This ListBox is used only as a virtualizing host; row selection is intentionally disabled.
+            if (sender is ListBox listBox && listBox.SelectedItem is not null)
             {
-                //TryRebuildRowsForCurrentViewport();
-                UpdateColumnsForViewportWidth();
+                listBox.SelectedItem = null;
             }
         }
 
         private int GetCurrentViewportWidth()
         {
-            if (AlbumsViewport.ViewportWidth > 0)
-            {
-                return (int)AlbumsViewport.ViewportWidth;
-            }
-
             var padding = AlbumsViewport.Padding;
             var estimated = AlbumsViewport.ActualWidth - padding.Left - padding.Right;
             return Math.Max(1, (int)estimated);
         }
-
-        //private void TryRebuildRowsForCurrentViewport(bool force = false)
-        //{
-        //    if (vm.SelectedEntry == null)
-        //    {
-        //        return;
-        //    }
-
-        //    int width = GetCurrentViewportWidth();
-        //    if (width <= 0)
-        //    {
-        //        return;
-        //    }
-
-        //    if (!force && width == _lastViewportWidth)
-        //    {
-        //        return;
-        //    }
-
-        //    _lastViewportWidth = width;
-        //    vm.RebuildRows(width);
-        //}
 
         private int CalculateColumns(int width)
         {
@@ -296,8 +264,6 @@ namespace MusicWrap.UI.Pages.MainWindow
         }
         private void UpdateColumnsForViewportWidth(bool force = false)
         {
-            if (vm.SelectedEntry == null) return;
-
             int width = GetCurrentViewportWidth();
             if (width <= 0) return;
             int columns = CalculateColumns(width);

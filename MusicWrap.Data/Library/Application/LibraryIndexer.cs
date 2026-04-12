@@ -450,6 +450,7 @@ namespace MusicWrap.Data.Library.Application
                     "image/webp" => ".webp",
                     _ => ".bin"
                 };
+                // create variants 
                 Directory.CreateDirectory(MusicWrapDirectories.CoverDirectory);
                 var filename = fingerprint.GetHashCode().ToString("X8") + ext;
                 var fullPath = Path.Combine(MusicWrapDirectories.CoverDirectory, filename);
