@@ -4,14 +4,28 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:MusicWrap.UI.Pages.MainWindow"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels.Library"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:QueueViewModel}"
              d:DesignHeight="700" d:DesignWidth="500">
 
+    <UserControl.Resources>
+        <ContextMenu x:Key="QueueTracksContextMenu" Opened="QueueTracksContextMenu_Opened">
+            <MenuItem Header="Play now" Icon="{ex:Icon Glyph=E768}" Click="QueuePlayNow_Click"/>
+            <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}" Click="QueuePlayNext_Click"/>
+            <Separator/>
+            <controlsM:TrackToPlaylistMenu x:Name="QueueTrackToPlaylistMenu"/>
+            <Separator/>
+            <MenuItem Header="Remove from queue" Icon="{ex:Icon Glyph=E738}" Click="QueueRemove_Click"/>
+        </ContextMenu>
+    </UserControl.Resources>
+
     <controlsM:TracksView
+        x:Name="QueueTracksView"
         ItemsSource="{Binding QueueTrackRows}"
+        ContextMenu="{StaticResource QueueTracksContextMenu}"
         VisualMode="WithCoverArt"
         IndexMode="None"
         SelectionMode="Extended"

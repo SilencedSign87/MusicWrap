@@ -148,10 +148,12 @@ namespace MusicWrap.UI.Pages.MainWindow
 
                     var library = vm.GetLibrary();
                     var libCache = App.Services.GetRequiredService<ILibraryCacheService>();
+                    var tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
 
                     var tracksViewModel = new AlbumTracksViewModel(
                         library,
                         libCache,
+                        tracksContextMenuService,
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,

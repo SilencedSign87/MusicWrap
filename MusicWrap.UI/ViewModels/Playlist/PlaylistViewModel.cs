@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MusicWrap.Core;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Playlist.Models;
 using MusicWrap.UI.Controls.Models;
@@ -22,6 +23,8 @@ namespace MusicWrap.UI.ViewModels.Playlist
         [ObservableProperty] bool compactMode = true;
         [ObservableProperty] PlaylistEntry? selectedEntry;
         [ObservableProperty] ObservableCollection<TrackRowItem> tracks = [];
+        [ObservableProperty] List<int> allTrackIds = [];
+        [ObservableProperty] List<int> selectedTrackIds = [];
 
         private readonly PlaylistData _playlist;
         private readonly ISaveCoordinator _saveCoordinator;
@@ -33,6 +36,7 @@ namespace MusicWrap.UI.ViewModels.Playlist
             _playlist = playlist;
             _libraryCacheService = cache;
             _saveCoordinator = saveCoordinator;
+            selectedTrackIds = [];
 
             ConstructEntries();
         }
@@ -156,11 +160,16 @@ namespace MusicWrap.UI.ViewModels.Playlist
             if (selectedPlaylist != null)
             {
                 var ids = selectedPlaylist.Items.Select(i => i.TrackId).ToList();
+                AllTrackIds = ids;
                 var trackRows = _libraryCacheService.TrackIdsToTrackRowItems(ids);
                 foreach (var row in trackRows)
                 {
                     Tracks.Add(row);
                 }
+            }
+            else
+            {
+                AllTrackIds = [];
             }
         }
     }

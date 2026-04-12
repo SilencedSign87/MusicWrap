@@ -59,6 +59,16 @@
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
             <Setter Property="BorderBrush" Value="{StaticResource StrokeDivider}"/>
         </Style>
+
+        <ContextMenu x:Key="PlaylistTracksContextMenu" Opened="PlaylistTracksContextMenu_Opened">
+            <MenuItem Header="Play now" Icon="{ex:Icon Glyph=E768}" Click="PlaylistPlayNow_Click"/>
+            <Separator/>
+            <MenuItem Header="Add next" Icon="{ex:Icon Glyph=E893}" Click="PlaylistPlayNext_Click"/>
+            <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E710}" Click="PlaylistAddToQueue_Click"/>
+            <controlsM:TrackToPlaylistMenu x:Name="PlaylistTrackToPlaylistMenu"/>
+            <Separator/>
+            <MenuItem Header="Remove from playlist" Icon="{ex:Icon Glyph=E74D}" Click="PlaylistRemoveSelected_Click"/>
+        </ContextMenu>
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
@@ -202,6 +212,9 @@
                     >
                     <controlsM:TracksView
                         ItemsSource="{Binding Tracks}"
+                        AllTrackIds="{Binding AllTrackIds}"
+                        SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
+                        ContextMenu="{StaticResource PlaylistTracksContextMenu}"
                         VisualMode="ListImage"
                         IndexMode="ListIndex"
                         SelectionMode="Extended"

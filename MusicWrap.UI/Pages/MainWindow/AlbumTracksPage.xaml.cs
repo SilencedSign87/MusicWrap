@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
 using MusicWrap.Data.Library;
+using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.ViewModels.Library;
 using System;
 using System.Windows;
@@ -127,6 +128,25 @@ namespace MusicWrap.UI.Pages.MainWindow
             if (DataContext is AlbumTracksViewModel vm)
             {
                 vm.UpdatePlaybackState(_musicPlayerService.CurrentTrackId, _musicPlayerService.IsPlaying);
+            }
+        }
+
+        private void AlbumTracksContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+            {
+                return;
+            }
+
+            if (DataContext is not AlbumTracksViewModel vm)
+            {
+                return;
+            }
+
+            if (contextMenu.Items.OfType<TrackToPlaylistMenu>().FirstOrDefault() is TrackToPlaylistMenu playlistMenu)
+            {
+                // Force DP change with a fresh list instance so the menu reloads current selection.
+                playlistMenu.TrackIds = vm.SelectedTrackIds.ToList();
             }
         }
     }

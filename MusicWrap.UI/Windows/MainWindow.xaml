@@ -174,7 +174,7 @@
                     </TabControl>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
-                    <controls:CommandPaletteInput VerticalAlignment="Center" Width="250" Height="32"/>
+                    <controls:CommandPaletteInput VerticalAlignment="Center" Width="200" Height="32" PlaceholderText="Search..."/>
                     <!--<Border Margin="0,4" Width="1" Background="#333">
                     </Border>-->
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">

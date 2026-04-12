@@ -11,7 +11,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Diagnostics;
 using ICommand = System.Windows.Input.ICommand;
 
 namespace MusicWrap.UI.Controls.Models
@@ -22,8 +21,6 @@ namespace MusicWrap.UI.Controls.Models
     public partial class TracksView : UserControl
     {
         private readonly IMusicPlayerService _musicPlayerService;
-        private readonly IEditMetadataService _editMetadataService;
-        private readonly MusicLibrary _library;
         private Point _dragStartPoint;
         private TrackRowItem? _draggedItem;
         private IEnumerable<TrackRowItem>? _itemsSource;
@@ -34,8 +31,6 @@ namespace MusicWrap.UI.Controls.Models
         {
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
-            _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
-            _library = App.Services.GetRequiredService<MusicLibrary>();
 
             Loaded += TracksView_Loaded;
             Unloaded += TracksView_Unloaded;
@@ -366,118 +361,7 @@ namespace MusicWrap.UI.Controls.Models
             }
         }
 
-        private void PlayNowButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTrackIds = GetSelectedTrackIds();
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            _musicPlayerService.SetQueue(selectedTrackIds);
-            _musicPlayerService.PlayTrack(selectedTrackIds[0]);
-        }
-
-        private void PlayNextButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTrackIds = GetSelectedTrackIds();
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            var currentQueue = _musicPlayerService.GetQueue() ?? [];
-            var newQueue = new List<int>();
-            bool inserted = false;
-
-            foreach (var trackId in currentQueue)
-            {
-                newQueue.Add(trackId);
-                if (!inserted && trackId == _musicPlayerService.CurrentTrackId)
-                {
-                    newQueue.AddRange(selectedTrackIds);
-                    inserted = true;
-                }
-            }
-
-            if (!inserted)
-            {
-                newQueue.AddRange(selectedTrackIds);
-            }
-
-            _musicPlayerService.SetQueue(newQueue, true);
-        }
-
-        private void AddQueueButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTrackIds = GetSelectedTrackIds();
-            foreach (var trackId in selectedTrackIds)
-            {
-                _musicPlayerService.AddToQueue(trackId);
-            }
-        }
-
-        private void AddToPlaylist_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTrackIds = GetSelectedTrackIds();
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            //_playlistCoordinator.AddToManager(selectedTrackIds.ToArray());
-        }
-
-        private void EditButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTrackIds = GetSelectedTrackIds();
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            _editMetadataService.OpenMetadataWindow(selectedTrackIds[0], MetadataEntityType.Track);
-        }
-
-        private void RemoveButton_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTrackIds = GetSelectedTrackIds();
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            if (RemoveRequestedCommand?.CanExecute(selectedTrackIds) == true)
-            {
-                RemoveRequestedCommand.Execute(selectedTrackIds);
-            }
-        }
-
-        private void ShowExternal_Click(object sender, RoutedEventArgs e)
-        {
-            var selectedTrackIds = GetSelectedTrackIds();
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            var path = _library.Tracks.FirstOrDefault(t => t.Id == selectedTrackIds[0])?.Path;
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return;
-            }
-
-            Process.Start(
-                new ProcessStartInfo
-                {
-                    FileName = "explorer",
-                    Arguments = $"/select,\"{path}\"",
-                    UseShellExecute = true
-                }
-            );
-        }
-
-        private List<int> GetSelectedTrackIds()
+        public List<int> GetSelectedTrackIds()
         {
             var selectedTrackIds = TracksList.SelectedItems
                 .OfType<TrackRowItem>()
@@ -511,13 +395,6 @@ namespace MusicWrap.UI.Controls.Models
             }
 
             return null;
-        }
-
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            // Use AllTrackIds if provided (e.g., for album context), otherwise use selected tracks
-            var trackIds = AllTrackIds != null ? AllTrackIds.ToList() : GetSelectedTrackIds();
-            TrackToPlaylistMenuItem.TrackIds = trackIds;
         }
 
         private void TracksList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

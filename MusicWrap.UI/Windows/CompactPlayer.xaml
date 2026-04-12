@@ -136,7 +136,7 @@
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding DjButtonIcon}" FontSize="12"/>
                         </Button>
                         <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Volume">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe767;" FontSize="12"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="12"/>
                         </Button>
                     </StackPanel>
                     <Popup

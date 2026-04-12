@@ -266,6 +266,7 @@
                  ItemContainerStyle="{StaticResource TrackItemContainerStyle}" 
                  ItemsSource="{Binding ElementName=Root, Path=ItemsSource}" 
                  SelectionMode="{Binding ElementName=Root, Path=SelectionMode}" 
+                 ContextMenu="{Binding ElementName=Root, Path=ContextMenu}"
                  AllowDrop="{Binding ElementName=Root, Path=IsReorderEnabled}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  SelectionChanged="TracksList_SelectionChanged"
@@ -291,21 +292,6 @@
                     </Style.Triggers>
                 </Style>
             </ListView.Style>
-            <ListView.ContextMenu>
-                <ContextMenu Opened="ContextMenu_Opened">
-                    <MenuItem Header="Play Now" Icon="{ex:Icon Glyph=E768}" x:Name="PlayNowButton" Click="PlayNowButton_Click" />
-                    <MenuItem Header="Play Next" Icon="{ex:Icon Glyph=E893}" x:Name="PlayNextButton" Click="PlayNextButton_Click" />
-                    <Separator/>
-                    <MenuItem Header="Add to Queue" Icon="{ex:Icon Glyph=E710}" x:Name="AddQueueButton" Click="AddQueueButton_Click" />
-                    <local:TrackToPlaylistMenu x:Name="TrackToPlaylistMenuItem"/>
-                    <Separator/>
-                    <MenuItem Header="Edit track" Icon="{ex:Icon Glyph=E70F}" x:Name="EditButton" Click="EditButton_Click" />
-                    <MenuItem Header="Remove track" Icon="{ex:Icon Glyph=E74D}" x:Name="RemoveButton" Click="RemoveButton_Click"
-                              IsEnabled="{Binding ElementName=Root, Path=RemoveRequestedCommand, Converter={StaticResource NullToBoolConverter}}" />
-                    <Separator/>
-                    <MenuItem Header="Show in File Explorer" Icon="{ex:Icon Glyph=E8B7}" x:Name="ShowExternal" Click="ShowExternal_Click" />
-                </ContextMenu>
-            </ListView.ContextMenu>
         </ListView>
     </Grid>
 </UserControl>

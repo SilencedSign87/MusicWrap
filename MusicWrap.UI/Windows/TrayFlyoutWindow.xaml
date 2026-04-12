@@ -111,7 +111,7 @@
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
                     </Button>
                     <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Volume">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe767;" FontSize="14"/>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="14"/>
                     </Button>
                 </StackPanel>
                 <Popup

@@ -285,6 +285,7 @@ namespace MusicWrap.UI
 
             // Services
             services.AddSingleton<IImageService, ImageService>();
+            services.AddSingleton<TracksContextMenuService>();
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
