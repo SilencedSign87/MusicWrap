@@ -328,6 +328,7 @@ namespace MusicWrap.UI
             services.AddTransient<DirectoriesManagerViewModel>();
             services.AddTransient<SettingsGeneralViewModel>();
             services.AddTransient<LibraryViewModel>();
+            services.AddTransient<LibraryEntryDetailPanelViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
             services.AddTransient<PlaylistViewModel>();
             services.AddTransient<PlaylistManagerViewModel>();

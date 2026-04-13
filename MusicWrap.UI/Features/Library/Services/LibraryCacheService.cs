@@ -5,6 +5,7 @@ using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Controls.Models;
+using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,8 @@ namespace MusicWrap.UI.Features.Library.Services
     {
         Track? GetTrackById(int trackId);
         int[] GetTracksForAlbum(int albumId, string? query = null);
+        int[] GetTrackIdsForEntry(LibraryEntry entry, string? query = null);
+        LibraryEntryStatsModel GetStatsForEntry(LibraryEntry entry, string? query = null);
         Task InitializeAsync(string initialView, bool ascending);
         Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(string viewType, bool ascending);
         IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry);
@@ -237,6 +240,49 @@ namespace MusicWrap.UI.Features.Library.Services
             return trackRowItems;
         }
 
+        public int[] GetTrackIdsForEntry(LibraryEntry entry, string? query = null)
+        {
+            EnsureIndexes();
+
+            int[] albumIds = entry.Type switch
+            {
+                "Album" => [entry.Id],
+                "Artist" => _albumIdsByArtistId.TryGetValue(entry.Id, out var byArtist) ? byArtist : [],
+                "Genre" => _albumIdsByGenreId.TryGetValue(entry.Id, out var byGenre) ? byGenre : [],
+                "Decade" => TryGetDecadeAlbumIds(entry.Title, out var byDecade) ? byDecade : [],
+                _ => []
+            };
+
+            var tracks = _library.Tracks.Where(t => albumIds.Contains(t.AlbumId));
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var q = query.Trim();
+                tracks = tracks.Where(t => TrackMatchesQuery(t, q));
+            }
+
+            return tracks
+                .OrderBy(t => t.Disk)
+                .ThenBy(t => t.TrackNumber)
+                .ThenBy(t => t.Title)
+                .Select(t => t.Id)
+                .ToArray();
+        }
+
+        public LibraryEntryStatsModel GetStatsForEntry(LibraryEntry entry, string? query = null)
+        {
+            var trackIds = GetTrackIdsForEntry(entry, query);
+            var tracks = _library.Tracks.Where(t => trackIds.Contains(t.Id)).ToArray();
+
+            var albumCount = tracks.Select(t => t.AlbumId).Distinct().Count();
+            var artistCount = tracks.SelectMany(t => t.ArtistIds).Distinct().Count();
+
+            return new LibraryEntryStatsModel
+            {
+                AlbumsCount = albumCount,
+                TracksCount = tracks.Length,
+                ArtistsCount = artistCount
+            };
+        }
         public void InvalidateCache()
         {
             _artistCache = null;

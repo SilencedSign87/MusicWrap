@@ -12,6 +12,7 @@
          xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
          xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
+         xmlns:views="clr-namespace:MusicWrap.UI.Features.Library.Views"
          mc:Ignorable="d" 
          Foreground="White"
          d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumGridRowModel}"
@@ -274,7 +275,11 @@
         <GridSplitter Grid.Column="1" />
         <!-- Selected content -->
         <Grid Grid.Column="2" Background="{StaticResource BackgroundSmoke}">
-            <ListBox x:Name="AlbumsViewport"
+            <views:LibraryEntryDetailPanel
+                SelectedEntry="{Binding DataContext.SelectedEntry, Mode=OneWay, ElementName=RootLibraryPage}"
+                LibraryViewModel="{Binding DataContext, Mode=OneWay, ElementName=RootLibraryPage}"
+                />
+            <!--<ListBox x:Name="AlbumsViewport"
                      ItemsSource="{Binding GridRows}"
                      SelectionChanged="AlbumsViewport_SelectionChanged"
                      SelectionMode="Single"
@@ -401,7 +406,7 @@
                                         HorizontalContentAlignment="Stretch"
                                         VerticalContentAlignment="Top"/>
 
-                                        <!-- Close Button -->
+                                        --><!-- Close Button --><!--
                                         <Button 
                                         Content="✕"
                                         HorizontalAlignment="Right"
@@ -420,7 +425,7 @@
                             </Grid>
                         </DataTemplate>
                 </ListBox.ItemTemplate>
-            </ListBox>
+            </ListBox>-->
         </Grid>
     </Grid>
 </UserControl>

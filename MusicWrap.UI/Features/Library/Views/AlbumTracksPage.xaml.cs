@@ -2,12 +2,16 @@ using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core;
 using MusicWrap.Data.Library;
 using MusicWrap.UI.Controls.Models;
+using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Services;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Linq;
 using MusicWrap.Data.Library.Models;
+using System.IO;
+using System.Diagnostics;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -18,6 +22,8 @@ namespace MusicWrap.UI.Features.Library.Views
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly MusicLibrary _library;
+        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly IEditMetadataService _editMetadataService;
         private bool _playerEventsAttached;
 
         public AlbumTracksPage()
@@ -25,6 +31,8 @@ namespace MusicWrap.UI.Features.Library.Views
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _library = App.Services.GetRequiredService<MusicLibrary>();
+            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
+            _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
 
             Loaded += AlbumTracksPage_Loaded;
             Unloaded += AlbumTracksPage_Unloaded;
@@ -148,6 +156,40 @@ namespace MusicWrap.UI.Features.Library.Views
                 // Force DP change with a fresh list instance so the menu reloads current selection.
                 playlistMenu.TrackIds = vm.SelectedTrackIds.ToList();
             }
+        }
+
+        private void EditMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not AlbumTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
+            {
+                return;
+            }
+
+            _editMetadataService.OpenMetadataWindow(vm.SelectedTrackIds[0], MetadataEntityType.Track);
+        }
+
+        private void ShowInFileExplorerMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not AlbumTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
+            {
+                return;
+            }
+
+            var track = _libraryCacheService.GetTrackById(vm.SelectedTrackIds[0]);
+            if (track is null || string.IsNullOrWhiteSpace(track.Path))
+            {
+                return;
+            }
+
+            if (!File.Exists(track.Path))
+            {
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{track.Path}\"")
+            {
+                UseShellExecute = true
+            });
         }
     }
 }

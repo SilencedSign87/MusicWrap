@@ -38,7 +38,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         [ObservableProperty] private LibraryEntry? selectedEntry;
 
-        //[ObservableProperty] private List<object> albumsForSelectedEntry = [];
         [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
 
         [ObservableProperty] private int? expandedAlbumId = null;

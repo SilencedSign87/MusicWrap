@@ -103,22 +103,8 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            // Defer once so the viewport is measured and rows are rebuilt with final width.
-            Dispatcher.BeginInvoke(() =>
-            {
-                if (vm.IsAlbumView && vm.GridRows.Count > 0)
-                    {
-                    var firstAlbum = vm.GridRows[0].Albums.FirstOrDefault();
-                    if (firstAlbum != null)
-                    {
-                        vm.ExpandAlbum(firstAlbum.Id, GetCurrentViewportWidth());
-                    }
-                }
-                else
-                {
-                    vm.CollapseAlbum();
-                }
-            }, DispatcherPriority.Loaded);
+            // Keep collapsed by default. Album expansion is user-driven.
+            vm.CollapseAlbum();
         }
 
         private void AlbumButton_Click(object sender, RoutedEventArgs e)
@@ -255,8 +241,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private int GetCurrentViewportWidth()
         {
-            var padding = AlbumsViewport.Padding;
-            var estimated = AlbumsViewport.ActualWidth - padding.Left - padding.Right;
+            var estimated = ActualWidth - 280;
             return Math.Max(1, (int)estimated);
         }
 

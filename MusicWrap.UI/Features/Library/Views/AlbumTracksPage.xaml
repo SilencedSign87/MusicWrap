@@ -21,14 +21,14 @@
                      DataContext="{Binding Source={x:Reference RootAlbumTracksPage}, Path=DataContext}">
             <MenuItem Header="Play" Icon="{helpers:Icon Glyph=E768}" Command="{Binding PlayNowSelectedTracksCommand}"/>
             <Separator/>
-            <MenuItem Header="Add next" Icon="{helpers:Icon Glyph=E893}" Command="{Binding PlayNextSelectedTracksCommand}"/>
+            <MenuItem Header="Play next" Icon="{helpers:Icon Glyph=E893}" Command="{Binding PlayNextSelectedTracksCommand}"/>
             <MenuItem Header="Add to queue" Icon="{helpers:Icon Glyph=E710}" Command="{Binding AddSelectedTracksToQueueCommand}"/>
             <uimodels:TrackToPlaylistMenu x:Name="AlbumTracksTrackToPlaylistMenu"
                                           TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
             <Separator/>
-            <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" />
-            <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" />
-            <MenuItem Header="Show in file storage" Icon="{helpers:Icon Glyph=EC50}" />
+            <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" Click="EditMenuItem_Click"/>
+            <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" IsEnabled="False"/>
+            <MenuItem Header="Show in file explorer" Icon="{helpers:Icon Glyph=EC50}" Click="ShowInFileExplorerMenuItem_Click"/>
         </ContextMenu>
     </UserControl.Resources>
     <Grid Margin="0">
@@ -58,6 +58,7 @@
                            Grid.Column="1"
                            FontSize="16" 
                            FontWeight="Bold"
+                           Margin="4,0,0,0"
                            Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
                            TextTrimming="CharacterEllipsis"/>
             </Grid>

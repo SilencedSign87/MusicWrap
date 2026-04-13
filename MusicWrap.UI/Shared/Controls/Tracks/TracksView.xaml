@@ -291,7 +291,7 @@
                 <TextBlock Grid.Column="3" Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Grid.Column="4" Text="{Binding ArtistNames}" VerticalAlignment="Center" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
                 <TextBlock Grid.Column="5" Text="{Binding AlbumName}" VerticalAlignment="Center" FontSize="12" Opacity="0.75" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
-                <TextBlock Grid.Column="6" Text="{Binding DurationText}" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Opacity="0.7" Margin="8,0,0,0"/>
+                <TextBlock Grid.Column="6" Text="{Binding DurationText}" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Opacity="0.7" Margin="8,0"/>
             </Grid>
         </DataTemplate>
     </UserControl.Resources>

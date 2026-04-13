@@ -1,0 +1,152 @@
+<UserControl x:Class="MusicWrap.UI.Features.Library.Views.LibraryEntryAlbumsView"
+             x:Name="RootAlbumsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:MusicWrap.UI.Features.Library.Components"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid Background="Transparent">
+        <ListBox x:Name="AlbumsViewport"
+                 ItemsSource="{Binding LibraryViewModel.GridRows, ElementName=RootAlbumsView}"
+                 SelectionChanged="AlbumsViewport_SelectionChanged"
+                 SelectionMode="Single"
+                 IsSynchronizedWithCurrentItem="False"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Padding="8"
+                 Loaded="AlbumsViewport_Loaded"
+                 SizeChanged="AlbumsViewport_SizeChanged"
+                 HorizontalContentAlignment="Stretch"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.CanContentScroll="True"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling"
+                 VirtualizingPanel.ScrollUnit="Pixel"
+                 VirtualizingPanel.CacheLength="2,2"
+                 VirtualizingPanel.CacheLengthUnit="Page">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Margin" Value="0"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,0,0,16" HorizontalAlignment="Stretch">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <ItemsControl Grid.Row="0" ItemsSource="{Binding Albums}" HorizontalAlignment="Stretch">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="{Binding Source={x:Reference RootAlbumsView}, Path=LibraryViewModel.LayoutColumns}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button BorderThickness="0"
+                                            Padding="0"
+                                            Width="150"
+                                            Height="194"
+                                            Cursor="Hand"
+                                            Click="AlbumButton_Click"
+                                            Margin="0,0,16,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}"
+                                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                        <Button.Background>
+                                            <MultiBinding Converter="{StaticResource SelectedAlbumBackgroundConverter}">
+                                                <Binding Path="Id"/>
+                                                <Binding Source="{x:Reference RootAlbumsView}" Path="LibraryViewModel.ExpandedAlbumId"/>
+                                                <Binding Path="DominantColor"/>
+                                            </MultiBinding>
+                                        </Button.Background>
+                                        <local:AlbumPage DataContext="{Binding}"/>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Grid.Row="1"
+                                DataContext="{Binding}"
+                                Visibility="{Binding ExpandedAlbumId, Converter={StaticResource NullToCollapseConverter}}"
+                                Margin="0,8,0,0"
+                                CornerRadius="4"
+                                BorderThickness="0"
+                                HorizontalAlignment="Stretch">
+                            <Border.Background>
+                                <ImageBrush ImageSource="{Binding ExpandedImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}"
+                                            RenderOptions.BitmapScalingMode="HighQuality"
+                                            Stretch="UniformToFill"/>
+                            </Border.Background>
+                            <Grid Margin="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <ContentControl x:Name="TracksContentPlaceholder"
+                                                Grid.Row="0"
+                                                Loaded="TracksContentPlaceholder_Loaded"
+                                                DataContext="{Binding}"
+                                                HorizontalContentAlignment="Stretch"
+                                                VerticalContentAlignment="Top"/>
+
+                                <Button Content="✕"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Top"
+                                        Padding="8,4"
+                                        Background="Transparent"
+                                        Foreground="{Binding ExpandedForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                                        BorderThickness="0"
+                                        FontSize="14"
+                                        Cursor="Hand"
+                                        Click="CloseTracksButton_Click"
+                                        Tag="{Binding}"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>
