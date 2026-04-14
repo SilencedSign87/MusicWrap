@@ -28,6 +28,8 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         [ObservableProperty] ObservableCollection<TrackRowItem> tracks = [];
         [ObservableProperty] List<int> allTrackIds = [];
         [ObservableProperty] List<int> selectedTrackIds = [];
+        [ObservableProperty] List<string> allTabs = ["Tracks", "Stats"];
+        [ObservableProperty] string selectedTab = "Tracks";
 
         private readonly PlaylistData _playlist;
         private readonly ISaveCoordinator _saveCoordinator;

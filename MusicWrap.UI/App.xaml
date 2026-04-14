@@ -25,6 +25,7 @@
             <converters:SelectedAlbumBackgroundConverter x:Key="SelectedAlbumBackgroundConverter"/>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
+            <converters:TabStringToVisibilityConverter x:Key="TabStringToVisibilityConverter"/>
         </ResourceDictionary>
 
     </Application.Resources>

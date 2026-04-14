@@ -257,7 +257,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="TrackListImageTemplate" DataType="local:TrackRowItem">
-            <Grid Margin="0,1" Cursor="Hand" Height="24">
+            <Grid Margin="1" Cursor="Hand" Height="24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="22"/>
                     <ColumnDefinition Width="24"/>

@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         Title="Indexer Manager"
         Height="700"
-        Width="1000"
+        Width="800"
         ShowInTaskbar="False"
         ThemeMode="Dark"
         ResizeMode="NoResize"
@@ -207,7 +207,7 @@
             </DockPanel>
         </Border>
 
-        <Border Grid.ColumnSpan="2" Grid.Row="1" Background="{StaticResource BackgroundLayer}" Padding="8,4">
+        <Border Grid.ColumnSpan="2" Grid.Row="1" Background="{StaticResource BackgroundLayer}" Padding="0">
             <ProgressBar
                 Height="6"
                 Minimum="0"

@@ -4,7 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Library.Views"
+             xmlns:viewmodel="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=viewmodel:LibraryEntryDetailPanelViewModel}"
              d:DesignHeight="800" d:DesignWidth="500">
     <Grid>
         <Grid.RowDefinitions>
@@ -48,7 +50,7 @@
                              SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
                              HorizontalAlignment="Right"
                              VerticalAlignment="Bottom"
-                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
                              BorderThickness="0"
                              Background="Transparent"
@@ -61,7 +63,7 @@
                         </ListBox.ItemsPanel>
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="6"/>
+                                <Setter Property="Padding" Value="8,6"/>
                                 <Setter Property="Margin" Value="2,0"/>
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter Property="Background" Value="Transparent"/>
@@ -106,10 +108,12 @@
         <Grid Grid.Row="1">
             <local:LibraryEntryAlbumsView
                 LibraryViewModel="{Binding LibraryViewModel, RelativeSource={RelativeSource AncestorType={x:Type local:LibraryEntryDetailPanel}}}"
-                Visibility="{Binding IsAlbumsTabActive, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <local:LibraryEntryTracksView Visibility="{Binding IsTracksTabActive, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Albums}"/>
+            <local:LibraryEntryTracksView 
+                Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}"/>
 
-            <StackPanel Visibility="{Binding IsStatsTabActive, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="10">
+            <StackPanel 
+                Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Stats}" Margin="10">
                 <TextBlock Text="{Binding StatsLine1}" FontSize="12" Margin="0,0,0,6"/>
                 <TextBlock Text="{Binding StatsLine2}" FontSize="12" Margin="0,0,0,6"/>
                 <TextBlock Text="{Binding StatsLine3}" FontSize="12"/>
@@ -118,12 +122,12 @@
             <TextBlock Text="Profile"
                        Margin="10"
                        FontSize="12"
-                       Visibility="{Binding IsProfileTabActive, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                       Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Profile}"/>
 
             <TextBlock Text="More"
                        Margin="10"
                        FontSize="12"
-                       Visibility="{Binding IsMoreTabActive, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                       Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=More}"/>
         </Grid>
     </Grid>
 </UserControl>

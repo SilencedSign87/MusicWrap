@@ -64,11 +64,6 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            if (!vm.IsTracksTabActive)
-            {
-                return;
-            }
-
             vm.TrackSearchQuery = query?.Trim() ?? string.Empty;
         }
 

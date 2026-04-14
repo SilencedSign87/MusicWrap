@@ -362,17 +362,16 @@ namespace MusicWrap.UI
                 var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
                 await LibraryCache.InitializeAsync(listBy, ascending);
 
-                if (trayService is not null)
-                {
-                    trayService.Initialize();
-                    //_trayIcon = TrayIconManager.GetTrayIcon();
-                    //_trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
-                }
 
                 player.LoadInitialState(userSettings);
                 windowToShow = (int)userSettings.LastWindowMode;
                 _saveCoordinator = Services.GetRequiredService<ISaveCoordinator>();
                 _saveOrchestration = Services.GetRequiredService<ISaveOrchestration>();
+
+                if (trayService is not null)
+                {
+                    trayService.Initialize();
+                }
             }
             catch
             {
@@ -389,7 +388,6 @@ namespace MusicWrap.UI
                 else
                 {
                     ShowMain();
-
                 }
             }
         }

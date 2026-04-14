@@ -71,16 +71,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private string statsLine2 = string.Empty;
         [ObservableProperty] private string statsLine3 = string.Empty;
 
-        public bool IsAlbumsTabActive => SelectedTab?.Key == LibraryDetailTabKey.Albums;
-        public bool IsTracksTabActive => SelectedTab?.Key == LibraryDetailTabKey.Tracks;
-        public bool IsProfileTabActive => SelectedTab?.Key == LibraryDetailTabKey.Profile;
-        public bool IsStatsTabActive => SelectedTab?.Key == LibraryDetailTabKey.Stats;
-        public bool IsMoreTabActive => SelectedTab?.Key == LibraryDetailTabKey.More;
-        public bool IsSortByName => SelectedTrackSortMode == TrackSortMode.Name;
-        public bool IsSortByAlbumName => SelectedTrackSortMode == TrackSortMode.AlbumName;
-        public bool IsSortByAlbumYear => SelectedTrackSortMode == TrackSortMode.AlbumYear;
-        public bool IsSortByDuration => SelectedTrackSortMode == TrackSortMode.Duration;
-
         public LibraryEntryDetailPanelViewModel(ILibraryCacheService libraryCache, TracksContextMenuService tracksContextMenuService, MusicLibrary library, IMusicPlayerService musicPlayerService)
         {
             _libraryCache = libraryCache;
@@ -111,7 +101,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 HeaderAlbumsCountText = "0";
                 HeaderTracksCountText = "0";
                 HeaderTotalDurationText = "00:00:00";
-                RaiseTabFlags();
                 return;
             }
 
@@ -185,8 +174,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             {
                 LoadSelectedTab();
             }
-
-            RaiseTabFlags();
         }
 
         private void LoadSelectedTab()
@@ -270,10 +257,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         partial void OnSelectedTrackSortModeChanged(TrackSortMode value)
         {
-            OnPropertyChanged(nameof(IsSortByName));
-            OnPropertyChanged(nameof(IsSortByAlbumName));
-            OnPropertyChanged(nameof(IsSortByAlbumYear));
-            OnPropertyChanged(nameof(IsSortByDuration));
 
             _ = RefreshTracksViewAsync(false);
         }
@@ -432,15 +415,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
 
             return [T(LibraryDetailTabKey.Albums, "Albums"), T(LibraryDetailTabKey.Stats, "Stats")];
-        }
-
-        private void RaiseTabFlags()
-        {
-            OnPropertyChanged(nameof(IsAlbumsTabActive));
-            OnPropertyChanged(nameof(IsTracksTabActive));
-            OnPropertyChanged(nameof(IsProfileTabActive));
-            OnPropertyChanged(nameof(IsStatsTabActive));
-            OnPropertyChanged(nameof(IsMoreTabActive));
         }
 
     }
