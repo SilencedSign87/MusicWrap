@@ -43,6 +43,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILibraryCacheService _libraryCache;
         private readonly TracksContextMenuService _tracksContextMenuService;
         private readonly string _searchQuery;
+        private readonly TrackSortMode _sortMode;
         private HashSet<int> _albumTrackIds = [];
 
         public AlbumTracksViewModel(
@@ -52,12 +53,14 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             int albumId,
             string dominantColor = "#1a1a1a",
             string foregroundColor = "#ffffff",
-            string? searchQuery = null)
+            string? searchQuery = null,
+            TrackSortMode sortMode = TrackSortMode.Year)
         {
             _library = library;
             _libraryCache = libraryCache;
             _tracksContextMenuService = tracksContextMenuService;
             _searchQuery = searchQuery?.Trim() ?? string.Empty;
+            _sortMode = sortMode;
             this.albumId = albumId;
             this.dominantColor = dominantColor;
             this.foregroundColor = foregroundColor;
@@ -77,15 +80,45 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 ? allTrackIds
                 : _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
 
-            var trackRows = _libraryCache.TrackIdsToTrackRowItems(displayTrackIds)
-                .OrderBy(t => t.DiskNumber)
-                .ThenBy(t => t.TrackNumber)
-                .ThenBy(t => t.Title)
-                .ToList();
+            var trackRows = SortTracks(_libraryCache.TrackIdsToTrackRowItems(displayTrackIds)).ToList();
 
             Tracks = new ObservableCollection<TrackRowItem>(trackRows);
-            AllTrackIds = allTrackIds.ToList();
+            AllTrackIds = trackRows.Select(t => t.Id).ToList();
             _albumTrackIds = allTrackIds.ToHashSet();
+        }
+
+        private IEnumerable<TrackRowItem> SortTracks(List<TrackRowItem> rows)
+        {
+            if (_sortMode == TrackSortMode.Title)
+            {
+                return rows
+                    .OrderBy(t => t.Title, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(t => t.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(t => t.DiskNumber)
+                    .ThenBy(t => t.TrackNumber);
+            }
+
+            if (_sortMode == TrackSortMode.ArtistName)
+            {
+                return rows
+                    .OrderBy(t => t.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(t => t.DiskNumber)
+                    .ThenBy(t => t.TrackNumber);
+            }
+
+            if (_sortMode == TrackSortMode.Duration)
+            {
+                return rows
+                    .OrderBy(t => _libraryCache.GetTrackById(t.Id)?.Duration ?? int.MaxValue)
+                    .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return rows
+                .OrderBy(t => AlbumYear)
+                .ThenBy(t => t.DiskNumber)
+                .ThenBy(t => t.TrackNumber)
+                .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase);
         }
 
         public bool ContainsTrack(int trackId)

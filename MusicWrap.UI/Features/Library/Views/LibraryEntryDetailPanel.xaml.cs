@@ -46,7 +46,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 nameof(LibraryViewModel),
                 typeof(LibraryViewModel),
                 typeof(LibraryEntryDetailPanel),
-                new PropertyMetadata(null));
+                new PropertyMetadata(null, OnLibraryViewModelChanged));
 
         public LibraryViewModel? LibraryViewModel
         {
@@ -60,6 +60,16 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
 
             panel._viewModel.LoadEntry(e.NewValue as LibraryEntry);
+        }
+
+        private static void OnLibraryViewModelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not LibraryEntryDetailPanel panel)
+            {
+                return;
+            }
+
+            panel._viewModel.AttachLibraryViewModel(e.NewValue as LibraryViewModel);
         }
     }
 }

@@ -48,8 +48,11 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         [ObservableProperty] private double loadingProgressValue = 0;
         [ObservableProperty] private int layoutColumns = 1;
+        [ObservableProperty] private TrackSortMode detailSortMode = TrackSortMode.Year;
+        [ObservableProperty] private bool detailSortAscending = true;
 
         private List<AlbumData> _visibleAlbums = [];
+        private Dictionary<int, int> _albumDurationById = [];
 
         private CancellationTokenSource? _imageCts;
         private string _activeSearchQuery = string.Empty;
@@ -119,6 +122,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             _imageCts?.Cancel(); // cancel previous image loading if any
             _imageCts = null;
+            _albumDurationById = [];
 
             if (value == null)
             {
@@ -130,6 +134,26 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             RefreshVisibleAlbumsData();
             //LoadAlbumsForEntry(value);
+        }
+
+        partial void OnDetailSortModeChanged(TrackSortMode value)
+        {
+            if (SelectedEntry is null)
+            {
+                return;
+            }
+
+            RefreshVisibleAlbumsData();
+        }
+
+        partial void OnDetailSortAscendingChanged(bool value)
+        {
+            if (SelectedEntry is null)
+            {
+                return;
+            }
+
+            RefreshVisibleAlbumsData();
         }
 
         [RelayCommand]
@@ -245,6 +269,53 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
         }
 
+        public void SetDetailSortOptions(TrackSortMode sortMode, bool ascending)
+        {
+            DetailSortMode = sortMode;
+            DetailSortAscending = ascending;
+        }
+
+        public void ApplyGlobalTrackOrder(IReadOnlyList<int> orderedTrackIds)
+        {
+            if (SelectedEntry is null || orderedTrackIds.Count == 0 || _visibleAlbums.Count == 0)
+            {
+                return;
+            }
+
+            var albumOrder = new List<int>(_visibleAlbums.Count);
+            var seenAlbumIds = new HashSet<int>();
+
+            foreach (var trackId in orderedTrackIds)
+            {
+                var albumId = _LibraryCache.GetTrackById(trackId)?.AlbumId;
+                if (!albumId.HasValue)
+                {
+                    continue;
+                }
+
+                if (seenAlbumIds.Add(albumId.Value))
+                {
+                    albumOrder.Add(albumId.Value);
+                }
+            }
+
+            if (albumOrder.Count == 0)
+            {
+                return;
+            }
+
+            var rankByAlbumId = albumOrder
+                .Select((albumId, index) => (albumId, index))
+                .ToDictionary(x => x.albumId, x => x.index);
+
+            _visibleAlbums = _visibleAlbums
+                .OrderBy(a => rankByAlbumId.TryGetValue(a.Id, out var rank) ? rank : int.MaxValue)
+                .ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            ReflowRowsFromVisibleAlbums();
+        }
+
         private void RefreshVisibleAlbumsData()
         {
             if (SelectedEntry == null)
@@ -271,6 +342,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             {
                 albums = FilterAlbums(albums, _activeSearchQuery);
             }
+
+            albums = SortAlbumsByCurrentMode(albums);
+
             _visibleAlbums = albums;
             ReflowRowsFromVisibleAlbums();
             _imageCts?.Cancel();
@@ -615,6 +689,77 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     a.ArtistNames.Contains(q, StringComparison.OrdinalIgnoreCase) ||
                     _LibraryCache.GetTracksForAlbum(a.Id, q).Length > 0)
                 .ToList();
+        }
+
+        private List<AlbumData> SortAlbumsByCurrentMode(List<AlbumData> albums)
+        {
+            IEnumerable<AlbumData> ordered;
+
+            if (DetailSortMode == TrackSortMode.Title)
+            {
+                ordered = DetailSortAscending
+                    ? albums
+                        .OrderBy(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(a => a.Year)
+                    : albums
+                        .OrderByDescending(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(a => a.Year);
+            }
+            else if (DetailSortMode == TrackSortMode.ArtistName)
+            {
+                ordered = DetailSortAscending
+                    ? albums
+                        .OrderBy(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(a => a.Year)
+                    : albums
+                        .OrderByDescending(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(a => a.Year);
+            }
+            else if (DetailSortMode == TrackSortMode.Duration)
+            {
+                ordered = DetailSortAscending
+                    ? albums
+                        .OrderBy(a => GetAlbumDurationSeconds(a.Id))
+                        .ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                    : albums
+                        .OrderByDescending(a => GetAlbumDurationSeconds(a.Id))
+                        .ThenByDescending(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase);
+            }
+            else
+            {
+                ordered = DetailSortAscending
+                    ? albums
+                        .OrderBy(a => a.Year == 0 ? int.MaxValue : a.Year)
+                        .ThenBy(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase)
+                    : albums
+                        .OrderByDescending(a => a.Year == 0 ? int.MinValue : a.Year)
+                        .ThenByDescending(a => a.Title, StringComparer.OrdinalIgnoreCase)
+                        .ThenByDescending(a => a.ArtistNames, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return ordered.ToList();
+        }
+
+        private int GetAlbumDurationSeconds(int albumId)
+        {
+            if (_albumDurationById.TryGetValue(albumId, out var duration))
+            {
+                return duration;
+            }
+
+            var total = _LibraryCache.GetTracksForAlbum(albumId)
+                .Select(trackId => _LibraryCache.GetTrackById(trackId)?.Duration ?? 0)
+                .Sum();
+
+            _albumDurationById[albumId] = total;
+            return total;
         }
 
         public MusicLibrary GetLibrary() => _library;

@@ -35,6 +35,10 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>basswasapi.dll</Link>
 		</None>
+		<None Update="Native\x64\bassopus.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>bassopus.dll</Link>
+		</None>
 	</ItemGroup>
 	
 	<ItemGroup>

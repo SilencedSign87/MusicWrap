@@ -18,9 +18,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 {
     public enum TrackSortMode
     {
-        Name,
-        AlbumName,
-        AlbumYear,
+        Title,
+        Year,
+        ArtistName,
         Duration
     }
 
@@ -31,6 +31,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         Profile,
         Stats,
         More
+    }
+
+    public enum SortDirectionOption
+    {
+        Ascending,
+        Descending
     }
 
     public sealed class LibraryDetailTabItem
@@ -45,9 +51,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly TracksContextMenuService _tracksContextMenuService;
         private readonly MusicLibrary _library;
         private readonly IMusicPlayerService _musicPlayerService;
+        private LibraryViewModel? _hostLibraryViewModel;
         private int _headerStatsRequestId;
         private int _tracksViewRequestId;
+        private int _entryPreloadRequestId;
         private List<int> _entryTrackIds = [];
+        private LibraryEntryStatsModel? _cachedStats;
 
         [ObservableProperty] private LibraryEntry? currentEntry;
 
@@ -64,7 +73,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private ObservableCollection<TrackRowItem> tracks = [];
         [ObservableProperty] private List<int> selectedTrackIds = [];
         [ObservableProperty] private List<int> allTrackIds = [];
-        [ObservableProperty] private TrackSortMode selectedTrackSortMode = TrackSortMode.AlbumName;
+        [ObservableProperty] private TrackSortMode selectedTrackSortMode = TrackSortMode.Year;
+        [ObservableProperty] private bool sortAscending = false;
+        [ObservableProperty] private SortDirectionOption selectedSortDirection = SortDirectionOption.Ascending;
         [ObservableProperty] private string trackSearchQuery = string.Empty;
 
         [ObservableProperty] private string statsLine1 = string.Empty;
@@ -79,6 +90,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _musicPlayerService = musicPlayerService;
         }
 
+        public void AttachLibraryViewModel(LibraryViewModel? libraryViewModel)
+        {
+            _hostLibraryViewModel = libraryViewModel;
+            _hostLibraryViewModel?.SetDetailSortOptions(SelectedTrackSortMode, SortAscending);
+        }
+
         public void LoadEntry(LibraryEntry? entry)
         {
             CurrentEntry = entry;
@@ -88,6 +105,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             AllTrackIds = [];
             TrackSearchQuery = string.Empty;
             _entryTrackIds = [];
+            _cachedStats = null;
             StatsLine1 = string.Empty;
             StatsLine2 = string.Empty;
             StatsLine3 = string.Empty;
@@ -113,6 +131,49 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             Tabs = BuildTabs(entry.Type);
             SelectedTab = Tabs.FirstOrDefault();
             _ = LoadHeaderStatsDeferredAsync(entry);
+            _ = PreloadEntryDataAsync(entry, SelectedTab?.Key);
+        }
+
+        private async Task PreloadEntryDataAsync(LibraryEntry entry, LibraryDetailTabKey? prioritizedTab)
+        {
+            var requestId = Interlocked.Increment(ref _entryPreloadRequestId);
+
+            async Task LoadTracksAsync()
+            {
+                var trackIds = await Task.Run(() => _libraryCache.GetTrackIdsForEntry(entry));
+                if (requestId != Volatile.Read(ref _entryPreloadRequestId))
+                {
+                    return;
+                }
+
+                _entryTrackIds = trackIds.ToList();
+                await RefreshTracksViewAsync(false, true);
+            }
+
+            async Task LoadStatsAsync()
+            {
+                var stats = await Task.Run(() => _libraryCache.GetStatsForEntry(entry));
+                if (requestId != Volatile.Read(ref _entryPreloadRequestId))
+                {
+                    return;
+                }
+
+                _cachedStats = stats;
+                if (SelectedTab?.Key == LibraryDetailTabKey.Stats)
+                {
+                    ApplyStats(stats);
+                }
+            }
+
+            if (prioritizedTab == LibraryDetailTabKey.Stats)
+            {
+                await LoadStatsAsync();
+                await LoadTracksAsync();
+                return;
+            }
+
+            await LoadTracksAsync();
+            await LoadStatsAsync();
         }
 
         private async Task LoadHeaderStatsDeferredAsync(LibraryEntry entry)
@@ -160,6 +221,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             return $"{(int)span.TotalHours:D2}:{span.Minutes:D2}:{span.Seconds:D2}";
         }
 
+        private void ApplyStats(LibraryEntryStatsModel stats)
+        {
+            StatsLine1 = "Albums: " + stats.AlbumsCount;
+            StatsLine2 = "Tracks: " + stats.TracksCount;
+            StatsLine3 = "Artists: " + stats.ArtistsCount;
+        }
+
         [RelayCommand]
         private void SelectTab(LibraryDetailTabItem? tab)
         {
@@ -183,21 +251,18 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             if (SelectedTab.Key == LibraryDetailTabKey.Albums)
             {
-                Albums = new ObservableCollection<AlbumSummary>(_libraryCache.GetAlbumsForEntry(CurrentEntry));
+                return;
             }
             else if (SelectedTab.Key == LibraryDetailTabKey.Tracks)
             {
-                var ids = _libraryCache.GetTrackIdsForEntry(CurrentEntry);
-                _entryTrackIds = ids.ToList();
-                SelectedTrackIds = [];
                 _ = RefreshTracksViewAsync(false);
             }
             else if (SelectedTab.Key == LibraryDetailTabKey.Stats)
             {
-                var stats = _libraryCache.GetStatsForEntry(CurrentEntry);
-                StatsLine1 = "Albums: " + stats.AlbumsCount;
-                StatsLine2 = "Tracks: " + stats.TracksCount;
-                StatsLine3 = "Artists: " + stats.ArtistsCount;
+                if (_cachedStats is not null)
+                {
+                    ApplyStats(_cachedStats);
+                }
             }
         }
 
@@ -230,23 +295,31 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _musicPlayerService.SetQueue(AllTrackIds);
             _musicPlayerService.PlayTrack(AllTrackIds[0]);
         }
-
         [RelayCommand]
-        private void SortTracksByName()
+        private void ShuffleAllTracks()
         {
-            SelectedTrackSortMode = TrackSortMode.Name;
+            if (AllTrackIds.Count == 0) return;
+            _musicPlayerService.SetQueue(AllTrackIds.Shuffle());
+            _musicPlayerService.PlayIndex(0);
+
         }
 
         [RelayCommand]
-        private void SortTracksByAlbumName()
+        private void SortTracksByTitle()
         {
-            SelectedTrackSortMode = TrackSortMode.AlbumName;
+            SelectedTrackSortMode = TrackSortMode.Title;
         }
 
         [RelayCommand]
-        private void SortTracksByAlbumYear()
+        private void SortTracksByYear()
         {
-            SelectedTrackSortMode = TrackSortMode.AlbumYear;
+            SelectedTrackSortMode = TrackSortMode.Year;
+        }
+
+        [RelayCommand]
+        private void SortTracksByArtistName()
+        {
+            SelectedTrackSortMode = TrackSortMode.ArtistName;
         }
 
         [RelayCommand]
@@ -255,20 +328,66 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             SelectedTrackSortMode = TrackSortMode.Duration;
         }
 
+        [RelayCommand]
+        private void SetSortAscending()
+        {
+            SortAscending = true;
+        }
+
+        [RelayCommand]
+        private void SetSortDescending()
+        {
+            SortAscending = false;
+        }
+
         partial void OnSelectedTrackSortModeChanged(TrackSortMode value)
         {
+            OnPropertyChanged(nameof(IsSortByTitle));
+            OnPropertyChanged(nameof(IsSortByYear));
+            OnPropertyChanged(nameof(IsSortByArtistName));
+            OnPropertyChanged(nameof(IsSortByDuration));
+            _hostLibraryViewModel?.SetDetailSortOptions(value, SortAscending);
+            _ = RefreshTracksViewAsync(false, true);
+        }
 
-            _ = RefreshTracksViewAsync(false);
+        partial void OnSortAscendingChanged(bool value)
+        {
+            var expectedDirection = value ? SortDirectionOption.Ascending : SortDirectionOption.Descending;
+            if (SelectedSortDirection != expectedDirection)
+            {
+                SelectedSortDirection = expectedDirection;
+            }
+
+            OnPropertyChanged(nameof(IsSortAscending));
+            OnPropertyChanged(nameof(IsSortDescending));
+            _hostLibraryViewModel?.SetDetailSortOptions(SelectedTrackSortMode, value);
+            _ = RefreshTracksViewAsync(false, true);
+        }
+
+        partial void OnSelectedSortDirectionChanged(SortDirectionOption value)
+        {
+            var nextAscending = value == SortDirectionOption.Ascending;
+            if (SortAscending != nextAscending)
+            {
+                SortAscending = nextAscending;
+            }
         }
 
         partial void OnTrackSearchQueryChanged(string value)
         {
-            _ = RefreshTracksViewAsync(true);
+            _ = RefreshTracksViewAsync(true, true);
         }
 
-        private async Task RefreshTracksViewAsync(bool debounce)
+        public bool IsSortByTitle => SelectedTrackSortMode == TrackSortMode.Title;
+        public bool IsSortByYear => SelectedTrackSortMode == TrackSortMode.Year;
+        public bool IsSortByArtistName => SelectedTrackSortMode == TrackSortMode.ArtistName;
+        public bool IsSortByDuration => SelectedTrackSortMode == TrackSortMode.Duration;
+        public bool IsSortAscending => SortAscending;
+        public bool IsSortDescending => !SortAscending;
+
+        private async Task RefreshTracksViewAsync(bool debounce, bool forceWhenTabHidden = false)
         {
-            if (SelectedTab?.Key != LibraryDetailTabKey.Tracks)
+            if (!forceWhenTabHidden && SelectedTab?.Key != LibraryDetailTabKey.Tracks)
             {
                 return;
             }
@@ -287,8 +406,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             var sourceIds = _entryTrackIds.ToArray();
             var query = TrackSearchQuery?.Trim() ?? string.Empty;
             var sortMode = SelectedTrackSortMode;
+            var ascending = SortAscending;
 
-            var result = await Task.Run(() => BuildTracksResult(sourceIds, query, sortMode));
+            var result = await Task.Run(() => BuildTracksResult(sourceIds, query, sortMode, ascending));
 
             if (requestId != Volatile.Read(ref _tracksViewRequestId))
             {
@@ -302,6 +422,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 Tracks = new ObservableCollection<TrackRowItem>(result.Rows);
                 AllTrackIds = result.TrackIds;
                 SelectedTrackIds = result.TrackIds.Where(previousSelection.Contains).ToList();
+                _hostLibraryViewModel?.ApplyGlobalTrackOrder(result.TrackIds);
             }
 
             if (!Application.Current.Dispatcher.CheckAccess())
@@ -313,7 +434,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             Apply();
         }
 
-        private (List<TrackRowItem> Rows, List<int> TrackIds) BuildTracksResult(int[] sourceIds, string query, TrackSortMode sortMode)
+        private (List<TrackRowItem> Rows, List<int> TrackIds) BuildTracksResult(int[] sourceIds, string query, TrackSortMode sortMode, bool ascending)
         {
             if (sourceIds.Length == 0)
             {
@@ -332,55 +453,90 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     .ToList();
             }
 
-            IEnumerable<TrackRowItem> ordered;
+            var trackById = sourceIds
+                .Select(id => _libraryCache.GetTrackById(id))
+                .Where(t => t is not null)
+                .Cast<Track>()
+                .ToDictionary(t => t.Id, t => t);
 
-            if (sortMode == TrackSortMode.Name)
-            {
-                ordered = rows
-                    .OrderBy(t => t.Title, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(t => t.ArtistNames, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(t => t.AlbumName, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(t => t.DiskNumber)
-                    .ThenBy(t => t.TrackNumber);
-            }
-            else if (sortMode == TrackSortMode.AlbumName)
-            {
-                ordered = rows
-                    .OrderBy(t => t.AlbumName, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(t => t.DiskNumber)
-                    .ThenBy(t => t.TrackNumber)
-                    .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase);
-            }
-                    else if (sortMode == TrackSortMode.AlbumYear)
-            {
-                var albumYearById = _library.Albums.ToDictionary(a => a.Id, a => a.Year);
+            var albumIds = rows
+                .Select(r => trackById.TryGetValue(r.Id, out var t) ? t.AlbumId : (int?)null)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .Distinct()
+                .ToList();
 
-                ordered = rows
-                    .OrderBy(t =>
+            var albumById = _library.Albums.ToDictionary(a => a.Id, a => a);
+            var albumArtistById = albumIds.ToDictionary(id => id, id => _libraryCache.GetArtistNamesForAlbum(id));
+            var albumDurationById = albumIds.ToDictionary(
+                id => id,
+                id => _libraryCache.GetTracksForAlbum(id).Sum(trackId => _libraryCache.GetTrackById(trackId)?.Duration ?? 0));
+
+            IEnumerable<int> orderedAlbumIds;
+
+            if (sortMode == TrackSortMode.Title)
+            {
+                orderedAlbumIds = albumIds
+                    .OrderBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Year : int.MaxValue);
+            }
+            else if (sortMode == TrackSortMode.ArtistName)
+            {
+                orderedAlbumIds = albumIds
+                    .OrderBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Year : int.MaxValue);
+            }
+            else if (sortMode == TrackSortMode.Duration)
+            {
+                orderedAlbumIds = albumIds
+                    .OrderBy(id => albumDurationById[id])
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase);
+            }
+            else
+            {
+                orderedAlbumIds = albumIds
+                    .OrderBy(id =>
                     {
-                        var track = _libraryCache.GetTrackById(t.Id);
-                        if (track is null)
+                        if (!albumById.TryGetValue(id, out var album) || album.Year <= 0)
                         {
                             return int.MaxValue;
                         }
 
-                        return albumYearById.TryGetValue(track.AlbumId, out var year) ? year : int.MaxValue;
+                        return album.Year;
                     })
-                    .ThenBy(t => t.AlbumName, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(t => t.DiskNumber)
-                    .ThenBy(t => t.TrackNumber)
-                    .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase);
-            }
-            else
-            {
-                ordered = rows
-                    .OrderBy(t => _libraryCache.GetTrackById(t.Id)?.Duration ?? int.MaxValue)
-                    .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase);
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase);
             }
 
-                    var orderedRows = ordered.ToList();
-                    var orderedIds = orderedRows.Select(r => r.Id).ToList();
-                    return (orderedRows, orderedIds);
+            if (!ascending)
+            {
+                orderedAlbumIds = orderedAlbumIds.Reverse();
+            }
+
+            var albumRankById = orderedAlbumIds
+                .Select((albumId, index) => (albumId, index))
+                .ToDictionary(x => x.albumId, x => x.index);
+
+            var orderedRows = rows
+                .OrderBy(r =>
+                {
+                    if (!trackById.TryGetValue(r.Id, out var track))
+                    {
+                        return int.MaxValue;
+                    }
+
+                    return albumRankById.TryGetValue(track.AlbumId, out var rank) ? rank : int.MaxValue;
+                })
+                .ThenBy(r => r.DiskNumber)
+                .ThenBy(r => r.TrackNumber)
+                .ThenBy(r => r.Title, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var orderedIds = orderedRows.Select(r => r.Id).ToList();
+            return (orderedRows, orderedIds);
         }
 
         private static ObservableCollection<LibraryDetailTabItem> BuildTabs(string type)

@@ -203,7 +203,7 @@
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="40" />
+                        <RowDefinition Height="42" />
                     </Grid.RowDefinitions>
 
                     <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
@@ -212,14 +212,25 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Text="{Binding SelectedEntry.Title}" FontSize="16" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Row="1" Text="{Binding SelectedEntry.Description}" FontSize="12"/>
+                        <StackPanel Grid.Row="1" Orientation="Horizontal">
+                            <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12" VerticalAlignment="Center"/>
+                            <Button Style="{StaticResource SubtleButton}" Margin="4,0,0,0" ToolTip="Play">
+                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
+                            </Button>
+                            <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle">
+                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
+                            </Button>
+                            <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle">
+                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE712;"/>
+                            </Button>
+                        </StackPanel>
                     </Grid>
                     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource BackgroundLayer}">
                         <ListBox
-                            Margin="4,0"
+                            Margin="100,0,4,0"
                             ItemsSource="{Binding AllTabs}"
                             SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
-                            HorizontalAlignment="Right"
+                            HorizontalAlignment="Left"
                             VerticalAlignment="Bottom"
                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
@@ -282,7 +293,7 @@
                 <Grid
                     Grid.Row="1" 
                     >
-                    <StackPanel Visibility="{Binding SelectedTab, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}">
+                    <StackPanel Visibility="{Binding SelectedTab, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}" Margin="8,0">
                         <controlsM:TracksView
                         ItemsSource="{Binding Tracks}"
                         AllTrackIds="{Binding AllTrackIds}"

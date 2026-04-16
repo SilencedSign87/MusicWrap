@@ -197,8 +197,13 @@ namespace MusicWrap.Data.Library.Application
                     };
                 }
 
-                int artistId = GetOrCreateArtist(
-                    string.IsNullOrWhiteSpace(request.ArtistName) ? "Unknown Artist" : request.ArtistName);
+                int[] artistIds = [];
+                var artistsNames = request.ArtistName.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var artistName in artistsNames)
+                {
+                    var artistId = GetOrCreateArtist(artistName);
+                    artistIds = [.. artistIds, artistId];
+                }
 
                 int coverId = 0;
                 if (request.ThumbnailBytes is { Length: > 0 } &&
@@ -209,8 +214,8 @@ namespace MusicWrap.Data.Library.Application
 
                 int albumId = GetOrCreateAlbum(
                     string.IsNullOrWhiteSpace(request.AlbumName) ? "Unknown Album" : request.AlbumName,
-                    [artistId],
-                    [artistId],
+                    artistIds,
+                    artistIds,
                     request.Year,
                     coverId);
 
@@ -219,7 +224,7 @@ namespace MusicWrap.Data.Library.Application
                     Id = _library.GenerateTrackId(),
                     Path = string.Empty,
                     Title = request.Title.Trim(),
-                    ArtistIds = [artistId],
+                    ArtistIds = artistIds,
                     AlbumId = albumId,
                     GenreIds = [],
                     Duration = Math.Max(0, request.DurationSeconds),
@@ -273,16 +278,24 @@ namespace MusicWrap.Data.Library.Application
                     };
                 }
 
-                int artistId = GetOrCreateArtist(string.IsNullOrWhiteSpace(request.ArtistName) ? "Unknown Artist" : request.ArtistName);
+                int[] artistIds = [];
+                var artistsNames = request.ArtistName.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var artistName in artistsNames)
+                {
+                    var artistId = GetOrCreateArtist(artistName);
+                    artistIds = [.. artistIds, artistId];
+                }
+
                 int albumId = GetOrCreateAlbum(
                     string.IsNullOrWhiteSpace(request.AlbumName) ? "Unknown Album" : request.AlbumName,
-                    [artistId],
-                    [artistId],
+                    artistIds,
+                    artistIds,
                     request.Year,
                     existing.CoverId);
 
                 existing.Title = request.Title.Trim();
-                existing.ArtistIds = [artistId];
+                existing.ArtistIds = artistIds;
                 existing.AlbumId = albumId;
                 if (request.DurationSeconds > 0)
                 {

@@ -176,7 +176,8 @@ namespace MusicWrap.UI.Features.Library.Views
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,
-                        LibraryViewModel.ActiveSearchQuery
+                        LibraryViewModel.ActiveSearchQuery,
+                        LibraryViewModel.DetailSortMode
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
                     contentControl.Content = tracksPage;

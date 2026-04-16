@@ -24,6 +24,7 @@ namespace MusicWrap.Core
         private bool _isInitialized;
         private bool _isWasapiInitialized;
         private int _flacPluginHandle;
+        private int _opusPluginHandle;
 
         private OutputMode _currentOutputMode = OutputMode.WasapiShared;
 
@@ -64,10 +65,17 @@ namespace MusicWrap.Core
             if (!_isInitialized) return false;
 
             _flacPluginHandle = Bass.BASS_PluginLoad("bassflac.dll");
+            _opusPluginHandle = Bass.BASS_PluginLoad("bassopus.dll");
+
             if (_flacPluginHandle == 0)
             {
                 var err = Bass.BASS_ErrorGetCode();
                 Debug.WriteLine($"Failed to load FLAC plugin: {err}");
+            }
+            if (_opusPluginHandle == 0)
+            {
+                var err = Bass.BASS_ErrorGetCode();
+                Debug.WriteLine($"Failed to load Opus plugin: {err}");
             }
 
             // initialize wasapi
@@ -496,6 +504,10 @@ namespace MusicWrap.Core
             {
                 Bass.BASS_PluginFree(_flacPluginHandle);
                 _flacPluginHandle = 0;
+            }
+            if (_opusPluginHandle != 0) {
+                Bass.BASS_PluginFree(_opusPluginHandle);
+                _opusPluginHandle = 0;
             }
 
             if (_isInitialized)

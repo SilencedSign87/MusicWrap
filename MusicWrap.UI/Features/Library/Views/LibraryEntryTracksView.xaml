@@ -5,7 +5,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:uimodels="clr-namespace:MusicWrap.UI.Controls.Models"
-             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:helpers="clr-namespace:MusicWrap.UI.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -27,33 +26,9 @@
     </UserControl.Resources>
     <Grid Margin="8,0">
         <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" HorizontalAlignment="Right" Margin="0,0,0,6">
-            <Menu>
-                <MenuItem Header="Play" Icon="{ex:Icon Glyph=E768}" Command="{Binding PlayAllTracksCommand}"/>
-                <MenuItem Header="Sort" Icon="{ex:Icon Glyph=E8CB}">
-                    <MenuItem Header="Name"
-                              IsCheckable="True"
-                              IsChecked="{Binding IsSortByName, Mode=OneWay}"
-                              Command="{Binding SortTracksByNameCommand}"/>
-                    <MenuItem Header="Album - Name"
-                              IsCheckable="True"
-                              IsChecked="{Binding IsSortByAlbumName, Mode=OneWay}"
-                              Command="{Binding SortTracksByAlbumNameCommand}"/>
-                    <MenuItem Header="Album - Year"
-                              IsCheckable="True"
-                              IsChecked="{Binding IsSortByAlbumYear, Mode=OneWay}"
-                              Command="{Binding SortTracksByAlbumYearCommand}"/>
-                    <MenuItem Header="Duration"
-                              IsCheckable="True"
-                              IsChecked="{Binding IsSortByDuration, Mode=OneWay}"
-                              Command="{Binding SortTracksByDurationCommand}"/>
-                </MenuItem>
-            </Menu>
-        </StackPanel>
-        <uimodels:TracksView ItemsSource="{Binding Tracks}" Grid.Row="1"
+        <uimodels:TracksView ItemsSource="{Binding Tracks}" Grid.Row="0"
                              AllTrackIds="{Binding AllTrackIds}"
                              SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
                              ContextMenu="{StaticResource TracksContextMenu}"

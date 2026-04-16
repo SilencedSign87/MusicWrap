@@ -301,7 +301,7 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
     private async Task<IReadOnlyList<YoutubeSearchItem>> SearchArtistsAsync(string query, CancellationToken cancellationToken)
     {
         var all = await _ytmClient.SearchAsync(query, SearchCategory.Artists)
-            .FetchItemsAsync(0, 40, cancellationToken);
+            .FetchItemsAsync(0, 50, cancellationToken);
 
         var artists = all
             .OfType<ArtistSearchResult>()
@@ -602,7 +602,7 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
 
         var albumGroups = artistInfo.Albums
             .Where(a => !string.IsNullOrWhiteSpace(a.Id) && !string.IsNullOrWhiteSpace(a.Name))
-            .Take(24)
+            .Take(50)
             .Select(a => new YoutubeDetailGroup
             {
                 GroupId = $"album::{a.Id}",
@@ -675,8 +675,8 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                             Id = video.Id,
                             Title = video.Name,
                             Artist = JoinArtists(video.Artists),
-                            Album = string.Empty,
-                            Genre = string.Empty,
+                            Album = video.Name,
+                            Genre = "video",
                             Duration = string.Empty,
                             Subtitle = BuildArtistVideoSubtitle(video)
                         }
