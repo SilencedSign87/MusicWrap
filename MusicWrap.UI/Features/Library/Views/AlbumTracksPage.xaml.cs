@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core;
 using MusicWrap.Data.Library;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Features.Library.Services;
@@ -12,6 +11,7 @@ using System.Linq;
 using MusicWrap.Data.Library.Models;
 using System.IO;
 using System.Diagnostics;
+using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Features.Library.Views
 {

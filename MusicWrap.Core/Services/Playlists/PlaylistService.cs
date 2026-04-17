@@ -3,17 +3,21 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MusicWrap.Data.Playlist
+namespace MusicWrap.Core.Services.Playlists
 {
     public interface IPlaylistService
     {
         void CreatePlaylist(string name);
         List<PlaylistMenuItemModel> GetMenuItems(IEnumerable<int> trackIds);
         void SetTracksInPlaylist(IEnumerable<int> trackIds, int playlistId, bool shouldBeInPlaylist);
+        event EventHandler? PlaylistsChanged;
+        event EventHandler<PlaylistItemsChangedEventArgs>? PlaylistItemsChanged;
     }
     public class PlaylistService : IPlaylistService
     {
         private readonly PlaylistData _playlists;
+        public event EventHandler? PlaylistsChanged;
+        public event EventHandler<PlaylistItemsChangedEventArgs>? PlaylistItemsChanged;
 
         public PlaylistService(PlaylistData playlist)
         {
@@ -96,7 +100,7 @@ namespace MusicWrap.Data.Playlist
             if (string.IsNullOrWhiteSpace(name))
                 return;
 
-            _playlists.Playlists.Add(new Models.Playlist
+            _playlists.Playlists.Add(new Playlist
             {
                 Id = _playlists.GenerateNextPlaylistId(),
                 Name = name,
@@ -105,11 +109,23 @@ namespace MusicWrap.Data.Playlist
         }
     }
 
-    public class PlaylistMenuItemModel
+    public sealed class PlaylistMenuItemModel
     {
         public int PlaylistId { get; set; }
         public string Name { get; set; } = string.Empty;
         public bool IsChecked { get; set; } = false;
         public long UpdatedatUtcTicks { get; set; } = 0;
+    }
+    public sealed class PlaylistItemsChangedEventArgs : EventArgs
+    {
+        public int PlaylistId { get; }
+        public IEnumerable<int> TrackIds { get; }
+        public bool ShouldBeInPlaylist { get; }
+        public PlaylistItemsChangedEventArgs(int playlistId, IEnumerable<int> trackIds, bool shouldBeInPlaylist)
+        {
+            PlaylistId = playlistId;
+            TrackIds = trackIds;
+            ShouldBeInPlaylist = shouldBeInPlaylist;
+        }
     }
 }

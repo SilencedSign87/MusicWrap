@@ -1,6 +1,5 @@
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Library.Components;
@@ -20,6 +19,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Shell.Windows
 {

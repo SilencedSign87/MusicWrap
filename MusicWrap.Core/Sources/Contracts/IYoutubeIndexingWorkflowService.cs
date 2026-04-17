@@ -1,4 +1,4 @@
-using MusicWrap.Data.Providers.Youtube;
+using MusicWrap.Core.Services.Providers.Youtube;
 
 namespace MusicWrap.Core.Sources.Contracts;
 

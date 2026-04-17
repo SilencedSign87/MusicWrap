@@ -1,7 +1,7 @@
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using System;

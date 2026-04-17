@@ -1,10 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
-using MusicWrap.Core;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
@@ -23,6 +21,8 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {

@@ -1,7 +1,6 @@
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MusicWrap.Core;
 using MusicWrap.Core.Metadata;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Core.Sources.Providers.Local;
@@ -10,12 +9,11 @@ using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.Playlist;
-using MusicWrap.Data.Providers.Youtube;
+using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Controls;
@@ -41,6 +39,11 @@ using Serilog.Enrichers;
 using System.Configuration;
 using System.Data;
 using System.Windows;
+using MusicWrap.Core.Threading;
+using MusicWrap.UI.Shared.Services;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playlists;
 
 namespace MusicWrap.UI
 {
@@ -292,6 +295,7 @@ namespace MusicWrap.UI
             services.AddSingleton(sp=>sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
 
             // Services
+            services.AddSingleton<IUIDispatcher, UIDispatcher>();
             services.AddSingleton<IImageService, ImageService>();
             services.AddSingleton<TracksContextMenuService>();
             services.AddSingleton<ILibraryScanner, LibraryScanner>();

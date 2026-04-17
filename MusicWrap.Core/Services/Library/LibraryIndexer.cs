@@ -9,7 +9,7 @@ using SixLabors.ImageSharp.Processing;
 using System.IO;
 using TagLib;
 
-namespace MusicWrap.Data.Library.Application
+namespace MusicWrap.Core.Services.Library
 {
 
     public interface ILibraryIndexer
@@ -219,7 +219,7 @@ namespace MusicWrap.Data.Library.Application
                     request.Year,
                     coverId);
 
-                var track = new Models.Track
+                var track = new Track
                 {
                     Id = _library.GenerateTrackId(),
                     Path = string.Empty,

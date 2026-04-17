@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Library.Services;

@@ -10,8 +10,9 @@ using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User.Models;
 using System.Net;
 using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Threading;
 
-namespace MusicWrap.Core
+namespace MusicWrap.Core.Services.Playback
 {
     public enum PlaybackState
     {
@@ -90,6 +91,7 @@ namespace MusicWrap.Core
         private readonly ILogger<MusicPlayerService> _logger;
         private readonly IPlaybackRepository _playbackRepository;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IUIDispatcher _dispatcher;
 
         private const int MaxErrorCount = 5;
         private int _errorCount;
@@ -228,13 +230,16 @@ namespace MusicWrap.Core
             ITrackPlaybackResolver trackPlaybackResolver,
             IPlaybackRepository playbackRepository,
             IServiceProvider serviceProvider,
-            ILogger<MusicPlayerService> logger)
+            ILogger<MusicPlayerService> logger,
+            IUIDispatcher dispatcher
+            )
         {
             _library = library;
             _trackPlaybackResolver = trackPlaybackResolver;
             _playbackRepository = playbackRepository;
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _dispatcher = dispatcher;
 
             _audioEngine = new AudioEngine();
 
@@ -382,7 +387,7 @@ namespace MusicWrap.Core
                 _suppressPositionUntilUtc = DateTime.UtcNow.AddMilliseconds(suppressMs);
 
                 //var pos = _audioEngine.GetMixerPosition(_currentStream);
-                InvokeUI(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek
+                _dispatcher.Invoke(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek
                 EnqueuePlaybackSave();
             }
         }
@@ -533,7 +538,7 @@ namespace MusicWrap.Core
                     Seek(position);
                 }
             }
-            InvokeUI(() => DeviceIndexChanged?.Invoke(this, CurrentDeviceIndex));
+            _dispatcher.Invoke(() => DeviceIndexChanged?.Invoke(this, CurrentDeviceIndex));
             EnqueuePlaybackSave();
         }
 
@@ -567,7 +572,7 @@ namespace MusicWrap.Core
                 if (!shouldResume && position > 0) Seek(position);
             }
 
-            InvokeUI(() => SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs
+            _dispatcher.Invoke(() => SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs
             {
                 PreferedSampleRate = CurrentSampleRate,
                 EffectiveSampleRate = _audioEngine.CurrentOutputSampleRate
@@ -605,7 +610,7 @@ namespace MusicWrap.Core
                 }
             }
 
-            InvokeUI(() => OutputModeChanged?.Invoke(this, CurrentOutputMode));
+            _dispatcher.Invoke(() => OutputModeChanged?.Invoke(this, CurrentOutputMode));
             EnqueuePlaybackSave();
         }
 
@@ -946,10 +951,10 @@ namespace MusicWrap.Core
                 SetPlaybackState(PlaybackState.Paused);
             }
             var inmidiatePos = _audioEngine.GetMixerPosition(_currentStream);
-            InvokeUI(() => PositionChanged?.Invoke(this, inmidiatePos)); // update position immediately on track change
+            _dispatcher.Invoke(() => PositionChanged?.Invoke(this, inmidiatePos)); // update position immediately on track change
 
             var snapshot = CreateQueueSnapshot();
-            InvokeUI(() =>
+            _dispatcher.Invoke(() =>
             {
                 SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate });
                 var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
@@ -972,7 +977,7 @@ namespace MusicWrap.Core
                 ? PositionTimerPlayingIntervalMs
                 : PositionTimerIdleIntervalMs;
 
-            InvokeUI(() => PlaybackStateChanged?.Invoke(this, _playbackState));
+            _dispatcher.Invoke(() => PlaybackStateChanged?.Invoke(this, _playbackState));
         }
 
         private void PositionTimerOnElapsed(object? sender, ElapsedEventArgs e)
@@ -983,14 +988,14 @@ namespace MusicWrap.Core
                 return; // Suppress position updates for a short time after seeking to avoid UI jitter
 
             var position = _audioEngine.GetMixerPosition(_currentStream);
-            InvokeUI(() => PositionChanged?.Invoke(this, position));
+            _dispatcher.Invoke(() => PositionChanged?.Invoke(this, position));
         }
 
         private void OnTrackEndedInternal(int handle, int channel, int data, IntPtr user)
         {
             if (channel != _currentStream) return;
 
-            InvokeUI(() => TrackEnded?.Invoke(this, EventArgs.Empty));
+            _dispatcher.Invoke(() => TrackEnded?.Invoke(this, EventArgs.Empty));
 
             // Handle RepeatTrack mode
             if (RepeatMode == RepeatMode.RepeatTrack)
@@ -1051,7 +1056,7 @@ namespace MusicWrap.Core
                 var snapshot = CreateQueueSnapshot();
                 if (track != null)
                 {
-                    InvokeUI(() =>
+                    _dispatcher.Invoke(() =>
                     {
                         var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
                         TrackChanged?.Invoke(this, trackRef);
@@ -1137,14 +1142,6 @@ namespace MusicWrap.Core
             }
         }
 
-        private static void InvokeUI(Action action)
-        {
-            if (System.Windows.Application.Current != null && System.Windows.Application.Current.Dispatcher != null)
-            {
-                System.Windows.Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, action);
-            }
-        }
-
         private int[] CreateQueueSnapshot()
         {
             return _queue.Count == 0 ? Array.Empty<int>() : [.. _queue];
@@ -1198,7 +1195,7 @@ namespace MusicWrap.Core
             if (trackId <= 0) return;
 
 
-            InvokeUI(() =>
+            _dispatcher.Invoke(() =>
             {
                 if (requestVersion != Volatile.Read(ref _waveformVersion)) return; // Stale request, ignore
 
@@ -1217,7 +1214,7 @@ namespace MusicWrap.Core
         private void NotifyQueueChanged()
         {
             var snapshot = CreateQueueSnapshot();
-            InvokeUI(() => QueueChanged?.Invoke(this, snapshot));
+            _dispatcher.Invoke(() => QueueChanged?.Invoke(this, snapshot));
         }
     }
 

@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
-using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Library.Services;
@@ -14,6 +13,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows;
 using System.Xml.Serialization;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Features.Settings.ViewModels
 {

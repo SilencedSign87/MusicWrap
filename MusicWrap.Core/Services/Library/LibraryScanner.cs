@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace MusicWrap.Data.Library.Application
+namespace MusicWrap.Core.Services.Library
 {
     public interface ILibraryScanner
     {

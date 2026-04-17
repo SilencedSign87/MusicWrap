@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
@@ -15,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Data;
 using ICommand = System.Windows.Input.ICommand;
+using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Controls.Models
 {

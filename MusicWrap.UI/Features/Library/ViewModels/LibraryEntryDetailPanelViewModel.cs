@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core;
+using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Features.Library.Services;

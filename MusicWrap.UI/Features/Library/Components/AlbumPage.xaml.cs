@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Library.Services;
@@ -17,6 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Features.Library.Components
 {

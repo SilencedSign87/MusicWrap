@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Sources.Contracts;
-using MusicWrap.Data.Providers.Youtube;
+using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.UI.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Library.Services;

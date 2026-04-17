@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
@@ -11,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Windows.Media.Imaging;
+using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {

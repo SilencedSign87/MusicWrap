@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Sources.Contracts;
-using MusicWrap.Data.Providers.Youtube;
+using MusicWrap.Core.Services.Providers.Youtube;
 using System.Diagnostics;
 
 namespace MusicWrap.Core.Sources.Providers.Youtube;
