@@ -34,7 +34,7 @@
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Grid.Column="0"  Text="{Binding HeaderTitle}" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                     <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
-                        <TextBlock Opacity="0.75" Margin="0,4,0,0" FontSize="12" TextTrimming="CharacterEllipsis">
+                        <TextBlock Opacity="0.75" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
                             <Run Text="{Binding HeaderAlbumsCountText}"/>
                             <Run Text=" Albums"/>
                             <Run Text=" • "/>
@@ -42,15 +42,14 @@
                             <Run Text=" tracks"/>
                             <Run Text=" • "/>
                             <Run Text="{Binding HeaderTotalDurationText}"/>
-                            <Run Text=" •"/>
                         </TextBlock>
-                        <Button Style="{StaticResource SubtleButton}" Margin="4,0,0,0" ToolTip="Play all" Command="{Binding PlayAllTracksCommand}">
+                        <Button Style="{StaticResource SubtleButton}" Margin="8,0,0,0" Padding="0"  Width="26" Height="26" ToolTip="Play all" Command="{Binding PlayAllTracksCommand}">
                             <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
                         </Button>
-                        <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle" Command="{Binding ShuffleAllTracksCommand}">
+                        <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle" Command="{Binding ShuffleAllTracksCommand}">
                             <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
                         </Button>
-                        <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle">
+                        <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle">
                             <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE712;"/>
                         </Button>
                     </StackPanel>

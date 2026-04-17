@@ -135,6 +135,11 @@ namespace MusicWrap.Core.Services.Providers.Youtube
                 {
                     CleanupFilesOnFailure(request.ExternalId, sourceAudioPath, destinationPath);
                 }
+                else
+                {
+                    // Remove staging cache once the final file has been tagged and indexed.
+                    TryDeleteFile(sourceAudioPath, "source", request.ExternalId);
+                }
 
                 return new YoutubeIndexingTrackResult
                 {

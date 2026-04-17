@@ -214,10 +214,10 @@
                         <TextBlock Grid.Row="0" Text="{Binding SelectedEntry.Title}" FontSize="16" FontWeight="SemiBold"/>
                         <StackPanel Grid.Row="1" Orientation="Horizontal">
                             <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12" VerticalAlignment="Center"/>
-                            <Button Style="{StaticResource SubtleButton}" Margin="4,0,0,0" ToolTip="Play">
+                            <Button Style="{StaticResource SubtleButton}" Margin="4,0,0,0" ToolTip="Play" Click="PlaySelectedPlaylist_click">
                                 <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
                             </Button>
-                            <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle">
+                            <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle" Click="ShufflePlaylist_click">
                                 <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
                             </Button>
                             <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle">

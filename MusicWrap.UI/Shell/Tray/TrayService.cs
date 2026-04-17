@@ -74,12 +74,7 @@ namespace MusicWrap.UI.Services
         #region Internal 
         private static Forms.ContextMenuStrip CreateContextMenu()
         {
-            var contextMenu = new Forms.ContextMenuStrip
-            {
-                RenderMode = ToolStripRenderMode.Professional,
-                Renderer = new ToolStripProfessionalRenderer(new DarkColorTable()),
-                ForeColor = Color.FromArgb(200, 200, 200),
-            };
+            var contextMenu = new Forms.ContextMenuStrip();
 
             contextMenu.Items.Add("Open", null, (_, _) => App.ShowOrRestoreCurrentWindow());
             contextMenu.Items.Add(new Forms.ToolStripSeparator());
@@ -108,30 +103,6 @@ namespace MusicWrap.UI.Services
             _icon = null;
         }
         #endregion
-    }
-
-    class DarkColorTable : ProfessionalColorTable
-    {
-        public override Color ToolStripDropDownBackground => Color.FromArgb(30, 30, 30);
-
-        public override Color MenuItemSelected => Color.FromArgb(60, 60, 60);
-        public override Color MenuItemSelectedGradientBegin => Color.FromArgb(60, 60, 60);
-        public override Color MenuItemSelectedGradientEnd => Color.FromArgb(60, 60, 60);
-        public override Color MenuBorder => Color.Red;
-
-        public override Color MenuItemPressedGradientBegin => Color.FromArgb(50, 50, 50);
-        public override Color MenuItemPressedGradientEnd => Color.FromArgb(50, 50, 50);
-
-        public override Color MenuItemBorder => Color.FromArgb(80, 80, 80);
-
-        public override Color ImageMarginGradientBegin => Color.FromArgb(30, 30, 30);
-        public override Color ImageMarginGradientMiddle => Color.FromArgb(30, 30, 30);
-        public override Color ImageMarginGradientEnd => Color.FromArgb(30, 30, 30);
-
-        public override Color SeparatorDark => Color.FromArgb(70, 70, 70);
-        public override Color SeparatorLight => Color.FromArgb(70, 70, 70);
-
-        public override Color ToolStripBorder => Color.FromArgb(50, 50, 50);
     }
 }
 

@@ -25,12 +25,14 @@ namespace MusicWrap.UI.Features.Playlist.Views
     public partial class PlaylistPage : UserControl
     {
         private readonly TracksContextMenuService _tracksContextMenuService;
+        private PlaylistViewModel _vm;
 
         public PlaylistPage()
         {
             InitializeComponent();
             _tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
-            DataContext = App.Services.GetRequiredService<PlaylistViewModel>();
+            _vm = App.Services.GetRequiredService<PlaylistViewModel>();
+            DataContext = _vm;
         }
 
         private void PlaylistTracksContextMenu_Opened(object sender, RoutedEventArgs e)
@@ -118,6 +120,29 @@ namespace MusicWrap.UI.Features.Playlist.Views
             }
 
             return (element.Parent as ContextMenu)?.PlacementTarget as TracksView;
+        }
+
+        private void PlaySelectedPlaylist_click(object sender, RoutedEventArgs e)
+        {
+            var entry = _vm.SelectedEntry;
+            if (entry == null) return;
+
+            if (_vm.PlayPlaylistCommand.CanExecute(entry.id))
+            {
+                _vm.PlayPlaylistCommand.Execute(entry.id);
+            }
+
+
+        }
+
+        private void ShufflePlaylist_click(object sender, RoutedEventArgs e)
+        {
+            var entry = _vm.SelectedEntry;
+            if (entry == null) return;
+            if (_vm.ShufflePlaylistCommand.CanExecute(entry.id))
+            {
+                _vm.ShufflePlaylistCommand.Execute(entry.id);
+            }
         }
     }
 }

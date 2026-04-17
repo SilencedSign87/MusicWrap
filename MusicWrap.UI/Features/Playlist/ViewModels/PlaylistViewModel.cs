@@ -17,6 +17,7 @@ using System.ComponentModel;
 using System.Net.Sockets;
 using System.Text;
 using System.Xml.Serialization;
+using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
@@ -34,13 +35,15 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private readonly PlaylistData _playlist;
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly ILibraryCacheService _libraryCacheService;
+        private readonly IMusicPlayerService _musicPlayerService;
         private NewPlaylistWindow? _newPlaylistWindow;
 
-        public PlaylistViewModel(PlaylistData playlist, ILibraryCacheService cache, ISaveCoordinator saveCoordinator)
+        public PlaylistViewModel(PlaylistData playlist, ILibraryCacheService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService)
         {
             _playlist = playlist;
             _libraryCacheService = cache;
             _saveCoordinator = saveCoordinator;
+            _musicPlayerService = musicPlayerService;
             selectedTrackIds = [];
 
             ConstructEntries();
@@ -94,7 +97,23 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             LoadPlaylistTracks();
             _saveCoordinator.Enqueue(SaveKind.Playlist);
         }
+        [RelayCommand]
+        private void PlayPlaylist(int playlistId)
+        {
+            var tracks = _playlist.Playlists.FirstOrDefault(p => p.Id == playlistId)?.Items.Select(i => i.TrackId).ToList();
+            if (tracks == null || tracks.Count == 0) return;
 
+            _musicPlayerService.SetQueue(tracks, false);
+            _musicPlayerService.PlayIndex(0);
+        }
+        [RelayCommand]
+        private void ShufflePlaylist(int playlistId)
+        {
+            var tracks = _playlist.Playlists.FirstOrDefault(p => p.Id == playlistId)?.Items.Select(i => i.TrackId).Shuffle().ToList();
+            if (tracks == null || tracks.Count == 0) return;
+            _musicPlayerService.SetQueue(tracks, false);
+            _musicPlayerService.PlayIndex(0);
+        }
         [RelayCommand]
         private void RemoveSelectedTracks(List<int> trackIds)
         {

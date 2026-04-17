@@ -191,6 +191,27 @@ namespace MusicWrap.UI.Features.Library.Views
                 UseShellExecute = true
             });
         }
+
+        private void ShuffleButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not AlbumTracksViewModel vm)
+            {
+                return;
+            }
+            var trackIds = _library.Tracks
+                .Where(t => t.AlbumId == vm.AlbumId)
+                .Select(t => t.Id)
+                .Shuffle()
+                .ToList();
+
+            if (trackIds.Count == 0)
+            {
+                return;
+            }
+            _musicPlayerService.SetQueue(trackIds);
+            _musicPlayerService.PlayIndex(0);
+
+        }
     }
 }
 

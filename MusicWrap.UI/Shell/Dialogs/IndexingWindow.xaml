@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         Title="Indexer Manager"
         Height="700"
-        Width="800"
+        Width="700"
         ShowInTaskbar="False"
         ThemeMode="Dark"
         ResizeMode="NoResize"
@@ -196,13 +196,6 @@
                         Style="{StaticResource BaseTextInput}"
                         Text="{Binding SelectedDurationValue, Mode=OneWay}"
                         IsReadOnly="True"/>
-
-                    <TextBlock
-                        Margin="0,8"
-                        Text="If selected tracks differ on a field, '-- Various Values --' is shown. Editing the field applies to all selected tracks."
-                        Foreground="#888888"
-                        TextWrapping="Wrap"
-                        FontSize="10"/>
                 </StackPanel>
             </DockPanel>
         </Border>

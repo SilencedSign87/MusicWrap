@@ -38,38 +38,43 @@
         </Grid.RowDefinitions>
 
         <!-- Album Header -->
-        <StackPanel Grid.Row="0" Margin="0,8,0,8">
-            <Grid Margin="0,0,24,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="auto"/>
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
+        <StackPanel Grid.Row="0" Margin="8,8,0,0">
+            <StackPanel Margin="0,0,24,0">
+                <TextBlock Text="{Binding AlbumTitle}" 
+                           FontSize="16" 
+                           FontWeight="Bold"
+                           Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                           TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock FontSize="12" 
+                           VerticalAlignment="Center"
+                       Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                       Opacity="0.7">
+                    <Run Text="{Binding AlbumArtists}"/>
+                    <Run Text=" • "/>
+                    <Run Text="{Binding AlbumYear}"/>
+                </TextBlock>
                 <Button Width="26" Height="26" Padding="0" VerticalAlignment="Top"
-                        Grid.Column="0"
                         Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
                         Background="Transparent"
                         BorderThickness="0"
+                        Margin="8,0,0,0"
                         ToolTip="{Binding AlbumPlayTooltip}" 
                         Click="PlayPauseAlbum_Click"
                         >
                     <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="{Binding AlbumPlayGlyph}"/>
                 </Button>
-                <TextBlock Text="{Binding AlbumTitle}" 
-                           Grid.Column="1"
-                           FontSize="16" 
-                           FontWeight="Bold"
-                           Margin="4,0,0,0"
-                           Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
-                           TextTrimming="CharacterEllipsis"/>
-            </Grid>
-            <TextBlock FontSize="12" 
-                       Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
-                       Opacity="0.7"
-                       Margin="0,4,0,0">
-                <Run Text="{Binding AlbumArtists}"/>
-                <Run Text=" • "/>
-                <Run Text="{Binding AlbumYear}"/>
-            </TextBlock>
+                <Button
+                        Width="26" Height="26" Padding="0" VerticalAlignment="Top"
+                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="ShuffleButton_Click"
+                    >
+                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
+                </Button>
+            </StackPanel>
         </StackPanel>
 
         <Grid Grid.Row="1" x:Name="AlbumTracksTracksHost">
