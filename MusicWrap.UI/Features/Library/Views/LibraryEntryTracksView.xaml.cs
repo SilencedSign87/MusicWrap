@@ -92,7 +92,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            _editMetadataService.OpenMetadataWindow(vm.SelectedTrackIds[0], MetadataEntityType.Track);
+            _editMetadataService.OpenMetadataWindow(vm.SelectedTrackIds);
         }
 
         private void ShowInFileExplorerMenuItem_Click(object sender, RoutedEventArgs e)

@@ -28,9 +28,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     {
         Albums,
         Tracks,
-        Profile,
+        About,
         Stats,
-        More
     }
 
     public enum SortDirectionOption
@@ -555,8 +554,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return [
                     T(LibraryDetailTabKey.Albums, "Albums"),
                     T(LibraryDetailTabKey.Tracks, "Tracks"),
-                    T(LibraryDetailTabKey.Profile, "Profile"),
-                    T(LibraryDetailTabKey.More, "More"),
+                    T(LibraryDetailTabKey.About, "About"),
                     T(LibraryDetailTabKey.Stats, "Stats")
                 ];
             }

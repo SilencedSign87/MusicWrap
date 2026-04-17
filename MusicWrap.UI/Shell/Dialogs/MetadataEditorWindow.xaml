@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI.Shell.Dialogs"
+        xmlns:views="clr-namespace:MusicWrap.UI.Features.MetadataEditor.Views"
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         mc:Ignorable="d"
         ResizeMode="NoResize"
@@ -16,8 +17,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0">
-            <TabItem>
+        <TabControl Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabItem Style="{StaticResource SubtleTabItem}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE946;" VerticalAlignment="Center"/>
@@ -28,24 +29,16 @@
                     <TextBlock Margin="12" Text="World" />
                 </Grid>
             </TabItem>
-            <TabItem IsSelected="True">
+            <TabItem IsSelected="True" Style="{StaticResource SubtleTabItem}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8EC;" VerticalAlignment="Center"/>
                         <TextBlock Text="Tags" Margin="8,0" />
                     </StackPanel>
                 </TabItem.Header>
-                <Grid>
-                    <StackPanel>
-                        <controls:CompactInputField PlaceholderText="Insert something">
-                            <controls:CompactInputField.BeforeContent>
-                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE71E;"/>
-                            </controls:CompactInputField.BeforeContent>
-                        </controls:CompactInputField>
-                    </StackPanel>
-                </Grid>
+                <views:TagsEditor />
             </TabItem>
-            <TabItem>
+            <TabItem Style="{StaticResource SubtleTabItem}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8BA;" VerticalAlignment="Center"/>
@@ -58,7 +51,7 @@
             </TabItem>
         </TabControl>
         <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="8" Orientation="Horizontal">
-            <Button Margin="8,0" Style="{StaticResource DefaultButton}">
+            <Button Margin="8,0" Style="{StaticResource AccentButton}">
                 Save
             </Button>
             <Button Style="{StaticResource DefaultButton}">

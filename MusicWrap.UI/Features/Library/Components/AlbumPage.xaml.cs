@@ -26,6 +26,7 @@ namespace MusicWrap.UI.Features.Library.Components
     public partial class AlbumPage : UserControl
     {
         private readonly IMusicPlayerService _playerService;
+        private readonly IEditMetadataService _editMetadataService;
         private readonly MusicLibrary _library;
         private int[] TracksId = [];
         public AlbumPage()
@@ -34,6 +35,7 @@ namespace MusicWrap.UI.Features.Library.Components
 
             _playerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _library = App.Services.GetRequiredService<MusicLibrary>();
+            _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
             //this.DataContextChanged += AlbumPage_DataContextChanged;
 
             Loaded += AlbumPage_Loaded;
@@ -107,6 +109,16 @@ namespace MusicWrap.UI.Features.Library.Components
         private int[] GetAllAlbumTracksId(int albumId)
         {
             return [.. _library.Tracks.Where(t => t.AlbumId == albumId).Select(t => t.Id)];
+        }
+
+        private void EditTracks_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is LibraryViewModel.AlbumData data)
+            {
+                var tracks = _library.Tracks.Where(t => t.AlbumId == data.Id).Select(t => t.Id).ToList();
+                _editMetadataService.OpenMetadataWindow(tracks);
+            }
+
         }
     }
 }

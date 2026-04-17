@@ -30,7 +30,7 @@
                 <MenuItem Header="Add to queue" Click="AddToQueue" Icon="{ex:Icon Glyph=E710}"/>
                 <controlsM:TrackToPlaylistMenu x:Name="AlbumTrackToPlaylistMenu"/>
                 <Separator/>
-                <MenuItem Header="Edit album" Icon="{ex:Icon Glyph=E70F}"/>
+                <MenuItem Header="Edit album" Icon="{ex:Icon Glyph=E70F}" Click="EditTracks_Click"/>
             </ContextMenu>
         </Border.ContextMenu>
         <Grid>
