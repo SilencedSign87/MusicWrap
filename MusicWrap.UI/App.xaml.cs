@@ -343,6 +343,7 @@ namespace MusicWrap.UI
             services.AddSingleton<DeviceViewModel>();
             services.AddSingleton<PlayerViewModel>();
             services.AddSingleton<CommandPaletteViewModel>();
+            services.AddSingleton<TaskbarIconViewModel>();
 
             return services.BuildServiceProvider();
         }

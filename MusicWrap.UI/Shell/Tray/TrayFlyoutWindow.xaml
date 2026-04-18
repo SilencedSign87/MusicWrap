@@ -52,14 +52,6 @@
             <ColumnDefinition Width="4"/>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
-        <Grid.ContextMenu>
-            <ContextMenu>
-                <MenuItem Header="Open" Click="OpenMainWindow"/>
-                <Separator/>
-                <MenuItem Header="Exit" Click="ExitApp"/>
-            </ContextMenu>
-        </Grid.ContextMenu>
-
         <Image
                 Grid.Column="0"
                 Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:100}"
@@ -89,6 +81,9 @@
                         </TextBlock>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
+                        <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Exit" Click="ExitApp">
+                            <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE711;"/>
+                        </Button>
                         <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Open MusicWrap" Click="OpenMainWindow">
                             <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8A7;"/>
                         </Button>

@@ -7,6 +7,9 @@ using System.Windows;
 using Forms = System.Windows.Forms;
 using System.Windows.Forms;
 using Application = System.Windows.Application;
+using Hardcodet.Wpf.TaskbarNotification;
+using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.ViewModels;
 
 namespace MusicWrap.UI.Services
 {
@@ -19,7 +22,7 @@ namespace MusicWrap.UI.Services
     }
     class TrayService : ITrayService, IDisposable
     {
-        private Forms.NotifyIcon? _trayIcon;
+        private TaskbarIcon? _trayIcon;
         private Icon? _icon;
         private TrayFlyoutWindow? _flyout;
 
@@ -30,26 +33,16 @@ namespace MusicWrap.UI.Services
                 return;
             }
 
-            using var iconStream = Application.GetResourceStream(new Uri("pack://application:,,,/Resources/icon.ico"))!.Stream;
-            _icon = new Icon(iconStream);
+            _trayIcon = (TaskbarIcon)App.Current.Resources["TrayIcon"];
+            _trayIcon.DataContext = App.Services.GetRequiredService<TaskbarIconViewModel>();
 
-            _trayIcon = new Forms.NotifyIcon
-            {
-                Icon = _icon,
-                Text = "Music Wrap",
-                Visible = true,
-                ContextMenuStrip = CreateContextMenu(),
-            };
+            _trayIcon.TrayLeftMouseUp += _trayIcon_TrayLeftMouseUp;
 
-            _trayIcon.MouseClick += OnTrayMouseClick;
         }
 
-        private void OnTrayMouseClick(object? sender, Forms.MouseEventArgs e)
+        private void _trayIcon_TrayLeftMouseUp(object sender, RoutedEventArgs e)
         {
-            if (e.Button == Forms.MouseButtons.Left)
-            {
-                Application.Current.Dispatcher.Invoke(ToggleFlyout);
-            }
+            ToggleFlyout();
         }
 
         public void ShowFlyout()
@@ -72,16 +65,6 @@ namespace MusicWrap.UI.Services
         }
 
         #region Internal 
-        private static Forms.ContextMenuStrip CreateContextMenu()
-        {
-            var contextMenu = new Forms.ContextMenuStrip();
-
-            contextMenu.Items.Add("Open", null, (_, _) => App.ShowOrRestoreCurrentWindow());
-            contextMenu.Items.Add(new Forms.ToolStripSeparator());
-            contextMenu.Items.Add("Exit", null, (_, _) => App.RequestShutdown());
-
-            return contextMenu;
-        }
 
         public void Dispose()
         {
@@ -93,8 +76,7 @@ namespace MusicWrap.UI.Services
 
             if (_trayIcon != null)
             {
-                _trayIcon.MouseClick -= OnTrayMouseClick;
-                _trayIcon.Visible = false;
+                _trayIcon.TrayLeftMouseUp -= _trayIcon_TrayLeftMouseUp;
                 _trayIcon.Dispose();
                 _trayIcon = null;
             }
