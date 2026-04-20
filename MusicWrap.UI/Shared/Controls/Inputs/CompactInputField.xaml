@@ -11,6 +11,7 @@
             CornerRadius="0"
             BorderThickness="1"
             Padding="0"
+            Margin="0"
             Background="{StaticResource BackgroundControlDefault}"
             BorderBrush="{StaticResource StrokeControl}">
         <Border.Style>
@@ -43,16 +44,54 @@
             <ContentPresenter Grid.Column="0"
                               Content="{Binding BeforeContent, ElementName=Root}"
                               VerticalAlignment="Center"
-                              Margin="4,0,2,0"/>
+                              >
+                <ContentPresenter.Style>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Margin" Value="6,0,2,0"/>
+                        <Style.Triggers>
+                            <Trigger Property="Content" Value="{x:Null}">
+                                <Setter Property="Margin" Value="0"/>
+
+                            </Trigger>
+                        </Style.Triggers>
+                        
+                    </Style>
+                </ContentPresenter.Style>
+            </ContentPresenter>
 
             <Grid Grid.Column="1">
                 <TextBox x:Name="InputBox"
-                         Style="{StaticResource TransparentTextInput}"
-                         Margin="2,0"
                          VerticalContentAlignment="Center"
                          FocusVisualStyle="{x:Null}"
                          KeyDown="InputBox_KeyDown"
-                         Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                         Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource TransparentTextInput}">
+                            <Setter Property="Margin" Value="2,0,2,0"/>
+
+                            <Style.Triggers>
+                                <!-- no before -->
+                                <DataTrigger Binding="{Binding BeforeContent, ElementName=Root}" Value="{x:Null}">
+                                    <Setter Property="Margin" Value="4,0,2,0"/>
+                                </DataTrigger>
+
+                                <!-- no after -->
+                                <DataTrigger Binding="{Binding AfterContent, ElementName=Root}" Value="{x:Null}">
+                                    <Setter Property="Margin" Value="2,0,4,0"/>
+                                </DataTrigger>
+
+                                <!-- no before and no after -->
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding BeforeContent, ElementName=Root}" Value="{x:Null}" />
+                                        <Condition Binding="{Binding AfterContent, ElementName=Root}" Value="{x:Null}" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Margin" Value="0"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
 
                 <TextBlock Text="{Binding PlaceholderText, ElementName=Root}"
                            Margin="4,0,0,0"
@@ -80,7 +119,20 @@
             <ContentPresenter Grid.Column="2"
                               Content="{Binding AfterContent, ElementName=Root}"
                               VerticalAlignment="Center"
-                              Margin="4,0,2,0"/>
+                              >
+                <ContentPresenter.Style>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Margin" Value="2,0,6,0"/>
+                        <Style.Triggers>
+                            <Trigger Property="Content" Value="{x:Null}">
+                                <Setter Property="Margin" Value="0"/>
+
+                            </Trigger>
+                        </Style.Triggers>
+
+                    </Style>
+                </ContentPresenter.Style>
+            </ContentPresenter>
         </Grid>
     </Border>
 </UserControl>

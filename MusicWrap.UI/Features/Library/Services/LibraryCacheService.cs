@@ -22,6 +22,7 @@ namespace MusicWrap.UI.Features.Library.Services
     public interface ILibraryCacheService
     {
         Track? GetTrackById(int trackId);
+        Album? GetAlbumById(int albumId);
         int[] GetTracksForAlbum(int albumId, string? query = null);
         int[] GetTrackIdsForEntry(LibraryEntry entry, string? query = null);
         LibraryEntryStatsModel GetStatsForEntry(LibraryEntry entry, string? query = null);
@@ -305,6 +306,11 @@ namespace MusicWrap.UI.Features.Library.Services
         {
             EnsureIndexes();
             return _trackById.TryGetValue(trackId, out var track) ? track : null;
+        }
+        public Album? GetAlbumById (int albumId)
+        {
+            EnsureIndexes();
+            return _albumById.TryGetValue(albumId, out var album) ? album : null;
         }
         public IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry)
         {

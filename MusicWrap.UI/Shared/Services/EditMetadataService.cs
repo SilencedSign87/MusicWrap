@@ -43,7 +43,7 @@ namespace MusicWrap.UI.Services
             {
                 _currentWindow.Title = $"Edit Metadata - {title}";
                 _currentWindow.Focus();
-                ItemsChanged?.Invoke(this, trackIds);
+                (_currentWindow.DataContext as MetadataEditorViewModel)?.LoadTracks(trackIds);
                 return;
             }
 
