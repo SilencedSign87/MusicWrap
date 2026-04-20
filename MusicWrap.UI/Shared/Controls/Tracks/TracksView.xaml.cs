@@ -30,6 +30,7 @@ namespace MusicWrap.UI.Controls.Models
         private INotifyCollectionChanged? _itemsSourceCollection;
         private CollectionViewSource? _collectionViewSource;
         private bool _playerEventsAttached;
+        private int _lastAutoScrolledIndex = 2;
 
         public TracksView()
         {
@@ -309,6 +310,18 @@ namespace MusicWrap.UI.Controls.Models
             set => SetValue(GroupByDiskProperty, value);
         }
 
+        public static readonly DependencyProperty AutoScrollToCurrentTrackProperty =
+            DependencyProperty.Register(
+                nameof(AutoScrollToCurrentTrack),
+                typeof(bool),
+                typeof(TracksView),
+                new PropertyMetadata(false));
+        public bool AutoScrollToCurrentTrack 
+        {
+            get => (bool)GetValue(AutoScrollToCurrentTrackProperty);
+            set => SetValue(AutoScrollToCurrentTrackProperty, value);
+        }
+
         #endregion
 
         private static void GroupByDisk_PropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -565,6 +578,44 @@ namespace MusicWrap.UI.Controls.Models
 
             CurrentTrackId = _musicPlayerService.CurrentTrackId;
             IsPlaybackActive = _musicPlayerService.IsPlaying;
+
+            if (AutoScrollToCurrentTrack)
+            {
+                ScrollToCurrentTrack();
+            }
+        }
+
+        private void ScrollToCurrentTrack()
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (!AutoScrollToCurrentTrack)
+                {
+                    return;
+                }
+
+                int index = _musicPlayerService.CurrentQueueIndex;
+                if (index < 0 || index >= TracksList.Items.Count)
+                {
+                    return;
+                }
+
+                if (_lastAutoScrolledIndex == index)
+                {
+                    return;
+                }
+
+                var item = TracksList.Items[index];
+                TracksList.UpdateLayout();
+                TracksList.ScrollIntoView(item);
+
+                if (TracksList.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement container)
+                {
+                    container.BringIntoView();
+                }
+
+                _lastAutoScrolledIndex = index;
+            }), System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
     }
 }

@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Windows;
 using MusicWrap.Data.Library.Models;
+using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.ViewModels;
+using Un4seen.Bass;
 
 namespace MusicWrap.UI.Services
 {
@@ -16,9 +19,9 @@ namespace MusicWrap.UI.Services
     }
     public class EditMetadataService : IEditMetadataService
     {
-        private Window? MetadataWindow;
-        private readonly MusicLibrary _library;
         public event EventHandler<List<int>>? ItemsChanged;
+        private readonly MusicLibrary _library;
+        private MetadataEditorWindow? _currentWindow;
         public EditMetadataService(MusicLibrary library)
         {
             _library = library;
@@ -36,32 +39,36 @@ namespace MusicWrap.UI.Services
                 title = trackIds.Count == 1 ? _library.Tracks.Where(t => t.Id == trackIds[0]).Select(t => t.Title).FirstOrDefault() ?? "Unknown Track" : $"{trackIds.Count} Tracks";
             }
 
-            if (MetadataWindow != null)
+            if (_currentWindow != null && _currentWindow.IsLoaded)
             {
-                MetadataWindow.Title = $"Edit Metadata - {title}";
-                MetadataWindow.Activate();
+                _currentWindow.Title = $"Edit Metadata - {title}";
+                _currentWindow.Focus();
                 ItemsChanged?.Invoke(this, trackIds);
                 return;
             }
 
             var mainWindow = App.CurrentWindow;
 
-            MetadataWindow = new MetadataEditorWindow
-            {
-                Title = $"Edit Metadata - {title}",
-                Owner = mainWindow,
-                WindowStartupLocation = WindowStartupLocation.CenterScreen
-            };
-            MetadataWindow.Show();
+            _currentWindow = App.Services.GetRequiredService<MetadataEditorWindow>();
+            _currentWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            _currentWindow.Title = $"Edit Metadata - {title}";
+            _currentWindow.Owner = mainWindow;
+
+            var viewmodel = _currentWindow.DataContext as MetadataEditorViewModel;
+            viewmodel?.LoadTracks(trackIds);
+
+            _currentWindow.DataContext = viewmodel;
+
+            _currentWindow.Show();
             ItemsChanged?.Invoke(this, trackIds);
 
-            MetadataWindow.Closed += MetadataWindow_Closed;
+            _currentWindow.Closed += MetadataWindow_Closed;
         }
 
         private void MetadataWindow_Closed(object? sender, EventArgs e)
         {
-            MetadataWindow?.Closed -= MetadataWindow_Closed;
-            MetadataWindow = null;
+            _currentWindow?.Closed -= MetadataWindow_Closed;
+            _currentWindow = null;
         }
     }
 

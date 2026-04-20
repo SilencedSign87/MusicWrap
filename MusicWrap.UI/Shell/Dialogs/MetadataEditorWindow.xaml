@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI.Shell.Dialogs"
-        xmlns:views="clr-namespace:MusicWrap.UI.Features.MetadataEditor.Views"
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         mc:Ignorable="d"
         ResizeMode="NoResize"
@@ -21,7 +20,7 @@
             <TabItem Style="{StaticResource SubtleTabItem}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE946;" VerticalAlignment="Center"/>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center"/>
                         <TextBlock Text="Properties" Margin="8,0" />
                     </StackPanel>
                 </TabItem.Header>
@@ -32,16 +31,112 @@
             <TabItem IsSelected="True" Style="{StaticResource SubtleTabItem}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8EC;" VerticalAlignment="Center"/>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8EC;" VerticalAlignment="Center"/>
                         <TextBlock Text="Tags" Margin="8,0" />
                     </StackPanel>
                 </TabItem.Header>
-                <views:TagsEditor />
+                <Border Background="{StaticResource BackgroundSmoke}">
+
+                    <Grid Margin="8" Grid.IsSharedSizeScope="True">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Title:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:CompactInputField Grid.Column="2" />
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Artist:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:CompactInputField Grid.Column="2" />
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Album:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:CompactInputField Grid.Column="2" />
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Album artist:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:CompactInputField Grid.Column="2" />
+                            </Grid>
+                            <Separator Margin="0,0,0,4"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="Year:" VerticalAlignment="Top" FontSize="12" Margin="0,4,0,0"/>
+
+                                <Grid Grid.Column="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <controls:CompactInputField Grid.Column="0" Width="150" VerticalAlignment="Top" />
+
+                                    <StackPanel Grid.Column="2">
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Track:" VerticalAlignment="Center" FontSize="12"/>
+                                            <controls:CompactInputField Grid.Column="2" />
+                                            <TextBlock Grid.Column="4" Text="of" VerticalAlignment="Center" FontSize="12"/>
+                                            <controls:CompactInputField Grid.Column="6" />
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Disk:" VerticalAlignment="Center" FontSize="12"/>
+                                            <controls:CompactInputField Grid.Column="2" />
+                                            <TextBlock Grid.Column="4" Text="of" VerticalAlignment="Center" FontSize="12"/>
+                                            <controls:CompactInputField Grid.Column="6" />
+                                        </Grid>
+                                    </StackPanel>
+
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </TabItem>
             <TabItem Style="{StaticResource SubtleTabItem}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8BA;" VerticalAlignment="Center"/>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BA;" VerticalAlignment="Center"/>
                         <TextBlock Text="Artwork" Margin="8,0" />
                     </StackPanel>
                 </TabItem.Header>

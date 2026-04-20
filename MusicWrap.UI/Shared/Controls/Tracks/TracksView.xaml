@@ -182,9 +182,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-
                     <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                    <TextBlock Grid.Row="1" Text="{Binding ArtistNames}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                    <TextBlock Grid.Row="1" Text="{Binding ArtistNames}" FontSize="11" Opacity="0.60" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                 </Grid>
 
                 <TextBlock Grid.Column="3" Text="{Binding DurationText}" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12" Opacity="0.6"/>

@@ -15,7 +15,7 @@ namespace MusicWrap.UI.ViewModels;
 /// </summary>
 public sealed partial class IndexingViewModel : ObservableObject
 {
-    public const string VariousValuesMarker = "-- various values --";
+    public const string VariousValuesMarker = "< mixed >";
 
     private readonly Dictionary<string, StagedArtworkNode> _artworksByUrl = new(StringComparer.OrdinalIgnoreCase);
     private readonly IYoutubeIndexingWorkflowService _youtubeIndexingWorkflowService;

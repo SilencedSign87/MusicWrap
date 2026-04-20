@@ -23,7 +23,7 @@
             Padding="0"
             >
         <Border.ContextMenu>
-            <ContextMenu Placement="Right" Opened="AlbumContextMenu_Opened">
+            <ContextMenu Placement="Right" Opened="AlbumContextMenu_Opened" MinWidth="175">
                 <MenuItem Header="Play album now" Click="PlayAlbum" Icon="{ex:Icon Glyph=E768}"/>
                 <MenuItem Header="Play album next" Click="AddAlbumToNext" Icon="{ex:Icon Glyph=E893}"/>
                 <Separator/>

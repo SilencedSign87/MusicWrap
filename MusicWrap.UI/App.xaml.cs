@@ -2,10 +2,15 @@ using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Metadata;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Playlists;
+using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Core.Sources.Providers.Local;
 using MusicWrap.Core.Sources.Providers.Runtime;
 using MusicWrap.Core.Sources.Providers.Youtube;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
@@ -13,37 +18,33 @@ using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.Playlist;
-using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Controls;
-using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Features.Library.Views;
-using MusicWrap.UI.Features.Library.Components;
-using MusicWrap.UI.Features.Playback.Views;
-using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Favorites.Views;
-using MusicWrap.UI.Services;
+using MusicWrap.UI.Features.Library.Components;
 using MusicWrap.UI.Features.Library.Services;
-using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.ViewModels;
+using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.ViewModels;
+using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Providers.ViewModels;
 using MusicWrap.UI.Features.Settings.ViewModels;
-using MusicWrap.UI.Shell.Windows;
+using MusicWrap.UI.Helpers;
+using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Tray;
+using MusicWrap.UI.Shell.Windows;
+using MusicWrap.UI.ViewModels;
 using Serilog;
 using Serilog.Enrichers;
 using System.Configuration;
 using System.Data;
+using System.Reflection;
 using System.Windows;
-using MusicWrap.Core.Threading;
-using MusicWrap.UI.Shared.Services;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Services.Playlists;
 
 namespace MusicWrap.UI
 {
@@ -64,6 +65,7 @@ namespace MusicWrap.UI
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            SetDropDownMenuToBeRightAligned();
             _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
             if (!createdNew)
             {
@@ -181,8 +183,6 @@ namespace MusicWrap.UI
             TrackCurrentWindow(main);
             main.Show();
 
-            CheckMemory();
-
             CurrentWindow = main;
         }
 
@@ -201,8 +201,6 @@ namespace MusicWrap.UI
             var player = Services.GetRequiredService<CompactPlayer>();
             TrackCurrentWindow(player);
             player.Show();
-
-            CheckMemory();
 
             CurrentWindow = player;
         }
@@ -318,15 +316,8 @@ namespace MusicWrap.UI
             services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
             services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
             services.AddSingleton<IPlaylistService, PlaylistService>();
-
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
-
-            // UI
-            services.AddTransient<MainWindow>();
-            services.AddTransient<CompactPlayer>();
-            services.AddTransient<SettingsWindow>();
-            services.AddTransient<IndexingWindow>();
 
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
@@ -344,6 +335,14 @@ namespace MusicWrap.UI
             services.AddSingleton<PlayerViewModel>();
             services.AddSingleton<CommandPaletteViewModel>();
             services.AddSingleton<TaskbarIconViewModel>();
+            services.AddTransient<MetadataEditorViewModel>();
+
+            // UI
+            services.AddTransient<MainWindow>();
+            services.AddTransient<CompactPlayer>();
+            services.AddTransient<SettingsWindow>();
+            services.AddTransient<IndexingWindow>();
+            services.AddTransient<MetadataEditorWindow>();
 
             return services.BuildServiceProvider();
         }
@@ -397,15 +396,6 @@ namespace MusicWrap.UI
             }
         }
 
-        private static void CheckMemory()
-        {
-#if DEBUG
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-#endif
-        }
-
         private static bool TryShowWindow(Window? window)
         {
             if (!IsWindowUsable(window))
@@ -444,6 +434,22 @@ namespace MusicWrap.UI
                 {
                     CurrentWindow = null;
                 }
+            };
+        }
+
+        private static void SetDropDownMenuToBeRightAligned()
+        {
+            var menuDropAlignmentField = typeof(SystemParameters).GetField("_menuDropAlignment", BindingFlags.NonPublic | BindingFlags.Static);
+            Action setAlignmentValue = () =>
+            {
+                if (SystemParameters.MenuDropAlignment && menuDropAlignmentField != null) menuDropAlignmentField.SetValue(null, false);
+            };
+
+            setAlignmentValue();
+
+            SystemParameters.StaticPropertyChanged += (sender, e) =>
+            {
+                setAlignmentValue();
             };
         }
 

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,9 +19,10 @@ namespace MusicWrap.UI.Shell.Dialogs
     /// </summary>
     public partial class MetadataEditorWindow : Window
     {
-        public MetadataEditorWindow()
+        public MetadataEditorWindow(MetadataEditorViewModel vm)
         {
             InitializeComponent();
+            DataContext = vm;
         }
     }
 }

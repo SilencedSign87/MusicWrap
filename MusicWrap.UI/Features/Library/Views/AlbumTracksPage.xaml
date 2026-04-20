@@ -88,7 +88,7 @@
                                  IndexMode="TrackNumber"
                                  SelectionMode="Extended">
                 <uimodels:TracksView.ColumnFlowColumns>
-                    <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,600">
+                    <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,500">
                         <Binding Path="Tracks.Count"/>
                         <Binding ElementName="AlbumTracksTracksHost" Path="ActualWidth"/>
                     </MultiBinding>

@@ -30,6 +30,7 @@
         IndexMode="None"
         SelectionMode="Extended"
         IsMouseWheelScrollEnabled="True"
+        AutoScrollToCurrentTrack="True"
         IsReorderEnabled="True"
         ReorderRequestedCommand="{Binding ReorderTrackCommand}"
         TrackActivatedCommand="{Binding ActivateTrackCommand}"
