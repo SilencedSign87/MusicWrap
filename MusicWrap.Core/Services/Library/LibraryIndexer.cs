@@ -73,24 +73,35 @@ namespace MusicWrap.Core.Services.Library
 
             using var tagFile = TagLib.File.Create(filePath);
 
-            // Genre
             int[] genreIds = [];
             if (tagFile.Tag.Genres.Length > 0)
             {
-                int[] Genres = [];
                 foreach (var genre in tagFile.Tag.Genres)
                 {
-                    var genreId = GetOrCreateGenre(genre);
-                    genreIds = [.. genreIds, genreId];
-                }
+                    var genreNames = genre.Split(new[] { ',', ';', '&' }, StringSplitOptions.RemoveEmptyEntries);
 
+                    foreach (var genreName in genreNames)
+                    {
+                        var trimmedGenre = genreName.Trim();
+                        if (!string.IsNullOrWhiteSpace(trimmedGenre))
+                        {
+                            var genreId = GetOrCreateGenre(trimmedGenre);
+                            genreIds = [.. genreIds, genreId];
+                        }
+                    }
+                }
             }
 
             // Track artist
             int[] trackArtists = [];
             if (tagFile.Tag.Performers.Length > 0)
             {
-                foreach (var performer in tagFile.Tag.Performers)
+                var artistsNames = tagFile.Tag.Performers.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(name => name.Trim())
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToArray();
+
+                foreach (var performer in artistsNames)
                 {
                     var artistId = GetOrCreateArtist(performer);
                     trackArtists = [.. trackArtists, artistId];
@@ -101,7 +112,12 @@ namespace MusicWrap.Core.Services.Library
             int[] albumArtists = [];
             if (tagFile.Tag.AlbumArtists.Length > 0)
             {
-                foreach (var performer in tagFile.Tag.AlbumArtists)
+                var albumArtistNames = tagFile.Tag.AlbumArtists.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(name => name.Trim())
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToArray();
+
+                foreach (var performer in albumArtistNames)
                 {
                     var artistId = GetOrCreateArtist(performer);
                     albumArtists = [.. albumArtists, artistId];
@@ -475,7 +491,8 @@ namespace MusicWrap.Core.Services.Library
 
             var variants = EnsureImageVariants(imageBytes, baseFileName);
 
-            lock (_lock) {
+            lock (_lock)
+            {
                 var existing = _library.CoverAssets
                     .FirstOrDefault(c => string.Equals(c.Fingerprint, fingerprint, StringComparison.Ordinal));
 

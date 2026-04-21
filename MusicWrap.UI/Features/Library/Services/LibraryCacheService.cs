@@ -23,6 +23,7 @@ namespace MusicWrap.UI.Features.Library.Services
     {
         Track? GetTrackById(int trackId);
         Album? GetAlbumById(int albumId);
+        List<Genre> GetGenreById(List<int> genreIds);
         int[] GetTracksForAlbum(int albumId, string? query = null);
         int[] GetTrackIdsForEntry(LibraryEntry entry, string? query = null);
         LibraryEntryStatsModel GetStatsForEntry(LibraryEntry entry, string? query = null);
@@ -116,7 +117,7 @@ namespace MusicWrap.UI.Features.Library.Services
             if (album is null) return "Unknown Artist";
 
             return _artistNamesByAlbumId.TryGetValue(album.Id, out var name) ? name : "Unknown Artist";
-         }
+        }
 
         public void SaveToDisk()
         {
@@ -307,10 +308,14 @@ namespace MusicWrap.UI.Features.Library.Services
             EnsureIndexes();
             return _trackById.TryGetValue(trackId, out var track) ? track : null;
         }
-        public Album? GetAlbumById (int albumId)
+        public Album? GetAlbumById(int albumId)
         {
             EnsureIndexes();
             return _albumById.TryGetValue(albumId, out var album) ? album : null;
+        }
+        public List<Genre> GetGenreById(List<int> genreIds)
+        {
+            return genreIds.Select(genreId => _library.Genres.FirstOrDefault(g => g.Id == genreId) ?? new Genre { Id = genreId, Name = "Unknown Genre" }).ToList();
         }
         public IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry)
         {

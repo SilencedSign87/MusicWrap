@@ -64,6 +64,11 @@
                          VerticalContentAlignment="Center"
                          FocusVisualStyle="{x:Null}"
                          KeyDown="InputBox_KeyDown"
+                         TextChanged="InputBox_TextChanged"
+                         PreviewTextInput="InputBox_PreviewTextInput"
+                         DataObject.Pasting="InputBox_Pasting"
+                         LostKeyboardFocus="InputBox_LostKeyboardFocus"
+                         PreviewKeyDown="InputBox_PreviewKeyDown"
                          Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                     <TextBox.Style>
                         <Style TargetType="TextBox" BasedOn="{StaticResource TransparentTextInput}">

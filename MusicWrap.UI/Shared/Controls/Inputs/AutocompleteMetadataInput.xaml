@@ -3,29 +3,27 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:MusicWrap.UI.Controls"
+             x:Name="Root"
              mc:Ignorable="d"
              Height="32"
+             d:Width="200"
              IsVisibleChanged="UserControl_IsVisibleChanged"
              Unloaded="UserControl_Unloaded"
              ClipToBounds="False">
     <Grid>
-        <TextBox x:Name="SearchTextBox"
-                 Style="{StaticResource BaseTextInput}"
-                 Text="{Binding Text, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}"
-                 VerticalContentAlignment="Center"
-                 TextChanged="SearchTextBox_TextChanged"
-                 PreviewTextInput="SearchTextBox_PreviewTextInput"
-                 DataObject.Pasting="SearchTextBox_Pasting"
-                 LostKeyboardFocus="SearchTextBox_LostKeyboardFocus"
-                 KeyDown="SearchTextBox_KeyDown"
-                 PreviewKeyDown="SearchTextBox_PreviewKeyDown"/>
+        <local:CompactInputField x:Name="CompactInput"
+                                 Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
+                                 BeforeContent="{Binding BeforeContent, ElementName=Root}"
+                                 AfterContent="{Binding AfterContent, ElementName=Root}"/>
 
         <Popup x:Name="SuggestionsPopup"
                IsOpen="{Binding IsOpen, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
                StaysOpen="False"
                AllowsTransparency="True"
                Placement="Bottom"
-               PlacementTarget="{Binding ElementName=SearchTextBox}"
+               PlacementTarget="{Binding ElementName=CompactInput}"
                Width="300"
                MaxHeight="250">
             <Border Background="{StaticResource BackgroundFloating}"
@@ -34,7 +32,7 @@
                     CornerRadius="4">
                 <ListBox x:Name="SuggestionsListBox"
                          ItemsSource="{Binding Suggestions, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                         SelectedItem="{Binding SelectedSuggestion, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                         SelectedIndex="-1"
                          MouseDoubleClick="SuggestionsListBox_MouseDoubleClick"
                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -55,6 +53,16 @@
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Background" Value="#F0F0F0"/>
                                 </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#F0F0F0"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsSelected" Value="True"/>
+                                        <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter Property="Background" Value="#F0F0F0"/>
+                                </MultiTrigger>
                             </Style.Triggers>
                         </Style>
                     </ListBox.ItemContainerStyle>

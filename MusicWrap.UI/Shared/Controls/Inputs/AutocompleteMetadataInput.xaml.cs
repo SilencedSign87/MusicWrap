@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -28,6 +29,19 @@ namespace MusicWrap.UI.Controls
 
             // Initialize suggestions collection
             Suggestions = new ObservableCollection<string>();
+
+            // Subscribe to CompactInputField events after initialization
+            Loaded += (s, e) =>
+            {
+                if (CompactInput != null)
+                {
+                    CompactInput.TextBoxTextChanged += SearchTextBox_TextChanged;
+                    CompactInput.TextBoxPreviewTextInput += SearchTextBox_PreviewTextInput;
+                    CompactInput.TextBoxPasting += SearchTextBox_Pasting;
+                    CompactInput.TextBoxLostKeyboardFocus += SearchTextBox_LostKeyboardFocus;
+                    CompactInput.TextBoxPreviewKeyDown += SearchTextBox_PreviewKeyDown;
+                }
+            };
         }
 
         #region Dependency Properties
@@ -73,14 +87,10 @@ namespace MusicWrap.UI.Controls
 
         private static void OnSelectedSuggestionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (e.NewValue is string suggestion && !string.IsNullOrEmpty(suggestion))
-            {
-                var control = (AutocompleteMetadataInput)d;
-                control._isUpdating = true;
-                control.Text = suggestion;
-                control.IsOpen = false;
-                control._isUpdating = false;
-            }
+            //if (e.NewValue is string suggestion && !string.IsNullOrEmpty(suggestion))
+            //{
+            //    ((AutocompleteMetadataInput)d).CommitSuggestion(suggestion);
+            //}
         }
 
         public static readonly DependencyProperty SuggestionsProperty =
@@ -122,6 +132,65 @@ namespace MusicWrap.UI.Controls
             set => SetValue(SuggestionLimitProperty, value);
         }
 
+        public static readonly DependencyProperty IsMultipleValueEnabledProperty =
+            DependencyProperty.Register(
+                nameof(IsMultipleValueEnabled),
+                typeof(bool),
+                typeof(AutocompleteMetadataInput),
+                new PropertyMetadata(false));
+        public bool IsMultipleValueEnabled
+        {
+            get => (bool)GetValue(IsMultipleValueEnabledProperty);
+            set => SetValue(IsMultipleValueEnabledProperty, value);
+        }
+
+        public static readonly DependencyProperty MultipleValueSeparatorProperty =
+           DependencyProperty.Register(
+               nameof(MultipleValueSeparator),
+               typeof(string),
+               typeof(AutocompleteMetadataInput),
+               new PropertyMetadata(","));
+        public string MultipleValueSeparator
+        {
+            get => (string)GetValue(MultipleValueSeparatorProperty);
+            set => SetValue(MultipleValueSeparatorProperty, value);
+        }
+
+        public static readonly DependencyProperty PlaceholderTextProperty = 
+            DependencyProperty.Register(
+                nameof(PlaceholderText),
+                typeof(string),
+                typeof(AutocompleteMetadataInput),
+                new PropertyMetadata(string.Empty));
+        public string PlaceholderText
+        {
+            get => (string)GetValue(PlaceholderTextProperty);
+            set => SetValue(PlaceholderTextProperty, value);
+        }
+
+        public static readonly DependencyProperty BeforeContentProperty =
+            DependencyProperty.Register(
+                nameof(BeforeContent),
+                typeof(object),
+                typeof(AutocompleteMetadataInput),
+                new PropertyMetadata(null));
+        public object BeforeContent
+        {
+            get => GetValue(BeforeContentProperty);
+            set => SetValue(BeforeContentProperty, value);
+        }
+
+        public static readonly DependencyProperty AfterContentProperty =
+            DependencyProperty.Register(
+                nameof(AfterContent),
+                typeof(object),
+                typeof(AutocompleteMetadataInput),
+                new PropertyMetadata(null));
+        public object AfterContent
+        {
+            get => GetValue(AfterContentProperty);
+            set => SetValue(AfterContentProperty, value);
+        }
         #endregion
 
         #region Event Handlers
@@ -151,40 +220,7 @@ namespace MusicWrap.UI.Controls
 
         private void SearchTextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Down && SuggestionsListBox.Items.Count > 0)
-            {
-                if (SuggestionsListBox.SelectedIndex < 0)
-                    SuggestionsListBox.SelectedIndex = 0;
-                else if (SuggestionsListBox.SelectedIndex < SuggestionsListBox.Items.Count - 1)
-                    SuggestionsListBox.SelectedIndex++;
 
-                SuggestionsListBox.ScrollIntoView(SuggestionsListBox.SelectedItem);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Up && SuggestionsListBox.Items.Count > 0)
-            {
-                if (SuggestionsListBox.SelectedIndex > 0)
-                    SuggestionsListBox.SelectedIndex--;
-                else if (SuggestionsListBox.SelectedIndex < 0)
-                    SuggestionsListBox.SelectedIndex = SuggestionsListBox.Items.Count - 1;
-
-                SuggestionsListBox.ScrollIntoView(SuggestionsListBox.SelectedItem);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Return && SuggestionsListBox.SelectedItem is string suggestion)
-            {
-                _isUpdating = true;
-                Text = suggestion;
-                IsOpen = false;
-                _isUpdating = false;
-                SearchTextBox.Focus();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Escape)
-            {
-                IsOpen = false;
-                e.Handled = true;
-            }
         }
 
         private void SearchTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -194,16 +230,52 @@ namespace MusicWrap.UI.Controls
                 _hasUserInteraction = true;
             }
 
-            // Suppress arrow key sounds when navigating suggestions
-            if (e.Key == Key.Up || e.Key == Key.Down)
+            if (!IsOpen || SuggestionsListBox.Items.Count == 0)
             {
-                e.Handled = false; // Allow the KeyDown event to handle it
+                return;
+            }
+
+            if (e.Key == Key.Down)
+            {
+                if (SuggestionsListBox.SelectedIndex < 0)
+                    SuggestionsListBox.SelectedIndex = 0;
+                else if (SuggestionsListBox.SelectedIndex < SuggestionsListBox.Items.Count - 1)
+                    SuggestionsListBox.SelectedIndex++;
+
+                SuggestionsListBox.ScrollIntoView(SuggestionsListBox.SelectedItem);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Up)
+            {
+                if (SuggestionsListBox.SelectedIndex > 0)
+                    SuggestionsListBox.SelectedIndex--;
+                else if (SuggestionsListBox.SelectedIndex >= 0)
+                    SuggestionsListBox.SelectedIndex = SuggestionsListBox.Items.Count - 1;
+
+                SuggestionsListBox.ScrollIntoView(SuggestionsListBox.SelectedItem);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Return && SuggestionsListBox.SelectedIndex >= 0)
+            {
+                var suggestion = SuggestionsListBox.SelectedItem as string;
+                if (suggestion != null)
+                {
+                    CommitSuggestion(suggestion);
+                    CompactInput?.Focus();
+                }
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape)
+            {
+                IsOpen = false;
+                e.Handled = true;
             }
         }
 
         private void SearchTextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            CloseSuggestionsPopup();
+            // Popup light-dismiss is handled by StaysOpen=False.
+            _hasUserInteraction = false;
         }
 
         private void UserControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -230,12 +302,16 @@ namespace MusicWrap.UI.Controls
 
         private void SuggestionsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (SuggestionsListBox.SelectedItem is string suggestion)
+            var suggestion = SuggestionsListBox.SelectedItem as string;
+
+            if (string.IsNullOrEmpty(suggestion) && e.OriginalSource is FrameworkElement element)
             {
-                _isUpdating = true;
-                Text = suggestion;
-                IsOpen = false;
-                _isUpdating = false;
+                suggestion = element.DataContext as string;
+            }
+
+            if (!string.IsNullOrEmpty(suggestion))
+            {
+                CommitSuggestion(suggestion);
             }
         }
 
@@ -247,28 +323,125 @@ namespace MusicWrap.UI.Controls
         {
             try
             {
-                var suggestions = _autocompleteService.GetSuggestions(
-                    MetadataType,
-                    Text,
-                    SuggestionLimit);
+                string term;
+                if (IsMultipleValueEnabled)
+                {
+                    var segment = GetActiveSegment(Text, GetCaretIndex());
+                    term = segment.Value;
+                }
+                else
+                {
+                    term = Text ?? string.Empty;
+                }
+
+                var suggestions = _autocompleteService.GetSuggestions(MetadataType, term, SuggestionLimit);
 
                 Suggestions.Clear();
                 foreach (var suggestion in suggestions)
                 {
                     Suggestions.Add(suggestion);
                 }
-
-                IsOpen = suggestions.Count > 0;
+                // Only open popup if user interacted and there are suggestions
+                IsOpen = Suggestions.Count > 0 && _hasUserInteraction;
             }
             catch
             {
-                // If suggestions fail, just close popup
                 Suggestions.Clear();
                 IsOpen = false;
             }
         }
 
+        private char GetSeparatorChar()
+        {
+            if (string.IsNullOrWhiteSpace(MultipleValueSeparator))
+            {
+                return ',';
+            }
+
+            return MultipleValueSeparator[0];
+        }
+        private SegmentInfo GetActiveSegment(string? text, int caretIndex)
+        {
+            string value = text ?? string.Empty;
+            int caret = Math.Clamp(caretIndex, 0, value.Length);
+            char sep = GetSeparatorChar();
+
+            int start = value.LastIndexOf(sep, Math.Max(0, caret - 1));
+            start = start < 0 ? 0 : start + 1;
+
+            int end = value.IndexOf(sep, caret);
+            end = end < 0 ? value.Length : end;
+
+            string segment = value.Substring(start, end - start).Trim();
+
+            return new SegmentInfo(start, end, segment);
+        }
+
+        private int GetCaretIndex()
+        {
+            var inputBox = CompactInput?.FindName("InputBox") as TextBox;
+            return inputBox?.CaretIndex ?? 0;
+        }
+
+        private void SetCaretIndex(int index)
+        {
+            var inputBox = CompactInput?.FindName("InputBox") as TextBox;
+            if (inputBox != null)
+            {
+                inputBox.CaretIndex = Math.Clamp(index, 0, Text.Length);
+            }
+        }
+        private string NormalizeCommaSpaces(string input)
+        {
+            if (!IsMultipleValueEnabled)
+            {
+                return input;
+            }
+            char sep = GetSeparatorChar();
+            var parts = input
+                        .Split(sep)
+                        .Select(p => p.Trim())
+                        .ToArray();
+            return string.Join($"{sep} ", parts);
+        }
+        private void CommitSuggestion(string suggestion)
+        {
+            if (string.IsNullOrEmpty(suggestion))
+            {
+                return;
+            }
+            _isUpdating = true;
+            try
+            {
+                if (!IsMultipleValueEnabled)
+                {
+                    Text = suggestion;
+                    IsOpen = false;
+                    return;
+                }
+                string current = Text ?? string.Empty;
+                var segment = GetActiveSegment(current, GetCaretIndex());
+
+                string before = current[..segment.Start];
+                string after = current[segment.End..];
+                string mergued = before + suggestion.Trim() + after;
+                mergued = NormalizeCommaSpaces(mergued);
+                int newCaret = (before + suggestion.Trim()).Length;
+                Text = mergued;
+                SetCaretIndex(newCaret);
+
+                IsOpen = false;
+                CompactInput?.Focus();
+            }
+            finally
+            {
+                _isUpdating = false;
+            }
+        }
+
         #endregion
+
+        private readonly record struct SegmentInfo(int Start, int End, string Value);
     }
 }
 

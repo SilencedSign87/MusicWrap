@@ -88,6 +88,13 @@ namespace MusicWrap.UI.Controls
             remove => RemoveHandler(EnterPressedEvent, value);
         }
 
+        // Custom CLR events for text input handling
+        public event TextChangedEventHandler? TextBoxTextChanged;
+        public event TextCompositionEventHandler? TextBoxPreviewTextInput;
+        public event DataObjectPastingEventHandler? TextBoxPasting;
+        public event KeyboardFocusChangedEventHandler? TextBoxLostKeyboardFocus;
+        public event KeyEventHandler? TextBoxPreviewKeyDown;
+
         private void InputBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key != Key.Enter)
@@ -97,6 +104,31 @@ namespace MusicWrap.UI.Controls
 
             RaiseEvent(new RoutedEventArgs(EnterPressedEvent, this));
             e.Handled = true;
+        }
+
+        private void InputBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBoxTextChanged?.Invoke(this, e);
+        }
+
+        private void InputBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBoxPreviewTextInput?.Invoke(this, e);
+        }
+
+        private void InputBox_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            TextBoxPasting?.Invoke(this, e);
+        }
+
+        private void InputBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            TextBoxLostKeyboardFocus?.Invoke(this, e);
+        }
+
+        private void InputBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            TextBoxPreviewKeyDown?.Invoke(this, e);
         }
 
     }
