@@ -14,7 +14,7 @@
     <Border Padding="2">
         <Grid x:Name="WaveformContainer">
             <!-- Back waveform -->
-            <Path x:Name="PathBackground" StrokeThickness="1" Fill="White" Stretch="Fill" Opacity="0.25"/>
+            <Path x:Name="PathBackground" StrokeThickness="1" Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}" Stretch="Fill" Opacity="0.22"/>
             <!-- Front filled waveform -->
             <Path x:Name="PathForeground" 
                   StrokeThickness="1" 

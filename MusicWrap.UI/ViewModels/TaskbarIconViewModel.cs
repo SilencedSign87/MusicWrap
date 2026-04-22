@@ -13,12 +13,8 @@ namespace MusicWrap.UI.ViewModels
     {
         private const string pauseIcon = "\xE769";
         private const string playIcon = "\xE768";
-        private const string mutedIcon = "\xE74F";
-        private const string unmutedIcon = "\xE767";
         [ObservableProperty] private string playPauseStatus = "Play";
         [ObservableProperty] private string playPauseIcon = playIcon;
-        [ObservableProperty] private string muteStatus = "Mute";
-        [ObservableProperty] private string muteIcon = mutedIcon;
         private float previousVolume = 1.0f;
 
         private readonly IMusicPlayerService _playerService;
@@ -74,34 +70,6 @@ namespace MusicWrap.UI.ViewModels
         {
             var tracks = _playerService.GetQueue().Shuffle();
             _playerService.SetQueue(tracks, true);
-        }
-        [RelayCommand]
-        private void SetVolume(string volume)
-        {
-            if (MuteIcon == mutedIcon) //is muted
-            {
-                MuteStatus = "Mute";
-                MuteIcon = mutedIcon;
-            }
-            var castedVolume = float.TryParse(volume, out float result) ? result : 100.0f;
-            float flattenedVolume = castedVolume / 100.0f;
-            _playerService.SetVolume(flattenedVolume);
-        }
-        [RelayCommand]
-        private void ToggleMute()
-        {
-            if (MuteIcon == mutedIcon)
-            {
-                MuteStatus = "Unmute";
-                MuteIcon = unmutedIcon;
-                _playerService.SetVolume(0f);
-            }
-            else
-            {   
-                MuteStatus = "Mute";
-                MuteIcon = mutedIcon;
-                _playerService.SetVolume(previousVolume);
-            }
         }
         [RelayCommand]
         private void Info()

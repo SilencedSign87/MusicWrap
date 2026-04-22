@@ -336,6 +336,7 @@ namespace MusicWrap.UI
             services.AddSingleton<CommandPaletteViewModel>();
             services.AddSingleton<TaskbarIconViewModel>();
             services.AddTransient<MetadataEditorViewModel>();
+            services.AddSingleton<DJControlViewModel>();
 
             // UI
             services.AddTransient<MainWindow>();

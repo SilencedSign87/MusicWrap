@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI.Shell.Tray"
         xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         mc:Ignorable="d"
         Title="Music Wrap" 
         ResizeMode="NoResize"
@@ -118,7 +119,7 @@
                         StaysOpen="False">
                     <Border>
                         <Border 
-                                Background="{StaticResource BackgroundFloating}" 
+                                Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}" 
                                 BorderBrush="{StaticResource StrokeFloating}" 
                                 CornerRadius="8" 
                                 Margin="8,16"
@@ -132,14 +133,10 @@
                                         Opacity="0.5"/>
                             </Border.Effect>
                             <StackPanel>
-                                <Slider
-                                        Maximum="1" 
-                                        Value="{Binding Volume, Mode=TwoWay}" 
-                                        Margin="4,0,8,0" 
-                                        IsMoveToPointEnabled="True"
-                                        VerticalAlignment="Center"
-                                        SmallChange="0.01"
-                                        LargeChange="0.1"/>
+                                <controls:VolumeControl DominantColorHex="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}"  
+                                                        Height="32"
+                                                        Width="120"
+                                                        />
                             </StackPanel>
                         </Border>
                     </Border>

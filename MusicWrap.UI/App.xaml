@@ -46,26 +46,7 @@
                         <MenuItem Header="Next" Icon="{ex:Icon Glyph=E893}" Command="{Binding NextCommand}"/>
                         <MenuItem Header="Previous" Icon="{ex:Icon Glyph=E892}" Command="{Binding PreviousCommand}"/>
                         <MenuItem Header="Shuffle" Icon="{ex:Icon Glyph=E8B1}" Command="{Binding ShuffleCommand}"/>
-                        <MenuItem Header="Volume" Icon="{ex:Icon Glyph=E767}">
-                            <MenuItem Header="{Binding MuteStatus}" MinWidth="100" Command="{Binding ToggleMuteCommand}">
-                                <MenuItem.Icon>
-                                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="{Binding MuteIcon}"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <Separator/>
-                            <MenuItem Header="0%" Command="{Binding SetVolumeCommand}" CommandParameter="0" />
-                            <MenuItem Header="10%" Command="{Binding SetVolumeCommand}" CommandParameter="10" />
-                            <MenuItem Header="20%" Command="{Binding SetVolumeCommand}" CommandParameter="20"/>
-                            <MenuItem Header="30%" Command="{Binding SetVolumeCommand}" CommandParameter="30"/>
-                            <MenuItem Header="40%" Command="{Binding SetVolumeCommand}" CommandParameter="40"/>
-                            <MenuItem Header="50%" Command="{Binding SetVolumeCommand}" CommandParameter="50"/>
-                            <MenuItem Header="60%"  Command="{Binding SetVolumeCommand}" CommandParameter="60"/>
-                            <MenuItem Header="70%"  Command="{Binding SetVolumeCommand}" CommandParameter="70"/>
-                            <MenuItem Header="80%"  Command="{Binding SetVolumeCommand}" CommandParameter="80"/>
-                            <MenuItem Header="90%"  Command="{Binding SetVolumeCommand}" CommandParameter="90"/>
-                            <MenuItem Header="100%" Command="{Binding SetVolumeCommand}" CommandParameter="100" />
-                        </MenuItem>
-                        <MenuItem Header="Information" Icon="{ex:Icon Glyph=E946}" Command="{Binding InfoCommand}"/>
+                        <MenuItem Header="More information" Icon="{ex:Icon Glyph=E946}" Command="{Binding InfoCommand}"/>
                         <Separator/>
                         <MenuItem Header="Exit" Icon="{ex:Icon Glyph=E711}" Command="{Binding ExitAppCommand}"/>
                     </ContextMenu>

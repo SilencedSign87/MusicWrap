@@ -133,7 +133,7 @@
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="12"/>
                         </Button>
                         <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding DjButtonIcon}" FontSize="12"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;" FontSize="12"/>
                         </Button>
                         <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Volume">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="12"/>
@@ -148,7 +148,7 @@
                          StaysOpen="False">
                         <Border>
                             <Border 
-                                Background="{StaticResource BackgroundFloating}" 
+                                Background="{Binding CurrentTrackDominantColorHex}" 
                                 BorderBrush="{StaticResource StrokeFloating}" 
                                 CornerRadius="8" 
                                 Margin="8,16"
@@ -162,14 +162,10 @@
                                         Opacity="0.5"/>
                                 </Border.Effect>
                                 <StackPanel>
-                                    <Slider
-                                        Maximum="1" 
-                                        Value="{Binding Volume, Mode=TwoWay}" 
-                                        Margin="4,0,8,0" 
-                                        IsMoveToPointEnabled="True"
-                                        VerticalAlignment="Center"
-                                        SmallChange="0.01"
-                                        LargeChange="0.1"/>
+                                    <controls:VolumeControl
+                                        DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
+                                        Width="150"
+                                        Height="32"/>
                                 </StackPanel>
                             </Border>
                         </Border>
