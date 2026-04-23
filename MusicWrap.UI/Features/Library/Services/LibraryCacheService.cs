@@ -47,7 +47,6 @@ namespace MusicWrap.UI.Features.Library.Services
         private readonly MusicLibrary _library;
         private readonly IUserSettingsRepository _userSettingsRepository;
         private readonly UserSettings _userSettings;
-        private readonly string _coversPath;
 
         private LibraryEntry[]? _artistCache;
         private LibraryEntry[]? _albumCache;
@@ -55,7 +54,6 @@ namespace MusicWrap.UI.Features.Library.Services
         private LibraryEntry[]? _decadeCache;
 
         private Dictionary<int, Track> _trackById = [];
-        private Dictionary<int, int[]> _trackIdsByAlbumId = [];
         private Dictionary<int, Album> _albumById = [];
         private Dictionary<int, int[]> _albumIdsByArtistId = [];
         private Dictionary<int, int[]> _albumIdsByGenreId = [];
@@ -71,8 +69,6 @@ namespace MusicWrap.UI.Features.Library.Services
             _library = library;
             _userSettingsRepository = userSettingsRepository;
             _userSettings = userSettings;
-            _coversPath = MusicWrapDirectories.CoverDirectory;
-
             BuildIndexes();
         }
 
@@ -293,7 +289,6 @@ namespace MusicWrap.UI.Features.Library.Services
             _decadeCache = null;
 
             _trackById = [];
-            _trackIdsByAlbumId = [];
             _albumById = [];
             _albumIdsByArtistId = [];
             _albumIdsByGenreId = [];
@@ -633,10 +628,6 @@ namespace MusicWrap.UI.Features.Library.Services
         private void BuildIndexes()
         {
             _trackById = _library.Tracks.ToDictionary(t => t.Id);
-
-            _trackIdsByAlbumId = _library.Tracks
-                .GroupBy(t => t.AlbumId)
-                .ToDictionary(g => g.Key, g => g.Select(t => t.Id).ToArray());
 
             _albumById = _library.Albums.ToDictionary(a => a.Id);
 

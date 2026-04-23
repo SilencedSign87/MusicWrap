@@ -167,6 +167,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             {
                 await _scanner.ScanAllDirectories(_scanProgress, null);
                 _LibraryCache.InvalidateCache();
+                _imageService.ClearCache();
                 await LoadEntriesAsync();
             }
             finally
@@ -472,58 +473,20 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return entries;
 
             var q = query.Trim();
-            var albumById = _library.Albums.ToDictionary(a => a.Id);
-            var artistById = _library.Artists.ToDictionary(a => a.Id, a => a.Name);
-            var tracksByAlbumId = _library.Tracks
-                .GroupBy(t => t.AlbumId)
-                .ToDictionary(g => g.Key, g => g.ToArray());
 
             return entries
-                .Where(entry => EntryMatchesQuery(entry, q, albumById, artistById, tracksByAlbumId))
+                .Where(e => EntryMatchesQuery(e, q))
                 .ToArray();
         }
 
-        private bool EntryMatchesQuery(
-            LibraryEntry entry,
-            string query,
-            IReadOnlyDictionary<int, Album> albumById,
-            IReadOnlyDictionary<int, string> artistById,
-            IReadOnlyDictionary<int, Track[]> tracksByAlbumId)
+        private bool EntryMatchesQuery(LibraryEntry entry, string query)
         {
             if (entry.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            foreach (var albumId in GetRelatedAlbumIds(entry))
             {
-                if (!albumById.TryGetValue(albumId, out var album))
-                    continue;
-
-                if (album.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
-                    return true;
-
-                var artistNames = album.ArtistIds
-                    .Where(id => artistById.ContainsKey(id))
-                    .Select(id => artistById[id]);
-
-                if (artistNames.Any(name => name.Contains(query, StringComparison.OrdinalIgnoreCase)))
-                    return true;
-
-                if (!tracksByAlbumId.TryGetValue(albumId, out var tracks))
-                    continue;
-
-                if (tracks.Any(t => t.Title.Contains(query, StringComparison.OrdinalIgnoreCase)))
-                    return true;
-
-                if (tracks
-                    .SelectMany(t => t.ArtistIds)
-                    .Distinct()
-                    .Where(id => artistById.ContainsKey(id))
-                    .Select(id => artistById[id])
-                    .Any(name => name.Contains(query, StringComparison.OrdinalIgnoreCase)))
-                    return true;
+                return true;
             }
 
-            return false;
+            return _LibraryCache.GetTrackIdsForEntry(entry, query).Length > 0;
         }
 
         private IEnumerable<int> GetRelatedAlbumIds(LibraryEntry entry)
@@ -572,16 +535,23 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
         private async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)
         {
-            using var sem = new SemaphoreSlim(3); // limit concurrent image loading
+            const int batchSize = 24;
 
-            var tasks = albums
-                .Where(a => a.ImagePath is not null)
-                .Select(async (album) =>
+            foreach (var batch in albums.Chunk(batchSize))
+            {
+                ct.ThrowIfCancellationRequested();
+
+                using var sem = new SemaphoreSlim(3);
+
+                var tasks = batch.Select(async album =>
                 {
                     await sem.WaitAsync(ct).ConfigureAwait(false);
                     try
                     {
-                        if (ct.IsCancellationRequested) return;
+                        if (ct.IsCancellationRequested)
+                        {
+                            return;
+                        }
 
                         var bmp = await _imageService.LoadAsync(
                             album.ImagePath,
@@ -594,18 +564,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                             album.CoverImage = bmp;
                         }
                     }
-                    catch (OperationCanceledException) { }
+                    catch (OperationCanceledException)
+                    {
+                    }
                     finally
                     {
                         sem.Release();
                     }
                 });
 
-            try
-            {
                 await Task.WhenAll(tasks).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
         }
         public void ExpandAlbum(int albumId, int currentAvailableWidth = 1000)
         {
@@ -662,7 +631,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             GridRows = rows;
             ExpandedAlbumId = null;
 
-            if (expandedAlbumIdSnapshot.HasValue) {
+            if (expandedAlbumIdSnapshot.HasValue)
+            {
                 var expandedRow = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == expandedAlbumIdSnapshot.Value));
                 if (expandedRow is not null)
                 {

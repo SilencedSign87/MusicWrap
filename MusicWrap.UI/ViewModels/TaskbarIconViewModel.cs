@@ -9,8 +9,9 @@ using System.Windows.Forms;
 
 namespace MusicWrap.UI.ViewModels
 {
-    public partial class TaskbarIconViewModel : ObservableObject
+    public partial class TaskbarIconViewModel : ObservableObject, IDisposable
     {
+        private bool _disposed = false;
         private const string pauseIcon = "\xE769";
         private const string playIcon = "\xE768";
         [ObservableProperty] private string playPauseStatus = "Play";
@@ -108,6 +109,14 @@ namespace MusicWrap.UI.ViewModels
                     break;
             }
 
+        }
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                _playerService.PlaybackStateChanged -= _playerService_PlaybackStateChanged;
+            }
         }
 
     }

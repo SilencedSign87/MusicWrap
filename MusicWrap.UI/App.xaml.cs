@@ -62,6 +62,8 @@ namespace MusicWrap.UI
         private static int _windowTransitionDepth;
         private ISaveCoordinator? _saveCoordinator;
         private ISaveOrchestration? _saveOrchestration;
+        private ITrayService? _trayService;
+        private UserSettings? _userSettings;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -290,7 +292,7 @@ namespace MusicWrap.UI
             services.AddSingleton<IUserSettingsRepository, UserSettingsRepository>();
             services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
             services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
-            services.AddSingleton(sp=>sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
+            services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
 
             // Services
             services.AddSingleton<IUIDispatcher, UIDispatcher>();
@@ -353,29 +355,30 @@ namespace MusicWrap.UI
             int windowToShow = 0;
             try
             {
-                // Force load
                 Services.GetRequiredService<MusicLibrary>();
-                var userSettings = Services.GetRequiredService<UserSettings>();
+                _userSettings = Services.GetRequiredService<UserSettings>();
                 var player = Services.GetRequiredService<IMusicPlayerService>();
-                var trayService = Services.GetRequiredService<ITrayService>();
+                _trayService = Services.GetRequiredService<ITrayService>();
 
-                var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)
+                _userSettings.PropertyChanged += _userSettings_PropertyChanged;
+                ApplyTrayBehavior(_userSettings.KeepAppInTray);
+
+                var listBy = string.IsNullOrWhiteSpace(_userSettings.LibraryListBy)
                     ? "Artist"
-                    : userSettings.LibraryListBy;
-                var ascending = userSettings.LibraryAscending;
+                    : _userSettings.LibraryListBy;
+                var ascending = _userSettings.LibraryAscending;
 
-                var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
-                await LibraryCache.InitializeAsync(listBy, ascending);
+                var libraryCache = Services.GetRequiredService<ILibraryCacheService>();
+                await libraryCache.InitializeAsync(listBy, ascending);
 
-
-                player.LoadInitialState(userSettings);
-                windowToShow = (int)userSettings.LastWindowMode;
+                player.LoadInitialState(_userSettings);
+                windowToShow = (int)_userSettings.LastWindowMode;
                 _saveCoordinator = Services.GetRequiredService<ISaveCoordinator>();
                 _saveOrchestration = Services.GetRequiredService<ISaveOrchestration>();
 
-                if (trayService is not null)
+                if (_userSettings.KeepAppInTray)
                 {
-                    trayService.Initialize();
+                    _trayService.Initialize();
                 }
             }
             catch
@@ -397,6 +400,36 @@ namespace MusicWrap.UI
             }
         }
 
+        private void _userSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(UserSettings.KeepAppInTray))
+            {
+                ApplyTrayBehavior(_userSettings?.KeepAppInTray ?? false);
+            }
+        }
+        private void ApplyTrayBehavior(bool keepInTray)
+        {
+            ShutdownMode = keepInTray
+                ? ShutdownMode.OnExplicitShutdown
+                : ShutdownMode.OnLastWindowClose;
+
+            if (keepInTray)
+            {
+                _trayService?.Initialize();
+                return;
+            }
+
+            if (_trayService is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            if (CurrentWindow is not null && !CurrentWindow.IsVisible && IsWindowUsable(CurrentWindow))
+            {
+                CurrentWindow.Show();
+                CurrentWindow.Activate();
+            }
+        }
         private static bool TryShowWindow(Window? window)
         {
             if (!IsWindowUsable(window))

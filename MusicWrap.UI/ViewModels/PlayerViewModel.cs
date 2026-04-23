@@ -16,8 +16,9 @@ using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.ViewModels
 {
-    public partial class PlayerViewModel : ObservableObject
+    public partial class PlayerViewModel : ObservableObject, IDisposable
     {
+        private bool _disposed = false;
         private readonly IMusicPlayerService _playerService;
         private readonly MusicLibrary _library;
 
@@ -525,6 +526,21 @@ namespace MusicWrap.UI.ViewModels
             {
                 FormattedPosition = time.ToString(@"m\:ss");
             }
+        }
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            _uiPositionTmer.Stop();
+            _uiPositionTmer.Tick -= UiPositionTimerOnTick;
+
+            _playerService.PlaybackStateChanged -= OnPlaybackStateChanged;
+            _playerService.TrackChanged -= OnTrackChanged;
+            _playerService.PositionChanged -= OnPositionChanged;
+            _playerService.WaveformDataChanged -= _playerService_WaveformDataChanged;
+
+            Waveform = Array.Empty<float>();
         }
     }
 }

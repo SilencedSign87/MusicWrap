@@ -1,12 +1,14 @@
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Features.Library.Views;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.Components;
+using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.Views;
-using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Providers.Views;
+using MusicWrap.UI.Helpers;
+using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
 using System.ComponentModel;
 using System.Text;
@@ -19,7 +21,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Shell.Windows
 {
@@ -50,6 +51,7 @@ namespace MusicWrap.UI.Shell.Windows
 
             StateChanged += MainWindow_StateChanged;
             Closing += MainWindow_Closing;
+            Closed += MainWindow_Closed;
 
             _player = App.Services.GetRequiredService<IMusicPlayerService>();
             _player.PlaybackStateChanged += _player_PlaybackStateChanged;
@@ -106,14 +108,29 @@ namespace MusicWrap.UI.Shell.Windows
 
             if (App.ShouldKeepAppInTray())
             {
-                e.Cancel = true;
-                Hide();
+                App.Services.GetService<ITrayService>()?.HideFlyout();
                 return;
             }
 
             App.RequestShutdown();
         }
+        private void MainWindow_Closed(object? sender, EventArgs e)
+        {
+            StateChanged -= MainWindow_StateChanged;
+            Closing -= MainWindow_Closing;
+            Closed -= MainWindow_Closed;
 
+            _player.PlaybackStateChanged -= _player_PlaybackStateChanged;
+            MainFrame.Content = null;
+            foreach (var cachedPage in _pageCache.Values)
+            {
+                if (cachedPage is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            _pageCache.Clear();
+        }
         private void CloseButtonClick(object sender, RoutedEventArgs e)
         {
             Close();
@@ -193,10 +210,11 @@ namespace MusicWrap.UI.Shell.Windows
         {
             const int libraryIndex = 0;
             var keysToRemove = _pageCache.Keys
-                .Where(k=>k != libraryIndex && k != currentIndex)
+                .Where(k => k != libraryIndex && k != currentIndex)
                 .ToList();
 
-            foreach (var key in keysToRemove) {
+            foreach (var key in keysToRemove)
+            {
                 if (!_pageCache.TryGetValue(key, out var cachedPage))
                     continue;
 

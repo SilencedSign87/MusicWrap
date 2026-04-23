@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.ViewModels;
+using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -110,8 +111,7 @@ namespace MusicWrap.UI.Shell.Windows
 
             if (App.ShouldKeepAppInTray())
             {
-                e.Cancel = true;
-                Hide();
+                App.Services.GetService<ITrayService>()?.HideFlyout();
                 return;
             }
 

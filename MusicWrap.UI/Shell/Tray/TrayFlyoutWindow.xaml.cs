@@ -112,7 +112,7 @@ namespace MusicWrap.UI.Shell.Tray
             {
                 _isAnimatingClose = false;
 
-                Hide();
+                Close();
                 RootPanel.Opacity = 1;
                 RootTranslate.Y = 0;
                 Top = _homeTop;
@@ -122,7 +122,7 @@ namespace MusicWrap.UI.Shell.Tray
         }
         private void OpenMainWindow(object sender, RoutedEventArgs e)
         {
-            Hide();
+            Close();
             App.ShowOrRestoreCurrentWindow();
         }
         private void ExitApp(object sender, RoutedEventArgs e)

@@ -15,22 +15,24 @@ namespace MusicWrap.UI.Converters
 {
     public class PathToImageConverter : IValueConverter
     {
-        private static IImageService _imageService => App.Services.GetRequiredService<IImageService>();
+        private static readonly Lazy<IImageService> _imageService = new(() => App.Services.GetRequiredService<IImageService>());
+        private static IImageService ImageService => _imageService.Value;
+
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             ParseParameter(parameter, out var size, out var variant, out var hasExplicitVariant);
 
             if (value is not string fileName || string.IsNullOrWhiteSpace(fileName))
             {
-                return _imageService.GetDefaultImage(size, hasExplicitVariant ? variant : ImageVariant.Original);
+                return ImageService.GetDefaultImage(size, hasExplicitVariant ? variant : ImageVariant.Original);
             }
 
             if (hasExplicitVariant)
             {
-                return _imageService.Load(fileName, variant, size);
+                return ImageService.Load(fileName, variant, size);
             }
 
-            return _imageService.LoadForSize(fileName, size);
+            return ImageService.LoadForSize(fileName, size);
 
         }
 
@@ -41,7 +43,7 @@ namespace MusicWrap.UI.Converters
 
         public static void ClearCache()
         {
-            App.Services.GetRequiredService<IImageService>().ClearCache();
+            ImageService.ClearCache();
         }
 
         private static void ParseParameter(object? parameter, out int size, out ImageVariant variant, out bool hasExplicitVariant)

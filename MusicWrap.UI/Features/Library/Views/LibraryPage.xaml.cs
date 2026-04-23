@@ -22,13 +22,14 @@ using System.Windows.Threading;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
-    public partial class LibraryPage : UserControl
+    public partial class LibraryPage : UserControl, IDisposable
     {
         public LibraryViewModel vm;
         private readonly CommandPaletteViewModel _commandPaletteViewModel;
         private readonly ILibraryCacheService _libraryCacheService;
         private bool _isCommandPaletteSubscribed;
         private DispatcherTimer? _resizeThrottleTimer;
+        private bool _disposed = false;
 
         private int _lastColumns = -1;
         private const int MinTileWidth = 150;
@@ -52,11 +53,14 @@ namespace MusicWrap.UI.Features.Library.Views
 
             // Initialize throttle timer (50ms to reduce excessive recalcs during drag resize)
             _resizeThrottleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _resizeThrottleTimer.Tick += (_, _) =>
-            {
-                _resizeThrottleTimer.Stop();
-                UpdateColumnsForViewportWidth();
-            };
+            _resizeThrottleTimer.Tick += ResizeThrottleTimer_Tick;
+
+        }
+
+        private void ResizeThrottleTimer_Tick(object? sender, EventArgs e)
+        {
+            _resizeThrottleTimer?.Stop();
+            UpdateColumnsForViewportWidth();
         }
 
         private void LibraryPage_Loaded(object sender, RoutedEventArgs e)
@@ -325,6 +329,35 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 trackToPlaylistMenu.TrackIds = trackIds;
             }
+        }
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            Loaded -= LibraryPage_Loaded;
+            Unloaded -= LibraryPage_Unloaded;
+
+            if (_isCommandPaletteSubscribed)
+            {
+                _commandPaletteViewModel.QuerySubmitted -= CommandPaletteViewModel_QuerySubmitted;
+                _isCommandPaletteSubscribed = false;
+            }
+
+            vm.PropertyChanged -= Vm_PropertyChanged;
+
+            if (_resizeThrottleTimer is not null)
+            {
+                _resizeThrottleTimer.Stop();
+                _resizeThrottleTimer.Tick -= ResizeThrottleTimer_Tick;
+                _resizeThrottleTimer = null;
+            }
+
+            DataContext = null;
         }
     }
 }

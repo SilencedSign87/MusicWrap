@@ -25,36 +25,67 @@ namespace MusicWrap.UI.Services
         BitmapImage? LoadForSize(string? fileName, int requestedSize, bool preferOriginal = false);
         Task<BitmapImage?> LoadForSizeAsync(string? fileName, int requestedSize, bool preferOriginal = false, CancellationToken ct = default);
         BitmapImage? GetDefaultImage(int size = 64, ImageVariant variant = ImageVariant.Original);
-        void ClearCache();
+        void ClearCache(ImageVariant? variant = null);
     }
     public class ImageService : IImageService
     {
         private const int SmallThreshold = 64;
         private const int MediumThreshold = 180;
-        private const int LargeThreshold = 340;
+        private const int LargeThreshold = 300;
+        private const int MaxDecodeSize = 300;
 
-        private const int SmallCacheLimit = 80;
-        private const int MediumCacheLimit = 40;
-        private const int LargeCacheLimit = 10;
+        private const int SmallCacheLimit = 50;
+        private const int MediumCacheLimit = 20;
+        private const int LargeCacheLimit = 5;
 
         private static readonly object _cacheLock = new();
+
         private static readonly Dictionary<string, CacheEntry> _smallCache = new();
         private static readonly LinkedList<string> _smallLru = new();
+
+        private static readonly Dictionary<string, CacheEntry> _mediumCache = new();
+        private static readonly LinkedList<string> _mediumLru = new();
 
         private static readonly Dictionary<string, CacheEntry> _largeCache = new();
         private static readonly LinkedList<string> _largeLru = new();
 
         private static readonly Dictionary<string, BitmapImage?> _defaultImages = new();
 
-        public void ClearCache()
+        public void ClearCache(ImageVariant? variant = null)
         {
             lock (_cacheLock)
             {
-                _smallCache.Clear();
-                _smallLru.Clear();
-                _largeCache.Clear();
-                _largeLru.Clear();
-                _defaultImages.Clear();
+                if (variant is null)
+                {
+                    _smallCache.Clear();
+                    _smallLru.Clear();
+                    _mediumCache.Clear();
+                    _mediumLru.Clear();
+                    _largeCache.Clear();
+                    _largeLru.Clear();
+                    _defaultImages.Clear();
+                    return;
+                }
+
+                switch (variant)
+                {
+                    case ImageVariant.Small:
+                        _smallCache.Clear();
+                        _smallLru.Clear();
+                        break;
+                    case ImageVariant.Medium:
+                        _mediumCache.Clear();
+                        _mediumLru.Clear();
+                        break;
+                    case ImageVariant.Large:
+                    case ImageVariant.Original:
+                        _largeCache.Clear();
+                        _largeLru.Clear();
+                        break;
+                    case ImageVariant.Blur:
+                        _defaultImages.Clear();
+                        break;
+                }
             }
         }
 
@@ -66,6 +97,10 @@ namespace MusicWrap.UI.Services
             {
                 return GetDefaultImage(size, variant);
             }
+            if (variant != ImageVariant.Original)
+            {
+                size = NormalizeDecodeSize(size);
+            }
             string normalizedPath = NormalizePath(path);
             string cacheKey = BuildCacheKey(normalizedPath, size);
 
@@ -77,7 +112,10 @@ namespace MusicWrap.UI.Services
             try
             {
                 var bitmap = DecodeBitmap(normalizedPath, size);
-                AddToCache(cacheKey, bitmap, size);
+                if (ShouldCache(size))
+                {
+                    AddToCache(cacheKey, bitmap, size);
+                }
                 return bitmap;
             }
             catch
@@ -89,7 +127,7 @@ namespace MusicWrap.UI.Services
 
         public async Task<BitmapImage?> LoadAsync(string? fileName, ImageVariant variant, int decodeSize = 0, CancellationToken ct = default)
         {
-            int size = decodeSize > 0 ? decodeSize : 64;
+            int size = NormalizeDecodeSize(decodeSize > 0 ? decodeSize : 64);
             var path = ResolvePath(fileName, variant);
 
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
@@ -113,7 +151,10 @@ namespace MusicWrap.UI.Services
                     return DecodeBitmap(normalizedPath, size);
                 }, ct).ConfigureAwait(false);
 
-                AddToCache(cacheKey, bitmap, size);
+                if (ShouldCache(size))
+                {
+                    AddToCache(cacheKey, bitmap, size);
+                }
                 return bitmap;
             }
             catch
@@ -125,7 +166,7 @@ namespace MusicWrap.UI.Services
 
         public BitmapImage? LoadForSize(string? fileName, int requestedSize, bool preferOriginal = false)
         {
-            int size = requestedSize > 0 ? requestedSize : 64;
+            int size = NormalizeDecodeSize(requestedSize > 0 ? requestedSize : 64);
             var path = ResolvePathForSize(fileName, size, preferOriginal);
 
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
@@ -144,7 +185,10 @@ namespace MusicWrap.UI.Services
             try
             {
                 var bitmap = DecodeBitmap(normalizedPath, size);
-                AddToCache(cacheKey, bitmap, size);
+                if (ShouldCache(size))
+                {
+                    AddToCache(cacheKey, bitmap, size);
+                }
                 return bitmap;
             }
             catch
@@ -156,12 +200,12 @@ namespace MusicWrap.UI.Services
 
         public async Task<BitmapImage?> LoadForSizeAsync(string? fileName, int requestedSize, bool preferOriginal = false, CancellationToken ct = default)
         {
-            int size = requestedSize > 0 ? requestedSize : 64;
+            int size = NormalizeDecodeSize(requestedSize > 0 ? requestedSize : 64);
             var path = ResolvePathForSize(fileName, size, preferOriginal);
 
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {
-                return GetDefaultImage(size , ImageVariant.Original);
+                return GetDefaultImage(size, ImageVariant.Original);
             }
 
             string normalizedPath = NormalizePath(path);
@@ -179,8 +223,10 @@ namespace MusicWrap.UI.Services
                     ct.ThrowIfCancellationRequested();
                     return DecodeBitmap(normalizedPath, size);
                 }, ct).ConfigureAwait(false);
-
-                AddToCache(cacheKey, bitmap, size);
+                if (ShouldCache(size))
+                {
+                    AddToCache(cacheKey, bitmap, size);
+                }
                 return bitmap;
             }
             catch
@@ -244,7 +290,7 @@ namespace MusicWrap.UI.Services
         }
         public BitmapImage? GetDefaultImage(int size = 64, ImageVariant variant = ImageVariant.Original)
         {
-            if (size <= 0) size = 64;
+            size = NormalizeDecodeSize(size);
 
             string key = $"default|{variant}|{size}";
             string uri = variant == ImageVariant.Blur
@@ -280,8 +326,7 @@ namespace MusicWrap.UI.Services
         {
             if (size <= SmallThreshold) return ImageVariant.Small;
             if (size <= MediumThreshold) return ImageVariant.Medium;
-            if (size <= LargeThreshold) return ImageVariant.Large;
-            return ImageVariant.Original;
+            return ImageVariant.Large;
         }
         private static BitmapImage DecodeBitmap(string absolutePath, int decodeSize)
         {
@@ -298,6 +343,13 @@ namespace MusicWrap.UI.Services
         {
             return Path.GetFullPath(path).ToLowerInvariant();
         }
+        private static int NormalizeDecodeSize(int size)
+        {
+            if (size <= SmallThreshold) return SmallThreshold;
+            if (size <= MediumThreshold) return MediumThreshold;
+            if (size <= LargeThreshold) return LargeThreshold;
+            return MaxDecodeSize;
+        }
         private static string BuildCacheKey(string path, int decodeSize)
         {
             return $"{path}|{decodeSize}";
@@ -307,9 +359,7 @@ namespace MusicWrap.UI.Services
         {
             lock (_cacheLock)
             {
-                bool isSmall = size <= SmallThreshold;
-                var cache = isSmall ? _smallCache : _largeCache;
-                var lru = isSmall ? _smallLru : _largeLru;
+                var (cache, lru, _) = GetBucket(size);
 
                 if (cache.TryGetValue(key, out var entry) && entry.BitmapImage != null)
                 {
@@ -328,10 +378,7 @@ namespace MusicWrap.UI.Services
         {
             lock (_cacheLock)
             {
-                bool isSmall = size <= SmallThreshold;
-                var cache = isSmall ? _smallCache : _largeCache;
-                var lru = isSmall ? _smallLru : _largeLru;
-                int cacheLimit = isSmall ? SmallCacheLimit : LargeCacheLimit;
+                var (cache, lru, limit) = GetBucket(size);
 
                 if (cache.TryGetValue(key, out var existing))
                 {
@@ -343,10 +390,13 @@ namespace MusicWrap.UI.Services
                 lru.AddLast(node);
                 cache[key] = new CacheEntry { BitmapImage = image, LruNode = node };
 
-                while (cache.Count > cacheLimit)
+                while (cache.Count > limit)
                 {
                     var oldest = lru.First;
-                    if (oldest == null) break;
+                    if (oldest == null)
+                    {
+                        break;
+                    }
 
                     lru.RemoveFirst();
                     cache.Remove(oldest.Value);
@@ -358,9 +408,7 @@ namespace MusicWrap.UI.Services
         {
             lock (_cacheLock)
             {
-                bool isSmall = size <= SmallThreshold;
-                var cache = isSmall ? _smallCache : _largeCache;
-                var lru = isSmall ? _smallLru : _largeLru;
+                var (cache, lru, _) = GetBucket(size);
 
                 if (cache.TryGetValue(key, out var entry))
                 {
@@ -368,6 +416,24 @@ namespace MusicWrap.UI.Services
                     cache.Remove(key);
                 }
             }
+        }
+        private static bool ShouldCache(int size)
+        {
+            return size <= LargeThreshold;
+        }
+        private static (Dictionary<string, CacheEntry> cache, LinkedList<string> lru, int limit) GetBucket(int size)
+        {
+            if (size <= SmallThreshold)
+            {
+                return (_smallCache, _smallLru, SmallCacheLimit);
+            }
+
+            if (size <= MediumThreshold)
+            {
+                return (_mediumCache, _mediumLru, MediumCacheLimit);
+            }
+
+            return (_largeCache, _largeLru, LargeCacheLimit);
         }
         private sealed class CacheEntry
         {

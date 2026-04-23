@@ -1,13 +1,16 @@
 ﻿using MessagePack;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace MusicWrap.Data.User.Models
 {
     [MessagePackObject]
-    public sealed class UserSettings
+    public sealed class UserSettings : INotifyPropertyChanged
     {
+        private bool _keepAppInTray = false;
         [Key(0)] public int PreferredDeviceIndex { get; set; } = -1; // default audio output
         [Key(1)] public SampleRatePreference PreferredSampleRate { get; set; } = SampleRatePreference.Auto;
         [Key(2)] public OutputMode PreferredOutputMode { get; set; } = OutputMode.WasapiShared;
@@ -16,7 +19,18 @@ namespace MusicWrap.Data.User.Models
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
         [Key(6)] public string LibraryListBy { get; set; } = "Artist";
         [Key(7)] public bool LibraryAscending { get; set; } = false;
-        [Key(8)] public bool KeepAppInTray { get; set; } = false;
+        [Key(8)] public bool KeepAppInTray
+        {
+            get => _keepAppInTray;
+            set
+            {
+                if (_keepAppInTray != value)
+                {
+                    _keepAppInTray = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         // FFMpeg settings
         [Key(9)] public FFMpegSettings FFMpegSettings { get; set; } = new FFMpegSettings();
@@ -27,6 +41,13 @@ namespace MusicWrap.Data.User.Models
         // Misc settings
 
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
     }
 
