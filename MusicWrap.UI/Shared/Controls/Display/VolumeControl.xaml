@@ -10,64 +10,84 @@
              Loaded="UserControl_Loaded"
              SizeChanged="UserControl_SizeChanged"
              d:DesignHeight="32" d:DesignWidth="200">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="4"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
-        <Button 
-            Grid.Column="0"
-            VerticalAlignment="Center"
-            Foreground="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}" 
-            Style="{StaticResource SubtleButton}" Width="32" Height="32" Padding="1"  Command="{Binding ToggleMuteCommand}"
-        >
-            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" d:Text="&#xE767;" FontSize="16"/>
-        </Button>
-        <Border Grid.Column="2">
-            <Grid x:Name="VolumeContainer">
-                <Path x:Name="PathBackground" 
-                        Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                        Opacity="0.18"
-                      Stretch="Fill"/>
-                
-                <Path x:Name="PathForeground" 
-                      Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}" 
-                      Stretch="Fill">
-                    <Path.Clip>
-                        <RectangleGeometry x:Name="VolumeClip" Rect="0,0,0,0"/>
-                    </Path.Clip>
-                </Path>
 
-                <Popup
-                    x:Name="VolumePopup"
-                    Placement="Relative"
-                    PlacementTarget="{Binding ElementName=VolumeContainer}"
-                    StaysOpen="True"
-                    AllowsTransparency="True"
-                    IsHitTestVisible="False"
-                    IsOpen="False"
-                    >
-                    <Border
-                        Background="{StaticResource BackgroundFloating}"
-                        BorderThickness="1"
-                        BorderBrush="{StaticResource StrokeFloating}"
-                        CornerRadius="4"
-                        Padding="8,4"
-                        >
-                        <TextBlock x:Name="VolumePopupText" Foreground="White" FontSize="11" Text="0" />
+    <Grid x:Name="RootLayout">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="ColButton" Width="Auto"/>
+            <ColumnDefinition x:Name="ColSpacer" Width="4"/>
+            <ColumnDefinition x:Name="ColVolume" Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="RowVolume" Height="*"/>
+            <RowDefinition x:Name="RowSpacer" Height="0"/>
+            <RowDefinition x:Name="RowButton" Height="0"/>
+        </Grid.RowDefinitions>
+
+        <Button x:Name="MuteButton"
+                Grid.Row="0"
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Width="32"
+                Height="32"
+                Padding="1"
+                Style="{StaticResource SubtleButton}"
+                Foreground="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                Command="{Binding ToggleMuteCommand}">
+            <TextBlock FontFamily="Segoe Fluent Icons"
+                       Text="{Binding MuteButtonIcon}"
+                       d:Text="&#xE767;"
+                       FontSize="16"/>
+        </Button>
+
+        <Border x:Name="LayoutSpacer"
+                Grid.Row="0"
+                Grid.Column="1"
+                Background="Transparent"/>
+
+        <Border x:Name="VolumeHost"
+                Grid.Row="0"
+                Grid.Column="2">
+            <Grid x:Name="VolumeContainer" Background="Transparent">
+
+                <Border x:Name="PillBackground"
+                        Background="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                        Opacity="0.18"/>
+
+                <Border x:Name="FillHost"
+                        Margin="4"
+                        ClipToBounds="True"
+                        Background="Transparent">
+                    <Border x:Name="PillForeground"
+                            Background="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"/>
+                </Border>
+
+                <Popup x:Name="VolumePopup"
+                       Placement="Relative"
+                       PlacementTarget="{Binding ElementName=VolumeContainer}"
+                       StaysOpen="True"
+                       AllowsTransparency="True"
+                       IsHitTestVisible="False"
+                       IsOpen="False">
+                    <Border Background="{StaticResource BackgroundFloating}"
+                            BorderThickness="1"
+                            BorderBrush="{StaticResource StrokeFloating}"
+                            CornerRadius="4"
+                            Padding="8,4">
+                        <TextBlock x:Name="VolumePopupText"
+                                   Foreground="White"
+                                   FontSize="11"
+                                   Text="0"/>
                     </Border>
                 </Popup>
-                
-                <!-- Interactive layer-->
-                <Rectangle
-                    x:Name="InteractiveLayer"
-                    Fill="Transparent"
-                    MouseDown="InteractiveLayer_MouseDown"
-                    MouseUp="InteractiveLayer_MouseUp"
-                    MouseMove="InteractiveLayer_MouseMove"
-                    MouseLeave="InteractiveLayer_MouseLeave"
-                />
+
+                <Rectangle x:Name="InteractiveLayer"
+                           Fill="Transparent"
+                           MouseDown="InteractiveLayer_MouseDown"
+                           MouseUp="InteractiveLayer_MouseUp"
+                           MouseMove="InteractiveLayer_MouseMove"
+                           MouseLeave="InteractiveLayer_MouseLeave"/>
             </Grid>
         </Border>
     </Grid>

@@ -85,6 +85,9 @@
                 <MenuItem Header="Playlists" Icon="{ex:Icon Glyph=EA37}">
                     <MenuItem Header="New playlist" Icon="{ex:Icon Glyph=E710}" Command="{Binding NewPlaylistCommand}" />
                     <MenuItem Header="Refresh" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}" />
+                    <Separator/>
+                    <MenuItem Header="Import" Icon="{ex:Icon Glyph=EA52}" />
+                    <MenuItem Header="Export" Icon="{ex:Icon Glyph=EDE1}" />
                 </MenuItem>
                 <MenuItem Header="View" Icon="{ex:Icon Glyph=E890}">
                     <MenuItem Header="Title" IsCheckable="True" />

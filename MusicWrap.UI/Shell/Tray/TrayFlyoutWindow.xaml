@@ -82,11 +82,11 @@
                         </TextBlock>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Exit" Click="ExitApp">
-                            <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE711;"/>
+                        <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Close" Click="ExitApp">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE711;"/>
                         </Button>
                         <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Open MusicWrap" Click="OpenMainWindow">
-                            <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8A7;"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8A7;"/>
                         </Button>
                     </StackPanel>
                 </Grid>
@@ -134,8 +134,10 @@
                             </Border.Effect>
                             <StackPanel>
                                 <controls:VolumeControl DominantColorHex="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}"  
-                                                        Height="32"
-                                                        Width="120"
+                                                        Orientation="Vertical"
+                                                        Width="32"
+                                                        ShowMuteButton="False"
+                                                        Height="120"
                                                         />
                             </StackPanel>
                         </Border>
