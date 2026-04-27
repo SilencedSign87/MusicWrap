@@ -127,7 +127,7 @@ namespace MusicWrap.UI.Shell.Tray
         }
         private void ExitApp(object sender, RoutedEventArgs e)
         {
-            Close();
+            AnimateClose();
         }
         private void VolumeButton_Click(object sender, RoutedEventArgs e)
         {

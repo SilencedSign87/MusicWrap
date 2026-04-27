@@ -38,18 +38,18 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            
+
             <!-- Album Cover -->
-            <Image Grid.Row="0"
+            <Viewbox Grid.Row="0" Stretch="Uniform">
+                <Image
                    Source="{Binding CoverImage}"
                    Stretch="UniformToFill"
                    VerticalAlignment="Top"
-                   Width="150"
-                   Height="150"
                    HorizontalAlignment="Center"
                    RenderOptions.BitmapScalingMode="LowQuality"
                    />
-            
+            </Viewbox>
+
             <!-- Album Info -->
             <Border Grid.Row="1" 
                     Padding="8,4"

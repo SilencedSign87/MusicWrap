@@ -84,8 +84,7 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250" MinWidth="200" MaxWidth="350"/>
-            <ColumnDefinition Width="6"/>
+            <ColumnDefinition Width="250"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <!-- Library entries list -->
@@ -270,9 +269,8 @@
                 </ListView.ItemTemplate>
             </ListView>
         </Grid>
-        <GridSplitter Grid.Column="1" />
         <!-- Selected content -->
-        <Grid Grid.Column="2" Background="{StaticResource BackgroundSmoke}">
+        <Grid Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
             <views:LibraryEntryDetailPanel
                 SelectedEntry="{Binding DataContext.SelectedEntry, Mode=OneWay, ElementName=RootLibraryPage}"
                 LibraryViewModel="{Binding DataContext, Mode=OneWay, ElementName=RootLibraryPage}"

@@ -16,9 +16,7 @@
 
     <Border 
         Padding="4,0" 
-        CornerRadius="8" 
-        BorderThickness="3,0,3,0"
-        BorderBrush="{StaticResource AccentBrush100}"
+        CornerRadius="8"
         Background="{StaticResource BackgroundCard1}"
         >
         <StackPanel Orientation="Horizontal">

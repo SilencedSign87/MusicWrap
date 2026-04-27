@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI"
         xmlns:pages="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+        xmlns:status="clr-namespace:MusicWrap.UI.Features.State"
         xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
@@ -109,7 +110,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="32" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="auto" />
+                <RowDefinition Height="28" />
+                <RowDefinition Height="40" />
             </Grid.RowDefinitions>
             <!--Titlebar-->
             <Grid Grid.Row="0" Margin="0,0,144,0">
@@ -269,10 +271,12 @@
                     </Expander>
                 </Grid>
             </Grid>
+            <Grid Grid.Row="2">
+                <status:StatusbarControl/>
+            </Grid>
             <!--Player-->
             <Grid
-                Grid.Row="2"
-                Height="80">
+                Grid.Row="3">
                 <pages:PlayerPage/>
             </Grid>
 

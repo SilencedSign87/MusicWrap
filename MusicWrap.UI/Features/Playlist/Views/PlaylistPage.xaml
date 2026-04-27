@@ -72,8 +72,7 @@
     </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250" MinWidth="200" MaxWidth="400" />
-            <ColumnDefinition Width="6" />
+            <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0">
@@ -192,8 +191,7 @@
             </ListView>
 
         </Grid>
-        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-        <Border Grid.Column="2" Background="{StaticResource BackgroundSmoke}">
+        <Border Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="120" />

@@ -8,113 +8,88 @@
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="80" 
+             d:DesignHeight="40" 
              d:DesignWidth="1200"
              d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
-             Foreground="white"
+             Foreground="#FFFFFF"
              >
+    <UserControl.Resources>
+        <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BackgroundControlPressed}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
     <Border>
+        <Border.Background>
+            <ImageBrush 
+        ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}" 
+        RenderOptions.BitmapScalingMode="LowQuality"
+                Opacity="0.25"
+        Stretch="UniformToFill"/>
+        </Border.Background>
+
         <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="32"/>
-                <RowDefinition />
-            </Grid.RowDefinitions>
-            <Rectangle
-                Grid.RowSpan="2"
-                Panel.ZIndex="-1"
-                Fill="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}"
-                Opacity="0.20"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                />
-            <!-- Duration slider -->
-            <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition  Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!-- Info -->
+            <Grid Grid.Column="0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+
+                    <Button x:Name="PrevButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="Previous track" Command="{Binding PreviousCommand}"
+                                >
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
+                    </Button>
+                    <Button x:Name="PlayButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" Command="{Binding PlayPauseCommand}"
+                                >
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="20"/>
+                    </Button>
+                    <Button x:Name="NextButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="Next track" Command="{Binding NextCommand}"
+                                >
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
+                    </Button>
+
+                    <controls:VolumeControl DominantColorHex="#ffffff" Height="30" Width="120" Margin="8,0,0,0"/>
+                </StackPanel>
+            </Grid>
+
+            <!--Controls-->
+            <Grid Grid.Column="1" HorizontalAlignment="Stretch">
                 <controls:WaveformPlayerControl
-                    WaveformData="{Binding Waveform}"
-                    Position="{Binding CurrentPosition}"
-                    Duration="{Binding Duration}"
-                    DominantColorHex="#FFFFFF"
-                    SeekStarted="WaveformPlayerControl_SeekStarted"
-                    SeekEnded="WaveformPlayerControl_SeekEnded"
-                    SeekCanceled="WaveformPlayerControl_SeekCanceled"
-                    />
-                <!--<Slider Grid.Column="1" 
-                        Minimum="0" 
-                        x:Name="PlayerSlider"
-                        IsMoveToPointEnabled="True"
-                        Maximum="{Binding Duration}" 
-                        Value="{Binding CurrentPosition, Mode=OneWay}"
-                        VerticalAlignment="Center" 
-                        Margin="8,0" 
-                        Padding="0"
-                        PreviewMouseLeftButtonDown="PlayerSlider_PreviewMouseLeftButtonDown"
-                        PreviewMouseLeftButtonUp="PlayerSlider_PreviewMouseLeftButtonUp"
-                        ValueChanged="PlayerSlider_ValueChanged"
-                        
-                        />-->
+                    Margin="16,4"
+                            HorizontalAlignment="Stretch"
+                            WaveformData="{Binding Waveform}"
+                            Position="{Binding CurrentPosition}"
+                            Duration="{Binding Duration}"
+                            DominantColorHex="#ffffff"
+                            SeekStarted="WaveformPlayerControl_SeekStarted"
+                            SeekEnded="WaveformPlayerControl_SeekEnded"
+                            SeekCanceled="WaveformPlayerControl_SeekCanceled"
+                            />
             </Grid>
 
-            <!-- Controls-->
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition />
-                    <ColumnDefinition MaxWidth="1000"/>
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <!-- Info -->
-                <Grid Grid.Column="0">
-                    <Border Padding="8,0" VerticalAlignment="Center">
-                        <StackPanel>
-                            <TextBlock FontSize="12" TextTrimming="CharacterEllipsis">
-                                <Run Text="{Binding CurrentTrackTitle}" />
-                                <Run Text=" • "/>
-                                <Run Text="{Binding CurrentTrackArtists}" />
-                            </TextBlock>
-
-                            <TextBlock FontSize="11">
-                                <Run Text="{Binding FormattedPosition}" />
-                                <Run Text=" / "/>
-                                <Run Text="{Binding FormattedDuration}" />
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <!--Controls-->
-                <Grid Grid.Column="1" Margin="8,0" HorizontalAlignment="Stretch">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button x:Name="RepeadButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}"
-                                >
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
-                        </Button>
-                        <Button x:Name="PrevButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Previous track" Command="{Binding PreviousCommand}"
-                                >
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
-                        </Button>
-                        <Button x:Name="PlayButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" Command="{Binding PlayPauseCommand}"
-                                >
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="20"/>
-                        </Button>
-                        <Button x:Name="NextButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="Next track" Command="{Binding NextCommand}"
-                                >
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
-                        </Button>
-                        <Button x:Name="DJButton" Style="{StaticResource SubtleButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}"
-                                >
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;" FontSize="14"/>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-
-                <!--Volume-->
-                <Border Grid.Column="2" Padding="8,0">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <controls:DJCompactControl Height="40" />
-                        <controls:VolumeControl DominantColorHex="#FFFFFF" Height="30" Width="120" Margin="8,0,0,0"/>
-                    </StackPanel>
-                </Border>
+            <!--Volume-->
+            <Grid Grid.Column="2">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <controls:DJCompactControl Height="40" />
+                    <Button x:Name="RepeadButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
+                    </Button>
+                    <Button x:Name="DJButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;" FontSize="14"/>
+                    </Button>
+                </StackPanel>
             </Grid>
-
         </Grid>
     </Border>
 </UserControl>

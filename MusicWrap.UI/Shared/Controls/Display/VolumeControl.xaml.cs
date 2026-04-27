@@ -14,9 +14,9 @@ namespace MusicWrap.UI.Controls
         private readonly PlayerViewModel playerViewModel;
         private bool isDragging;
 
-        private const double MaxThickness = 16d;
-        private const double InnerPadding = 4d;
-        private const double ControlGap = 4d;
+        private const double MaxThickness = 12d;
+        private const double InnerPadding = 2d;
+        private const double ControlGap = 2d;
 
         public VolumeControl()
         {

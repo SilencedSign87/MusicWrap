@@ -32,6 +32,8 @@ using MusicWrap.UI.Features.Playlist.ViewModels;
 using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Providers.ViewModels;
 using MusicWrap.UI.Features.Settings.ViewModels;
+using MusicWrap.UI.Features.State.Services;
+using MusicWrap.UI.Features.State.ViewModels;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
@@ -318,6 +320,8 @@ namespace MusicWrap.UI
             services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
             services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
             services.AddSingleton<IPlaylistService, PlaylistService>();
+            services.AddSingleton<IStatusbarService, StatusbarService>();
+
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
 
@@ -339,6 +343,7 @@ namespace MusicWrap.UI
             services.AddSingleton<TaskbarIconViewModel>();
             services.AddTransient<MetadataEditorViewModel>();
             services.AddSingleton<DJControlViewModel>();
+            services.AddTransient<StatusbarViewModel>();
 
             // UI
             services.AddTransient<MainWindow>();
