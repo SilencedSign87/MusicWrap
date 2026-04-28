@@ -10,6 +10,7 @@
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
         mc:Ignorable="d"
+        x:Name="MainWindowRoot"
         Icon="/Resources/icon.ico"
         Title="MusicWrap"
         Height="800"
@@ -242,20 +243,6 @@
 
                     </Grid>
 
-                    <!--<Expander Grid.Row="1" ExpandDirection="Up" x:Name="DeviceExpander">
-                        <Expander.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xe7f5;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                <TextBlock Text="Device information" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Expander.Header>
-                        <Expander.Content>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <mw:DevicePage />
-                            </ScrollViewer>
-                        </Expander.Content>
-                    </Expander>-->
-
                     <Expander Grid.Row="1" ExpandDirection="Up" x:Name="TrackExpander">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal">
@@ -272,14 +259,13 @@
                 </Grid>
             </Grid>
             <Grid Grid.Row="2">
-                <status:StatusbarControl/>
+                <status:StatusbarControl />
             </Grid>
             <!--Player-->
             <Grid
                 Grid.Row="3">
-                <pages:PlayerPage/>
+                <pages:PlayerPage />
             </Grid>
-
         </Grid>
     </Border>
 </Window>

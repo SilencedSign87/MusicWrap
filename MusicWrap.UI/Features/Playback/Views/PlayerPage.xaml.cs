@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using TagLib.Matroska;
 
 namespace MusicWrap.UI.Features.Playback.Views
 {
@@ -22,29 +23,18 @@ namespace MusicWrap.UI.Features.Playback.Views
     /// </summary>
     public partial class PlayerPage : UserControl
     {
-        private PlayerViewModel? _viewModel;
-
+        private readonly PlayerViewModel _viewModel;
         public PlayerPage()
         {
             InitializeComponent();
-
             _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
             DataContext = _viewModel;
 
-            //PlayerSlider.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler(PlayerSlider_DragStarted));
-            //PlayerSlider.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler(PlayerSlider_DragCompleted));
-        }
-
-        private static string FormatTime(double seconds)
-        {
-            var time = System.TimeSpan.FromSeconds(seconds);
-            if (time.TotalHours >= 1)
-                return time.ToString(@"h\:mm\:ss");
-            return time.ToString(@"m\:ss");
         }
 
         private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
         {
+
             if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
             {
                 _viewModel.StartSeekingCommand.Execute(null);
@@ -53,6 +43,7 @@ namespace MusicWrap.UI.Features.Playback.Views
 
         private void WaveformPlayerControl_SeekEnded(object sender, double e)
         {
+
             if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
             {
                 _viewModel.EndSeekingCommand.Execute(e);
@@ -61,6 +52,7 @@ namespace MusicWrap.UI.Features.Playback.Views
 
         private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
         {
+
             if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
             {
                 _viewModel.CancelSeekingCommand.Execute(null);

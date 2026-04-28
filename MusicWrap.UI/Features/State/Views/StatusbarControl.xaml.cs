@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Features.State.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -13,14 +15,14 @@ using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Features.State
 {
-    /// <summary>
-    /// Lógica de interacción para StatusbarControl.xaml
-    /// </summary>
     public partial class StatusbarControl : UserControl
     {
+        private readonly StatusbarViewModel _viewModel;
         public StatusbarControl()
         {
             InitializeComponent();
+            _viewModel = App.Services.GetRequiredService<StatusbarViewModel>();
+            DataContext = _viewModel;
         }
     }
 }

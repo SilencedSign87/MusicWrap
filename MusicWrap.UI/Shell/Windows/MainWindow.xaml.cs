@@ -7,9 +7,11 @@ using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Providers.Views;
+using MusicWrap.UI.Features.State.ViewModels;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
 using System.Text;
 using System.Windows;
@@ -45,15 +47,14 @@ namespace MusicWrap.UI.Shell.Windows
             return bitmap;
         }
 
-        public MainWindow()
+        public MainWindow(IMusicPlayerService playerService)
         {
             InitializeComponent();
-
+            _player = playerService;
             StateChanged += MainWindow_StateChanged;
             Closing += MainWindow_Closing;
             Closed += MainWindow_Closed;
 
-            _player = App.Services.GetRequiredService<IMusicPlayerService>();
             _player.PlaybackStateChanged += _player_PlaybackStateChanged;
 
             UpdateBackdrop();

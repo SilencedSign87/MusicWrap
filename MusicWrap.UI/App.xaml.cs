@@ -320,7 +320,7 @@ namespace MusicWrap.UI
             services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
             services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
             services.AddSingleton<IPlaylistService, PlaylistService>();
-            services.AddSingleton<IStatusbarService, StatusbarService>();
+            services.AddSingleton<IStatusService, StatusService>();
 
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
@@ -343,7 +343,7 @@ namespace MusicWrap.UI
             services.AddSingleton<TaskbarIconViewModel>();
             services.AddTransient<MetadataEditorViewModel>();
             services.AddSingleton<DJControlViewModel>();
-            services.AddTransient<StatusbarViewModel>();
+            services.AddSingleton<StatusbarViewModel>();
 
             // UI
             services.AddTransient<MainWindow>();
