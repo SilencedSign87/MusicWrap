@@ -50,7 +50,6 @@
         </StackPanel>
         <!-- Artwork -->
         <Grid Grid.Row="1">
-
             <Image
                     HorizontalAlignment="Stretch"
                     Source="{Binding CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
@@ -58,7 +57,6 @@
                     Stretch="UniformToFill"
                     />
         </Grid>
-
     </Grid>
 </UserControl>
 

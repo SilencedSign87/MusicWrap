@@ -37,9 +37,9 @@ namespace MusicWrap.Core.Services.Library
             ".bmp",
             ];
 
-        private const int SmallCoverSize = 50;
-        private const int MediumCoverSize = 150;
-        private const int LargeCoverSize = 300;
+        private const int SmallCoverSize = 64;
+        private const int MediumCoverSize = 180;
+        private const int LargeCoverSize = 360;
         private const int BlurCoverSize = 512;
 
         private readonly MusicLibrary _library;

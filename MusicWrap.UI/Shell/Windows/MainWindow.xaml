@@ -243,7 +243,7 @@
 
                     </Grid>
 
-                    <Expander Grid.Row="1" ExpandDirection="Up" x:Name="TrackExpander">
+                    <Expander Grid.Row="1" ExpandDirection="Up" x:Name="TrackExpander" Expanded="TrackExpander_Expanded" Collapsed="TrackExpander_Collapsed">
                         <Expander.Header>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
@@ -251,9 +251,9 @@
                             </StackPanel>
                         </Expander.Header>
                         <Expander.Content>
-                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                <mw:TrackInformationPage />
-                            </ScrollViewer>
+                            <!--<ScrollViewer VerticalScrollBarVisibility="Auto">-->
+                            <ContentControl x:Name="TrackInformationHost" />
+                            <!--</ScrollViewer>-->
                         </Expander.Content>
                     </Expander>
                 </Grid>

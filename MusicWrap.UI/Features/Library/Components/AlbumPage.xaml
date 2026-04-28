@@ -11,12 +11,14 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumData}"
              d:DesignHeight="200" d:DesignWidth="200"
+             Width="180"
              Cursor="Hand">
     <UserControl.Resources>
         <converters:PathToImageConverter x:Key="PathToImageConverter"/>
     </UserControl.Resources>
     <!-- Renders an album -->
     <Border Background="Transparent" 
+            ToolTip="{Binding Title}"
             BorderThickness="0"
             CornerRadius="4"
             Margin="4"
@@ -41,13 +43,12 @@
 
             <!-- Album Cover -->
             <Border Grid.Row="0" 
-                Background="Transparent"
-                Height="{Binding RelativeSource={RelativeSource Self}, Path=ActualWidth}"
-                VerticalAlignment="Top">
+                    Background="Transparent"
+                    Height="{Binding RelativeSource={RelativeSource Self}, Path=ActualWidth}"
+                    VerticalAlignment="Top">
                 <Image
                     Source="{Binding CoverImage}"
-                    Stretch="UniformToFill"
-                    RenderOptions.BitmapScalingMode="LowQuality"/>
+                    Stretch="UniformToFill"/>
             </Border>
 
             <!-- Album Info -->
@@ -64,17 +65,16 @@
                                FontSize="12" 
                                FontWeight="SemiBold"
                                Foreground="White"
+                               TextAlignment="Center"
                                TextTrimming="CharacterEllipsis"
                                TextWrapping="NoWrap"/>
                     <TextBlock Grid.Row="1"
                                FontSize="11" 
+                               TextAlignment="Center"
                                Foreground="#999999"
+                               Text="{Binding Year}"
                                TextTrimming="CharacterEllipsis"
-                               TextWrapping="NoWrap">
-                        <Run Text="{Binding ArtistNames}"/>
-                        <Run Text=" • "/>
-                        <Run Text="{Binding Year}"/>
-                    </TextBlock>
+                               TextWrapping="NoWrap"/>
                 </Grid>
             </Border>
         </Grid>

@@ -351,6 +351,7 @@ namespace MusicWrap.UI
             services.AddTransient<SettingsWindow>();
             services.AddTransient<IndexingWindow>();
             services.AddTransient<MetadataEditorWindow>();
+            services.AddTransient<TrackInformationPage>();
 
             return services.BuildServiceProvider();
         }

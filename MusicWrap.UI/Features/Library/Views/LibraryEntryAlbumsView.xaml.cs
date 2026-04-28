@@ -18,8 +18,8 @@ namespace MusicWrap.UI.Features.Library.Views
         private LibraryViewModel? _subscribedViewModel;
 
         private int _lastColumns = -1;
-        private const int MinTileWidth = 150;
-        private const int Gutter = 16;
+        private const int MinTileWidth = 190;
+        private const int Gutter = 0;
         private const int MinColumns = 1;
 
         public LibraryEntryAlbumsView()

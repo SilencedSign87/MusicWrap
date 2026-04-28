@@ -31,8 +31,8 @@ namespace MusicWrap.UI.Services
     {
         private const int SmallThreshold = 64;
         private const int MediumThreshold = 180;
-        private const int LargeThreshold = 300;
-        private const int MaxDecodeSize = 300;
+        private const int LargeThreshold = 360;
+        private const int MaxDecodeSize = 360;
 
         private const int SmallCacheLimit = 50;
         private const int MediumCacheLimit = 20;

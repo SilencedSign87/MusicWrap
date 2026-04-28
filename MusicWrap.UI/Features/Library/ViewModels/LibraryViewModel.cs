@@ -556,9 +556,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                         var bmp = await _imageService.LoadAsync(
                             album.ImagePath,
                             ImageVariant.Medium,
-                            150,
+                            180,
                             ct).ConfigureAwait(false);
-
+                        
                         if (bmp is not null && !ct.IsCancellationRequested)
                         {
                             album.CoverImage = bmp;

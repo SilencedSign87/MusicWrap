@@ -250,6 +250,19 @@ namespace MusicWrap.UI.Shell.Windows
         {
             _player.Next();
         }
+
+        private void TrackExpander_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (TrackInformationHost.Content is null)
+            {
+                TrackInformationHost.Content = App.Services.GetRequiredService<TrackInformationPage>();
+            }
+        }
+
+        private void TrackExpander_Collapsed(object sender, RoutedEventArgs e)
+        {
+            TrackInformationHost.Content = null;
+        }
     }
 }
 
