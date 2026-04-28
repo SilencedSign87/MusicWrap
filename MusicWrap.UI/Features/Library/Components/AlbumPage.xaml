@@ -40,15 +40,15 @@
             </Grid.RowDefinitions>
 
             <!-- Album Cover -->
-            <Viewbox Grid.Row="0" Stretch="Uniform">
+            <Border Grid.Row="0" 
+                Background="Transparent"
+                Height="{Binding RelativeSource={RelativeSource Self}, Path=ActualWidth}"
+                VerticalAlignment="Top">
                 <Image
-                   Source="{Binding CoverImage}"
-                   Stretch="UniformToFill"
-                   VerticalAlignment="Top"
-                   HorizontalAlignment="Center"
-                   RenderOptions.BitmapScalingMode="LowQuality"
-                   />
-            </Viewbox>
+                    Source="{Binding CoverImage}"
+                    Stretch="UniformToFill"
+                    RenderOptions.BitmapScalingMode="LowQuality"/>
+            </Border>
 
             <!-- Album Info -->
             <Border Grid.Row="1" 

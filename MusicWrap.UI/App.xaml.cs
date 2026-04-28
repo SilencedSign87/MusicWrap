@@ -376,6 +376,7 @@ namespace MusicWrap.UI
                 var libraryCache = Services.GetRequiredService<ILibraryCacheService>();
                 await libraryCache.InitializeAsync(listBy, ascending);
 
+                Services.GetRequiredService<PlayerViewModel>();
                 player.LoadInitialState(_userSettings);
                 windowToShow = (int)_userSettings.LastWindowMode;
                 _saveCoordinator = Services.GetRequiredService<ISaveCoordinator>();

@@ -22,8 +22,13 @@ namespace MusicWrap.UI.Controls
         {
             InitializeComponent();
 
+            Loaded += VolumeControl_Loaded;
             playerViewModel = App.Services.GetRequiredService<PlayerViewModel>();
             DataContext = playerViewModel;
+        }
+
+        private void VolumeControl_Loaded(object sender, RoutedEventArgs e)
+        {
             playerViewModel.PropertyChanged += PlayerViewModel_PropertyChanged;
         }
 

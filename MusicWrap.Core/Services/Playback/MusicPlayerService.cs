@@ -45,6 +45,7 @@ namespace MusicWrap.Core.Services.Playback
         int CurrentDeviceIndex { get; }
         int CurrentSampleRate { get; }
         OutputMode CurrentOutputMode { get; }
+        float[] CurrentWaveformData { get; }
 
         RepeatMode RepeatMode { get; set; }
         ContinueMode ContinueMode { get; set; }
@@ -58,6 +59,7 @@ namespace MusicWrap.Core.Services.Playback
         event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
         event EventHandler<OutputMode>? OutputModeChanged;
         event EventHandler<float[]>? WaveformDataChanged;
+        event EventHandler<float>? VolumeChanged;
         void LoadIndex(int index, bool autoPlay);
         void Play();
         void Pause();
@@ -106,6 +108,8 @@ namespace MusicWrap.Core.Services.Playback
         public int CurrentQueueIndex => _currentIndex;
 
         private int _currentStream;
+        private double _selectedTrackDuration;
+        private float[] _currentWaveform = Array.Empty<float>();
 
         private int _preloadedStream = 0;
         private int _preloadedTrackId = 0;
@@ -147,7 +151,8 @@ namespace MusicWrap.Core.Services.Playback
         public bool IsPlaying => _playbackState == PlaybackState.Playing;
         public bool IsPaused => _playbackState == PlaybackState.Paused;
         public double CurrentPosition => _currentStream != 0 ? _audioEngine.GetMixerPosition(_currentStream) : 0.0;
-        public double Duration => _currentTrackDuration;
+        public double Duration => _currentStream != 0 ? _currentTrackDuration : _selectedTrackDuration;
+        public float[] CurrentWaveformData => _currentWaveform;
 
         private double _currentTrackDuration;
 
@@ -170,11 +175,11 @@ namespace MusicWrap.Core.Services.Playback
             get => _volume;
             set
             {
-                _volume = value;
-                if (_currentStream != 0)
-                {
-                    _audioEngine.SetVolume(_currentStream, _volume);
-                }
+                var v = Math.Clamp(value, 0f, 1f);
+                if (Math.Abs(_volume - v) < 0.0001f) return;
+                _volume = v;
+                if (_currentStream != 0) _audioEngine.SetVolume(_currentStream, _volume);
+                _dispatcher.Invoke(() => VolumeChanged?.Invoke(this, _volume));
             }
         }
 
@@ -270,6 +275,7 @@ namespace MusicWrap.Core.Services.Playback
         public event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
         public event EventHandler<float[]>? WaveformDataChanged;
         public event EventHandler<OutputMode>? OutputModeChanged;
+        public event EventHandler<float>? VolumeChanged;
 
         public void LoadIndex(int index, bool autoplay)
         {
@@ -392,10 +398,7 @@ namespace MusicWrap.Core.Services.Playback
             }
         }
 
-        public void SetVolume(float volume)
-        {
-            Volume = volume;
-        }
+        public void SetVolume(float volume) => Volume = volume;
 
         public void PlayIndex(int index)
         {
@@ -412,6 +415,7 @@ namespace MusicWrap.Core.Services.Playback
                 return;
 
             _currentIndex = index;
+            UpdateSelectedTrackState();
             EnqueuePlaybackSave();
         }
 
@@ -453,6 +457,7 @@ namespace MusicWrap.Core.Services.Playback
                 _queue.AddRange(list);
             }
             _currentIndex = newIndex;
+            UpdateSelectedTrackState();
 
             NotifyQueueChanged();
             EnqueuePlaybackSave();
@@ -477,6 +482,8 @@ namespace MusicWrap.Core.Services.Playback
                 _currentIndex--;
             }
 
+            UpdateSelectedTrackState();
+
             NotifyQueueChanged();
             EnqueuePlaybackSave();
         }
@@ -486,6 +493,7 @@ namespace MusicWrap.Core.Services.Playback
             Stop();
             _queue.Clear();
             _currentIndex = -1;
+            UpdateSelectedTrackState();
             NotifyQueueChanged();
             EnqueuePlaybackSave();
         }
@@ -507,6 +515,27 @@ namespace MusicWrap.Core.Services.Playback
             _currentIndex = index;
             StartPlaybackOfCurrent();
             EnqueuePlaybackSave();
+        }
+
+        private void UpdateSelectedTrackState()
+        {
+            var track = GetCurrentTrack();
+            if (track == null)
+            {
+                _selectedTrackDuration = 0;
+                _currentWaveform = Array.Empty<float>();
+                _dispatcher.Invoke(() =>
+                {
+                    TrackChanged?.Invoke(this, string.Empty);
+                    WaveformDataChanged?.Invoke(this, Array.Empty<float>());
+                });
+                return;
+            }
+
+            _selectedTrackDuration = track.Duration > 0 ? track.Duration : 0;
+            var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
+            _dispatcher.Invoke(() => TrackChanged?.Invoke(this, trackRef));
+            BeginWaveformPipeline(track);
         }
 
         public void ChangeOutputDevice(int deviceIndex)
@@ -1201,6 +1230,7 @@ namespace MusicWrap.Core.Services.Playback
 
                 if (CurrentTrackId != trackId) return; // Not current track anymore, ignore
 
+                _currentWaveform = data;
                 WaveformDataChanged?.Invoke(this, data);
 
             });

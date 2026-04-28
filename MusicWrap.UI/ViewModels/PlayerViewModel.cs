@@ -124,12 +124,14 @@ namespace MusicWrap.UI.ViewModels
             _playerService.TrackChanged += OnTrackChanged;
             _playerService.PositionChanged += OnPositionChanged;
             _playerService.WaveformDataChanged += _playerService_WaveformDataChanged;
+            _playerService.VolumeChanged += _playerService_VolumeChanged;
 
             // Load initial states
             UpdateDJButtonIcon();
             UpdateRepeatModeIcon();
-            Waveform = [];
+            Waveform = _playerService.CurrentWaveformData;
             Volume = _playerService.Volume;
+            SyncCurrentTrackStateFromPlayer();
 
             _uiPositionTmer = new DispatcherTimer(DispatcherPriority.Render)
             {
@@ -140,6 +142,12 @@ namespace MusicWrap.UI.ViewModels
 
             // Initialize state
             UpdatePlaybackState(_playerService.IsPlaying);
+        }
+
+        private void _playerService_VolumeChanged(object? sender, float e)
+        {
+            if (Math.Abs(Volume - e) > 0.0001f)
+                Volume = e;
         }
 
         private void _playerService_WaveformDataChanged(object? sender, float[] e)
@@ -293,7 +301,9 @@ namespace MusicWrap.UI.ViewModels
             {
                 UpdateVolumeIcon(value);
             }
-            _playerService.SetVolume(value);
+            if (Math.Abs(_playerService.Volume - value) > 0.0001f)
+                _playerService.SetVolume(value);
+            //_playerService.SetVolume(value);
         }
         private void UpdateVolumeIcon(float value)
         {
@@ -349,12 +359,12 @@ namespace MusicWrap.UI.ViewModels
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
+                SyncCurrentTrackStateFromPlayer();
+
                 CurrentPosition = 0;
                 _lastEnginePosition = 0;
                 _lastEnginePositionAtUTC = DateTime.UtcNow;
                 UpdateFormattedPosition(0);
-
-                UpdateCurrentTrackInfo();
                 Duration = _playerService.Duration;
                 FormattedDuration = FormatTime(Duration);
             });
@@ -411,12 +421,19 @@ namespace MusicWrap.UI.ViewModels
 
         private void UpdateCurrentTrackInfo()
         {
+            ClearCurrentTrackInfo();
+
+            var currentIndex = _playerService.CurrentQueueIndex;
+            if (currentIndex < 0)
+            {
+                CurrentTrackTitle = "No track playing";
+                return;
+            }
+
             var trackId = _playerService.CurrentTrackId;
             if (trackId == 0)
             {
-                CurrentTrackTitle = "No track playing";
-                CurrentTrackArtists = "";
-                CurrentTrackImagePath = "";
+                CurrentTrackTitle = "Unknown track";
                 return;
             }
 
@@ -430,8 +447,6 @@ namespace MusicWrap.UI.ViewModels
             if (track == null)
             {
                 CurrentTrackTitle = "Unknown track";
-                CurrentTrackArtists = "";
-                CurrentTrackImagePath = "";
                 return;
             }
 
@@ -482,6 +497,49 @@ namespace MusicWrap.UI.ViewModels
                 CurrentTrackDominantColorHex = null;
                 CurrentTrackForegroundColorHex = null;
             }
+        }
+
+        private void SyncCurrentTrackStateFromPlayer()
+        {
+            UpdateCurrentTrackInfo();
+
+            var currentIndex = _playerService.CurrentQueueIndex;
+            if (currentIndex < 0)
+            {
+                CurrentPosition = 0;
+                Duration = 0;
+                FormattedPosition = "0:00";
+                FormattedDuration = "0:00";
+                UpdatePlaybackState(false);
+                return;
+            }
+
+            Duration = _playerService.Duration;
+            FormattedDuration = FormatTime(Duration);
+
+            var position = Math.Clamp(_playerService.CurrentPosition, 0, Duration > 0 ? Duration : _playerService.CurrentPosition);
+            CurrentPosition = position;
+            UpdateFormattedPosition(position);
+            _lastEnginePosition = position;
+            _lastEnginePositionAtUTC = DateTime.UtcNow;
+            _isSeekingPosition = false;
+        }
+
+        private void ClearCurrentTrackInfo()
+        {
+            CurrentTrackTitle = string.Empty;
+            CurrentTrackAlbum = string.Empty;
+            CurrentTrackArtists = string.Empty;
+            CurrentTrackYear = string.Empty;
+            CurrentTrackSampleRate = string.Empty;
+            CurrentTrackFormat = string.Empty;
+            CurrentTrackBitrate = string.Empty;
+            CurrentTrackBitDepth = string.Empty;
+            CurrentTrackChannels = string.Empty;
+            CurrentTrackImagePath = string.Empty;
+            CurrentTrackDominantColorHex = null;
+            CurrentTrackForegroundColorHex = null;
+            ArtworkPath = string.Empty;
         }
 
         private static string FormatTime(double seconds)

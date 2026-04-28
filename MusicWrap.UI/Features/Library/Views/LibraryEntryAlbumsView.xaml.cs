@@ -202,9 +202,9 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void AlbumsViewport_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (e.NewSize.Width > 0 && _resizeThrottleTimer?.IsEnabled != true)
+            if (e.NewSize.Width > 0)
             {
-                _resizeThrottleTimer?.Start();
+                UpdateColumnsForViewportWidth();
             }
         }
 

@@ -565,7 +565,9 @@ namespace MusicWrap.UI.Controls.Models
 
         private void MusicPlayerService_PlaybackStateChanged(object? sender, PlaybackState e)
         {
-            RefreshPlaybackIndicator();
+            // Only refresh indicator if track selection changed, not just playback state
+            CurrentTrackId = _musicPlayerService.CurrentTrackId;
+            IsPlaybackActive = _musicPlayerService.CurrentQueueIndex >= 0;
         }
 
         private void RefreshPlaybackIndicator()
@@ -577,7 +579,7 @@ namespace MusicWrap.UI.Controls.Models
             }
 
             CurrentTrackId = _musicPlayerService.CurrentTrackId;
-            IsPlaybackActive = _musicPlayerService.IsPlaying;
+            IsPlaybackActive = _musicPlayerService.CurrentQueueIndex >= 0;
 
             if (AutoScrollToCurrentTrack)
             {

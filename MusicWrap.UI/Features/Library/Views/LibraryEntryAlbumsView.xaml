@@ -69,8 +69,6 @@
                                 <DataTemplate>
                                     <Button BorderThickness="0"
                                             Padding="0"
-                                            Width="150"
-                                            Height="194"
                                             Cursor="Hand"
                                             Click="AlbumButton_Click"
                                             Margin="0,0,16,0">
