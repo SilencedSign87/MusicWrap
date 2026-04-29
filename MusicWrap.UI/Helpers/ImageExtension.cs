@@ -14,18 +14,25 @@ namespace MusicWrap.UI.Helpers
 
         public override object ProvideValue(IServiceProvider serviceProvider)
         {
-            if (!string.IsNullOrEmpty(Source))
+            if (string.IsNullOrEmpty(Source))
+                return DependencyProperty.UnsetValue;
+
+            var uri = new Uri(Source, UriKind.RelativeOrAbsolute);
+
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = uri;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+
+            return new Image
             {
-                return new Image
-                {
-                    Source = new BitmapImage(new Uri(Source, UriKind.RelativeOrAbsolute)),
-                    Width = Width,
-                    Height = Height,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center
-                };
-            }
-            return DependencyProperty.UnsetValue;
+                Source = bitmap,
+                Width = Width,
+                Height = Height,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
         }
     }
 }

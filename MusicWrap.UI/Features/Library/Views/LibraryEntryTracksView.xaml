@@ -1,0 +1,40 @@
+<UserControl x:Class="MusicWrap.UI.Features.Library.Views.LibraryEntryTracksView"
+             x:Name="RootLibraryEntryTracksView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:uimodels="clr-namespace:MusicWrap.UI.Controls.Models"
+             xmlns:helpers="clr-namespace:MusicWrap.UI.Helpers"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ContextMenu x:Key="TracksContextMenu"
+                     Opened="TracksContextMenu_Opened"
+                     DataContext="{Binding Source={x:Reference RootLibraryEntryTracksView}, Path=DataContext}">
+            <MenuItem Header="Play" Icon="{helpers:Icon Glyph=E768}" Command="{Binding PlayNowSelectedTracksCommand}"/>
+            <Separator/>
+            <MenuItem Header="Play next" Icon="{helpers:Icon Glyph=E893}" Command="{Binding PlayNextSelectedTracksCommand}"/>
+            <MenuItem Header="Add to queue" Icon="{helpers:Icon Glyph=E710}" Command="{Binding AddSelectedTracksToQueueCommand}"/>
+            <uimodels:TrackToPlaylistMenu x:Name="TracksTrackToPlaylistMenu"
+                                          TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
+            <Separator/>
+            <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" Click="EditMenuItem_Click"/>
+            <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" IsEnabled="False"/>
+            <MenuItem Header="Show in file explorer" Icon="{helpers:Icon Glyph=EC50}" Click="ShowInFileExplorerMenuItem_Click"/>
+        </ContextMenu>
+    </UserControl.Resources>
+    <Grid Margin="8,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <uimodels:TracksView ItemsSource="{Binding Tracks}" Grid.Row="0"
+                             AllTrackIds="{Binding AllTrackIds}"
+                             SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
+                             ContextMenu="{StaticResource TracksContextMenu}"
+                             VisualMode="ListImage"
+                             IndexMode="ListIndex"
+                             SelectionMode="Extended"
+                             IsMouseWheelScrollEnabled="True"/>
+    </Grid>
+</UserControl>

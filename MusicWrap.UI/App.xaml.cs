@@ -1,35 +1,51 @@
-﻿using Hardcodet.Wpf.TaskbarNotification;
+using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MusicWrap.Core;
 using MusicWrap.Core.Metadata;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Playlists;
+using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Core.Sources.Providers.Local;
 using MusicWrap.Core.Sources.Providers.Runtime;
 using MusicWrap.Core.Sources.Providers.Youtube;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Application;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
-using MusicWrap.Data.Providers.Youtube;
+using MusicWrap.Data.Playlist;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Controls;
+using MusicWrap.UI.Features.Favorites.Views;
+using MusicWrap.UI.Features.Library.Components;
+using MusicWrap.UI.Features.Library.Services;
+using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Features.Library.Views;
+using MusicWrap.UI.Features.Playback.ViewModels;
+using MusicWrap.UI.Features.Playback.Views;
+using MusicWrap.UI.Features.Playlist.ViewModels;
+using MusicWrap.UI.Features.Playlist.Views;
+using MusicWrap.UI.Features.Providers.ViewModels;
+using MusicWrap.UI.Features.Settings.ViewModels;
+using MusicWrap.UI.Features.State.Services;
+using MusicWrap.UI.Features.State.ViewModels;
 using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Pages.MainWindow;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
+using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.Shell.Tray;
+using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.ViewModels;
-using MusicWrap.UI.ViewModels.Library;
-using MusicWrap.UI.ViewModels.Playlist;
-using MusicWrap.UI.ViewModels.Providers;
-using MusicWrap.UI.ViewModels.Settings;
-using MusicWrap.UI.Windows;
 using Serilog;
 using Serilog.Enrichers;
 using System.Configuration;
 using System.Data;
+using System.Reflection;
 using System.Windows;
 
 namespace MusicWrap.UI
@@ -46,12 +62,14 @@ namespace MusicWrap.UI
         public static bool IsWindowTransitioning => _windowTransitionDepth > 0;
         public static IServiceProvider Services { get; private set; } = default!;
         private static int _windowTransitionDepth;
-        private IMusicPlayerService? _player;
         private ISaveCoordinator? _saveCoordinator;
-        private bool _saveHooksAttached;
+        private ISaveOrchestration? _saveOrchestration;
+        private ITrayService? _trayService;
+        private UserSettings? _userSettings;
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            SetDropDownMenuToBeRightAligned();
             _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool createdNew);
             if (!createdNew)
             {
@@ -117,7 +135,7 @@ namespace MusicWrap.UI
                 var save = Services.GetService<ISaveCoordinator>();
                 if (save is not null)
                 {
-                    save.Enqueue(SaveKind.Cache | SaveKind.Library | SaveKind.Playback | SaveKind.Settings);
+                    save.Enqueue(SaveKind.Cache | SaveKind.Library | SaveKind.Playback | SaveKind.Settings | SaveKind.Playlist);
                     using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
                     save.FlushAsync(cts.Token).GetAwaiter().GetResult();
                 }
@@ -137,10 +155,14 @@ namespace MusicWrap.UI
             }
             finally
             {
-                DetachSaveHooks();
                 if (_saveCoordinator is IDisposable disposable)
                 {
                     disposable.Dispose();
+                }
+
+                if (_saveOrchestration is IDisposable orchestrationDisposable)
+                {
+                    orchestrationDisposable.Dispose();
                 }
 
                 Log.Information("Application exiting");
@@ -165,8 +187,6 @@ namespace MusicWrap.UI
             TrackCurrentWindow(main);
             main.Show();
 
-            CheckMemory();
-
             CurrentWindow = main;
         }
 
@@ -185,8 +205,6 @@ namespace MusicWrap.UI
             var player = Services.GetRequiredService<CompactPlayer>();
             TrackCurrentWindow(player);
             player.Show();
-
-            CheckMemory();
 
             CurrentWindow = player;
         }
@@ -239,22 +257,11 @@ namespace MusicWrap.UI
                 var player = Services.GetService<IMusicPlayerService>();
                 if (playbackRepository is not null && player is not null)
                 {
-                    var isCompactLastSession = CurrentWindow is CompactPlayer;
-
-                    var snapshot = new PlaybackQueueSnapshot
-                    {
-                        TrackIds = player.GetQueue(),
-                        CurrentIndex = player.CurrentQueueIndex,
-                        PositionInSeconds = player.CurrentPosition,
-                        RepeatMode = (int)player.RepeatMode,
-                        ContinueMode = (int)player.ContinueMode,
-                        PlaybackState = player.IsPlaying ? 1 : (player.IsPaused ? 2 : 0)
-                    };
-
-                    playbackRepository.Save(snapshot);
+                    playbackRepository.Save(player.BuildPlaybackSnapshot());
 
                     if (userSettings is not null && userSettingsRepository is not null)
                     {
+                        var isCompactLastSession = CurrentWindow is CompactPlayer;
                         userSettings.LastWindowMode = isCompactLastSession ? LastWindowMode.CompactPlayer : LastWindowMode.MainPlayer;
                         userSettings.PreferredVolume = player.Volume;
                         userSettingsRepository.Save(userSettings);
@@ -286,12 +293,20 @@ namespace MusicWrap.UI
             services.AddSingleton(sp => sp.GetRequiredService<IPlaybackRepository>().Load()); // Provide Queue settings
             services.AddSingleton<IUserSettingsRepository, UserSettingsRepository>();
             services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
+            services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
 
             // Services
+            services.AddSingleton<IUIDispatcher, UIDispatcher>();
+            services.AddSingleton<IImageService, ImageService>();
+            services.AddSingleton<TracksContextMenuService>();
             services.AddSingleton<ILibraryScanner, LibraryScanner>();
             services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
             services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
-            services.AddSingleton<ISaveCoordinator, SaveCoordinator>();
+            services.AddSingleton<ILibraryCacheStore, LibraryCacheStoreAdapter>();
+            services.AddSingleton<ISaveOrchestration, SaveOrchestration>();
+            services.AddSingleton<ISaveStateProvider>(sp => (ISaveStateProvider)sp.GetRequiredService<ISaveOrchestration>());
+            services.AddSingleton<ISaveCoordinator, SaveScheduler>();
             services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
             services.AddSingleton<IEditMetadataService, EditMetadataService>();
 
@@ -304,22 +319,20 @@ namespace MusicWrap.UI
             services.AddSingleton<IYoutubeIndexingWorkflowService, YoutubeIndexingWorkflowService>();
             services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
             services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
+            services.AddSingleton<IPlaylistService, PlaylistService>();
+            services.AddSingleton<IStatusService, StatusService>();
 
             //Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
-
-            // UI
-            services.AddTransient<MainWindow>();
-            services.AddTransient<CompactPlayer>();
-            services.AddTransient<SettingsWindow>();
-            services.AddTransient<IndexingWindow>();
 
             // View Models
             services.AddTransient<DirectoriesManagerViewModel>();
             services.AddTransient<SettingsGeneralViewModel>();
             services.AddTransient<LibraryViewModel>();
+            services.AddTransient<LibraryEntryDetailPanelViewModel>();
             services.AddTransient<AlbumTracksViewModel>();
             services.AddTransient<PlaylistViewModel>();
+            services.AddTransient<PlaylistManagerViewModel>();
             services.AddTransient<SettingsYoutubeViewModel>();
             services.AddTransient<YoutubeProviderViewModel>();
             services.AddSingleton<IndexingViewModel>();
@@ -327,6 +340,18 @@ namespace MusicWrap.UI
             services.AddSingleton<DeviceViewModel>();
             services.AddSingleton<PlayerViewModel>();
             services.AddSingleton<CommandPaletteViewModel>();
+            services.AddSingleton<TaskbarIconViewModel>();
+            services.AddTransient<MetadataEditorViewModel>();
+            services.AddSingleton<DJControlViewModel>();
+            services.AddSingleton<StatusbarViewModel>();
+
+            // UI
+            services.AddTransient<MainWindow>();
+            services.AddTransient<CompactPlayer>();
+            services.AddTransient<SettingsWindow>();
+            services.AddTransient<IndexingWindow>();
+            services.AddTransient<MetadataEditorWindow>();
+            services.AddTransient<TrackInformationPage>();
 
             return services.BuildServiceProvider();
         }
@@ -336,46 +361,32 @@ namespace MusicWrap.UI
             int windowToShow = 0;
             try
             {
-                // Force load
                 Services.GetRequiredService<MusicLibrary>();
-                var userSettings = Services.GetRequiredService<UserSettings>();
+                _userSettings = Services.GetRequiredService<UserSettings>();
                 var player = Services.GetRequiredService<IMusicPlayerService>();
-                var trayService = Services.GetRequiredService<ITrayService>();
+                _trayService = Services.GetRequiredService<ITrayService>();
 
-                // Apply persisted audio preferences before restoring playback/caching state.
-                if (userSettings.PreferredDeviceIndex >= 0 && userSettings.PreferredDeviceIndex != player.CurrentDeviceIndex)
-                {
-                    player.ChangeOutputDevice(userSettings.PreferredDeviceIndex);
-                }
+                _userSettings.PropertyChanged += _userSettings_PropertyChanged;
+                ApplyTrayBehavior(_userSettings.KeepAppInTray);
 
-                player.ChangeOutputMode(userSettings.PreferredOutputMode);
-
-                int preferredSampleRate = (int)userSettings.PreferredSampleRate;
-                if (preferredSampleRate != player.CurrentSampleRate)
-                {
-                    player.ChangeSampleRate(preferredSampleRate);
-                }
-
-                player.SetVolume(Math.Clamp(userSettings.PreferredVolume, 0f, 1f));
-
-                var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)
+                var listBy = string.IsNullOrWhiteSpace(_userSettings.LibraryListBy)
                     ? "Artist"
-                    : userSettings.LibraryListBy;
-                var ascending = userSettings.LibraryAscending;
+                    : _userSettings.LibraryListBy;
+                var ascending = _userSettings.LibraryAscending;
 
-                var LibraryCache = Services.GetRequiredService<ILibraryCacheService>();
-                await LibraryCache.InitializeAsync(listBy, ascending);
+                var libraryCache = Services.GetRequiredService<ILibraryCacheService>();
+                await libraryCache.InitializeAsync(listBy, ascending);
 
-                if (trayService is not null)
+                Services.GetRequiredService<PlayerViewModel>();
+                player.LoadInitialState(_userSettings);
+                windowToShow = (int)_userSettings.LastWindowMode;
+                _saveCoordinator = Services.GetRequiredService<ISaveCoordinator>();
+                _saveOrchestration = Services.GetRequiredService<ISaveOrchestration>();
+
+                if (_userSettings.KeepAppInTray)
                 {
-                    trayService.Initialize();
-                    //_trayIcon = TrayIconManager.GetTrayIcon();
-                    //_trayIcon.TrayMouseDoubleClick += _trayIcon_TrayMouseDoubleClick;
+                    _trayService.Initialize();
                 }
-
-                windowToShow = TryRestorePlaybackSession();
-
-                AttachSaveHooks();
             }
             catch
             {
@@ -392,158 +403,40 @@ namespace MusicWrap.UI
                 else
                 {
                     ShowMain();
-
                 }
             }
         }
 
-        private static int TryRestorePlaybackSession()
+        private void _userSettings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            try
+            if (e.PropertyName == nameof(UserSettings.KeepAppInTray))
             {
-                int playerMode = 0;
-                var userSettings = Services.GetService<UserSettings>();
-                if (userSettings is not null)
-                {
-                    playerMode = (int)userSettings.LastWindowMode;
-                }
-
-                var playbackRepository = Services.GetService<IPlaybackRepository>();
-                var player = Services.GetService<IMusicPlayerService>();
-                if (playbackRepository is null || player is null) return playerMode;
-
-                var startupBehavior = userSettings?.StartupBehavior ?? StartupBehavior.RestoreQueueOnly;
-                if (startupBehavior == StartupBehavior.StartClean) return playerMode;
-
-                var snapshot = playbackRepository.Load();
-                if (snapshot.TrackIds.Length == 0) return playerMode;
-
-                var library = Services.GetService<MusicLibrary>();
-                if (library is null) return playerMode;
-
-                var validIds = new HashSet<int>(library.Tracks.Select(t => t.Id));
-                var queue = snapshot.TrackIds.Where(id => validIds.Contains(id)).ToArray();
-                if (queue.Length == 0) return playerMode;
-
-                player.SetQueue(queue, false);
-                player.RepeatMode = (RepeatMode)snapshot.RepeatMode;
-                player.ContinueMode = (ContinueMode)snapshot.ContinueMode;
-
-                int index = snapshot.CurrentIndex;
-                if (index < 0 || index >= queue.Length) index = 0;
-
-                switch (startupBehavior)
-                {
-                    case StartupBehavior.RestoreQueueOnly:
-                        player.Stop();
-                        break;
-
-                    case StartupBehavior.RestoreQueueAndIndexOnly:
-                        player.SetSilentIndex(index);
-                        player.Stop();
-                        break;
-
-                    case StartupBehavior.ResumePlayback:
-                        player.SetVolume(0f);
-                        player.PlayIndex(index);
-
-                        var position = Math.Clamp(snapshot.PositionInSeconds, 0, player.Duration);
-                        player.Seek(position);
-
-                        switch (snapshot.PlaybackState)
-                        {
-                            case 0: player.Stop(); break;
-                            case 1: player.Play(); break;
-                            case 2: player.Pause(); break;
-                            default: player.Pause(); break;
-                        }
-                        break;
-                }
-
-                if (userSettings is not null)
-                {
-                    player.SetVolume(Math.Clamp(userSettings.PreferredVolume, 0f, 1f));
-                }
-
-                return playerMode;
+                ApplyTrayBehavior(_userSettings?.KeepAppInTray ?? false);
             }
-            catch
+        }
+        private void ApplyTrayBehavior(bool keepInTray)
+        {
+            ShutdownMode = keepInTray
+                ? ShutdownMode.OnExplicitShutdown
+                : ShutdownMode.OnLastWindowClose;
+
+            if (keepInTray)
             {
-                return 0;
+                _trayService?.Initialize();
+                return;
             }
-        }
 
-        private void AttachSaveHooks()
-        {
-            if (_saveHooksAttached) return;
-            _player = Services.GetService<IMusicPlayerService>();
-            _saveCoordinator = Services.GetService<ISaveCoordinator>();
-
-            if (_player is null || _saveCoordinator is null) return;
-
-            _player.QueueChanged += OnQueueChanged;
-            _player.PlaybackStateChanged += OnPlaybackStateChanged;
-            _player.TrackChanged += OnTrackChanged;
-            _player.DeviceIndexChanged += OnDeviceIndexChanged;
-            _player.SampleRateChanged += OnSampleRateChanged;
-            _player.OutputModeChanged += OnOutputModeChanged;
-
-            _saveHooksAttached = true;
-        }
-        private void DetachSaveHooks()
-        {
-            if (!_saveHooksAttached) return;
-            if (_player is not null)
+            if (_trayService is IDisposable disposable)
             {
-                _player.QueueChanged -= OnQueueChanged;
-                _player.PlaybackStateChanged -= OnPlaybackStateChanged;
-                _player.TrackChanged -= OnTrackChanged;
-                _player.DeviceIndexChanged -= OnDeviceIndexChanged;
-                _player.SampleRateChanged -= OnSampleRateChanged;
-                _player.OutputModeChanged -= OnOutputModeChanged;
+                disposable.Dispose();
             }
-            _saveHooksAttached = false;
-        }
 
-        private void OnOutputModeChanged(object? sender, OutputMode e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Settings);
+            if (CurrentWindow is not null && !CurrentWindow.IsVisible && IsWindowUsable(CurrentWindow))
+            {
+                CurrentWindow.Show();
+                CurrentWindow.Activate();
+            }
         }
-
-        private void OnSampleRateChanged(object? sender, SampleRateChangedEventArgs e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Settings);
-        }
-
-        private void OnDeviceIndexChanged(object? sender, int e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Settings);
-        }
-
-        private void OnTrackChanged(object? sender, string e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Playback);
-        }
-
-        private void OnPlaybackStateChanged(object? sender, PlaybackState e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Playback);
-        }
-
-        private void OnQueueChanged(object? sender, int[] e)
-        {
-            _saveCoordinator?.Enqueue(SaveKind.Playback);
-        }
-
-        private static void CheckMemory()
-        {
-#if DEBUG
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-#endif
-        }
-
         private static bool TryShowWindow(Window? window)
         {
             if (!IsWindowUsable(window))
@@ -585,6 +478,22 @@ namespace MusicWrap.UI
             };
         }
 
+        private static void SetDropDownMenuToBeRightAligned()
+        {
+            var menuDropAlignmentField = typeof(SystemParameters).GetField("_menuDropAlignment", BindingFlags.NonPublic | BindingFlags.Static);
+            Action setAlignmentValue = () =>
+            {
+                if (SystemParameters.MenuDropAlignment && menuDropAlignmentField != null) menuDropAlignmentField.SetValue(null, false);
+            };
+
+            setAlignmentValue();
+
+            SystemParameters.StaticPropertyChanged += (sender, e) =>
+            {
+                setAlignmentValue();
+            };
+        }
+
         private static void CloseForWindowTransition(Window window)
         {
             _windowTransitionDepth++;
@@ -601,3 +510,7 @@ namespace MusicWrap.UI
     }
 
 }
+
+
+
+

@@ -249,6 +249,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 {
                     Id = s.Id,
                     Title = s.Name,
+                    Artist = JoinArtists(s.Artists),
+                    Album = s.Album?.Name ?? string.Empty,
+                    Genre = string.Empty,
+                    Duration = FormatDuration(s.Duration),
                     Subtitle = BuildSongSubtitle(s)
                 })
                 .ToArray();
@@ -276,8 +280,12 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                 .Take(100)
                 .Select(s => new YoutubeDetailTrack
                 {
-                    Id = s.Id,
-                    Title = s.Name,
+                    Id = s.Id!,
+                    Title = s.Name!,
+                    Artist = JoinArtists(albumInfo.Artists),
+                    Album = albumInfo.Name ?? string.Empty,
+                    Genre = string.Empty,
+                    Duration = FormatDuration(s.Duration),
                     Subtitle = FormatAlbumSongSubtitle(s)
                 })
                 .ToArray();
@@ -293,7 +301,7 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
     private async Task<IReadOnlyList<YoutubeSearchItem>> SearchArtistsAsync(string query, CancellationToken cancellationToken)
     {
         var all = await _ytmClient.SearchAsync(query, SearchCategory.Artists)
-            .FetchItemsAsync(0, 40, cancellationToken);
+            .FetchItemsAsync(0, 50, cancellationToken);
 
         var artists = all
             .OfType<ArtistSearchResult>()
@@ -464,11 +472,14 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
     {
         int? releaseYear = null;
         string artistName = TryExtractArtistFromSubtitle(selectedItem.Subtitle);
+        string albumName = TryExtractAlbumFromSubtitle(selectedItem.Subtitle);
+        string duration = ExtractDurationFromSubtitle(selectedItem.Subtitle);
 
         try
         {
             var video = await _youtubeClient.Videos.GetAsync(selectedItem.Id, cancellationToken).ConfigureAwait(false);
             releaseYear = video.UploadDate.Year;
+            duration = FormatDuration(video.Duration ?? TimeSpan.Zero);
 
             if (string.IsNullOrWhiteSpace(artistName))
             {
@@ -498,6 +509,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     {
                         Id = selectedItem.Id,
                         Title = selectedItem.Title,
+                        Artist = artistName,
+                        Album = albumName,
+                        Genre = string.Empty,
+                        Duration = duration,
                         Subtitle = selectedItem.Subtitle
                     }
                 ]
@@ -519,6 +534,44 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
         }
 
         return subtitle.Trim();
+    }
+
+    private static string TryExtractAlbumFromSubtitle(string subtitle)
+    {
+        if (string.IsNullOrWhiteSpace(subtitle))
+        {
+            return string.Empty;
+        }
+
+        int separatorIndex = subtitle.IndexOf(" - ", StringComparison.Ordinal);
+        if (separatorIndex <= 0 || separatorIndex + 3 >= subtitle.Length)
+        {
+            return string.Empty;
+        }
+
+        return subtitle[(separatorIndex + 3)..].Trim();
+    }
+
+    private static string ExtractDurationFromSubtitle(string subtitle)
+    {
+        if (string.IsNullOrWhiteSpace(subtitle))
+        {
+            return string.Empty;
+        }
+
+        var onlyDuration = System.Text.RegularExpressions.Regex.Match(subtitle.Trim(), @"^(?:#?\d+\s*-\s*)?(\d{1,2}:\d{2}(?::\d{2})?)$");
+        if (onlyDuration.Success)
+        {
+            return onlyDuration.Groups[1].Value;
+        }
+
+        var endDuration = System.Text.RegularExpressions.Regex.Match(subtitle.Trim(), @"(?:\s*[•-]\s*)(\d{1,2}:\d{2}(?::\d{2})?)$");
+        if (endDuration.Success)
+        {
+            return endDuration.Groups[1].Value;
+        }
+
+        return string.Empty;
     }
 
     private async Task<IReadOnlyList<YoutubeDetailGroup>> BuildArtistGroupsAsync(YoutubeSearchItem artistItem, CancellationToken cancellationToken)
@@ -549,7 +602,7 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
 
         var albumGroups = artistInfo.Albums
             .Where(a => !string.IsNullOrWhiteSpace(a.Id) && !string.IsNullOrWhiteSpace(a.Name))
-            .Take(24)
+            .Take(50)
             .Select(a => new YoutubeDetailGroup
             {
                 GroupId = $"album::{a.Id}",
@@ -573,6 +626,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
             {
                 Id = s.Id,
                 Title = s.Name,
+                Artist = JoinArtists(s.Artists),
+                Album = s.Album?.Name ?? string.Empty,
+                Genre = string.Empty,
+                Duration = string.Empty,
                 Subtitle = BuildArtistSongSubtitle(s)
             })
             .ToArray();
@@ -617,6 +674,10 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                         {
                             Id = video.Id,
                             Title = video.Name,
+                            Artist = JoinArtists(video.Artists),
+                            Album = video.Name,
+                            Genre = "video",
+                            Duration = string.Empty,
                             Subtitle = BuildArtistVideoSubtitle(video)
                         }
                     ]

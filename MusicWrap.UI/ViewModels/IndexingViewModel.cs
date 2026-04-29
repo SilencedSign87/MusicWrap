@@ -2,9 +2,10 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Sources.Contracts;
-using MusicWrap.Data.Providers.Youtube;
+using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.UI.Models;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Features.Library.Services;
 using System.Windows;
 
 namespace MusicWrap.UI.ViewModels;
@@ -14,7 +15,7 @@ namespace MusicWrap.UI.ViewModels;
 /// </summary>
 public sealed partial class IndexingViewModel : ObservableObject
 {
-    public const string VariousValuesMarker = "-- Various Values --";
+    public const string VariousValuesMarker = "< mixed >";
 
     private readonly Dictionary<string, StagedArtworkNode> _artworksByUrl = new(StringComparer.OrdinalIgnoreCase);
     private readonly IYoutubeIndexingWorkflowService _youtubeIndexingWorkflowService;
@@ -464,7 +465,8 @@ public sealed partial class IndexingViewModel : ObservableObject
         SaveAllStagedTracksCommand.NotifyCanExecuteChanged();
 
         var stagedTracksToSave = StagedTracks.ToArray();
-        IndexingProgressMaximum = Math.Max(1, stagedTracksToSave.Length);
+        // Progress now accounts for 2 steps per track (downloading + indexing)
+        IndexingProgressMaximum = Math.Max(1, stagedTracksToSave.Length * 2);
         IndexingProgressValue = 0;
 
         int saved = 0;
@@ -492,10 +494,20 @@ public sealed partial class IndexingViewModel : ObservableObject
 
             var batchResult = await _youtubeIndexingWorkflowService.IndexTracksAsync(
                 requests,
-                (processed, total) =>
+                // Legacy progress callback (for backward compatibility)
+                onProgress: (processed, total) =>
                 {
-                    IndexingProgressMaximum = Math.Max(1, total);
-                    IndexingProgressValue = processed;
+                    // Simple counting: 1 to total
+                },
+                // Detailed progress callback with track and phase information
+                onDetailedProgress: progress =>
+                {
+                    IndexingProgressMaximum = progress.TotalTracks * 2;
+                    // Calculate step count: track index * 2 + phase offset
+                    int stepOffset = progress.Phase.Equals("indexing", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+                    IndexingProgressValue = (progress.CurrentTrackIndex - 1) * 2 + stepOffset + 1;
+                    // Display detailed status message
+                    SaveStatusMessage = progress.StatusMessage;
                 });
 
             saved = batchResult.Saved;
@@ -692,3 +704,5 @@ public sealed partial class IndexingViewModel : ObservableObject
         }
     }
 }
+
+

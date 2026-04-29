@@ -9,6 +9,7 @@
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="White"/>
@@ -20,7 +21,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="0"
+                            CornerRadius="2"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter
                             HorizontalAlignment="Center"
@@ -57,12 +58,16 @@
     <!-- Accent button -->
     <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="Background" Value="{StaticResource AccentBrush100}" />
-        <Setter Property="Foreground" Value="{StaticResource TextOnAccentSecondaryBrush}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush100}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush100}" />
+        <Setter Property="Foreground" Value="{StaticResource TextOnAccentPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlElevationBorderBrush}"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
                 <Setter Property="Background" Value="{StaticResource AccentBrush110}"/>
-                <Setter Property="Foreground" Value="{StaticResource TextOnAccentPrimaryBrush}"/>
+                <Setter Property="Foreground" Value="{StaticResource TextOnAccentSecondaryBrush}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="true">
+                <Setter Property="Background" Value="{StaticResource AccentBrush120}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -73,7 +78,7 @@
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
     </Style>
-    
+
     <!--Outline Button-->
     <Style x:Key="OutlineButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
         <Setter Property="Background" Value="{StaticResource BackgroundControlTransparent}" />
@@ -107,6 +112,56 @@
             <Trigger Property="IsMouseOver" Value="true">
                 <Setter Property="Background" Value="Red"/>
                 <Setter Property="Foreground" Value="White"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- DJ Buttons -->
+    <Style x:Key="DJAccentButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
+        <Setter Property="Background" Value="{StaticResource AccentBrush100}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="RootBorder"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="4"
+                Padding="{TemplateBinding Padding}">
+                        <ContentPresenter
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                TextElement.Foreground="{TemplateBinding Foreground}"
+                />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="true">
+                <Setter Property="Background" Value="{StaticResource AccentBrush110}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource AccentBrush100}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="DjDefaultButton" TargetType="Button" BasedOn="{StaticResource DJAccentButton}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="true">
+                <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource BackgroundControlPressed}"/>
             </Trigger>
         </Style.Triggers>
     </Style>

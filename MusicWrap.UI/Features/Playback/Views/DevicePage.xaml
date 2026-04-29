@@ -1,0 +1,69 @@
+<UserControl x:Class="MusicWrap.UI.Features.Playback.Views.DevicePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance Type=vm:DeviceViewModel}"
+             d:Background="#1fffffff"
+             d:DesignHeight="500" d:DesignWidth="300">
+    <StackPanel Margin="16">
+        <!-- Current Info -->
+        <controls:SectionTitleSeparator Title="Current Device Information" IconGlyph="&#xe946;" Margin="0,8"/>
+
+        <StackPanel Margin="0,0,0,16">
+
+            <TextBlock   Text="Current Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis" />
+            <TextBlock   Text="{Binding CurrentDeviceName}" FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right" />
+
+            <TextBlock  Text="Current Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis"/>
+            <TextBlock  FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right">
+                <Run Text="{Binding CurrentSampleRate}" />
+                <Run Text=" hz" />
+            </TextBlock>
+
+        </StackPanel>
+
+        <controls:SectionTitleSeparator Title="Device Settings" IconGlyph="&#xe713;" Margin="0,8"/>
+        <!-- Settings -->
+        <StackPanel Margin="0,0,0,16">
+
+            <TextBlock Text="Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox
+                      Margin="0,0,0,8" 
+                      SelectedIndex="{Binding CurrentDeviceIndex}"
+                      ItemsSource="{Binding AvailableDevices}"
+                      SelectionChanged="DeviceChanged"
+                      >
+                <ComboBox.ItemTemplate>
+                    <DataTemplate DataType="vm:DeviceDefinition">
+                        <TextBlock Tag="{Binding Index}" Text="{Binding Name}" TextTrimming="WordEllipsis" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox  SelectedIndex="{Binding CurrentSampleRateIndex}" SelectionChanged="SampleRateChanged" Margin="0,0,0,8" >
+                <ComboBoxItem Tag="auto" Content="Match track sample rate" />
+                <ComboBoxItem Tag="44100" Content="44100 hz" />
+                <ComboBoxItem Tag="48000" Content="48000 hz" />
+                <ComboBoxItem Tag="88200" Content="88200 hz" />
+                <ComboBoxItem Tag="96000" Content="96000 hz" />
+                <ComboBoxItem Tag="176400" Content="176400 hz" />
+                <ComboBoxItem Tag="192000" Content="192000 hz" />
+            </ComboBox>
+
+            <TextBlock Text="Output mode" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox SelectedIndex="{Binding CurrentOutputModeIndex}" SelectionChanged="OutputModeChanged" Margin="0,0,0,8">
+                <ComboBoxItem Tag="wasapi-shared" Content="WASAPI Shared" />
+                <ComboBoxItem Tag="wasapi-exclusive" Content="WASAPI Exclusive" />
+            </ComboBox>
+        </StackPanel>
+
+    </StackPanel>
+</UserControl>
+
+

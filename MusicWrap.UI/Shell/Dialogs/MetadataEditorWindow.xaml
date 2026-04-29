@@ -1,0 +1,217 @@
+<Window x:Class="MusicWrap.UI.Shell.Dialogs.MetadataEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MusicWrap.UI.Shell.Dialogs"
+        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+        xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+        mc:Ignorable="d"
+        ResizeMode="NoResize"
+        Icon="/Resources/icon.ico"
+        d:Background="#080808"
+        d:Foreground="White"
+        d:DataContext="{d:DesignInstance Type=vm:MetadataEditorViewModel}"
+        Title="Metadata Editor" Height="500" Width="500">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <TabControl Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabItem Style="{StaticResource SubtleTabItem}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center"/>
+                        <TextBlock Text="File" Margin="8,0" />
+                    </StackPanel>
+                </TabItem.Header>
+                <Grid>
+                    <TextBlock Margin="12" Text="World" />
+                </Grid>
+            </TabItem>
+            <TabItem Style="{StaticResource SubtleTabItem}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BA;" VerticalAlignment="Center"/>
+                        <TextBlock Text="Artwork" Margin="8,0" />
+                    </StackPanel>
+                </TabItem.Header>
+                <Grid>
+                    <TextBlock Margin="12" Text="Is a lie." />
+                </Grid>
+            </TabItem>
+            <TabItem IsSelected="True" Style="{StaticResource SubtleTabItem}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" VerticalAlignment="Center"/>
+                        <TextBlock Text="Metadata" Margin="8,0" />
+                    </StackPanel>
+                </TabItem.Header>
+                <Border Background="{StaticResource BackgroundSmoke}">
+
+                    <Grid Margin="8" Grid.IsSharedSizeScope="True">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Title:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:CompactInputField Grid.Column="2" 
+                                                            Text="{Binding Title, Mode=TwoWay}"
+                                                            PlaceholderText="{Binding TitlePlaceholder, Mode=OneWay}"
+                                                            />
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Artist:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:AutocompleteMetadataInput
+                                    Grid.Column="2"
+                                    Text="{Binding Artist, Mode=TwoWay}"
+                                    MetadataType="ArtistName"
+                                    PlaceholderText="{Binding ArtistPlaceholder, Mode=OneWay}"
+                                    IsMultipleValueEnabled="True"
+                                    />
+                                <!--<controls:CompactInputField Grid.Column="2" 
+                                                            Text="{Binding Artist , Mode=TwoWay}"
+                                                            PlaceholderText="{Binding ArtistPlaceholder, Mode=OneWay}"
+                                                            />-->
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Album:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:CompactInputField Grid.Column="2" 
+                                                            Text="{Binding Album, Mode=TwoWay}"
+                                                            PlaceholderText="{Binding AlbumPlaceholder, Mode=OneWay}"
+                                                            />
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Album artist:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:AutocompleteMetadataInput
+                                    Grid.Column="2"
+                                    Text="{Binding AlbumArtist, Mode=TwoWay}"
+                                    PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
+                                    MetadataType="ArtistName"
+                                     IsMultipleValueEnabled="True"
+                                    />
+                                <!--<controls:CompactInputField Grid.Column="2" 
+                                                            Text="{Binding AlbumArtist, Mode=TwoWay}"
+                                                            PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
+                                                            />-->
+                            </Grid>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Genre:" VerticalAlignment="Center" FontSize="12"/>
+                                <controls:AutocompleteMetadataInput
+                                    Grid.Column="2"
+                                    Text="{Binding Genre, Mode=TwoWay}"
+                                    PlaceholderText="{Binding GenrePlaceholder, Mode=OneWay}"
+                                    MetadataType="GenreName"
+                                     IsMultipleValueEnabled="True"
+                                    />
+                                <!--<controls:CompactInputField Grid.Column="2" 
+                                 Text="{Binding AlbumArtist, Mode=TwoWay}"
+                                 PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
+                                 />-->
+                            </Grid>
+                            <Separator Margin="0,0,0,4"/>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="Year:" VerticalAlignment="Top" FontSize="12" Margin="0,4,0,0"/>
+
+                                <Grid Grid.Column="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="12"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <controls:CompactInputField Grid.Column="0" 
+                                                                Width="150" 
+                                                                VerticalAlignment="Top" 
+                                                                Text="{Binding Year, Mode=TwoWay}" 
+                                                                PlaceholderText="{Binding YearPlaceholder, Mode=OneWay}"
+                                                                />
+
+                                    <StackPanel Grid.Column="2">
+                                        <Grid Margin="0,0,0,8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Track:" VerticalAlignment="Center" FontSize="12"/>
+                                            <controls:CompactInputField Grid.Column="2" 
+                                                                        Text="{Binding TrackNumber, Mode=TwoWay}" 
+                                                                        PlaceholderText="{Binding TrackNumberPlaceholder, Mode=OneWay}"
+                                                                        />
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
+                                                <ColumnDefinition Width="12"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Disk:" VerticalAlignment="Center" FontSize="12"/>
+                                            <controls:CompactInputField Grid.Column="2" 
+                                                                        Text="{Binding DiskNumber, Mode=TwoWay}" 
+                                                                        PlaceholderText="{Binding DiskNumberPlaceholder, Mode=OneWay}"
+                                                                        />
+                                        </Grid>
+                                    </StackPanel>
+
+                                </Grid>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </TabItem>
+            <TabItem IsSelected="True" Style="{StaticResource SubtleTabItem}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8EC;" VerticalAlignment="Center"/>
+                        <TextBlock Text="Tags" Margin="8,0" />
+                    </StackPanel>
+                </TabItem.Header>
+            </TabItem>
+        </TabControl>
+        <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="8" Orientation="Horizontal">
+            <Button Margin="8,0" Style="{StaticResource AccentButton}"
+                    IsEnabled="{Binding HasChanges}"
+                    >
+                Save
+            </Button>
+            <Button Style="{StaticResource DefaultButton}" 
+                    Command="{Binding CancelChangesCommand}" 
+                    IsEnabled="{Binding HasChanges}">
+                Cancel changes
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>
+
+

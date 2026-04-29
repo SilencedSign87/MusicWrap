@@ -7,7 +7,7 @@ namespace MusicWrap.UI.Converters
 {
     public class SelectedAlbumBackgroundConverter : IMultiValueConverter
     {
-        private const byte SelectedAlpha = 0x33; // ~20% opacity
+        private static readonly SolidColorBrush SelectedBrush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
 
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
@@ -18,30 +18,13 @@ namespace MusicWrap.UI.Converters
 
             var albumId = values[0];
             var expandedAlbumId = values[1];
-            var dominantColorHex = values[2] as string;
 
             if (albumId == null || expandedAlbumId == null || !albumId.Equals(expandedAlbumId))
             {
                 return Brushes.Transparent;
             }
 
-            if (string.IsNullOrWhiteSpace(dominantColorHex))
-            {
-                return Brushes.Transparent;
-            }
-
-            try
-            {
-                var color = (Color)ColorConverter.ConvertFromString(dominantColorHex);
-                color.A = SelectedAlpha;
-                var brush = new SolidColorBrush(color);
-                brush.Freeze();
-                return brush;
-            }
-            catch
-            {
-                return Brushes.Transparent;
-            }
+            return SelectedBrush;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

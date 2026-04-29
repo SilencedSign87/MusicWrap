@@ -45,5 +45,9 @@ public sealed class YoutubeDetailTrack
 {
     public required string Id { get; init; }
     public required string Title { get; init; }
+    public string Artist { get; init; } = string.Empty;
+    public string Album { get; init; } = string.Empty;
+    public string Genre { get; init; } = string.Empty;
+    public string Duration { get; init; } = string.Empty;
     public string Subtitle { get; init; } = string.Empty;
 }

@@ -1,0 +1,19 @@
+<MenuItem x:Class="MusicWrap.UI.Controls.Models.TrackToPlaylistMenu"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Controls.Models"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:service="clr-namespace:MusicWrap.Data.Playlist;assembly=MusicWrap.Data"
+             x:Name="Root"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             Header="Add to playlist"
+             Icon="{ex:Icon Glyph=E142}"
+          >
+    <MenuItem Header="New playlist..."  Click="NewPlaylist_click"/>
+    <Separator />
+</MenuItem>
+
+

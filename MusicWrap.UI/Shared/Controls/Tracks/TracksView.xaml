@@ -1,0 +1,344 @@
+<UserControl x:Class="MusicWrap.UI.Controls.Models.TracksView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Controls.Models"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
+             mc:Ignorable="d" 
+             x:Name="Root"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
+        <converters:ForegroundToHoverBrushConverter x:Key="ForegroundToHoverBrushConverter"/>
+        <converters:ItemCountToColumnsConverter x:Key="ItemCountToColumnsConverter"/>
+        <converters:TrackPlayingToVisibilityConverter x:Key="TrackPlayingToVisibilityConverter"/>
+        <converters:NullToBoolConverter x:Key="NullToBoolConverter"/>
+        <converters:DiskNumberToGroupHeaderConverter x:Key="DiskNumberToGroupHeaderConverter"/>
+        <ItemsPanelTemplate x:Key="VirtualizedItemsPanel">
+            <VirtualizingStackPanel/>
+        </ItemsPanelTemplate>
+
+        <ItemsPanelTemplate x:Key="ColumnFlowItemsPanel">
+            <ex:ColumnFlowPanel 
+                ex:ColumnFlowPanel.Columns="{Binding ElementName=Root, Path=ColumnFlowColumns}"
+                />
+        </ItemsPanelTemplate>
+
+        <Style x:Key="TracksListBoxStyle" TargetType="{x:Type ListBox}">
+            <Setter Property="ItemsPanel" Value="{StaticResource VirtualizedItemsPanel}"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+            <Setter Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="True"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ElementName=Root, Path=UseColumnFlowPanel}" Value="True">
+                    <Setter Property="ItemsPanel" Value="{StaticResource ColumnFlowItemsPanel}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ElementName=Root, Path=IsMouseWheelScrollEnabled}" Value="True">
+                    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="TrackItemContainerStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{Binding ElementName=Root, Path=Foreground}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Grid SnapsToDevicePixels="True">
+                            <Border
+                                x:Name="RootBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"/>
+
+                            <Border
+                                x:Name="HoverOverlay"
+                                Visibility="Collapsed"
+                                IsHitTestVisible="False"
+                                Background="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Foreground, Converter={StaticResource ForegroundToHoverBrushConverter}}"/>
+
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                Margin="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsSelected" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="HoverOverlay" Property="Visibility" Value="Visible"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=Root, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="True"/>
+                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Background" Value="#FFFFFFFF"/>
+                    <Setter Property="Foreground" Value="#FF000000"/>
+                </MultiDataTrigger>
+
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=Root, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="False"/>
+                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Background" Value="#FF000000"/>
+                    <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="TrackGroupItemStyle" TargetType="GroupItem">
+            <Setter Property="Foreground" Value="{Binding ElementName=Root, Path=Foreground}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupItem">
+                        <StackPanel Margin="0,0,0,10">
+                            <Border Margin="0,0,0,6"
+                                    Padding="8,4"
+                                    Background="Transparent"
+                                    BorderThickness="0,0,0,1"
+                                    BorderBrush="{StaticResource StrokeDivider}">
+                                <TextBlock FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Opacity="0.8"
+                                           Text="{Binding Name, Converter={StaticResource DiskNumberToGroupHeaderConverter}}"/>
+                            </Border>
+                            <ItemsPresenter />
+                        </StackPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="TrackCompactNoCoverTemplate" DataType="local:TrackRowItem">
+            <Grid Margin="0,2" Cursor="Hand">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto" MinWidth="50"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0">
+                    <TextBlock
+                    FontFamily="Segoe Fluent Icons"
+                    Text="&#xE995;"
+                    FontSize="13"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    TextAlignment="Center">
+                        <TextBlock.Visibility>
+                            <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
+                                <Binding ElementName="Root" Path="CurrentTrackId"/>
+                                <Binding Path="Id"/>
+                                <Binding ElementName="Root" Path="IsPlaybackActive"/>
+                            </MultiBinding>
+                        </TextBlock.Visibility>
+                    </TextBlock>
+                </Grid>
+
+                <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="13" Opacity="0.6" >
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Text" Value=""/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.ListIndex}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Text" Value="{Binding ListIndex}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.TrackNumber}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Text" Value="{Binding TrackNumberDisplay}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <Grid Grid.Column="2" HorizontalAlignment="Stretch">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                    <TextBlock Grid.Row="1" Text="{Binding ArtistNames}" FontSize="11" Opacity="0.60" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                </Grid>
+
+                <TextBlock Grid.Column="3" Text="{Binding DurationText}" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12" Opacity="0.6"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="TrackWithCoverArtTemplate" DataType="local:TrackRowItem">
+            <Grid Margin="2" Cursor="Hand">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="42"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto" MinWidth="50"/>
+                </Grid.ColumnDefinitions>
+
+                <Image
+                        Grid.Column="0"
+                        Width="42"
+                        Height="42"
+                        Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}" />
+
+                <TextBlock Grid.Column="1"
+                           FontFamily="Segoe Fluent Icons"
+                           Text="&#xE995;"
+                           FontSize="13"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Margin="8,0,2,0">
+                    <TextBlock.Visibility>
+                        <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
+                            <Binding ElementName="Root" Path="CurrentTrackId"/>
+                            <Binding Path="Id"/>
+                            <Binding ElementName="Root" Path="IsPlaybackActive"/>
+                        </MultiBinding>
+                    </TextBlock.Visibility>
+                </TextBlock>
+
+                <TextBlock Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="13" Opacity="0.6" >
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Text" Value=""/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.ListIndex}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Text" Value="{Binding ListIndex}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ElementName=Root, Path=IndexMode}" Value="{x:Static local:TrackIndexDisplayMode.TrackNumber}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Text" Value="{Binding TrackNumberDisplay}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+
+                <Grid Grid.Column="3" HorizontalAlignment="Stretch" Margin="8,0" VerticalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="12" FontWeight="Medium" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                    <TextBlock Grid.Row="1" Text="{Binding ArtistNames}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                </Grid>
+
+                <TextBlock Grid.Column="4" Text="{Binding DurationText}" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="12" Opacity="0.6"/>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="TrackListImageTemplate" DataType="local:TrackRowItem">
+            <Grid Margin="1" Cursor="Hand" Height="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="22"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="60"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Width="20" Height="20" CornerRadius="2" VerticalAlignment="Center" ClipToBounds="True">
+                    <Image Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=20}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="LowQuality"/>
+                </Border>
+
+                <TextBlock Grid.Column="1"
+                           FontFamily="Segoe Fluent Icons"
+                           Text="&#xE995;"
+                           FontSize="11"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center">
+                    <TextBlock.Visibility>
+                        <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
+                            <Binding ElementName="Root" Path="CurrentTrackId"/>
+                            <Binding Path="Id"/>
+                            <Binding ElementName="Root" Path="IsPlaybackActive"/>
+                        </MultiBinding>
+                    </TextBlock.Visibility>
+                </TextBlock>
+
+                <TextBlock Grid.Column="2" Text="{Binding ListIndex}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" FontSize="11" Opacity="0.7"/>
+                <TextBlock Grid.Column="3" Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="4" Text="{Binding ArtistNames}" VerticalAlignment="Center" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
+                <TextBlock Grid.Column="5" Text="{Binding AlbumName}" VerticalAlignment="Center" FontSize="12" Opacity="0.75" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
+                <TextBlock Grid.Column="6" Text="{Binding DurationText}" VerticalAlignment="Center" HorizontalAlignment="Right" FontSize="12" Opacity="0.7" Margin="8,0"/>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <ListView x:Name="TracksList" 
+                 ItemContainerStyle="{StaticResource TrackItemContainerStyle}" 
+                 ItemsSource="{Binding ElementName=Root, Path=ItemsSource}" 
+                 SelectionMode="{Binding ElementName=Root, Path=SelectionMode}" 
+                 ContextMenu="{Binding ElementName=Root, Path=ContextMenu}"
+                 AllowDrop="{Binding ElementName=Root, Path=IsReorderEnabled}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 SelectionChanged="TracksList_SelectionChanged"
+                 MouseDoubleClick="TracksList_MouseDoubleClick" 
+                 KeyDown="TracksList_KeyDown" 
+                 PreviewMouseLeftButtonDown="TracksList_PreviewMouseLeftButtonDown"
+                 MouseMove="TracksList_MouseMove"
+                 DragOver="TracksList_DragOver"
+                 Drop="TracksList_Drop"
+                 PreviewMouseWheel="TracksList_PreviewMouseWheel"
+                 PreviewMouseRightButtonDown="TracksList_PreviewMouseRightButtonDown"
+                 Background="Transparent" BorderThickness="0">
+            <ListView.Style>
+                <Style TargetType="ListView" BasedOn="{StaticResource TracksListBoxStyle}">
+                    <Setter Property="ItemTemplate" Value="{StaticResource TrackCompactNoCoverTemplate}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ElementName=Root, Path=VisualMode}" Value="{x:Static local:TrackVisualMode.WithCoverArt}">
+                            <Setter Property="ItemTemplate" Value="{StaticResource TrackWithCoverArtTemplate}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding ElementName=Root, Path=VisualMode}" Value="{x:Static local:TrackVisualMode.ListImage}">
+                            <Setter Property="ItemTemplate" Value="{StaticResource TrackListImageTemplate}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ListView.Style>
+            <ListView.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.ContainerStyle>
+                        <Style TargetType="GroupItem" BasedOn="{StaticResource TrackGroupItemStyle}"/>
+                    </GroupStyle.ContainerStyle>
+                    <GroupStyle.Panel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel/>
+                        </ItemsPanelTemplate>
+                    </GroupStyle.Panel>
+                </GroupStyle>
+            </ListView.GroupStyle>
+        </ListView>
+    </Grid>
+</UserControl>
+
