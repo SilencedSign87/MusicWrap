@@ -3,6 +3,7 @@ using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.State.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Timers;
 
 namespace MusicWrap.UI.Features.State.Services
@@ -11,14 +12,10 @@ namespace MusicWrap.UI.Features.State.Services
     {
         StatusBarState Current { get; }
         event EventHandler? StateChanged;
-        StatusbarOperation BeginOpetation(string operationName);
-        void SetLeftText(string text, string? icon = null);
-        void SetCenterText(string text, string? icon = null);
-        void SetRightText(string text, string? icon = null);
-        void AddAction(StatusbarSlotKind slot, StatusBarAction action);
-        void ClearActions(StatusbarSlotKind slot);
-        void ReportProgress(double value, double maximum = 100, bool isIndeterminate = false, string? detail = null);
-        void ShowMessage(string message, TimeSpan duration, StatusbarSlotKind slot = StatusbarSlotKind.Center);
+        void PublishState(StatusbarSlotKind slot, string text, string? icon = null, ObservableCollection<StatusBarAction>? actions = null);
+        void ClearSlot(StatusbarSlotKind slot);
+        void ReportProgress(double value, double maximum = 100, bool isIndeterminate = false, string? detail = null, StatusbarSlotKind? slot = StatusbarSlotKind.Center);
+        void ClearProgress();
         void Clear();
     }
     public enum StatusbarSlotKind
@@ -32,129 +29,93 @@ namespace MusicWrap.UI.Features.State.Services
         private readonly IUIDispatcher _dispatcher;
         private readonly ILogger _logger;
         private readonly StatusBarState _state = new();
-        private readonly System.Timers.Timer _dismissTimer;
-        private string _currentOperationId = string.Empty;
-        private bool _disposed;
-        public StatusBarState Current => _state;
+        private bool _dispose;
 
+        private readonly Stack<StatusSlotSnapshot> _leftStack = new();
+        private readonly Stack<StatusSlotSnapshot> _centerStack = new();
+        private readonly Stack<StatusSlotSnapshot> _rightStack = new();
+
+        public StatusBarState Current => _state;
         public event EventHandler? StateChanged;
 
         public StatusService(IUIDispatcher dispatcher, ILogger<StatusService> logger)
         {
             _dispatcher = dispatcher;
             _logger = logger;
-
-            _dismissTimer = new System.Timers.Timer
-            {
-                AutoReset = false,
-                Interval = TimeSpan.FromSeconds(5).TotalMilliseconds
-            };
-            _dismissTimer.Elapsed += _dismissTimer_Elapsed;
-
         }
-        public StatusbarOperation BeginOpetation(string operationName)
-        {
-            _dispatcher.Invoke(() =>
-            {
-                _currentOperationId = Guid.NewGuid().ToString("N").Substring(0,8);
-                _state.OperationName = operationName;
-                _state.IsVisible = true;
-                _state.IsIndeterminate = true;
-                _state.ProgressValue = 0;
-                _state.DismissAt = null;
-                RaiseStateChanged();
-                _dismissTimer.Start();
-
-                _logger.LogInformation("Statusbar operation started: {OperationName}", operationName);
-            });
-
-            return new StatusbarOperation(_currentOperationId, () => EndOperation(_currentOperationId));
-        }
-        public void SetLeftText(string text, string? icon = null)
-        {
-            _dispatcher.Invoke(() =>
-            {
-                _state.Left.Text = text;
-                _state.Left.Icon = icon;
-                RaiseStateChanged();
-            });
-        }
-
-        public void SetCenterText(string text, string? icon = null)
-        {
-            _dispatcher.Invoke(() =>
-            {
-                _state.Center.Text = text;
-                _state.Center.Icon = icon;
-                RaiseStateChanged();
-            });
-        }
-
-        public void SetRightText(string text, string? icon = null)
-        {
-            _dispatcher.Invoke(() =>
-            {
-                _state.Right.Text = text;
-                _state.Right.Icon = icon;
-                RaiseStateChanged();
-            });
-        }
-
-        public void AddAction(StatusbarSlotKind slot, StatusBarAction action)
-        {
-            if (action == null)
-            {
-                _logger.LogWarning("Attempted to add null action to statusbar");
-                return;
-            }
-            _dispatcher.Invoke(() => { 
-                var targetSlot = GetSlot(slot);
-                targetSlot?.Actions.Add(action);
-                RaiseStateChanged();
-            });
-
-        }
-
-        public void ClearActions(StatusbarSlotKind slot)
+        public void PublishState(StatusbarSlotKind slot, string text, string? icon = null, ObservableCollection<StatusBarAction>? actions = null)
         {
             _dispatcher.Invoke(() =>
             {
                 var targetSlot = GetSlot(slot);
-                targetSlot.Actions.Clear();
+                var stack = GetStack(slot);
+                var snapshot = new StatusSlotSnapshot
+                {
+                    Text = targetSlot.Text,
+                    Icon = targetSlot.Icon,
+                    Actions = targetSlot.Actions
+                };
+                stack.Push(snapshot);
+                // publicate new state
+                targetSlot.Text = text;
+                targetSlot.Icon = icon;
+                if (actions != null)
+                {
+                    targetSlot.Actions = actions;
+                }
+                RaiseStateChanged();
+                //_logger.LogInformation("Published new status in {Slot} slot: {Text}", slot, text);
+            });
+        }
+        public void ClearSlot(StatusbarSlotKind slot)
+        {
+            _dispatcher.Invoke(() =>
+            {
+                var targetSlot = GetSlot(slot);
+                var stack = GetStack(slot);
+                if (stack.Count > 0)
+                {
+                    var previousState = stack.Pop();
+                    targetSlot.Text = previousState.Text;
+                    targetSlot.Icon = previousState.Icon;
+                    targetSlot.Actions = previousState.Actions;
+                }
+                else
+                {
+                    targetSlot.Text = string.Empty;
+                    targetSlot.Icon = null;
+                    targetSlot.Actions.Clear();
+                }
                 RaiseStateChanged();
             });
         }
-
-        public void ReportProgress(double value, double maximum = 100, bool isIndeterminate = false, string? detail = null)
+        public void ReportProgress(double value, double maximum = 100, bool isIndeterminate = false, string? detail = null, StatusbarSlotKind? slot = StatusbarSlotKind.Center)
         {
             _dispatcher.Invoke(() =>
             {
                 _state.ProgressValue = Math.Clamp(value, 0, maximum);
                 _state.ProgressMaximum = Math.Max(1, maximum);
                 _state.IsIndeterminate = isIndeterminate;
+                _state.IsVisible = true;
 
                 if (!string.IsNullOrEmpty(detail))
                 {
-                    _state.Center.Text = detail;
+                    var targetSlot = slot.HasValue ? GetSlot(slot.Value) : _state.Center;
+                    targetSlot.Text = detail;
                 }
 
                 RaiseStateChanged();
             });
         }
-
-        public void ShowMessage(string message, TimeSpan duration, StatusbarSlotKind slot = StatusbarSlotKind.Center)
+        public void ClearProgress()
         {
             _dispatcher.Invoke(() =>
             {
-                var targetSlot = GetSlot(slot);
-                targetSlot.Text = message;
-                _state.IsVisible = true;
-                _state.IsIndeterminate = true;
-                _state.DismissAt = DateTime.UtcNow.Add(duration);
+                _state.ProgressValue = 0;
+                _state.ProgressMaximum = 100;
+                _state.IsIndeterminate = false;
+                _state.IsVisible = false;
                 RaiseStateChanged();
-                _dismissTimer.Start();
-
-                _logger.LogInformation("Statusbar message shown: {Message}, will dismiss in {Duration}ms", message, duration.TotalMilliseconds);
             });
         }
 
@@ -163,42 +124,28 @@ namespace MusicWrap.UI.Features.State.Services
             _dispatcher.Invoke(() =>
             {
                 _state.Clear();
-                _currentOperationId = string.Empty;
-                _dismissTimer.Stop();
+                _leftStack.Clear();
+                _centerStack.Clear();
+                _rightStack.Clear();
                 RaiseStateChanged();
-
                 _logger.LogInformation("Statusbar cleared");
             });
         }
 
-        private void EndOperation(string operationId)
+
+        public void Dispose()
         {
-            _dispatcher.Invoke(() => {
-                if (_currentOperationId != operationId) return;
-
-                _state.Clear();
-                _currentOperationId = string.Empty;
-                _dismissTimer.Stop();
-                RaiseStateChanged();
-
-                _logger.LogInformation("Statusbar operation ended: {OperationId}", operationId);
-            });
+            if (_dispose) return;
+            _dispose = true;
         }
 
-        private void _dismissTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        private Stack<StatusSlotSnapshot> GetStack(StatusbarSlotKind kind) => kind switch
         {
-            _dispatcher.Invoke(() =>
-            {
-                if (_state.DismissAt.HasValue && DateTime.UtcNow >= _state.DismissAt)
-                {
-                    Clear();
-                }
-                else if (_state.IsVisible)
-                {
-                    _dismissTimer.Start();
-                }
-            });
-        }
+            StatusbarSlotKind.Left => _leftStack,
+            StatusbarSlotKind.Center => _centerStack,
+            StatusbarSlotKind.Right => _rightStack,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
 
         private StatusBarSlot GetSlot(StatusbarSlotKind kind) => kind switch
         {
@@ -213,11 +160,15 @@ namespace MusicWrap.UI.Features.State.Services
             StateChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            _dismissTimer?.Dispose();
-        }
+        #region Internal
+
+        #endregion
+    }
+
+    public class StatusSlotSnapshot
+    {
+        public string Text { get; set; } = string.Empty;
+        public string? Icon { get; set; }
+        public ObservableCollection<StatusBarAction> Actions { get; set; } = new();
     }
 }

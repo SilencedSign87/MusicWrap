@@ -11,23 +11,9 @@ namespace MusicWrap.UI.Features.State.ViewModels
         private readonly IStatusService _statusbarService;
         private bool _disposed;
 
-        [ObservableProperty]
-        private string leftText = string.Empty;
-
-        [ObservableProperty]
-        private string? leftIcon;
-
-        [ObservableProperty]
-        private string centerText = string.Empty;
-
-        [ObservableProperty]
-        private string? centerIcon;
-
-        [ObservableProperty]
-        private string rightText = string.Empty;
-
-        [ObservableProperty]
-        private string? rightIcon;
+        public StatusbarSlotViewModel Left { get; } = new();
+        public StatusbarSlotViewModel Center { get; } = new();
+        public StatusbarSlotViewModel Right { get; } = new();
 
         [ObservableProperty]
         private bool isVisible;
@@ -40,6 +26,9 @@ namespace MusicWrap.UI.Features.State.ViewModels
 
         [ObservableProperty]
         private double progressMaximum = 100;
+
+        [ObservableProperty]
+        private string operationName = string.Empty;
 
         public StatusbarViewModel(IStatusService statusbarService)
         {
@@ -57,19 +46,15 @@ namespace MusicWrap.UI.Features.State.ViewModels
         {
             var state = _statusbarService.Current;
 
-            LeftText = state.Left.Text;
-            LeftIcon = state.Left.Icon;
-
-            CenterText = state.Center.Text;
-            CenterIcon = state.Center.Icon;
-
-            RightText = state.Right.Text;
-            RightIcon = state.Right.Icon;
+            Left.UpdateFrom(state.Left);
+            Center.UpdateFrom(state.Center);
+            Right.UpdateFrom(state.Right);
 
             IsVisible = state.IsVisible;
             IsIndeterminate = state.IsIndeterminate;
             ProgressValue = state.ProgressValue;
             ProgressMaximum = state.ProgressMaximum;
+            OperationName = state.OperationName;
         }
 
         public void Dispose()

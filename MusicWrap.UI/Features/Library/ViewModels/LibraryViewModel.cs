@@ -23,6 +23,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.UI.Features.State.Services;
+using Microsoft.Extensions.Logging;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -42,11 +44,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         [ObservableProperty] private int? expandedAlbumId = null;
 
-        [ObservableProperty] private bool isLoading;
-
-        [ObservableProperty] private bool isLoadingIndeterminate = true;
-
-        [ObservableProperty] private double loadingProgressValue = 0;
         [ObservableProperty] private int layoutColumns = 1;
         [ObservableProperty] private TrackSortMode detailSortMode = TrackSortMode.Year;
         [ObservableProperty] private bool detailSortAscending = true;
@@ -66,22 +63,48 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryCacheService _LibraryCache;
         private readonly IMusicPlayerService _player;
+        private readonly IStatusService _statusService;
         private readonly IImageService _imageService;
+        private readonly ILogger<LibraryViewModel> _logger;
 
-        public LibraryViewModel(MusicLibrary library, ILibraryScanner scanner, ILibraryCacheService libraryCache, UserSettings settings, IMusicPlayerService player, IImageService imageService)
+        public LibraryViewModel(MusicLibrary library,
+            ILibraryScanner scanner,
+            ILibraryCacheService libraryCache,
+            UserSettings settings,
+            IMusicPlayerService player,
+            IImageService imageService,
+            IStatusService statusService,
+            ILogger<LibraryViewModel> logger)
         {
             _library = library;
             _scanner = scanner;
             _imageService = imageService;
             _LibraryCache = libraryCache;
             _player = player;
-            IsLoading = false;
+            _statusService = statusService;
+            _logger = logger;
 
             _scanProgress = new Progress<ScanProgress>(progress =>
             {
-                LoadingProgressValue = progress.TotalFiles > 0
-                    ? (double)progress.FilesProcessed / progress.TotalFiles * 100d
-                    : 0d;
+                var maximun = Math.Max(1, progress.TotalFiles);
+                var phase = progress.State switch
+                {
+                    ScanState.Fingerprinting => "Fingerprinting",
+                    ScanState.Scanning => "Scanning",
+                    ScanState.Saving => "Saving",
+                    _ => "Processing"
+                };
+                var detail = string.IsNullOrWhiteSpace(progress.CurrentFile)
+                ? phase
+                : $"{phase}: {Path.GetFileName(progress.CurrentFile)}";
+
+                _statusService.ReportProgress(
+                    progress.FilesProcessed,
+                    maximun,
+                    false,
+                    detail,
+                    StatusbarSlotKind.Left
+                    );
             });
 
             _isInitializing = true;
@@ -159,23 +182,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private async Task RescanAllDirectories()
         {
-            IsLoading = true;
-            IsLoadingIndeterminate = false;
-            LoadingProgressValue = 0;
-
-            try
+            await RunWithStatusAsync("Rescanning Library...", async () =>
             {
                 await _scanner.ScanAllDirectories(_scanProgress, null);
                 _LibraryCache.InvalidateCache();
                 _imageService.ClearCache();
                 await LoadEntriesAsync();
-            }
-            finally
-            {
-                IsLoading = false;
-                IsLoadingIndeterminate = true;
-                LoadingProgressValue = 0;
-            }
+            }, "Library Rescan Complete");
         }
 
         [RelayCommand]
@@ -186,31 +199,19 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 Title = "Select Music Folder",
                 Multiselect = false
             };
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() != true) return;
+
+            var selectedPath = dialog.FolderName;
+            if (selectedPath is null) return;
+
+            _scanner.AddDirectory(selectedPath, true);
+
+            await RunWithStatusAsync("Scanning added folder...", async () =>
             {
-                var selectedPath = dialog.FolderName;
-                if (selectedPath is not null)
-                {
-                    _scanner.AddDirectory(selectedPath, true);
-                }
-
-                IsLoading = true;
-                IsLoadingIndeterminate = false;
-                LoadingProgressValue = 0;
-
-                try
-                {
-                    await _scanner.ScanAllDirectories(_scanProgress, null);
-                    _LibraryCache.InvalidateCache();
-                    await LoadEntriesAsync();
-                }
-                finally
-                {
-                    IsLoading = false;
-                    IsLoadingIndeterminate = true;
-                    LoadingProgressValue = 0;
-                }
-            }
+                await _scanner.ScanDirectory(selectedPath, _scanProgress, null);
+                _LibraryCache.InvalidateCache();
+                await LoadEntriesAsync();
+            }, "Folder folder added");
         }
 
         [RelayCommand]
@@ -221,36 +222,51 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 Title = "Select Music Files",
                 Multiselect = true,
             };
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog() != true) return;
+
+            var selectedFiles = dialog.FileNames;
+            if (selectedFiles is null || selectedFiles.Length == 0) return;
+
+            await RunWithStatusAsync("Scanning files...", async () =>
             {
-                var selectedFiles = dialog.FileNames;
-                if (selectedFiles is null || selectedFiles.Length == 0) return;
-
-                IsLoading = true;
-                IsLoadingIndeterminate = false;
-                LoadingProgressValue = 0;
-
-                try
-                {
-                    await _scanner.ScanFiles(selectedFiles, _scanProgress, null);
-                    _LibraryCache.InvalidateCache();
-                    await LoadEntriesAsync();
-                }
-                finally
-                {
-                    IsLoading = false;
-                    IsLoadingIndeterminate = true;
-                    LoadingProgressValue = 0;
-                }
-            }
+                await _scanner.ScanFiles(selectedFiles, _scanProgress, null);
+                _LibraryCache.InvalidateCache();
+                await LoadEntriesAsync();
+            }, "Files added");
 
         }
 
         [RelayCommand]
-        private void Refresh()
+        private async Task Refresh()
         {
-            _LibraryCache.InvalidateCache();
-            _ = LoadEntriesAsync();
+            await RunWithStatusAsync("Reloading library", async () =>
+            {
+                _LibraryCache.InvalidateCache();
+                await LoadEntriesAsync();
+            });
+        }
+
+        private async Task RunWithStatusAsync(string title, Func<Task> work, string? successMessage = null)
+        {
+            _statusService.PublishState(StatusbarSlotKind.Left, title);
+
+            try
+            {
+                await work();
+
+                if (!string.IsNullOrWhiteSpace(successMessage))
+                {
+                    _statusService.PublishState(StatusbarSlotKind.Left, successMessage);
+                    await Task.Delay(2000);
+
+                    _statusService.ClearSlot(StatusbarSlotKind.Left);
+                }
+            }
+            finally
+            {
+                _statusService.ClearSlot(StatusbarSlotKind.Left);
+                _statusService.ClearProgress();
+            }
         }
 
         public void ApplySearchFilter(string? query)
@@ -385,9 +401,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             var listBySnapshot = ListBy;
             var ascendingSnapshot = Ascending;
 
-            IsLoading = true;
-            IsLoadingIndeterminate = true;
-
             try
             {
                 DateTime timeStart = DateTime.Now;
@@ -399,13 +412,11 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 ApplyGrouping(filteredEntries, ascendingSnapshot);
 
                 DateTime timeEnd = DateTime.Now;
-                Debug.WriteLine($"Loaded {loadedEntries.Count} entries in {(timeEnd - timeStart).TotalSeconds:F2} seconds");
+                _logger.LogInformation("Loaded {Count} entries in {Seconds:F2} seconds for ListBy={ListBy}, Ascending={Ascending}", loadedEntries.Count, (timeEnd - timeStart).TotalSeconds, listBySnapshot, ascendingSnapshot);
             }
-            finally
+            catch (Exception ex)
             {
-                IsLoading = false;
-                IsLoadingIndeterminate = true;
-                LoadingProgressValue = 0;
+                _logger.LogError(ex, "Error loading library entries for ListBy={ListBy}, Ascending={Ascending}", listBySnapshot, ascendingSnapshot);
             }
         }
 
@@ -558,7 +569,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                             ImageVariant.Medium,
                             180,
                             ct).ConfigureAwait(false);
-                        
+
                         if (bmp is not null && !ct.IsCancellationRequested)
                         {
                             album.CoverImage = bmp;
