@@ -34,8 +34,6 @@
                 >
                 <tb:TaskbarIcon.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="Open MusicWrap" Icon="{ex:Icon Glyph=E8A7}" Command="{Binding OpenMainWindowCommand}"/>
-                        <Separator/>
                         <MenuItem Header="{Binding PlayPauseStatus}" Command="{Binding TogglePlayPauseCommand}">
                             <MenuItem.Icon>
                                 <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="{Binding PlayPauseIcon}"/>
@@ -47,7 +45,8 @@
                         <MenuItem Header="Shuffle" Icon="{ex:Icon Glyph=E8B1}" Command="{Binding ShuffleCommand}"/>
                         <MenuItem Header="More information" Icon="{ex:Icon Glyph=E946}" Command="{Binding InfoCommand}"/>
                         <Separator/>
-                        <MenuItem Header="Exit" Icon="{ex:Icon Glyph=E711}" Command="{Binding ExitAppCommand}"/>
+                        <MenuItem Header="Open MusicWrap" Icon="{ex:Icon Glyph=E8A7}" Command="{Binding OpenMainWindowCommand}"/>
+                        <MenuItem Header="Exit MusicWrap" Icon="{ex:Icon Glyph=E711}" Command="{Binding ExitAppCommand}"/>
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>
             </tb:TaskbarIcon>

@@ -13,6 +13,7 @@ namespace MusicWrap.UI.Controls
     {
         private readonly PlayerViewModel playerViewModel;
         private bool isDragging;
+        private bool isSubscribed;
 
         private const double MaxThickness = 12d;
         private const double InnerPadding = 2d;
@@ -23,13 +24,34 @@ namespace MusicWrap.UI.Controls
             InitializeComponent();
 
             Loaded += VolumeControl_Loaded;
+            Unloaded += VolumeControl_Unloaded;
+
             playerViewModel = App.Services.GetRequiredService<PlayerViewModel>();
             DataContext = playerViewModel;
         }
 
         private void VolumeControl_Loaded(object sender, RoutedEventArgs e)
         {
-            playerViewModel.PropertyChanged += PlayerViewModel_PropertyChanged;
+            if (!isSubscribed)
+            {
+                playerViewModel.PropertyChanged += PlayerViewModel_PropertyChanged;
+                isSubscribed = true;
+            }
+            ApplyLayout();
+            UpdateVolumeVisual(playerViewModel.Volume);
+        }
+
+        private void VolumeControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (isSubscribed)
+            {
+                playerViewModel.PropertyChanged -= PlayerViewModel_PropertyChanged;
+                Loaded -= VolumeControl_Loaded;
+                Unloaded -= VolumeControl_Unloaded;
+                isSubscribed = false;
+            }
+            isDragging = false;
+            HideVolumePopup();
         }
 
         public string DominantColorHex

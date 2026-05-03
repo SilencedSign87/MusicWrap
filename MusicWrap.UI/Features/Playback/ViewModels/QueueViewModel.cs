@@ -23,11 +23,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         [ObservableProperty]
         private ObservableCollection<QueueData> queueDataList = [];
 
-        // Lookups
-        private Dictionary<int, Track> _trackById = [];
-        private Dictionary<int, string> _albumTitleById = [];
-        private Dictionary<int, CoverAsset> _coverById = [];
-        private Dictionary<int, string> _artistNameById = [];
         private Dictionary<int, BitmapImage?> _albumArtByCoverId = [];
 
         private const int AlbumArtCacheLimit = 256;
@@ -36,17 +31,16 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         // Services
         private IMusicPlayerService _player = null!;
-        private MusicLibrary _library = null!;
+        private ILibraryCacheService _libraryCache = null!;
         private readonly IImageService _imageService;
 
-        public QueueViewModel(IMusicPlayerService player, MusicLibrary library, IImageService imageService)
+        public QueueViewModel(IMusicPlayerService player, ILibraryCacheService libraryCache, IImageService imageService)
         {
-            _library = library;
+            _libraryCache = libraryCache;
             _player = player;
             _imageService = imageService;
 
             QueueDataList = [];
-            RefreshLookups();
 
             var currentQueue = _player.GetQueue();
             LoadQueueData(currentQueue);
@@ -56,42 +50,29 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         private void _player_QueueChanged(object? sender, int[] e)
         {
-            RefreshLookups();
             LoadQueueData(e);
         }
 
         private void LoadQueueData(int[] currentQueue)
         {
-            var validQueue = currentQueue.Where(id => _trackById.ContainsKey(id)).ToArray();
-            QueueTrackRows.Clear();
+            var validQueue = currentQueue.Where(id => _libraryCache.GetTrackById(id) is not null).ToArray();
 
-            while (QueueDataList.Count > validQueue.Length)
+            var rowItems = _libraryCache.TrackIdsToTrackRowItems(validQueue);
+            QueueTrackRows = new ObservableCollection<TrackRowItem>(rowItems);
+
+            while (QueueDataList.Count > rowItems.Count)
                 QueueDataList.RemoveAt(QueueDataList.Count - 1);
 
-            for (int i = 0; i < validQueue.Length; i++)
+            for (int i = 0; i < rowItems.Count; i++)
             {
-                var trackId = validQueue[i];
-                var track = _trackById[trackId];
-                var coverPath = track.CoverId != 0 && _coverById.TryGetValue(track.CoverId, out var cover)
-                    ? cover.FileName
-                    : null;
-
-                QueueTrackRows.Add(new TrackRowItem
+                var rowItem = rowItems[i];
+                var track = _libraryCache.GetTrackById(rowItem.Id);
+                if (track is null)
                 {
-                    Id = trackId,
-                    ListIndex = i + 1,
-                    DiskNumber = track.Disk,
-                    TrackNumber = track.TrackNumber,
-                    Title = track.Title,
-                    ArtistNames = BuildArtistString(track.ArtistIds),
-                    AlbumName = _albumTitleById.TryGetValue(track.AlbumId, out var albumTitle) ? albumTitle : "Unknown Album",
-                    DurationText = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),
-                    CoverAssetPath = coverPath
-                });
+                    continue;
+                }
 
-                // Build legacy QueueData for compatibility
                 QueueData row;
-
                 if (i < QueueDataList.Count)
                 {
                     row = QueueDataList[i];
@@ -102,18 +83,19 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                     QueueDataList.Add(row);
                 }
 
-                // recalculate metadata
-                if (row.TrackId != trackId)
+                if (row.TrackId != rowItem.Id)
                 {
-                    row.TrackId = trackId;
-                    row.Title = track.Title;
-                    row.ArtistString = BuildArtistString(track.ArtistIds);
-                    row.DurationString = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss");
-                    row.AlbumArt = GetAlbumArt(track.CoverId);
+                    row.TrackId = rowItem.Id;
+                    row.Title = rowItem.Title;
+                    row.ArtistString = rowItem.ArtistNames;
+                    row.DurationString = rowItem.DurationText;
+                    row.AlbumArt = GetAlbumArt(track.CoverId, rowItem.CoverAssetPath);
                 }
-                row.IsPlaying = trackId == _player.CurrentTrackId;
+
+                row.IsPlaying = rowItem.Id == _player.CurrentTrackId;
             }
         }
+
         [RelayCommand]
         public void RemoveSelectedTracksFromQueue(List<int> trackIDs)
         {
@@ -252,12 +234,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             _player.SetQueue(currentQueue, true);
         }
 
-        private string BuildArtistString(int[] artistIds)
-        {
-            var names = artistIds.Select(id => _artistNameById.TryGetValue(id, out var name) ? name : "Unknown Artist");
-            return string.Join(", ", names);
-        }
-        private BitmapImage? GetAlbumArt(int coverId)
+        private BitmapImage? GetAlbumArt(int coverId, string? coverPath)
         {
             if (coverId == 0) return _imageService.GetDefaultImage(42);
 
@@ -267,13 +244,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                 return cachedImage;
             }
 
-            string? path = null;
-            if (_coverById.TryGetValue(coverId, out var cover))
-            {
-                path = cover.FileName;
-            }
-
-            var img = _imageService.LoadForSize(path, 42);
+            var img = _imageService.LoadForSize(coverPath, 42);
             _albumArtByCoverId[coverId] = img;
             TouchAlbumArt(coverId);
             TrimAlbumArtCache();
@@ -308,20 +279,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                 _albumArtByCoverId.Remove(coverId);
             }
         }
-
-        private void RefreshLookups()
-        {
-            var tracks = _library.Tracks.ToArray();
-            var albums = _library.Albums.ToArray();
-            var covers = _library.CoverAssets.ToArray();
-            var artists = _library.Artists.ToArray();
-
-            _trackById = tracks.ToDictionary(t => t.Id);
-            _albumTitleById = albums.ToDictionary(a => a.Id, a => a.Title);
-            _coverById = covers.ToDictionary(c => c.Id);
-            _artistNameById = artists.ToDictionary(a => a.Id, a => a.Name);
-        }
-
     }
 
     public partial class QueueData : ObservableObject

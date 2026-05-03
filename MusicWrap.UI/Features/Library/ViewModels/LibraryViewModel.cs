@@ -94,9 +94,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     ScanState.Saving => "Saving",
                     _ => "Processing"
                 };
+
                 var detail = string.IsNullOrWhiteSpace(progress.CurrentFile)
                 ? phase
-                : $"{phase}: {Path.GetFileName(progress.CurrentFile)}";
+                : $"{phase} ({progress.FilesProcessed}/{progress.TotalFiles})";
 
                 _statusService.ReportProgress(
                     progress.FilesProcessed,

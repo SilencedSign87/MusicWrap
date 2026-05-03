@@ -160,9 +160,11 @@ namespace MusicWrap.Core.Services.Playback
         private const double PositionTimerIdleIntervalMs = 500;
 
         // Waveform
-
+        private const int MaxWaveformCacheEntries = 256;
         private const int WaveformDataPoints = 2000;
         private readonly Dictionary<int, float[]> _waveformCache = [];
+        private readonly Dictionary<int, LinkedListNode<int>> _waveformCacheNodes = [];
+        private readonly LinkedList<int> _waveformCacheLru = [];
         private readonly object _waveformCacheLock = new object();
         private int _waveformVersion = 0;
 
@@ -720,30 +722,30 @@ namespace MusicWrap.Core.Services.Playback
                         Stop();
                         break;
                     case StartupBehavior.ResumePlayback:
-                    {
-                        SetSilentIndex(index);
-                        LoadIndex(index, autoplay: false);
-
-                        var position = Math.Clamp(snapshot.PositionInSeconds, 0, Duration);
-                        if (position > 0)
                         {
-                            Seek(position);
-                        }
+                            SetSilentIndex(index);
+                            LoadIndex(index, autoplay: false);
 
-                        switch (snapshot.PlaybackState)
-                        {
-                            case 1:
-                                Play();
-                                break;
-                            case 2:
-                                Pause();
-                                break;
-                            default:
-                                Stop();
-                                break;
+                            var position = Math.Clamp(snapshot.PositionInSeconds, 0, Duration);
+                            if (position > 0)
+                            {
+                                Seek(position);
+                            }
+
+                            switch (snapshot.PlaybackState)
+                            {
+                                case 1:
+                                    Play();
+                                    break;
+                                case 2:
+                                    Pause();
+                                    break;
+                                default:
+                                    Stop();
+                                    break;
+                            }
+                            break;
                         }
-                        break;
-                    }
                     default:
                         Stop();
                         break;
@@ -815,17 +817,6 @@ namespace MusicWrap.Core.Services.Playback
 
             var saveCoordinator = _serviceProvider.GetService(typeof(ISaveCoordinator)) as ISaveCoordinator;
             saveCoordinator?.Enqueue(SaveKind.Playback);
-        }
-
-        public void Dispose()
-        {
-            _positionTimer.Elapsed -= PositionTimerOnElapsed;
-            _positionTimer.Stop();
-            _positionTimer.Dispose();
-
-            Stop();
-            FreeStream(_mixerStream);
-            _audioEngine.Dispose();
         }
 
         private Track? GetCurrentTrack()
@@ -1209,14 +1200,56 @@ namespace MusicWrap.Core.Services.Playback
         {
             lock (_waveformCacheLock)
             {
-                return _waveformCache.TryGetValue(trackId, out data);
+                if (!_waveformCache.TryGetValue(trackId, out data))
+                {
+                    return false;
+                }
+                TouchWaveformCacheEntry(trackId);
+                return true;
             }
         }
         private void CacheWaveform(int trackId, float[] data)
         {
+            if (trackId <= 0 || data.Length == 0) return;
+
             lock (_waveformCacheLock)
             {
                 _waveformCache[trackId] = data;
+                if (!_waveformCacheNodes.ContainsKey(trackId))
+                {
+                    var node = _waveformCacheLru.AddLast(trackId);
+                    _waveformCacheNodes[trackId] = node;
+                }
+                else
+                {
+                    TouchWaveformCacheEntry(trackId);
+                }
+
+                while (_waveformCache.Count > MaxWaveformCacheEntries)
+                {
+                    var oldest = _waveformCacheLru.First;
+                    if (oldest is null) break;
+
+                    int evictedTrackId = oldest.Value;
+                    _waveformCacheLru.RemoveFirst();
+                    _waveformCacheNodes.Remove(evictedTrackId);
+                    _waveformCache.Remove(evictedTrackId);
+                }
+            }
+        }
+        private void TouchWaveformCacheEntry(int trackId)
+        {
+            if (!_waveformCacheNodes.TryGetValue(trackId, out var node))
+            {
+                node = _waveformCacheLru.AddLast(trackId);
+                _waveformCacheNodes[trackId] = node;
+                return;
+            }
+
+            if (!ReferenceEquals(_waveformCacheLru.Last, node))
+            {
+                _waveformCacheLru.Remove(node);
+                _waveformCacheLru.AddLast(node);
             }
         }
         private void PublishWaveformIfCurrent(int trackId, int requestVersion, float[] data)
@@ -1245,6 +1278,24 @@ namespace MusicWrap.Core.Services.Playback
         {
             var snapshot = CreateQueueSnapshot();
             _dispatcher.Invoke(() => QueueChanged?.Invoke(this, snapshot));
+        }
+        public void Dispose()
+        {
+            _positionTimer.Elapsed -= PositionTimerOnElapsed;
+            _positionTimer.Stop();
+            _positionTimer.Dispose();
+
+            Stop();
+            FreeStream(_mixerStream);
+
+            lock (_waveformCacheLock)
+            {
+                _waveformCache.Clear();
+                _waveformCacheNodes.Clear();
+                _waveformCacheLru.Clear();
+            }
+
+            _audioEngine.Dispose();
         }
     }
 

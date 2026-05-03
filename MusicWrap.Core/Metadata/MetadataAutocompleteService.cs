@@ -12,30 +12,45 @@ namespace MusicWrap.Core.Metadata
     /// </summary>
     public class MetadataAutocompleteService : IMetadataAutocompleteService
     {
-        private readonly ILibraryRepository _libraryRepository;
+        private static readonly TimeSpan CacheRefreshInterval = TimeSpan.FromSeconds(30);
+        private readonly MusicLibrary _library;
+        private readonly object _cacheLock = new();
 
-        public MetadataAutocompleteService(ILibraryRepository libraryRepository)
+        private readonly Dictionary<MetadataType, IReadOnlyList<string>> _cache = [];
+        private DateTime _lastRefreshUtc = DateTime.MinValue;
+        private int _lastArtistsCount;
+        private int _lastAlbumsCount;
+        private int _lastGenresCount;
+
+        public MetadataAutocompleteService(MusicLibrary library)
         {
-            _libraryRepository = libraryRepository ?? throw new ArgumentNullException(nameof(libraryRepository));
+            _library = library ?? throw new ArgumentNullException(nameof(library));
         }
 
         public IReadOnlyList<string> GetSuggestions(MetadataType metadataType, string searchTerm, int limit = 20)
         {
-            if (string.IsNullOrWhiteSpace(searchTerm))
-                return GetAllValues(metadataType).Take(limit).ToList();
+            if (limit <= 0)
+            {
+                return Array.Empty<string>();
+            }
 
             var allValues = GetAllValues(metadataType);
-            var searchLower = searchTerm.ToLowerInvariant();
+            var term = searchTerm?.Trim() ?? string.Empty;
 
-            // Sort by relevance:
-            // 1. Exact match (case-insensitive)
-            // 2. Starts with search term
-            // 3. Contains search term (substring)
+            if (string.IsNullOrWhiteSpace(term))
+            {
+                return allValues.Take(limit).ToList();
+            }
+
+            // Ranking:
+            // 0: exact match
+            // 1: starts with term
+            // 2: contains term
             var suggestions = allValues
-                .OrderByDescending(v => v.Equals(searchTerm, StringComparison.OrdinalIgnoreCase))
-                .ThenByDescending(v => v.StartsWith(searchLower, StringComparison.OrdinalIgnoreCase))
-                .ThenBy(v => v.IndexOf(searchLower, StringComparison.OrdinalIgnoreCase))
-                .Where(v => v.Contains(searchLower, StringComparison.OrdinalIgnoreCase))
+                .Where(v => v.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(v => GetRank(v, term))
+                .ThenBy(v => v.IndexOf(term, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(v => v, StringComparer.OrdinalIgnoreCase)
                 .Take(limit)
                 .ToList();
 
@@ -44,44 +59,89 @@ namespace MusicWrap.Core.Metadata
 
         public IReadOnlyList<string> GetAllValues(MetadataType metadataType)
         {
-            try
+            EnsureCacheFresh();
+
+            lock (_cacheLock)
             {
-                var library = _libraryRepository.Load();
-
-                return metadataType switch
-                {
-                    MetadataType.ArtistName =>
-                        library.Artists
-                            .Where(a => !string.IsNullOrWhiteSpace(a.Name))
-                            .Select(a => a.Name)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(n => n)
-                            .ToList(),
-
-                    MetadataType.AlbumTitle =>
-                        library.Albums
-                            .Where(a => !string.IsNullOrWhiteSpace(a.Title))
-                            .Select(a => a.Title)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(n => n)
-                            .ToList(),
-
-                    MetadataType.GenreName =>
-                        library.Genres
-                            .Where(g => !string.IsNullOrWhiteSpace(g.Name))
-                            .Select(g => g.Name)
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(n => n)
-                            .ToList(),
-
-                    _ => []
-                };
-            }
-            catch
-            {
-                // If library loading fails, return empty list
-                return [];
+                return _cache.TryGetValue(metadataType, out var values)
+                    ? values
+                    : Array.Empty<string>();
             }
         }
+
+        private static int GetRank(string candidate, string term)
+        {
+            if (candidate.Equals(term, StringComparison.OrdinalIgnoreCase))
+            {
+                return 0;
+            }
+
+            if (candidate.StartsWith(term, StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            return 2;
+        }
+
+        private void EnsureCacheFresh()
+        {
+            lock (_cacheLock)
+            {
+                if (!ShouldRefreshCacheUnsafe())
+                {
+                    return;
+                }
+
+                RebuildCacheUnsafe();
+            }
+        }
+
+        private bool ShouldRefreshCacheUnsafe()
+        {
+            if (_cache.Count == 0)
+            {
+                return true;
+            }
+
+            var now = DateTime.UtcNow;
+            if ((now - _lastRefreshUtc) >= CacheRefreshInterval)
+            {
+                return true;
+            }
+
+            // Fast shape checks for library mutations that change counts.
+            if (_library.Artists.Count != _lastArtistsCount ||
+                _library.Albums.Count != _lastAlbumsCount ||
+                _library.Genres.Count != _lastGenresCount)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void RebuildCacheUnsafe()
+        {
+            _cache[MetadataType.ArtistName] = BuildValues(_library.Artists.Select(a => a.Name));
+            _cache[MetadataType.AlbumTitle] = BuildValues(_library.Albums.Select(a => a.Title));
+            _cache[MetadataType.GenreName] = BuildValues(_library.Genres.Select(g => g.Name));
+
+            _lastArtistsCount = _library.Artists.Count;
+            _lastAlbumsCount = _library.Albums.Count;
+            _lastGenresCount = _library.Genres.Count;
+            _lastRefreshUtc = DateTime.UtcNow;
+        }
+
+        private static IReadOnlyList<string> BuildValues(IEnumerable<string?> values)
+        {
+            return values
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v => v!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(v => v, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
     }
 }

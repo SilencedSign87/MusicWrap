@@ -153,8 +153,8 @@
                         <TabItem Style="{StaticResource CustomTabItem}" TabIndex="2">
                             <TabItem.Header>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xeb51;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                                    <TextBlock Text="Favorites" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
+                                    <TextBlock Text="&#xE704;" FontFamily="Segoe Fluent Icons" FontSize="16" />
+                                    <TextBlock Text="Radio" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </TabItem.Header>
                         </TabItem>

@@ -16,6 +16,7 @@ namespace MusicWrap.UI.Services
     public interface ITrayService
     {
         void Initialize();
+        void SetEnabled(bool enabled);
         void ShowFlyout();
         void HideFlyout();
         void ToggleFlyout();
@@ -25,18 +26,37 @@ namespace MusicWrap.UI.Services
         private TaskbarIcon? _trayIcon;
         private Icon? _icon;
         private TrayFlyoutWindow? _flyout;
+        private bool _isSubscribed;
 
         public void Initialize()
         {
-            if (_trayIcon is not null)
+            SetEnabled(true);
+        }
+
+        public void SetEnabled(bool enabled)
+        {
+            if (!enabled)
             {
+                if (_trayIcon is not null)
+                {
+                    _trayIcon.TrayLeftMouseUp -= _trayIcon_TrayLeftMouseUp;
+                    _trayIcon.DataContext = null;
+                    _trayIcon.Visibility = Visibility.Collapsed;
+                    _isSubscribed = false;
+                }
+
                 return;
             }
 
-            _trayIcon = (TaskbarIcon)App.Current.Resources["TrayIcon"];
+            _trayIcon ??= (TaskbarIcon)App.Current.Resources["TrayIcon"];
             _trayIcon.DataContext = App.Services.GetRequiredService<TaskbarIconViewModel>();
+            _trayIcon.Visibility = Visibility.Visible;
 
-            _trayIcon.TrayLeftMouseUp += _trayIcon_TrayLeftMouseUp;
+            if (!_isSubscribed)
+            {
+                _trayIcon.TrayLeftMouseUp += _trayIcon_TrayLeftMouseUp;
+                _isSubscribed = true;
+            }
 
         }
 
@@ -76,7 +96,14 @@ namespace MusicWrap.UI.Services
 
             if (_trayIcon != null)
             {
-                _trayIcon.TrayLeftMouseUp -= _trayIcon_TrayLeftMouseUp;
+                if (_isSubscribed)
+                {
+                    _trayIcon.TrayLeftMouseUp -= _trayIcon_TrayLeftMouseUp;
+                    _isSubscribed = false;
+                }
+
+                _trayIcon.Visibility = Visibility.Collapsed;
+                _trayIcon.DataContext = null;
                 _trayIcon.Dispose();
                 _trayIcon = null;
             }

@@ -81,7 +81,11 @@
             <!--Volume-->
             <Grid Grid.Column="2">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <controls:DJCompactControl Height="40" />
+                    <TextBlock VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11">
+                        <Run Text="{Binding FormattedPosition}"/>
+                        <Run Text="/"/>
+                        <Run Text="{Binding FormattedDuration}"/>
+                    </TextBlock>
                     <Button x:Name="RepeadButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
                     </Button>

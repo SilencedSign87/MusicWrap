@@ -34,9 +34,9 @@ namespace MusicWrap.UI.Services
         private const int LargeThreshold = 360;
         private const int MaxDecodeSize = 360;
 
-        private const int SmallCacheLimit = 50;
-        private const int MediumCacheLimit = 20;
-        private const int LargeCacheLimit = 5;
+        private const int SmallCacheLimit = 30;
+        private const int MediumCacheLimit = 30;
+        private const int LargeCacheLimit = 2;
 
         private static readonly object _cacheLock = new();
 
