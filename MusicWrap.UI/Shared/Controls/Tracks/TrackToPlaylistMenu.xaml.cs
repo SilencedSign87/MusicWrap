@@ -66,15 +66,6 @@ namespace MusicWrap.UI.Controls.Models
 
         private void ReloadPlaylists()
         {
-            //PlaylistItems.Clear();
-
-            //var trackIds = TrackIds?.ToArray() ?? [];
-            //var items = _playlistService.GetMenuItems(trackIds);
-
-            //foreach (var item in items)
-            //{
-            //    PlaylistItems.Add(item);
-            //}}
             while (Items.Count > 2)
             {
                 Items.RemoveAt(2);
@@ -121,7 +112,7 @@ namespace MusicWrap.UI.Controls.Models
 
             if (_dialogPlaylist is null)
             {
-                _dialogPlaylist = new NewPlaylistWindow();
+                _dialogPlaylist = new NewPlaylistWindow(TrackIds);
                 bool? result = WindowHelper.LauchFromParent(mainwindow, _dialogPlaylist, true);
                 if (result.HasValue)
                 {

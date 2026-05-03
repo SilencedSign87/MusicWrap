@@ -7,7 +7,7 @@ namespace MusicWrap.Core.Services.Playlists
 {
     public interface IPlaylistService
     {
-        void CreatePlaylist(string name);
+        void CreatePlaylist(string name, IEnumerable<int>? trackIds = null);
         List<PlaylistMenuItemModel> GetMenuItems(IEnumerable<int> trackIds);
         void SetTracksInPlaylist(IEnumerable<int> trackIds, int playlistId, bool shouldBeInPlaylist);
         event EventHandler? PlaylistsChanged;
@@ -95,17 +95,25 @@ namespace MusicWrap.Core.Services.Playlists
             }
         }
 
-        public void CreatePlaylist(string name)
+        public void CreatePlaylist(string name, IEnumerable<int>? trackIds = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return;
 
-            _playlists.Playlists.Add(new Playlist
+            var playlist = new Playlist
             {
                 Id = _playlists.GenerateNextPlaylistId(),
                 Name = name,
                 CreatedAtUtcTicks = DateTime.UtcNow.Ticks,
-            });
+            };
+
+            if (trackIds != null)
+            {
+                var now = DateTime.UtcNow.Ticks;
+                playlist.Items = trackIds.Distinct().Select(id => new PlaylistItem { TrackId = id, AddedAtUtcTicks = now }).ToList();
+            }
+
+            _playlists.Playlists.Add(playlist);
         }
     }
 

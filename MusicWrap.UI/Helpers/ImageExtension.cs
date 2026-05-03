@@ -23,7 +23,10 @@ namespace MusicWrap.UI.Helpers
             bitmap.BeginInit();
             bitmap.UriSource = uri;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.DecodePixelHeight = (int)Height;
+            bitmap.DecodePixelWidth = (int)Width;
             bitmap.EndInit();
+            bitmap.Freeze();
 
             return new Image
             {

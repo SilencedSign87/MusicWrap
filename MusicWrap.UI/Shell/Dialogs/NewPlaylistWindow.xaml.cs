@@ -23,9 +23,11 @@ namespace MusicWrap.UI.Shell.Dialogs
     {
         private readonly IPlaylistService _playlistService;
         private readonly PlaylistData _playlist;
-        public NewPlaylistWindow()
+        private readonly IEnumerable<int> _trackIds;
+        public NewPlaylistWindow(IEnumerable<int>? trackIds = null)
         {
             InitializeComponent();
+            _trackIds = trackIds ?? Array.Empty<int>();
             _playlistService = App.Services.GetRequiredService<IPlaylistService>();
             _playlist = App.Services.GetRequiredService<PlaylistData>();
         }
@@ -60,14 +62,8 @@ namespace MusicWrap.UI.Shell.Dialogs
 
             }else
             {
-                _playlistService.CreatePlaylist(playlistName);
-                MessageBox.Show(
-                     $"Playlist '{playlistName}' created successfully.",
-                     "Playlist Created",
-                     MessageBoxButton.OK,
-                     MessageBoxImage.Information
-                    );
-
+                _playlistService.CreatePlaylist(playlistName, _trackIds);
+                
                 Close();
 
             }

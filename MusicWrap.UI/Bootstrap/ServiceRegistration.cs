@@ -59,28 +59,30 @@ public static class ServiceRegistration
 
         // Services
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
-        services.AddSingleton<IImageService, ImageService>();
+        services.AddTransient<IImageService, ImageService>();
         services.AddSingleton<TracksContextMenuService>();
-        services.AddSingleton<ILibraryScanner, LibraryScanner>();
-        services.AddSingleton<ILibraryIndexer, LibraryIndexer>();
+        services.AddTransient<ILibraryScanner, LibraryScanner>();
+        services.AddTransient<ILibraryIndexer, LibraryIndexer>();
         services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
         services.AddSingleton<ILibraryCacheStore, LibraryCacheStoreAdapter>();
         services.AddSingleton<ISaveOrchestration, SaveOrchestration>();
         services.AddSingleton<ISaveStateProvider>(sp => (ISaveStateProvider)sp.GetRequiredService<ISaveOrchestration>());
         services.AddSingleton<ISaveCoordinator, SaveScheduler>();
         services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
-        services.AddSingleton<IEditMetadataService, EditMetadataService>();
+        services.AddTransient<IEditMetadataService, EditMetadataService>();
 
         // Providers
         services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
-        services.AddSingleton<IYoutubeResolutionService, YoutubeResolutionService>();
-        services.AddSingleton<IYoutubeStagingService, YoutubeStagingService>();
-        services.AddSingleton<IYoutubeSearchService, YoutubeSearchService>();
-        services.AddSingleton<IYoutubeLibraryIndexingService, YoutubeLibraryIndexingService>();
-        services.AddSingleton<IYoutubeIndexingWorkflowService, YoutubeIndexingWorkflowService>();
+        
+        services.AddTransient<IYoutubeResolutionService, YoutubeResolutionService>();
+        services.AddTransient<IYoutubeStagingService, YoutubeStagingService>();
+        services.AddTransient<IYoutubeSearchService, YoutubeSearchService>();
+        services.AddTransient<IYoutubeLibraryIndexingService, YoutubeLibraryIndexingService>();
+        services.AddTransient<IYoutubeIndexingWorkflowService, YoutubeIndexingWorkflowService>();
+
         services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
         services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
-        services.AddSingleton<IPlaylistService, PlaylistService>();
+        services.AddTransient<IPlaylistService, PlaylistService>();
         services.AddSingleton<IStatusService, StatusService>();
 
         //Player
@@ -101,9 +103,9 @@ public static class ServiceRegistration
         services.AddSingleton<DeviceViewModel>();
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<CommandPaletteViewModel>();
-        services.AddSingleton<TaskbarIconViewModel>();
+        services.AddTransient<TaskbarIconViewModel>();
         services.AddTransient<MetadataEditorViewModel>();
-        services.AddSingleton<DJControlViewModel>();
+        services.AddTransient<DJControlViewModel>();
         services.AddSingleton<StatusbarViewModel>();
 
         // UI
