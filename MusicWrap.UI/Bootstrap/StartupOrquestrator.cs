@@ -112,16 +112,8 @@ public static class StartupOrquestrator
             var libraryCache = serviceProvider.GetRequiredService<ILibraryCacheService>();
             await libraryCache.InitializeAsync(listBy, ascending);
 
-            // Pre-resolve important VMs / services and restore player state
+            // Pre-resolve important VMs / services
             serviceProvider.GetService<PlayerViewModel>();
-            try
-            {
-                player.LoadInitialState(userSettings);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error loading player initial state");
-            }
 
             windowToShow = (int)userSettings.LastWindowMode;
 

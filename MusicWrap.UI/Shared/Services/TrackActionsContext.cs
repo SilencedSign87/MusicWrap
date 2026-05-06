@@ -74,8 +74,11 @@ namespace MusicWrap.UI.Services
                 return;
             }
 
-            var queue = _musicPlayerService.GetQueue();
-            if (queue.Length == 0) return;
+            var playbackOrder = _musicPlayerService.GetPlaybackOrder();
+            if (playbackOrder.Length == 0) return;
+
+            var baseQueue = _musicPlayerService.GetQueue();
+            if (baseQueue.Length == 0) return;
 
             var selectedCounts = new Dictionary<int, int>();
             foreach (var id in selectedTrackIds)
@@ -89,9 +92,9 @@ namespace MusicWrap.UI.Services
             var selectedInQueueOrder = new List<int>(selectedTrackIds.Count);
             int firstSelectedIndex = -1;
 
-            for (int i = 0; i < queue.Length; i++)
+            for (int i = 0; i < playbackOrder.Length; i++)
             {
-                var id = queue[i];
+                var id = baseQueue[playbackOrder[i]];
                 if (!selectedCounts.TryGetValue(id, out var count) || count == 0)
                     continue;
 
@@ -105,7 +108,9 @@ namespace MusicWrap.UI.Services
 
             if (selectedInQueueOrder.Count == 0) return;
 
-            int anchorTrackId = firstSelectedIndex > 0 ? queue[firstSelectedIndex - 1] : int.MinValue;
+            int anchorTrackId = firstSelectedIndex > 0
+                ? baseQueue[playbackOrder[firstSelectedIndex - 1]]
+                : int.MinValue;
 
             var removeCounts = new Dictionary<int, int>();
             foreach (var id in selectedInQueueOrder)
@@ -116,8 +121,8 @@ namespace MusicWrap.UI.Services
                     removeCounts[id] = 1;
             }
 
-            var filtered = new List<int>(queue.Length - selectedInQueueOrder.Count);
-            foreach (var id in queue)
+            var filtered = new List<int>(baseQueue.Length - selectedInQueueOrder.Count);
+            foreach (var id in baseQueue)
             {
                 if (removeCounts.TryGetValue(id, out var count) && count > 0)
                 {
@@ -138,7 +143,7 @@ namespace MusicWrap.UI.Services
 
             filtered.InsertRange(insertionIndex, selectedInQueueOrder);
             _musicPlayerService.SetQueue(filtered, false);
-            _musicPlayerService.PlayIndex(insertionIndex);
+            _musicPlayerService.PlayPlaybackIndex(insertionIndex);
         }
 
         // Queue-specific behavior: move selected items to play right after current track.
@@ -161,6 +166,39 @@ namespace MusicWrap.UI.Services
 
             currentQueue.InsertRange(currentIndex + 1, selectedTrackIds);
             _musicPlayerService.SetQueue(currentQueue, true);
+
+            if (_musicPlayerService.IsShuffleEnabled)
+            {
+                var playbackOrder = _musicPlayerService.GetPlaybackOrder();
+                if (playbackOrder.Length == 0) return;
+
+                var baseQueue = _musicPlayerService.GetQueue();
+                var currentBaseIndex = Array.IndexOf(baseQueue, currentTrackId);
+                if (currentBaseIndex < 0) return;
+
+                var currentPlaybackIndex = Array.IndexOf(playbackOrder, currentBaseIndex);
+                if (currentPlaybackIndex < 0) return;
+
+                var insertionIndex = Math.Clamp(currentPlaybackIndex + 1, 0, playbackOrder.Length);
+                var newPlaybackOrder = playbackOrder.ToList();
+
+                var newlyAddedIndices = new List<int>();
+                foreach (var id in selectedTrackIds)
+                {
+                    var baseIndex = Array.IndexOf(baseQueue, id);
+                    if (baseIndex >= 0)
+                    {
+                        newlyAddedIndices.Add(baseIndex);
+                    }
+                }
+
+                if (newlyAddedIndices.Count > 0)
+                {
+                    newPlaybackOrder.RemoveAll(idx => newlyAddedIndices.Contains(idx));
+                    newPlaybackOrder.InsertRange(insertionIndex, newlyAddedIndices);
+                    _musicPlayerService.SetPlaybackOrder(newPlaybackOrder.ToArray());
+                }
+            }
         }
     }
 }

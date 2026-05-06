@@ -2,12 +2,14 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Metadata;
+using MusicWrap.Core.Queue;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Playlists;
 using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Core.Sources.Providers.Local;
+using MusicWrap.Core.Sources.Providers.Queue;
 using MusicWrap.Core.Sources.Providers.Runtime;
 using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Core.Threading;
@@ -56,6 +58,7 @@ public static class ServiceRegistration
         services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
         services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
         services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
+        services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
 
         // Services
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
@@ -63,15 +66,16 @@ public static class ServiceRegistration
         services.AddSingleton<TracksContextMenuService>();
         services.AddTransient<ILibraryScanner, LibraryScanner>();
         services.AddTransient<ILibraryIndexer, LibraryIndexer>();
-        services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
         services.AddSingleton<ILibraryCacheStore, LibraryCacheStoreAdapter>();
         services.AddSingleton<ISaveOrchestration, SaveOrchestration>();
         services.AddSingleton<ISaveStateProvider>(sp => (ISaveStateProvider)sp.GetRequiredService<ISaveOrchestration>());
         services.AddSingleton<ISaveCoordinator, SaveScheduler>();
         services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
         services.AddTransient<IEditMetadataService, EditMetadataService>();
+        services.AddSingleton<IQueueManager, QueueManager>();
 
         // Providers
+        services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();
         services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
         
         services.AddTransient<IYoutubeResolutionService, YoutubeResolutionService>();
@@ -98,9 +102,9 @@ public static class ServiceRegistration
         services.AddTransient<PlaylistManagerViewModel>();
         services.AddTransient<SettingsYoutubeViewModel>();
         services.AddTransient<YoutubeProviderViewModel>();
-        services.AddSingleton<IndexingViewModel>();
+        services.AddTransient<IndexingViewModel>();
         services.AddSingleton<QueueViewModel>();
-        services.AddSingleton<DeviceViewModel>();
+        services.AddTransient<DeviceViewModel>();
         services.AddSingleton<PlayerViewModel>();
         services.AddSingleton<CommandPaletteViewModel>();
         services.AddTransient<TaskbarIconViewModel>();

@@ -1,16 +1,16 @@
 using System.Timers;
 using System.Linq;
 using Un4seen.Bass;
-using System.Diagnostics;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User.Models;
-using System.Net;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Threading;
+using MusicWrap.Core.Queue;
+using MusicWrap.Core.Sources.Providers.Queue;
 
 namespace MusicWrap.Core.Services.Playback
 {
@@ -34,6 +34,8 @@ namespace MusicWrap.Core.Services.Playback
     public interface IMusicPlayerService
     {
         int CurrentQueueIndex { get; }
+        int CurrentPlaybackIndex { get; }
+        int[] GetPlaybackOrder();
         bool IsPlaying { get; }
         bool IsPaused { get; }
         double CurrentPosition { get; }
@@ -49,6 +51,8 @@ namespace MusicWrap.Core.Services.Playback
 
         RepeatMode RepeatMode { get; set; }
         ContinueMode ContinueMode { get; set; }
+        bool IsShuffleEnabled { get; }
+        event EventHandler<bool>? ShuffleStateChanged;
 
         event EventHandler<string>? TrackChanged;
         event EventHandler? TrackEnded;
@@ -61,16 +65,22 @@ namespace MusicWrap.Core.Services.Playback
         event EventHandler<float[]>? WaveformDataChanged;
         event EventHandler<float>? VolumeChanged;
         void LoadIndex(int index, bool autoPlay);
+        void LoadPlaybackIndex(int index, bool autoPlay);
         void Play();
         void Pause();
         void Stop();
         void Next();
         void Previous();
         void Seek(double seconds);
+        void FlushPlaybackState();
         void SetVolume(float volume);
         void PlayIndex(int index);
+        void PlayPlaybackIndex(int index);
+        void ToggleShuffle();
+        void SetShuffle(bool enabled);
 
         void SetSilentIndex(int index);
+        void SetSilentPlaybackIndex(int index);
         void AddToQueue(int TrackId);
         void AddToQueue(IEnumerable<int> TrackIds);
         void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false);
@@ -78,6 +88,7 @@ namespace MusicWrap.Core.Services.Playback
         void ClearQueue();
         int[] GetQueue();
         void PlayTrack(int TrackId);
+        void SetPlaybackOrder(int[] playbackOrderIndices);
 
         void ChangeOutputDevice(int deviceIndex);
         void ChangeSampleRate(int sampleRate);
@@ -88,6 +99,9 @@ namespace MusicWrap.Core.Services.Playback
     }
     public class MusicPlayerService : IMusicPlayerService, IDisposable
     {
+        // Providers
+        private readonly IQueueManager _queue;
+        private readonly IQueueItemPlaybackResolver _queueItemResolver;
         private readonly MusicLibrary _library;
         private readonly AudioEngine _audioEngine;
         private readonly ILogger<MusicPlayerService> _logger;
@@ -98,21 +112,21 @@ namespace MusicWrap.Core.Services.Playback
         private const int MaxErrorCount = 5;
         private int _errorCount;
 
-        private readonly List<int> _queue = [];
+        //private readonly List<int> _queue = [];
 
         private int _mixerStream = 0;
         private int _mixerSampleRate = 0;
         private int _mixerChannels = 2;
 
-        private int _currentIndex = -1;
-        public int CurrentQueueIndex => _currentIndex;
+        public int CurrentQueueIndex => _queue.CurrentIndex;
+        public int CurrentPlaybackIndex => _queue.CurrentPlaybackIndex;
 
         private int _currentStream;
         private double _selectedTrackDuration;
         private float[] _currentWaveform = Array.Empty<float>();
 
         private int _preloadedStream = 0;
-        private int _preloadedTrackId = 0;
+        private PlaybackQueueItem? _preloadedQueueItem;
         private readonly SYNCPROC _preloadSync;
 
         private PlaybackState _playbackState = PlaybackState.Stopped;
@@ -150,7 +164,7 @@ namespace MusicWrap.Core.Services.Playback
 
         public bool IsPlaying => _playbackState == PlaybackState.Playing;
         public bool IsPaused => _playbackState == PlaybackState.Paused;
-        public double CurrentPosition => _currentStream != 0 ? _audioEngine.GetMixerPosition(_currentStream) : 0.0;
+        public double CurrentPosition => _currentStream != 0 ? GetEffectivePosition() : 0.0;
         public double Duration => _currentStream != 0 ? _currentTrackDuration : _selectedTrackDuration;
         public float[] CurrentWaveformData => _currentWaveform;
 
@@ -170,6 +184,10 @@ namespace MusicWrap.Core.Services.Playback
 
         private DateTime _suppressPositionUntilUtc = DateTime.MinValue;
 
+        private int _positionDebugRemaining = 5;
+
+        private double? _pendingResumePositionSeconds;
+
         private bool _isRestoringInitialState;
 
         public float Volume
@@ -185,18 +203,11 @@ namespace MusicWrap.Core.Services.Playback
             }
         }
 
-        public int CurrentTrackId => (_currentIndex >= 0 && _currentIndex < _queue.Count) ? _queue[_currentIndex] : 0;
+        public int CurrentTrackId => _queue.CurrentItem?.LibraryId ?? 0;
 
-        public string CurrentTrackPath
-        {
-            get
-            {
-                var track = GetCurrentTrack();
-                return track?.Path ?? string.Empty;
-            }
-        }
+        public string CurrentTrackPath => _queue.CurrentItem?.Source ?? string.Empty;
 
-        public int QueueCount => _queue.Count;
+        public int QueueCount => _queue.Items.Count;
         private RepeatMode _repeatMode = RepeatMode.None;
         public RepeatMode RepeatMode
         {
@@ -209,9 +220,12 @@ namespace MusicWrap.Core.Services.Playback
                 }
 
                 _repeatMode = value;
+                SyncQueueRepeatMode();
                 EnqueuePlaybackSave();
             }
         }
+
+        public bool IsShuffleEnabled => _queue.IsShuffleEnabled;
 
         private ContinueMode _continueMode = ContinueMode.None;
         public ContinueMode ContinueMode
@@ -229,12 +243,10 @@ namespace MusicWrap.Core.Services.Playback
             }
         }
 
-        // Providers
-        private readonly ITrackPlaybackResolver _trackPlaybackResolver;
-
         public MusicPlayerService(
             MusicLibrary library,
-            ITrackPlaybackResolver trackPlaybackResolver,
+            IQueueManager queueManager,
+            IQueueItemPlaybackResolver queueItemPlaybackResolver,
             IPlaybackRepository playbackRepository,
             IServiceProvider serviceProvider,
             ILogger<MusicPlayerService> logger,
@@ -242,7 +254,8 @@ namespace MusicWrap.Core.Services.Playback
             )
         {
             _library = library;
-            _trackPlaybackResolver = trackPlaybackResolver;
+            _queue = queueManager;
+            _queueItemResolver = queueItemPlaybackResolver;
             _playbackRepository = playbackRepository;
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -266,6 +279,10 @@ namespace MusicWrap.Core.Services.Playback
             };
             _positionTimer.Elapsed += PositionTimerOnElapsed;
             _positionTimer.Start();
+
+            _queue.QueueChanged += QueueOnQueueChanged;
+            _queue.CurrentChanged += QueueOnCurrentChanged;
+            SyncQueueRepeatMode();
         }
 
         public event EventHandler<string>? TrackChanged;
@@ -278,22 +295,31 @@ namespace MusicWrap.Core.Services.Playback
         public event EventHandler<float[]>? WaveformDataChanged;
         public event EventHandler<OutputMode>? OutputModeChanged;
         public event EventHandler<float>? VolumeChanged;
+        public event EventHandler<bool>? ShuffleStateChanged;
 
         public void LoadIndex(int index, bool autoplay)
         {
-            if (index < 0 || index >= _queue.Count)
+            if (index < 0 || index >= _queue.Items.Count)
                 return;
-            _currentIndex = index;
+            _queue.Jump(index);
+            StartPlaybackOfCurrent(autoplay);
+        }
+
+        public void LoadPlaybackIndex(int index, bool autoplay)
+        {
+            if (index < 0 || index >= _queue.Items.Count)
+                return;
+            _queue.JumpPlaybackIndex(index);
             StartPlaybackOfCurrent(autoplay);
         }
         public void Play()
         {
             if (_currentStream == 0)
             {
-                if (_queue.Count == 0) return;
+                if (_queue.Items.Count == 0) return;
 
-                if (_currentIndex < 0 || _currentIndex >= _queue.Count)
-                    _currentIndex = 0;
+                if (_queue.CurrentIndex < 0 || _queue.CurrentIndex >= _queue.Items.Count)
+                    _queue.Jump(0);
 
                 StartPlaybackOfCurrent();
                 return;
@@ -301,6 +327,16 @@ namespace MusicWrap.Core.Services.Playback
 
             _audioEngine.Play(_mixerStream, false);
             SetPlaybackState(PlaybackState.Playing);
+            _positionDebugRemaining = 5;
+            var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
+            var streamPos = _audioEngine.GetPosition(_currentStream);
+            var effectivePos = GetEffectivePosition();
+            _logger.LogDebug("Play: mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s, effectivePos={EffectivePos:0.000}s",
+                mixerPos, streamPos, effectivePos);
+            if (_pendingResumePositionSeconds.HasValue)
+            {
+                _ = ApplyPendingResumeSeekAsync("Play");
+            }
             EnqueuePlaybackSave();
         }
 
@@ -323,7 +359,7 @@ namespace MusicWrap.Core.Services.Playback
 
             if (_preloadedStream != 0) FreeStream(_preloadedStream);
             _preloadedStream = 0;
-            _preloadedTrackId = 0;
+            _preloadedQueueItem = null;
 
             if (_mixerStream != 0)
             {
@@ -341,43 +377,19 @@ namespace MusicWrap.Core.Services.Playback
 
         public void Next()
         {
-            if (_queue.Count == 0)
+            var next = _queue.Next();
+            if (next == null)
             {
                 Stop();
                 return;
             }
-
-            int nextIndex = _currentIndex + 1;
-
-            if (nextIndex >= _queue.Count)
-            {
-                if (RepeatMode == RepeatMode.RepeatQueue)
-                {
-                    _currentIndex = 0;
-                    StartPlaybackOfCurrent();
-                }
-                else
-                {
-                    Stop();
-                }
-            }
-            else
-            {
-                _currentIndex = nextIndex;
-                StartPlaybackOfCurrent();
-            }
+            StartPlaybackOfCurrent();
         }
 
         public void Previous()
         {
-            if (_queue.Count == 0)
-                return;
-
-            int prevIndex = _currentIndex - 1;
-            if (prevIndex < 0)
-                prevIndex = 0;
-
-            _currentIndex = prevIndex;
+           var prev = _queue.Previous();
+            if (prev == null) return;
             StartPlaybackOfCurrent();
         }
 
@@ -386,9 +398,13 @@ namespace MusicWrap.Core.Services.Playback
             if (_currentStream == 0)
                 return;
 
-            if (_audioEngine.SetPosition(_currentStream, seconds))
+            var seekOk = _audioEngine.SetPosition(_currentStream, seconds);
+            if (seekOk)
             {
                 var target = Math.Clamp(seconds, 0.0, Duration);
+                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
+                var streamPos = _audioEngine.GetPosition(_currentStream);
+                _logger.LogDebug("Seek applied: target={Target:0.000}s, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s", target, mixerPos, streamPos);
 
                 int latencyMs = _audioEngine.GetDeviceLatencyMs();
                 int suppressMs = Math.Clamp(latencyMs * 2 + 40, 250, 900);
@@ -398,39 +414,84 @@ namespace MusicWrap.Core.Services.Playback
                 _dispatcher.Invoke(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek
                 EnqueuePlaybackSave();
             }
+            else
+            {
+                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
+                var streamPos = _audioEngine.GetPosition(_currentStream);
+                _logger.LogWarning("Seek failed: target={Target:0.000}s, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s", seconds, mixerPos, streamPos);
+            }
+        }
+
+        public void FlushPlaybackState()
+        {
+            _playbackRepository.Save(BuildPlaybackSnapshot());
         }
 
         public void SetVolume(float volume) => Volume = volume;
 
         public void PlayIndex(int index)
         {
-            if (index < 0 || index >= _queue.Count)
+            if (index < 0 || index >= _queue.Items.Count)
                 return;
-
-            _currentIndex = index;
+            _queue.Jump(index);
             StartPlaybackOfCurrent();
+        }
+
+        public void PlayPlaybackIndex(int index)
+        {
+            if (index < 0 || index >= _queue.Items.Count)
+                return;
+            _queue.JumpPlaybackIndex(index);
+            StartPlaybackOfCurrent();
+        }
+
+        public void ToggleShuffle()
+        {
+            SetShuffle(!_queue.IsShuffleEnabled);
+        }
+
+        public void SetShuffle(bool enabled)
+        {
+            if (_queue.IsShuffleEnabled == enabled) return;
+            _queue.SetShuffle(enabled);
+            ShuffleStateChanged?.Invoke(this, enabled);
         }
 
         public void SetSilentIndex(int index)
         {
-            if (index < 0 || index >= _queue.Count)
+            if (index < 0 || index >= _queue.Items.Count)
                 return;
+            _queue.Jump(index);
+            UpdateSelectedTrackState();
+            EnqueuePlaybackSave();
+        }
 
-            _currentIndex = index;
+        public void SetSilentPlaybackIndex(int index)
+        {
+            if (index < 0 || index >= _queue.Items.Count)
+                return;
+            _queue.JumpPlaybackIndex(index);
             UpdateSelectedTrackState();
             EnqueuePlaybackSave();
         }
 
         public void AddToQueue(int TrackId)
         {
-            _queue.Add(TrackId);
+            var item = CreateQueueItemFromTrackId(TrackId);
+            if (item == null) return;
+            _queue.AddLast([item]);
             NotifyQueueChanged();
             EnqueuePlaybackSave();
         }
 
         public void AddToQueue(IEnumerable<int> TrackIds)
         {
-            _queue.AddRange(TrackIds);
+            var items = TrackIds
+                .Select(CreateQueueItemFromTrackId)
+                .Where(item => item != null)
+                .ToList();
+            if (items.Count == 0) return;
+            _queue.AddLast(items!);
             NotifyQueueChanged();
             EnqueuePlaybackSave();
         }
@@ -453,12 +514,11 @@ namespace MusicWrap.Core.Services.Playback
                     }
                 }
             }
-            _queue.Clear();
-            if (list.Count > 0)
-            {
-                _queue.AddRange(list);
-            }
-            _currentIndex = newIndex;
+            var items = list
+                .Select(CreateQueueItemFromTrackId)
+                .Where(item => item != null)
+                .ToList();
+            _queue.Set(items!, newIndex);
             UpdateSelectedTrackState();
 
             NotifyQueueChanged();
@@ -467,21 +527,16 @@ namespace MusicWrap.Core.Services.Playback
 
         public void RemoveFromQueue(int index)
         {
-            if (index < 0 || index >= _queue.Count)
+            if (index < 0 || index >= _queue.Items.Count)
                 return;
 
-            bool removingCurrent = index == _currentIndex;
+            bool removingCurrent = index == _queue.CurrentIndex;
 
             _queue.RemoveAt(index);
 
             if (removingCurrent)
             {
                 Stop();
-                _currentIndex = -1;
-            }
-            else if (index < _currentIndex)
-            {
-                _currentIndex--;
             }
 
             UpdateSelectedTrackState();
@@ -494,7 +549,6 @@ namespace MusicWrap.Core.Services.Playback
         {
             Stop();
             _queue.Clear();
-            _currentIndex = -1;
             UpdateSelectedTrackState();
             NotifyQueueChanged();
             EnqueuePlaybackSave();
@@ -502,27 +556,41 @@ namespace MusicWrap.Core.Services.Playback
 
         public int[] GetQueue()
         {
-            return _queue.Count == 0 ? Array.Empty<int>() : _queue.ToArray();
+            return _queue.Items.Count == 0
+                ? Array.Empty<int>()
+                : _queue.Items.Select(item => item.LibraryId ?? 0).ToArray();
+        }
+
+        public int[] GetPlaybackOrder()
+        {
+            return _queue.GetPlaybackOrderIndices();
+        }
+
+        public void SetPlaybackOrder(int[] playbackOrderIndices)
+        {
+            _queue.SetPlaybackOrder(playbackOrderIndices);
         }
 
         public void PlayTrack(int TrackId)
         {
-            int index = _queue.IndexOf(TrackId);
+            int index = _queue.Items.ToList().FindIndex(item => item.LibraryId == TrackId);
             if (index < 0)
             {
-                _queue.Add(TrackId);
-                index = _queue.Count - 1;
+                var item = CreateQueueItemFromTrackId(TrackId);
+                if (item == null) return;
+                _queue.AddLast([item]);
+                index = _queue.Items.Count - 1;
             }
 
-            _currentIndex = index;
+            _queue.Jump(index);
             StartPlaybackOfCurrent();
             EnqueuePlaybackSave();
         }
 
         private void UpdateSelectedTrackState()
         {
-            var track = GetCurrentTrack();
-            if (track == null)
+            var item = _queue.CurrentItem;
+            if (item == null)
             {
                 _selectedTrackDuration = 0;
                 _currentWaveform = Array.Empty<float>();
@@ -530,6 +598,24 @@ namespace MusicWrap.Core.Services.Playback
                 {
                     TrackChanged?.Invoke(this, string.Empty);
                     WaveformDataChanged?.Invoke(this, Array.Empty<float>());
+                });
+                return;
+            }
+
+            Track? track = null;
+            if (item.LibraryId.HasValue)
+            {
+                track = _library.Tracks.FirstOrDefault(t => t.Id == item.LibraryId.Value);
+            }
+
+            if (track == null)
+            {
+                _selectedTrackDuration = 0;
+                _currentWaveform = CreateFallbackWaveForm(WaveformDataPoints);
+                _dispatcher.Invoke(() =>
+                {
+                    TrackChanged?.Invoke(this, item.DisplayTitle ?? item.Source);
+                    WaveformDataChanged?.Invoke(this, _currentWaveform);
                 });
                 return;
             }
@@ -560,7 +646,7 @@ namespace MusicWrap.Core.Services.Playback
             CurrentDeviceIndex = appliedPreferred ? deviceIndex : -1;
             CurrentOutputMode = _audioEngine.GetCurrentOutputMode();
 
-            if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
+            if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
                 _mixerStream = 0;
                 StartPlaybackOfCurrent(shouldResume);
@@ -596,7 +682,7 @@ namespace MusicWrap.Core.Services.Playback
                 CurrentDeviceIndex = -1;
             }
 
-            if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
+            if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
                 _mixerStream = 0;
                 StartPlaybackOfCurrent(shouldResume);
@@ -631,7 +717,7 @@ namespace MusicWrap.Core.Services.Playback
                 CurrentDeviceIndex = -1;
                 CurrentSampleRate = -1;
             }
-            if (_queue.Count > 0 && _currentIndex >= 0 && _currentIndex < _queue.Count)
+            if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
                 _mixerStream = 0;
                 StartPlaybackOfCurrent(shouldResume);
@@ -658,6 +744,9 @@ namespace MusicWrap.Core.Services.Playback
             {
                 TrackIds = GetQueue(),
                 CurrentIndex = CurrentQueueIndex,
+                CurrentPlaybackIndex = CurrentPlaybackIndex,
+                IsShuffleEnabled = IsShuffleEnabled,
+                PlaybackOrderIndices = GetPlaybackOrder(),
                 PositionInSeconds = CurrentPosition,
                 RepeatMode = (int)RepeatMode,
                 ContinueMode = (int)ContinueMode,
@@ -703,6 +792,11 @@ namespace MusicWrap.Core.Services.Playback
                 }
 
                 SetQueue(queue, false);
+                SetShuffle(snapshot.IsShuffleEnabled);
+                if (snapshot.IsShuffleEnabled && snapshot.PlaybackOrderIndices is { Length: > 0 })
+                {
+                    SetPlaybackOrder(snapshot.PlaybackOrderIndices);
+                }
                 RepeatMode = (RepeatMode)snapshot.RepeatMode;
                 ContinueMode = (ContinueMode)snapshot.ContinueMode;
 
@@ -718,29 +812,42 @@ namespace MusicWrap.Core.Services.Playback
                         Stop();
                         break;
                     case StartupBehavior.RestoreQueueAndIndexOnly:
-                        SetSilentIndex(index);
+                        SetSilentPlaybackIndex(snapshot.CurrentPlaybackIndex >= 0 ? snapshot.CurrentPlaybackIndex : index);
                         Stop();
                         break;
                     case StartupBehavior.ResumePlayback:
                         {
-                            SetSilentIndex(index);
-                            LoadIndex(index, autoplay: false);
+                            var playbackIndex = snapshot.CurrentPlaybackIndex >= 0
+                                ? snapshot.CurrentPlaybackIndex
+                                : index;
+                            SetSilentPlaybackIndex(playbackIndex);
+                            LoadPlaybackIndex(playbackIndex, autoplay: false);
+
+                            _logger.LogDebug("ResumePlayback: index={Index}, playbackIndex={PlaybackIndex}, savedPos={SavedPos:0.000}s", index, playbackIndex, snapshot.PositionInSeconds);
 
                             var position = Math.Clamp(snapshot.PositionInSeconds, 0, Duration);
                             if (position > 0)
                             {
+                                _pendingResumePositionSeconds = position;
                                 Seek(position);
                             }
 
                             switch (snapshot.PlaybackState)
                             {
                                 case 1:
+                                    _logger.LogDebug("ResumePlayback: restoring state -> Play");
                                     Play();
+                                    if (_pendingResumePositionSeconds.HasValue)
+                                    {
+                                        _ = ApplyPendingResumeSeekAsync("ResumePlayback:Play");
+                                    }
                                     break;
                                 case 2:
+                                    _logger.LogDebug("ResumePlayback: restoring state -> Pause");
                                     Pause();
                                     break;
                                 default:
+                                    _logger.LogDebug("ResumePlayback: restoring state -> Stop");
                                     Stop();
                                     break;
                             }
@@ -830,23 +937,24 @@ namespace MusicWrap.Core.Services.Playback
 
         private void StartPlaybackOfCurrent(bool autoplay = true)
         {
-            var track = GetCurrentTrack();
+            var item = _queue.CurrentItem;
 
-            if (track == null)
+            if (item == null)
             {
                 _errorCount++;
-                if (_errorCount >= MaxErrorCount)
-                {
-                    _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
-                    Stop();
-                    return;
-                }
-                Next();
+                if (_errorCount >= MaxErrorCount) Stop();
+                else Next();
                 return;
             }
 
-            int requestedSampleRate = CurrentSampleRate > 0 ? CurrentSampleRate : track.SamplingRate;
-            int requestedChannels = track.Channels > 0 ? track.Channels : 2;
+            var track = item.LibraryId.HasValue
+                ? _library.Tracks.FirstOrDefault(t => t.Id == item.LibraryId.Value)
+                : null;
+
+            int requestedSampleRate = CurrentSampleRate > 0
+                ? CurrentSampleRate
+                : (track?.SamplingRate ?? 44100);
+            int requestedChannels = track?.Channels > 0 ? track.Channels : 2;
 
             int effectiveSampleRate = _audioEngine.PrepareOutputForTrack(requestedSampleRate, requestedChannels);
             int effectiveChannels = _audioEngine.CurrentOutputChannels > 0 ? _audioEngine.CurrentOutputChannels : requestedChannels;
@@ -877,56 +985,34 @@ namespace MusicWrap.Core.Services.Playback
 
             int previousStream = _currentStream;
 
-            // Use preloaded stream if available and matches
-            if (_preloadedStream != 0 && _preloadedTrackId == track.Id)
+            if (_preloadedStream != 0 && _preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, item))
             {
                 _currentStream = _preloadedStream;
-                _preloadedTrackId = 0;
                 _preloadedStream = 0;
+                _preloadedQueueItem = null;
             }
             else
             {
-                if (!_trackPlaybackResolver.TryResolve(track, out var resolvedCurrent))
+                if (!_queueItemResolver.TryResolve(item, out var resolved))
                 {
-                    _logger.LogWarning("Failed to resolve playback source for track: {TrackId}, {TrackOrigin}", track.Id, track.Origin);
                     _errorCount++;
-                    if (_errorCount >= MaxErrorCount)
-                    {
-                        _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
-                        Stop();
-                        return;
-                    }
-                    Next();
+                    if (_errorCount >= MaxErrorCount) Stop();
+                    else Next();
                     return;
                 }
 
-                int createdStream;
-                switch (resolvedCurrent.Kind)
+                int createdStream = resolved.Kind switch
                 {
-                    case PlaybackSourceKind.LocalFile:
-                        createdStream = _audioEngine.CreateDecodeStream(resolvedCurrent.Input);
-                        break;
-                    case PlaybackSourceKind.RemoteUrl:
-                        createdStream = _audioEngine.CreateDecodeStreamFromUrl(resolvedCurrent.Input);
-                        break;
-                    default:
-                        _logger.LogWarning("Unsupported playback source kind {PlaybackSourceKind} for track {TrackId}, {TrackOrigin}", resolvedCurrent.Kind, track.Id, track.Origin);
-                        _errorCount++;
-                        if (_errorCount >= MaxErrorCount)
-                        {
-                            _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
-                            Stop();
-                            return;
-                        }
-                        Next();
-                        return;
-                }
+                    PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolved.Input),
+                    PlaybackSourceKind.RemoteUrl => _audioEngine.CreateDecodeStreamFromUrl(resolved.Input),
+                    _ => 0
+                };
 
                 _currentStream = createdStream;
                 if (_currentStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
-                    _logger.LogWarning("Failed to create decode stream for track {TrackId}, {TrackOrigin}, error code: {ErrorCode}", track.Id, track.Origin, err);
+                    _logger.LogWarning("Failed to create decode stream for queue item, error code: {ErrorCode}", err);
                     _errorCount++;
                     if (_errorCount >= MaxErrorCount)
                     {
@@ -970,18 +1056,32 @@ namespace MusicWrap.Core.Services.Playback
                 _audioEngine.Pause(_mixerStream);
                 SetPlaybackState(PlaybackState.Paused);
             }
-            var inmidiatePos = _audioEngine.GetMixerPosition(_currentStream);
+            var inmidiatePos = GetEffectivePosition();
+            var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
+            var streamPos = _audioEngine.GetPosition(_currentStream);
+            _logger.LogDebug("StartPlaybackOfCurrent: autoplay={Autoplay}, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s, effectivePos={EffectivePos:0.000}s",
+                autoplay, mixerPos, streamPos, inmidiatePos);
             _dispatcher.Invoke(() => PositionChanged?.Invoke(this, inmidiatePos)); // update position immediately on track change
 
             var snapshot = CreateQueueSnapshot();
             _dispatcher.Invoke(() =>
             {
                 SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate });
-                var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
+                var trackRef = track != null
+                    ? (string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path)
+                    : (item.DisplayTitle ?? item.Source);
                 TrackChanged?.Invoke(this, trackRef);
                 QueueChanged?.Invoke(this, snapshot);
             });
-            BeginWaveformPipeline(track);
+            if (track != null)
+            {
+                BeginWaveformPipeline(track);
+            }
+            else
+            {
+                _currentWaveform = CreateFallbackWaveForm(WaveformDataPoints);
+                _dispatcher.Invoke(() => WaveformDataChanged?.Invoke(this, _currentWaveform));
+            }
             _errorCount = 0; // Reset error count on successful playback
             EnqueuePlaybackSave();
         }
@@ -1007,7 +1107,15 @@ namespace MusicWrap.Core.Services.Playback
             if (DateTime.UtcNow < _suppressPositionUntilUtc)
                 return; // Suppress position updates for a short time after seeking to avoid UI jitter
 
-            var position = _audioEngine.GetMixerPosition(_currentStream);
+            var position = GetEffectivePosition();
+            if (_positionDebugRemaining > 0)
+            {
+                _positionDebugRemaining--;
+                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
+                var streamPos = _audioEngine.GetPosition(_currentStream);
+                _logger.LogDebug("PositionTick: mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s, effectivePos={EffectivePos:0.000}s",
+                    mixerPos, streamPos, position);
+            }
             _dispatcher.Invoke(() => PositionChanged?.Invoke(this, position));
         }
 
@@ -1034,29 +1142,20 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             }
 
-            int nextIndex = _currentIndex + 1;
-            if (nextIndex >= _queue.Count)
+            var nextItem = _queue.Next();
+            if (nextItem == null)
             {
-                if (RepeatMode == RepeatMode.RepeatQueue) nextIndex = 0;
-                else
-                {
-                    Stop();
-                    return;
-                }
+                Stop();
+                return;
             }
 
-            int nextTrackId = _queue[nextIndex];
-
-            // If preloaded stream is available and matches next track, use it
-            if (_preloadedStream != 0 && _preloadedTrackId == nextTrackId)
+            if (_preloadedStream != 0 && _preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, nextItem))
             {
                 int previousStream = _currentStream;
                 _currentStream = _preloadedStream;
                 _preloadedStream = 0;
-                _preloadedTrackId = 0;
-                _currentIndex = nextIndex;
+                _preloadedQueueItem = null;
 
-                // Remove previous and add preloaded stream to mixer immediately
                 _audioEngine.RemoveFromMixer(previousStream);
                 FreeStream(previousStream);
 
@@ -1064,7 +1163,6 @@ namespace MusicWrap.Core.Services.Playback
                 _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
                 _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
-                // Setup preload for next track
                 double duration = _audioEngine.GetDuration(_currentStream);
                 const double preloadLeadSeconds = 0.75;
                 if (duration > preloadLeadSeconds)
@@ -1072,23 +1170,18 @@ namespace MusicWrap.Core.Services.Playback
                     _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
                 }
 
-                var track = GetCurrentTrack();
                 var snapshot = CreateQueueSnapshot();
-                if (track != null)
+                _dispatcher.Invoke(() =>
                 {
-                    _dispatcher.Invoke(() =>
-                    {
-                        var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
-                        TrackChanged?.Invoke(this, trackRef);
-                        QueueChanged?.Invoke(this, snapshot);
-                    });
-                    BeginWaveformPipeline(track);
-                }
+                    var trackRef = nextItem.Source;
+                    TrackChanged?.Invoke(this, trackRef);
+                    QueueChanged?.Invoke(this, snapshot);
+                });
+
+                UpdateSelectedTrackState();
                 return;
             }
 
-            // Fallback: if no preloaded stream, load next track normally
-            _currentIndex = nextIndex;
             StartPlaybackOfCurrent();
         }
 
@@ -1099,58 +1192,48 @@ namespace MusicWrap.Core.Services.Playback
 
             Task.Run(() =>
             {
-                int nextIndex = _currentIndex + 1;
-                if (nextIndex >= _queue.Count)
-                {
-                    if (RepeatMode == RepeatMode.RepeatQueue) nextIndex = 0;
-                    else return;
-                }
+                var nextItem = _queue.PeekNext();
+                if (nextItem == null) return;
+                if (_preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, nextItem)) return;
 
-                int nextTrackId = _queue[nextIndex];
-                if (_preloadedTrackId == nextTrackId) return; // Already preloaded
-
-                var nextTrack = _library.Tracks.FirstOrDefault(t => t.Id == nextTrackId);
-                if (nextTrack == null) return;
-
-                // Clear previous preloaded stream if any
                 if (_preloadedStream != 0)
                 {
                     FreeStream(_preloadedStream);
                     _preloadedStream = 0;
-                    _preloadedTrackId = 0;
+                    _preloadedQueueItem = null;
                 }
 
-                if (!_trackPlaybackResolver.TryResolve(nextTrack, out var resolvedNext))
+                if (!_queueItemResolver.TryResolve(nextItem, out var resolvedNext))
                 {
-                    _logger.LogWarning("Failed to resolve playback source for preload of track : {TrackId}, {TrackOrigin}, {TrackPath}", nextTrack.Id, nextTrack.Origin, nextTrack.Path);
+                    _logger.LogWarning("Failed to resolve playback source for preload of queue item");
                     return;
                 }
 
-                int nextStream;
-
-                switch (resolvedNext.Kind)
+                int nextStream = resolvedNext.Kind switch
                 {
-                    case PlaybackSourceKind.LocalFile:
-                        nextStream = _audioEngine.CreateDecodeStream(resolvedNext.Input);
-                        break;
-                    case PlaybackSourceKind.RemoteUrl:
-                        nextStream = _audioEngine.CreateDecodeStreamFromUrl(resolvedNext.Input);
-                        break;
-                    default:
-                        _logger.LogWarning("Unsupported playback source kind {PlaybackSourceKind} for preload of track {TrackId}, {TrackOrigin}, {TrackPath}", resolvedNext.Kind, nextTrack.Id, nextTrack.Origin, nextTrack.Path);
-                        return;
-                }
+                    PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolvedNext.Input),
+                    PlaybackSourceKind.RemoteUrl => _audioEngine.CreateDecodeStreamFromUrl(resolvedNext.Input),
+                    _ => 0
+                };
 
                 if (nextStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
-                    _logger.LogWarning("Failed to create decode stream for preload of track {TrackId}, {TrackOrigin}, {TrackPath}, error code: {ErrorCode}", nextTrack.Id, nextTrack.Origin, nextTrack.Path, err);
+                    _logger.LogWarning("Failed to create decode stream for preload of queue item, error code: {ErrorCode}", err);
                     return;
                 }
 
                 _preloadedStream = nextStream;
-                _preloadedTrackId = nextTrackId;
-                _ = PreloadWaveformCacheAsync(nextTrack);
+                _preloadedQueueItem = nextItem;
+
+                if (nextItem.LibraryId.HasValue)
+                {
+                    var track = _library.Tracks.FirstOrDefault(t => t.Id == nextItem.LibraryId.Value);
+                    if (track != null)
+                    {
+                        _ = PreloadWaveformCacheAsync(track);
+                    }
+                }
             });
         }
 
@@ -1164,7 +1247,9 @@ namespace MusicWrap.Core.Services.Playback
 
         private int[] CreateQueueSnapshot()
         {
-            return _queue.Count == 0 ? Array.Empty<int>() : [.. _queue];
+            return _queue.Items.Count == 0
+                ? Array.Empty<int>()
+                : _queue.Items.Select(item => item.LibraryId ?? 0).ToArray();
         }
         private void BeginWaveformPipeline(Track track)
         {
@@ -1274,16 +1359,82 @@ namespace MusicWrap.Core.Services.Playback
             Array.Fill(data, 1f);
             return data;
         }
+        private async Task ApplyPendingResumeSeekAsync(string reason)
+        {
+            if (!_pendingResumePositionSeconds.HasValue || _currentStream == 0) return;
+
+            var target = _pendingResumePositionSeconds.Value;
+            for (int attempt = 1; attempt <= 3; attempt++)
+            {
+                await Task.Delay(150 * attempt).ConfigureAwait(false);
+                if (_currentStream == 0) return;
+
+                _audioEngine.SetPosition(_currentStream, target);
+                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
+                var streamPos = _audioEngine.GetPosition(_currentStream);
+                _logger.LogDebug("ApplyPendingResumeSeek({Reason}) attempt {Attempt}: target={Target:0.000}s, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s",
+                    reason, attempt, target, mixerPos, streamPos);
+
+                if (Math.Abs(streamPos - target) <= 0.25 || Math.Abs(mixerPos - target) <= 0.25)
+                {
+                    _pendingResumePositionSeconds = null;
+                    _dispatcher.Invoke(() => PositionChanged?.Invoke(this, target));
+                    return;
+                }
+            }
+        }
+        private double GetEffectivePosition()
+        {
+            if (_currentStream == 0) return 0.0;
+            var pos = _audioEngine.GetMixerPosition(_currentStream);
+            if (pos > 0.0001) return pos;
+            return _audioEngine.GetPosition(_currentStream);
+        }
         private void NotifyQueueChanged()
         {
             var snapshot = CreateQueueSnapshot();
             _dispatcher.Invoke(() => QueueChanged?.Invoke(this, snapshot));
+        }
+        private void QueueOnQueueChanged(object? sender, EventArgs e)
+        {
+            NotifyQueueChanged();
+        }
+        private void QueueOnCurrentChanged(object? sender, EventArgs e)
+        {
+            UpdateSelectedTrackState();
+        }
+        private PlaybackQueueItem? CreateQueueItemFromTrackId(int trackId)
+        {
+            if (trackId <= 0) return null;
+            var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+            if (track == null) return null;
+            return new PlaybackQueueItem
+            {
+                SourceType = QueueItemSourceType.LocalFile,
+                Source = track.Path,
+                DisplayTitle = track.Title,
+                LibraryId = track.Id,
+                ExternalId = track.ExternalId
+            };
+        }
+        private void SyncQueueRepeatMode()
+        {
+            var mapped = _repeatMode switch
+            {
+                RepeatMode.RepeatQueue => Queue.RepeatMode.RepeatAll,
+                RepeatMode.RepeatTrack => Queue.RepeatMode.RepeatOne,
+                _ => Queue.RepeatMode.None
+            };
+            _queue.SetRepeatMode(mapped);
         }
         public void Dispose()
         {
             _positionTimer.Elapsed -= PositionTimerOnElapsed;
             _positionTimer.Stop();
             _positionTimer.Dispose();
+
+            _queue.QueueChanged -= QueueOnQueueChanged;
+            _queue.CurrentChanged -= QueueOnCurrentChanged;
 
             Stop();
             FreeStream(_mixerStream);

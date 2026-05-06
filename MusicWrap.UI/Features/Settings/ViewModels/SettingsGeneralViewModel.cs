@@ -15,7 +15,6 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         private readonly UserSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
 
-        [ObservableProperty] private bool _resumePlayback;
         [ObservableProperty] private bool _restoreQueueAndIndexOnly;
         [ObservableProperty] private bool _restoreQueueOnly;
         [ObservableProperty] private bool _startClean;
@@ -63,7 +62,6 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 
         #region Internal
         private void LoadFromSettings() {
-            ResumePlayback = _settings.StartupBehavior == StartupBehavior.ResumePlayback;
             RestoreQueueAndIndexOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueAndIndexOnly;
             RestoreQueueOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueOnly;
             StartClean = _settings.StartupBehavior == StartupBehavior.StartClean;
@@ -75,13 +73,6 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         #endregion
 
         #region Partials
-        partial void OnResumePlaybackChanged(bool value)
-        {
-            if (!value) return;
-            _settings.StartupBehavior = StartupBehavior.ResumePlayback;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-
         partial void OnRestoreQueueAndIndexOnlyChanged(bool value)
         {
             if (!value) return;

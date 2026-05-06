@@ -49,9 +49,6 @@
                         <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle" Command="{Binding ShuffleAllTracksCommand}">
                             <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
                         </Button>
-                        <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle">
-                            <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE712;"/>
-                        </Button>
                     </StackPanel>
 
                 </Grid>

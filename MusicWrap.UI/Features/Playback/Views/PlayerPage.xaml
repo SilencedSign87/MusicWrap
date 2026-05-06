@@ -89,8 +89,8 @@
                     <Button x:Name="RepeadButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
                     </Button>
-                    <Button x:Name="DJButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;" FontSize="14"/>
+                    <Button x:Name="ShuffleButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding ShuffleTooltip}" Command="{Binding ToggleShuffleCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding ShuffleIcon}" FontSize="12"/>
                     </Button>
                 </StackPanel>
             </Grid>

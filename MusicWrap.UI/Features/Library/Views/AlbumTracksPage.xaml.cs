@@ -201,7 +201,6 @@ namespace MusicWrap.UI.Features.Library.Views
             var trackIds = _library.Tracks
                 .Where(t => t.AlbumId == vm.AlbumId)
                 .Select(t => t.Id)
-                .Shuffle()
                 .ToList();
 
             if (trackIds.Count == 0)
@@ -209,7 +208,10 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
             _musicPlayerService.SetQueue(trackIds);
-            _musicPlayerService.PlayIndex(0);
+            if (!_musicPlayerService.IsShuffleEnabled)
+            {
+                _musicPlayerService.ToggleShuffle();
+            }
 
         }
     }

@@ -13,6 +13,8 @@ using MusicWrap.Data.Infrastructure;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.User.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -51,6 +53,15 @@ namespace MusicWrap.UI.ViewModels
         private string repeatModeIcon = "";
         [ObservableProperty]
         private string repeatModeTooltip = "";
+
+        [ObservableProperty]
+        private bool isShuffleEnabled = false;
+
+        [ObservableProperty]
+        private string shuffleIcon = "\ue8b1";
+
+        [ObservableProperty]
+        private string shuffleTooltip = "Shuffle off";
 
         [ObservableProperty]
         private string currentTrackTitle = "No track playing";
@@ -125,13 +136,15 @@ namespace MusicWrap.UI.ViewModels
             _playerService.PositionChanged += OnPositionChanged;
             _playerService.WaveformDataChanged += _playerService_WaveformDataChanged;
             _playerService.VolumeChanged += _playerService_VolumeChanged;
+            _playerService.ShuffleStateChanged += _playerService_ShuffleStateChanged;
 
             // Load initial states
             UpdateDJButtonIcon();
             UpdateRepeatModeIcon();
+            UpdateShuffleState();
             Waveform = _playerService.CurrentWaveformData;
             Volume = _playerService.Volume;
-            SyncCurrentTrackStateFromPlayer();
+            RestorePlaybackState();
 
             _uiPositionTmer = new DispatcherTimer(DispatcherPriority.Render)
             {
@@ -144,10 +157,39 @@ namespace MusicWrap.UI.ViewModels
             UpdatePlaybackState(_playerService.IsPlaying);
         }
 
+        private void RestorePlaybackState()
+        {
+            var settings = App.Services.GetRequiredService<UserSettings>();
+            if (settings == null)
+            {
+                SyncCurrentTrackStateFromPlayer();
+                return;
+            }
+
+            try
+            {
+                if (settings.StartupBehavior == StartupBehavior.ResumePlayback)
+                {
+                    settings.StartupBehavior = StartupBehavior.RestoreQueueAndIndexOnly;
+                }
+                _playerService.LoadInitialState(settings);
+            }
+            catch
+            {
+            }
+
+            SyncCurrentTrackStateFromPlayer();
+        }
+
         private void _playerService_VolumeChanged(object? sender, float e)
         {
             if (Math.Abs(Volume - e) > 0.0001f)
                 Volume = e;
+        }
+
+        private void _playerService_ShuffleStateChanged(object? sender, bool enabled)
+        {
+            Application.Current?.Dispatcher.Invoke(UpdateShuffleState);
         }
 
         private void _playerService_WaveformDataChanged(object? sender, float[] e)
@@ -259,6 +301,13 @@ namespace MusicWrap.UI.ViewModels
             };
             UpdateRepeatModeIcon();
         }
+
+        [RelayCommand]
+        private void ToggleShuffle()
+        {
+            _playerService.ToggleShuffle();
+            UpdateShuffleState();
+        }
         [RelayCommand]
         private void ToggleDJMode()
         {
@@ -284,6 +333,20 @@ namespace MusicWrap.UI.ViewModels
                     RepeatModeTooltip = "Repeat entire queue";
                     break;
             }
+        }
+
+        private void UpdateShuffleState()
+        {
+            IsShuffleEnabled = _playerService.IsShuffleEnabled;
+            ShuffleIcon = IsShuffleEnabled ? "\xE894" : "\ue8b1";
+            ShuffleTooltip = IsShuffleEnabled ? "Shuffle on" : "Shuffle off";
+        }
+
+        partial void OnIsShuffleEnabledChanged(bool value)
+        {
+            if (_playerService.IsShuffleEnabled == value) return;
+            _playerService.SetShuffle(value);
+            UpdateShuffleState();
         }
         private void UpdateDJButtonIcon()
         {
@@ -434,6 +497,8 @@ namespace MusicWrap.UI.ViewModels
             if (trackId == 0)
             {
                 CurrentTrackTitle = "Unknown track";
+                CurrentTrackDominantColorHex = "#808080";
+                CurrentTrackForegroundColorHex = "#FFFFFF";
                 return;
             }
 
@@ -447,6 +512,8 @@ namespace MusicWrap.UI.ViewModels
             if (track == null)
             {
                 CurrentTrackTitle = "Unknown track";
+                CurrentTrackDominantColorHex = "#808080";
+                CurrentTrackForegroundColorHex = "#FFFFFF";
                 return;
             }
 
@@ -488,14 +555,14 @@ namespace MusicWrap.UI.ViewModels
                 {
                     CurrentTrackImagePath = string.Empty;
                     ArtworkPath = string.Empty;
-                    CurrentTrackDominantColorHex = null;
-                    CurrentTrackForegroundColorHex = null;
+                    CurrentTrackDominantColorHex = "#808080";
+                    CurrentTrackForegroundColorHex = "#FFFFFF";
                 }
             }
             else
             {
-                CurrentTrackDominantColorHex = null;
-                CurrentTrackForegroundColorHex = null;
+                CurrentTrackDominantColorHex = "#808080";
+                CurrentTrackForegroundColorHex = "#FFFFFF";
             }
         }
 
@@ -537,8 +604,8 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackBitDepth = string.Empty;
             CurrentTrackChannels = string.Empty;
             CurrentTrackImagePath = string.Empty;
-            CurrentTrackDominantColorHex = null;
-            CurrentTrackForegroundColorHex = null;
+            CurrentTrackDominantColorHex = "#808080";
+            CurrentTrackForegroundColorHex = "#FFFFFF";
             ArtworkPath = string.Empty;
         }
 
@@ -597,6 +664,7 @@ namespace MusicWrap.UI.ViewModels
             _playerService.TrackChanged -= OnTrackChanged;
             _playerService.PositionChanged -= OnPositionChanged;
             _playerService.WaveformDataChanged -= _playerService_WaveformDataChanged;
+            _playerService.ShuffleStateChanged -= _playerService_ShuffleStateChanged;
 
             Waveform = Array.Empty<float>();
         }

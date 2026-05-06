@@ -69,8 +69,7 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void Shuffle()
         {
-            var tracks = _playerService.GetQueue().Shuffle();
-            _playerService.SetQueue(tracks, true);
+            _playerService.ToggleShuffle();
         }
         [RelayCommand]
         private void Info()

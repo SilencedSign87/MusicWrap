@@ -132,8 +132,8 @@
                             >
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="12"/>
                         </Button>
-                        <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="{Binding DjTooltip}" Command="{Binding ToggleDJModeCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;" FontSize="12"/>
+                        <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="{Binding ShuffleTooltip}" Command="{Binding ToggleShuffleCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding ShuffleIcon}" FontSize="12"/>
                         </Button>
                         <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Volume">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="12"/>

@@ -298,7 +298,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private void ShuffleAllTracks()
         {
             if (AllTrackIds.Count == 0) return;
-            _musicPlayerService.SetQueue(AllTrackIds.Shuffle());
+            _musicPlayerService.SetQueue(AllTrackIds);
+            if (!_musicPlayerService.IsShuffleEnabled)
+                _musicPlayerService.ToggleShuffle();
+
             _musicPlayerService.PlayIndex(0);
 
         }

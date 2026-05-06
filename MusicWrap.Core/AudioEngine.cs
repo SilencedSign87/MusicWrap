@@ -340,6 +340,10 @@ namespace MusicWrap.Core
         public bool SetPosition(int stream, double seconds)
         {
             long bytePos = Bass.BASS_ChannelSeconds2Bytes(stream, seconds);
+            if (BassMix.BASS_Mixer_ChannelSetPosition(stream, bytePos))
+            {
+                return true;
+            }
             return Bass.BASS_ChannelSetPosition(stream, bytePos);
         }
         public OutputMode GetCurrentOutputMode() => _currentOutputMode;

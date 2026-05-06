@@ -36,7 +36,7 @@ namespace MusicWrap.UI.Services
 
         private const int SmallCacheLimit = 30;
         private const int MediumCacheLimit = 30;
-        private const int LargeCacheLimit = 2;
+        private const int LargeCacheLimit = 1;
 
         private static readonly object _cacheLock = new();
 

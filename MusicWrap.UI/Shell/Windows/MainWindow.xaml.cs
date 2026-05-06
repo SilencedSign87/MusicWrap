@@ -13,7 +13,6 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -113,6 +112,7 @@ namespace MusicWrap.UI.Shell.Windows
                 return;
             }
 
+            App.Services.GetService<IMusicPlayerService>()?.FlushPlaybackState();
             App.RequestShutdown();
         }
         private void MainWindow_Closed(object? sender, EventArgs e)

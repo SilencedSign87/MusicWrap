@@ -29,11 +29,6 @@
 
         <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
             <RadioButton GroupName="start"
-                 Content="Resume playing"
-                 Margin="8,0"
-                 IsChecked="{Binding ResumePlayback, Mode=TwoWay}" />
-
-            <RadioButton GroupName="start"
                  Content="Preserve queue and current track"
                  Margin="8,0"
                  IsChecked="{Binding RestoreQueueAndIndexOnly, Mode=TwoWay}" />
