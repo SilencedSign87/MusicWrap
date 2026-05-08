@@ -104,7 +104,6 @@
                     ScrollViewer.CanContentScroll="True"
                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                     ScrollViewer.VerticalScrollBarVisibility="Auto"
-                    Background="{StaticResource BackgroundLayer}"
                     >
                 <ListView.GroupStyle>
                     <GroupStyle>

@@ -86,7 +86,7 @@ public static class ServiceRegistration
 
         services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
         services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
-        services.AddTransient<IPlaylistService, PlaylistService>();
+        services.AddSingleton<IPlaylistService, PlaylistService>();
         services.AddSingleton<IStatusService, StatusService>();
 
         //Player

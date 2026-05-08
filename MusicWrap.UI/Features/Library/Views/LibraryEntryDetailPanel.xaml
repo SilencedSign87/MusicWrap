@@ -164,22 +164,6 @@
             <local:LibraryEntryTracksView 
                 Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}"/>
 
-            <StackPanel 
-                Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Stats}" Margin="10">
-                <TextBlock Text="{Binding StatsLine1}" FontSize="12" Margin="0,0,0,6"/>
-                <TextBlock Text="{Binding StatsLine2}" FontSize="12" Margin="0,0,0,6"/>
-                <TextBlock Text="{Binding StatsLine3}" FontSize="12"/>
-            </StackPanel>
-
-            <TextBlock Text="Profile"
-                       Margin="10"
-                       FontSize="12"
-                       Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Profile}"/>
-
-            <TextBlock Text="More"
-                       Margin="10"
-                       FontSize="12"
-                       Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=More}"/>
         </Grid>
     </Grid>
 </UserControl>

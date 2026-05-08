@@ -144,6 +144,22 @@ namespace MusicWrap.UI.Features.Playlist.Views
                 _vm.ShufflePlaylistCommand.Execute(entry.id);
             }
         }
+
+        private void PlayPlaylist_Click(object sender, RoutedEventArgs e)
+        {
+            if (_vm.PlaySelectedCommand.CanExecute(null))
+            {
+                _vm.PlaySelectedCommand.Execute(null);
+            }
+        }
+
+        private void PlayNext_Click(object sender, RoutedEventArgs e)
+        {
+            if (_vm.PlayNextSelectedCommand.CanExecute(null))
+            {
+                _vm.PlayNextSelectedCommand.Execute(null);
+            }
+        }
     }
 }
 

@@ -19,6 +19,7 @@ using System.Text;
 using System.Xml.Serialization;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.Core.Services.Playlists;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
@@ -33,20 +34,32 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         [ObservableProperty] List<string> allTabs = ["Tracks", "Stats"];
         [ObservableProperty] string selectedTab = "Tracks";
 
-        private readonly PlaylistData _playlist;
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly ILibraryCacheService _libraryCacheService;
         private readonly IMusicPlayerService _musicPlayerService;
+        private readonly IPlaylistService _playlistService;
         private NewPlaylistWindow? _newPlaylistWindow;
 
-        public PlaylistViewModel(PlaylistData playlist, ILibraryCacheService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService)
+        public PlaylistViewModel(ILibraryCacheService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService)
         {
-            _playlist = playlist;
             _libraryCacheService = cache;
             _saveCoordinator = saveCoordinator;
             _musicPlayerService = musicPlayerService;
+            _playlistService = playlistService;
             selectedTrackIds = [];
+            _playlistService.PlaylistsChanged += _playlistService_PlaylistsChanged;
+            _playlistService.PlaylistItemsChanged += _playlistService_PlaylistItemsChanged;
 
+            ConstructEntries();
+        }
+
+        private void _playlistService_PlaylistItemsChanged(object? sender, PlaylistItemsChangedEventArgs e)
+        {
+            ConstructEntries();
+        }
+
+        private void _playlistService_PlaylistsChanged(object? sender, EventArgs e)
+        {
             ConstructEntries();
         }
         #region Commands
@@ -77,31 +90,14 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             if (SelectedEntry is null) return;
 
-            var playlist = _playlist.Playlists.FirstOrDefault(p => p.Id == SelectedEntry.id);
-            if (playlist is null) return;
+            _playlistService.ReorderTrack(SelectedEntry.id, request.SourceTrackId, request.TargetTrackId, request.PlaceAfterTarget);
 
-            var sourceIndex = playlist.Items.FindIndex(i => i.TrackId == request.SourceTrackId);
-            var targetIndex = playlist.Items.FindIndex(i => i.TrackId == request.TargetTrackId);
-            if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) return;
-
-            var moved = playlist.Items[sourceIndex];
-            playlist.Items.RemoveAt(sourceIndex);
-
-            if (sourceIndex < targetIndex) targetIndex--;
-
-            var insertIndex = request.PlaceAfterTarget ? targetIndex + 1 : targetIndex;
-            insertIndex = Math.Clamp(insertIndex, 0, playlist.Items.Count);
-            playlist.Items.Insert(insertIndex, moved);
-
-            playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
-
-            LoadPlaylistTracks();
             _saveCoordinator.Enqueue(SaveKind.Playlist);
         }
         [RelayCommand]
         private void PlayPlaylist(int playlistId)
         {
-            var tracks = _playlist.Playlists.FirstOrDefault(p => p.Id == playlistId)?.Items.Select(i => i.TrackId).ToList();
+            var tracks = _playlistService.GetTracksByPlaylistId(playlistId);
             if (tracks == null || tracks.Count == 0) return;
 
             _musicPlayerService.SetQueue(tracks, false);
@@ -110,7 +106,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         [RelayCommand]
         private void ShufflePlaylist(int playlistId)
         {
-            var tracks = _playlist.Playlists.FirstOrDefault(p => p.Id == playlistId)?.Items.Select(i => i.TrackId).ToList();
+            var tracks = _playlistService.GetTracksByPlaylistId(playlistId);
             if (tracks == null || tracks.Count == 0) return;
             _musicPlayerService.SetQueue(tracks, false);
             if (!_musicPlayerService.IsShuffleEnabled)
@@ -127,23 +123,24 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
                 return;
             }
 
-            var playlist = _playlist.Playlists.FirstOrDefault(p => p.Id == SelectedEntry.id);
-            if (playlist is null)
-            {
-                return;
-            }
+            _playlistService.RemoveTracksFromPlaylist(trackIds, SelectedEntry.id);
 
-            var removeSet = trackIds.ToHashSet();
-            var removedAny = playlist.Items.RemoveAll(item => removeSet.Contains(item.TrackId)) > 0;
-            if (!removedAny)
-            {
-                return;
-            }
-
-            playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
-
-            LoadPlaylistTracks();
             _saveCoordinator.Enqueue(SaveKind.Playlist);
+        }
+        [RelayCommand]
+        private void PlaySelected()
+        {
+            if (SelectedEntry is null) return;
+            var tracks = _playlistService.GetTracksByPlaylistId(SelectedEntry.id);
+            if (tracks == null || tracks.Count == 0) return;
+            _musicPlayerService.SetQueue(tracks, false);
+            _musicPlayerService.PlayIndex(0);
+        }
+        [RelayCommand]
+        private void PlayNextSelected()
+        {
+            if (SelectedEntry is null) return;
+            
         }
         #endregion
 
@@ -162,18 +159,18 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private void ConstructEntries()
         {
             Entries.Clear();
-            var playlists = _playlist.Playlists;
+            var playlists = _playlistService.GetPlaylists();
             
             foreach (var entry in playlists)
             {
-                var tracks =  entry.Items.Select(i => i.TrackId).ToList();
+                var tracks =  entry.TrackIds;
 
                 Entries.Add(
                     new PlaylistEntry(
                         entry.Id,
                         entry.Name,
                         _libraryCacheService.FindCover(trackIds: tracks) ?? string.Empty,
-                        $"{entry.Items.Count} items"
+                        $"{tracks.Count} items"
                         )
                     );
             }
@@ -187,10 +184,10 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             Tracks.Clear();
 
-            var selectedPlaylist = _playlist.Playlists.FirstOrDefault(p => p.Id == SelectedEntry?.id);
+            var selectedPlaylist = _playlistService.GetPlaylistById(SelectedEntry?.id ?? 0);
             if (selectedPlaylist != null)
             {
-                var ids = selectedPlaylist.Items.Select(i => i.TrackId).ToList();
+                var ids = selectedPlaylist.TrackIds.ToList();
                 AllTrackIds = ids;
                 var trackRows = _libraryCacheService.TrackIdsToTrackRowItems(ids);
                 foreach (var row in trackRows)

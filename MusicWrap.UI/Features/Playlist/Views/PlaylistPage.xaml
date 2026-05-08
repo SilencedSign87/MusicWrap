@@ -8,6 +8,7 @@
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playlist.ViewModels"
              mc:Ignorable="d" 
+             x:Name="RootControl"
              Foreground="White"
              d:DataContext="{d:DesignInstance Type=vm:PlaylistViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -122,6 +123,16 @@
                 SelectionMode="Single"
                 HorizontalAlignment="Stretch"
                 >
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Icon="{ex:Icon Glyph=E768}" Header="Play" Click="PlayPlaylist_Click"/>
+                        <MenuItem Icon="{ex:Icon Glyph=E893}" Header="Play next"  Click="PlayNext_Click"/>
+                        <MenuItem Icon="{ex:Icon Glyph=E710}" Header="Add to queue" />
+                        <Separator/>
+                        <MenuItem Icon="{ex:Icon Glyph=E70F}" Header="Rename" />
+                        <MenuItem Icon="{ex:Icon Glyph=E74D}" Header="Delete" />
+                    </ContextMenu>
+                </ListView.ContextMenu>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="Foreground" Value="White"/>
@@ -133,7 +144,10 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="vm:PlaylistEntry">
-                        <Grid>
+                        <Grid 
+                            HorizontalAlignment="Stretch"
+                            Margin="0"
+                            >
                             <!-- Compact -->
                             <StackPanel x:Name="CompactLayout"
                             Orientation="Horizontal"

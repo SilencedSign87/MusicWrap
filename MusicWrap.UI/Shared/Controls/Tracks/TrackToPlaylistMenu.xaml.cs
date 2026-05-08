@@ -33,6 +33,8 @@ namespace MusicWrap.UI.Controls.Models
         {
             InitializeComponent();
             _playlistService = App.Services.GetRequiredService<IPlaylistService>();
+            Loaded += UserControl_Loaded;
+            Unloaded += TrackToPlaylistMenu_Unloaded;
         }
 
         #region Dependency Properties
@@ -56,7 +58,27 @@ namespace MusicWrap.UI.Controls.Models
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
+            _playlistService.PlaylistsChanged += _playlistService_PlaylistsChanged;
+            _playlistService.PlaylistItemsChanged += _playlistService_PlaylistItemsChanged;
             ReloadPlaylists();
+        }
+        private void TrackToPlaylistMenu_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _playlistService.PlaylistsChanged -= _playlistService_PlaylistsChanged;
+            _playlistService.PlaylistItemsChanged -= _playlistService_PlaylistItemsChanged;
+        }
+
+        private void _playlistService_PlaylistsChanged(object? sender, EventArgs e)
+        {
+            ReloadPlaylists();
+        }
+
+        private void _playlistService_PlaylistItemsChanged(object? sender, PlaylistItemsChangedEventArgs e)
+        {
+            var currentTrackIds = TrackIds?.ToArray() ?? [];
+            if (e.TrackIds.Any(id => currentTrackIds.Contains(id))) {
+                ReloadPlaylists();
+            }
         }
 
         private void OnPlaylistsChanged()
