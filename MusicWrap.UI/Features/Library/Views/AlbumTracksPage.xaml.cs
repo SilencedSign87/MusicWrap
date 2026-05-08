@@ -212,6 +212,7 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 _musicPlayerService.ToggleShuffle();
             }
+            _musicPlayerService.PlayPlaybackIndex(0);
 
         }
     }

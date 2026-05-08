@@ -11,10 +11,8 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty] private string query = string.Empty;
         public event EventHandler<string>? QuerySubmitted;
 
-        public CommandPaletteViewModel(ILibraryCacheService libraryCache, MusicLibrary library)
+        public CommandPaletteViewModel()
         {
-            _ = libraryCache;
-            _ = library;
         }
 
         partial void OnQueryChanged(string value)

@@ -26,14 +26,14 @@ namespace MusicWrap.UI.Features.Library.Services
         List<Genre> GetGenreById(List<int> genreIds);
         int[] GetTracksForAlbum(int albumId, string? query = null);
         int[] GetTrackIdsForEntry(LibraryEntry entry, string? query = null);
-        LibraryEntryStatsModel GetStatsForEntry(LibraryEntry entry, string? query = null);
+        int GetAlbumDuration(int albumId);
         Task InitializeAsync(string initialView, bool ascending);
         Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(string viewType, bool ascending);
         IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry);
         List<TrackRowItem> TrackIdsToTrackRowItems(IEnumerable<int> trackIds);
         string GetArtistNamesForAlbum(int albumId);
         string GetArtistNamesForTrack(int trackId);
-        string? FindCover(IEnumerable<int> AlbumIds, IEnumerable<int>? trackIds = null);
+        string? FindCover(IEnumerable<int>? albumIds = null, IEnumerable<int>? trackIds = null);
         int[] GetTrackQueueForAlbum(int albumId);
         void SaveToDisk();
         void InvalidateCache();
@@ -61,6 +61,7 @@ namespace MusicWrap.UI.Features.Library.Services
         private Dictionary<int, int> _trackCountByAlbumId = [];
         private Dictionary<int, string> _artistNamesByAlbumId = [];
         private Dictionary<int, string> _artistNameById = [];
+        private Dictionary<int, int>? _albumDurationById = [];
 
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
@@ -113,6 +114,27 @@ namespace MusicWrap.UI.Features.Library.Services
             if (album is null) return "Unknown Artist";
 
             return _artistNamesByAlbumId.TryGetValue(album.Id, out var name) ? name : "Unknown Artist";
+        }
+        public int GetAlbumDuration(int albumId)
+        {
+            EnsureIndexes();
+            if (_albumDurationById is not null && _albumDurationById.TryGetValue(albumId, out var duration))
+            {
+                return duration;
+            }
+            else
+            {
+                _albumDurationById ??= [];
+                // calculate duration
+                var tracks = _library.Tracks.Where(t => t.AlbumId == albumId);
+                int durationSeconds = 0;
+                foreach (var track in tracks)
+                {
+                    durationSeconds += track.Duration;
+                }
+                _albumDurationById[albumId] = durationSeconds;
+                return durationSeconds;
+            }
         }
 
         public void SaveToDisk()
@@ -266,21 +288,6 @@ namespace MusicWrap.UI.Features.Library.Services
                 .ToArray();
         }
 
-        public LibraryEntryStatsModel GetStatsForEntry(LibraryEntry entry, string? query = null)
-        {
-            var trackIds = GetTrackIdsForEntry(entry, query);
-            var tracks = _library.Tracks.Where(t => trackIds.Contains(t.Id)).ToArray();
-
-            var albumCount = tracks.Select(t => t.AlbumId).Distinct().Count();
-            var artistCount = tracks.SelectMany(t => t.ArtistIds).Distinct().Count();
-
-            return new LibraryEntryStatsModel
-            {
-                AlbumsCount = albumCount,
-                TracksCount = tracks.Length,
-                ArtistsCount = artistCount
-            };
-        }
         public void InvalidateCache()
         {
             _artistCache = null;
@@ -297,6 +304,7 @@ namespace MusicWrap.UI.Features.Library.Services
             _artistNamesByAlbumId = [];
             _artistNameById = [];
             _coverLookUp = [];
+            _albumDurationById = [];
         }
         public Track? GetTrackById(int trackId)
         {
@@ -560,16 +568,21 @@ namespace MusicWrap.UI.Features.Library.Services
             return "#"; // numbers
         }
 
-        public string? FindCover(IEnumerable<int> AlbumIds, IEnumerable<int>? trackIds = null)
+        public string? FindCover(IEnumerable<int>? albumIds = null, IEnumerable<int>? trackIds = null)
         {
-            foreach (var albumId in AlbumIds)
-            {
-                var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
-                if (album is null) continue;
 
-                if (album.CoverId != 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
+            if (albumIds is not null)
+            {
+
+                foreach (var albumId in albumIds)
                 {
-                    return cover.FileName;
+                    var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
+                    if (album is null) continue;
+
+                    if (album.CoverId != 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
+                    {
+                        return cover.FileName;
+                    }
                 }
             }
 
@@ -588,16 +601,6 @@ namespace MusicWrap.UI.Features.Library.Services
                 return null;
             }
 
-            foreach (var albumId in AlbumIds)
-            {
-                foreach (var track in _library.Tracks.Where(t => t.AlbumId == albumId))
-                {
-                    if (track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover))
-                    {
-                        return cover.FileName;
-                    }
-                }
-            }
             return null;
         }
         private void EnsureIndexes()

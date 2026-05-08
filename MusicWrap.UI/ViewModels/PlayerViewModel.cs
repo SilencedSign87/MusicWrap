@@ -338,7 +338,7 @@ namespace MusicWrap.UI.ViewModels
         private void UpdateShuffleState()
         {
             IsShuffleEnabled = _playerService.IsShuffleEnabled;
-            ShuffleIcon = IsShuffleEnabled ? "\xE894" : "\ue8b1";
+            ShuffleIcon = IsShuffleEnabled ? "\xE8B1" : "\xE73C";
             ShuffleTooltip = IsShuffleEnabled ? "Shuffle on" : "Shuffle off";
         }
 

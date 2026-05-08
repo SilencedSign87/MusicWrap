@@ -30,12 +30,19 @@ namespace MusicWrap.UI.Shell.Dialogs
             _trackIds = trackIds ?? Array.Empty<int>();
             _playlistService = App.Services.GetRequiredService<IPlaylistService>();
             _playlist = App.Services.GetRequiredService<PlaylistData>();
+
+            if (trackIds is not null && trackIds.Count() > 0)
+            {
+                Title = $"Create Playlist - {trackIds.Count()} tracks";
+            }
         }
         private void PlaylistNameInput_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter) {
+            if (e.Key == Key.Enter)
+            {
                 var playlistName = PlaylistNameInput.Text;
                 TryToCreatePlaylist(playlistName);
+                e.Handled = true;
             }
         }
 
@@ -52,7 +59,8 @@ namespace MusicWrap.UI.Shell.Dialogs
         private void TryToCreatePlaylist(string playlistName)
         {
             var existing = _playlist.Playlists.Any(p => p.Name.Equals(playlistName, StringComparison.OrdinalIgnoreCase));
-            if (existing) {
+            if (existing)
+            {
                 MessageBox.Show(
                      $"A playlist with the name '{playlistName}' already exists.",
                      "Duplicate Playlist Name",
@@ -60,10 +68,11 @@ namespace MusicWrap.UI.Shell.Dialogs
                      MessageBoxImage.Error
                     );
 
-            }else
+            }
+            else
             {
                 _playlistService.CreatePlaylist(playlistName, _trackIds);
-                
+
                 Close();
 
             }

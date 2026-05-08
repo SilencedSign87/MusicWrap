@@ -10,7 +10,7 @@
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Background="Transparent">
         <ListBox x:Name="AlbumsViewport"
-                 ItemsSource="{Binding LibraryViewModel.GridRows, ElementName=RootAlbumsView}"
+                 ItemsSource="{Binding ViewModel.GridRows, ElementName=RootAlbumsView}"
                  SelectionChanged="AlbumsViewport_SelectionChanged"
                  SelectionMode="Single"
                  IsSynchronizedWithCurrentItem="False"
@@ -62,7 +62,7 @@
                         <ItemsControl Grid.Row="0" ItemsSource="{Binding Albums}" HorizontalAlignment="Stretch">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="{Binding Source={x:Reference RootAlbumsView}, Path=LibraryViewModel.LayoutColumns}" />
+                                    <UniformGrid Columns="{Binding Source={x:Reference RootAlbumsView}, Path=ViewModel.LayoutColumns}" />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
@@ -97,7 +97,7 @@
                                         <Button.Background>
                                             <MultiBinding Converter="{StaticResource SelectedAlbumBackgroundConverter}">
                                                 <Binding Path="Id"/>
-                                                <Binding Source="{x:Reference RootAlbumsView}" Path="LibraryViewModel.ExpandedAlbumId"/>
+                                                <Binding Source="{x:Reference RootAlbumsView}" Path="ViewModel.ExpandedAlbumId"/>
                                                 <Binding Path="DominantColor"/>
                                             </MultiBinding>
                                         </Button.Background>

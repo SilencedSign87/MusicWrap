@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
@@ -13,9 +14,7 @@ namespace MusicWrap.UI.Features.Library.Views
 {
     public partial class LibraryEntryAlbumsView : UserControl
     {
-        private readonly ILibraryCacheService _libraryCacheService;
         private DispatcherTimer? _resizeThrottleTimer;
-        private LibraryViewModel? _subscribedViewModel;
 
         private int _lastColumns = -1;
         private const int MinTileWidth = 190;
@@ -26,11 +25,6 @@ namespace MusicWrap.UI.Features.Library.Views
         {
             InitializeComponent();
 
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
-
-            Loaded += LibraryEntryAlbumsView_Loaded;
-            Unloaded += LibraryEntryAlbumsView_Unloaded;
-
             _resizeThrottleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
             _resizeThrottleTimer.Tick += (_, _) =>
             {
@@ -39,113 +33,57 @@ namespace MusicWrap.UI.Features.Library.Views
             };
         }
 
-        public static readonly DependencyProperty LibraryViewModelProperty =
+        #region Dependency Properties
+        private static readonly DependencyProperty ViewModelProperty =
             DependencyProperty.Register(
-                nameof(LibraryViewModel),
-                typeof(LibraryViewModel),
+                nameof(ViewModel),
+                typeof(LibraryEntryAlbumViewModel),
                 typeof(LibraryEntryAlbumsView),
-                new PropertyMetadata(null, OnLibraryViewModelChanged));
-
-        public LibraryViewModel? LibraryViewModel
+                new PropertyMetadata(null));
+        public LibraryEntryAlbumViewModel ViewModel
         {
-            get => (LibraryViewModel?)GetValue(LibraryViewModelProperty);
-            set => SetValue(LibraryViewModelProperty, value);
+            get => (LibraryEntryAlbumViewModel)GetValue(ViewModelProperty);
+            set => SetValue(ViewModelProperty, value);
         }
-
-        private static void OnLibraryViewModelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not LibraryEntryAlbumsView view)
-            {
-                return;
-            }
-
-            if (ReferenceEquals(e.OldValue, e.NewValue))
-            {
-                return;
-            }
-
-            if (e.OldValue is LibraryViewModel oldVm)
-            {
-                oldVm.PropertyChanged -= view.ViewModel_PropertyChanged;
-            }
-
-            if (e.NewValue is LibraryViewModel newVm)
-            {
-                newVm.PropertyChanged += view.ViewModel_PropertyChanged;
-                view._subscribedViewModel = newVm;
-                view.HandleSelectionChanged();
-            }
-            else
-            {
-                view._subscribedViewModel = null;
-            }
-        }
+        #endregion
 
         private void LibraryEntryAlbumsView_Loaded(object sender, RoutedEventArgs e)
         {
-            if (_subscribedViewModel is null && LibraryViewModel is not null)
-            {
-                LibraryViewModel.PropertyChanged += ViewModel_PropertyChanged;
-                _subscribedViewModel = LibraryViewModel;
-            }
+            //    if (_subscribedViewModel is null && AlbumViewModel is not null)
+            //    {
+            //        AlbumViewModel.PropertyChanged += ViewModel_PropertyChanged;
+            //        _subscribedViewModel = AlbumViewModel;
+            //    }
 
             UpdateColumnsForViewportWidth(true);
-            HandleSelectionChanged();
+            //    //HandleSelectionChanged();
         }
 
         private void LibraryEntryAlbumsView_Unloaded(object sender, RoutedEventArgs e)
         {
-            if (_subscribedViewModel is not null)
-            {
-                _subscribedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-                _subscribedViewModel = null;
-            }
-        }
-
-        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(LibraryViewModel.SelectedEntry))
-            {
-                HandleSelectionChanged();
-            }
-        }
-
-        private void HandleSelectionChanged()
-        {
-            if (LibraryViewModel is null)
-            {
-                _lastColumns = -1;
-                return;
-            }
-
-            var selected = LibraryViewModel.SelectedEntry;
-            if (selected == null)
-            {
-                LibraryViewModel.CollapseAlbum();
-                _lastColumns = -1;
-                return;
-            }
-
-            // Keep collapsed by default when selecting a new entry.
-            LibraryViewModel.CollapseAlbum();
+            //    if (_subscribedViewModel is not null)
+            //    {
+            //        _subscribedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            //        _subscribedViewModel = null;
+            //    }
         }
 
         private void AlbumButton_Click(object sender, RoutedEventArgs e)
         {
-            if (LibraryViewModel is null)
+            if (ViewModel is null)
             {
                 return;
             }
 
             if (sender is Button button && button.DataContext is LibraryViewModel.AlbumData albumData)
             {
-                LibraryViewModel.ExpandAlbum(albumData.Id, GetCurrentViewportWidth());
+                ViewModel.ExpandAlbum(albumData.Id);
             }
         }
 
         private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
         {
-            LibraryViewModel?.CollapseAlbum();
+                ViewModel?.CollapseAlbum();
         }
 
         private void TracksContentPlaceholder_Loaded(object sender, RoutedEventArgs e)
@@ -160,24 +98,25 @@ namespace MusicWrap.UI.Features.Library.Views
                         return;
                     }
 
-                    if (LibraryViewModel is null)
+                    if (ViewModel is null)
                     {
                         contentControl.Content = null;
                         return;
                     }
 
-                    var library = LibraryViewModel.GetLibrary();
+                    var library = ViewModel.Library;
+                    var libraryCacheService = ViewModel.LibraryCache;
                     var tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
 
                     var tracksViewModel = new AlbumTracksViewModel(
                         library,
-                        _libraryCacheService,
+                        libraryCacheService,
                         tracksContextMenuService,
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,
-                        LibraryViewModel.ActiveSearchQuery,
-                        LibraryViewModel.DetailSortMode
+                        "",
+                        ViewModel.SortMode ?? TrackSortMode.Year
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
                     contentControl.Content = tracksPage;
@@ -236,7 +175,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void UpdateColumnsForViewportWidth(bool force = false)
         {
-            if (LibraryViewModel is null)
+            if (ViewModel is null)
             {
                 return;
             }
@@ -254,7 +193,7 @@ namespace MusicWrap.UI.Features.Library.Views
             }
 
             _lastColumns = columns;
-            LibraryViewModel.SetLayoutColumns(columns);
+            ViewModel.SetLayoutColumns(columns);
         }
     }
 }

@@ -18,6 +18,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Xml.Serialization;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
@@ -109,10 +110,14 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         [RelayCommand]
         private void ShufflePlaylist(int playlistId)
         {
-            var tracks = _playlist.Playlists.FirstOrDefault(p => p.Id == playlistId)?.Items.Select(i => i.TrackId).Shuffle().ToList();
+            var tracks = _playlist.Playlists.FirstOrDefault(p => p.Id == playlistId)?.Items.Select(i => i.TrackId).ToList();
             if (tracks == null || tracks.Count == 0) return;
             _musicPlayerService.SetQueue(tracks, false);
-            _musicPlayerService.PlayIndex(0);
+            if (!_musicPlayerService.IsShuffleEnabled)
+            {
+                _musicPlayerService.ToggleShuffle();
+            }
+            _musicPlayerService.PlayPlaybackIndex(0);
         }
         [RelayCommand]
         private void RemoveSelectedTracks(List<int> trackIds)
@@ -158,14 +163,16 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             Entries.Clear();
             var playlists = _playlist.Playlists;
-
+            
             foreach (var entry in playlists)
             {
+                var tracks =  entry.Items.Select(i => i.TrackId).ToList();
+
                 Entries.Add(
                     new PlaylistEntry(
                         entry.Id,
                         entry.Name,
-                        string.Empty,
+                        _libraryCacheService.FindCover(trackIds: tracks) ?? string.Empty,
                         $"{entry.Items.Count} items"
                         )
                     );

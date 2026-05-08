@@ -17,71 +17,6 @@
          Foreground="White"
          d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumGridRowModel}"
          d:DesignHeight="450" d:DesignWidth="800">
-    <UserControl.Resources>
-        <!-- Template for Album -->
-        <DataTemplate x:Key="AlbumTemplate">
-            <Button Background="Transparent"
-                    BorderThickness="0"
-                    Padding="0"
-                    Width="150"
-                    Height="194"
-                    Cursor="Hand"
-                    Tag="{Binding Id}"
-                    Click="AlbumButton_Click"
-                    >
-                <local:AlbumPage DataContext="{Binding}"/>
-            </Button>
-        </DataTemplate>
-
-        <!-- Template for Track List Placeholder -->
-        <DataTemplate x:Key="TrackListTemplate">
-            <Border 
-                Margin="0,8"
-                CornerRadius="4"
-                HorizontalAlignment="Stretch"
-                BorderThickness="1"
-                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                >
-                <Border.Background>
-                    <ImageBrush 
-                        ImageSource="{Binding ImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=512}" 
-                        RenderOptions.BitmapScalingMode="HighQuality"
-                        Stretch="UniformToFill"/>
-                </Border.Background>
-                <Grid>
-                    <Grid Margin="8">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <ContentControl x:Name="TracksContentPlaceholder"
-                                Grid.Row="0"
-                                Margin="0,0,0,0"
-                                Loaded="TracksContentPlaceholder_Loaded"/>
-
-                        <!-- Close Button -->
-                        <Button x:Name="CloseTracksButton"
-                        Content="✕"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Top"
-                        Padding="8,4"
-                        Background="Transparent"
-                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
-                        BorderThickness="0"
-                        FontSize="14"
-                        Cursor="Hand"
-                        Click="CloseTracksButton_Click"/>
-                    </Grid>
-                </Grid>
-            </Border>
-        </DataTemplate>
-
-        <!-- Template Selector -->
-        <selectors:AlbumItemTemplateSelector x:Key="AlbumItemSelector"
-                                         AlbumTemplate="{StaticResource AlbumTemplate}"
-                                         TrackListTemplate="{StaticResource TrackListTemplate}"/>
-    </UserControl.Resources>
-
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250"/>
@@ -263,7 +198,6 @@
         <Grid Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
             <views:LibraryEntryDetailPanel
                 SelectedEntry="{Binding DataContext.SelectedEntry, Mode=OneWay, ElementName=RootLibraryPage}"
-                LibraryViewModel="{Binding DataContext, Mode=OneWay, ElementName=RootLibraryPage}"
                 />
         </Grid>
     </Grid>

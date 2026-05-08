@@ -50,12 +50,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly TracksContextMenuService _tracksContextMenuService;
         private readonly MusicLibrary _library;
         private readonly IMusicPlayerService _musicPlayerService;
-        private LibraryViewModel? _hostLibraryViewModel;
         private int _headerStatsRequestId;
         private int _tracksViewRequestId;
         private int _entryPreloadRequestId;
         private List<int> _entryTrackIds = [];
-        private LibraryEntryStatsModel? _cachedStats;
+
+        public LibraryEntryAlbumViewModel AlbumEntriesViewModel { get; set; }
 
         [ObservableProperty] private LibraryEntry? currentEntry;
 
@@ -68,7 +68,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private ObservableCollection<LibraryDetailTabItem> tabs = [];
         [ObservableProperty] private LibraryDetailTabItem? selectedTab;
 
-        [ObservableProperty] private ObservableCollection<AlbumSummary> albums = [];
         [ObservableProperty] private ObservableCollection<TrackRowItem> tracks = [];
         [ObservableProperty] private List<int> selectedTrackIds = [];
         [ObservableProperty] private List<int> allTrackIds = [];
@@ -77,37 +76,28 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private SortDirectionOption selectedSortDirection = SortDirectionOption.Ascending;
         [ObservableProperty] private string trackSearchQuery = string.Empty;
 
-        [ObservableProperty] private string statsLine1 = string.Empty;
-        [ObservableProperty] private string statsLine2 = string.Empty;
-        [ObservableProperty] private string statsLine3 = string.Empty;
-
-        public LibraryEntryDetailPanelViewModel(ILibraryCacheService libraryCache, TracksContextMenuService tracksContextMenuService, MusicLibrary library, IMusicPlayerService musicPlayerService)
+        public LibraryEntryDetailPanelViewModel(
+            ILibraryCacheService libraryCache,
+            TracksContextMenuService tracksContextMenuService,
+            MusicLibrary library,
+            LibraryEntryAlbumViewModel albumViewModel,
+            IMusicPlayerService musicPlayerService)
         {
             _libraryCache = libraryCache;
             _tracksContextMenuService = tracksContextMenuService;
             _library = library;
             _musicPlayerService = musicPlayerService;
-        }
-
-        public void AttachLibraryViewModel(LibraryViewModel? libraryViewModel)
-        {
-            _hostLibraryViewModel = libraryViewModel;
-            _hostLibraryViewModel?.SetDetailSortOptions(SelectedTrackSortMode, SortAscending);
+            AlbumEntriesViewModel = albumViewModel;
         }
 
         public void LoadEntry(LibraryEntry? entry)
         {
             CurrentEntry = entry;
-            Albums.Clear();
             Tracks.Clear();
             SelectedTrackIds = [];
             AllTrackIds = [];
             TrackSearchQuery = string.Empty;
             _entryTrackIds = [];
-            _cachedStats = null;
-            StatsLine1 = string.Empty;
-            StatsLine2 = string.Empty;
-            StatsLine3 = string.Empty;
 
             if (entry is null)
             {
@@ -149,30 +139,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 await RefreshTracksViewAsync(false, true);
             }
 
-            async Task LoadStatsAsync()
-            {
-                var stats = await Task.Run(() => _libraryCache.GetStatsForEntry(entry));
-                if (requestId != Volatile.Read(ref _entryPreloadRequestId))
-                {
-                    return;
-                }
-
-                _cachedStats = stats;
-                if (SelectedTab?.Key == LibraryDetailTabKey.Stats)
-                {
-                    ApplyStats(stats);
-                }
-            }
-
             if (prioritizedTab == LibraryDetailTabKey.Stats)
             {
-                await LoadStatsAsync();
-                await LoadTracksAsync();
+
                 return;
             }
 
             await LoadTracksAsync();
-            await LoadStatsAsync();
         }
 
         private async Task LoadHeaderStatsDeferredAsync(LibraryEntry entry)
@@ -220,13 +193,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             return $"{(int)span.TotalHours:D2}:{span.Minutes:D2}:{span.Seconds:D2}";
         }
 
-        private void ApplyStats(LibraryEntryStatsModel stats)
-        {
-            StatsLine1 = "Albums: " + stats.AlbumsCount;
-            StatsLine2 = "Tracks: " + stats.TracksCount;
-            StatsLine3 = "Artists: " + stats.ArtistsCount;
-        }
-
         [RelayCommand]
         private void SelectTab(LibraryDetailTabItem? tab)
         {
@@ -250,6 +216,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             if (SelectedTab.Key == LibraryDetailTabKey.Albums)
             {
+                AlbumEntriesViewModel.SelectedEntry = CurrentEntry;
+                AlbumEntriesViewModel.SortAscending = SortAscending;
+                AlbumEntriesViewModel.SortMode = SelectedTrackSortMode;
                 return;
             }
             else if (SelectedTab.Key == LibraryDetailTabKey.Tracks)
@@ -258,12 +227,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
             else if (SelectedTab.Key == LibraryDetailTabKey.Stats)
             {
-                if (_cachedStats is not null)
-                {
-                    ApplyStats(_cachedStats);
-                }
+
             }
         }
+        #region Relay Commands
 
         [RelayCommand]
         private void PlayNowSelectedTracks()
@@ -291,8 +258,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return;
             }
 
+            if (_musicPlayerService.IsShuffleEnabled)
+            {
+                _musicPlayerService.ToggleShuffle();
+            }
+
             _musicPlayerService.SetQueue(AllTrackIds);
-            _musicPlayerService.PlayTrack(AllTrackIds[0]);
+            _musicPlayerService.PlayPlaybackIndex(0);
         }
         [RelayCommand]
         private void ShuffleAllTracks()
@@ -302,7 +274,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (!_musicPlayerService.IsShuffleEnabled)
                 _musicPlayerService.ToggleShuffle();
 
-            _musicPlayerService.PlayIndex(0);
+            _musicPlayerService.PlayPlaybackIndex(0);
 
         }
 
@@ -342,13 +314,18 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             SortAscending = false;
         }
 
+        #endregion
+
+        #region Partial Properties
         partial void OnSelectedTrackSortModeChanged(TrackSortMode value)
         {
             OnPropertyChanged(nameof(IsSortByTitle));
             OnPropertyChanged(nameof(IsSortByYear));
             OnPropertyChanged(nameof(IsSortByArtistName));
             OnPropertyChanged(nameof(IsSortByDuration));
-            _hostLibraryViewModel?.SetDetailSortOptions(value, SortAscending);
+
+            AlbumEntriesViewModel.SortMode = value;
+
             _ = RefreshTracksViewAsync(false, true);
         }
 
@@ -362,7 +339,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             OnPropertyChanged(nameof(IsSortAscending));
             OnPropertyChanged(nameof(IsSortDescending));
-            _hostLibraryViewModel?.SetDetailSortOptions(SelectedTrackSortMode, value);
+            
+            AlbumEntriesViewModel.SortAscending = value;
+
             _ = RefreshTracksViewAsync(false, true);
         }
 
@@ -379,6 +358,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             _ = RefreshTracksViewAsync(true, true);
         }
+        #endregion
 
         public bool IsSortByTitle => SelectedTrackSortMode == TrackSortMode.Title;
         public bool IsSortByYear => SelectedTrackSortMode == TrackSortMode.Year;
@@ -424,7 +404,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 Tracks = new ObservableCollection<TrackRowItem>(result.Rows);
                 AllTrackIds = result.TrackIds;
                 SelectedTrackIds = result.TrackIds.Where(previousSelection.Contains).ToList();
-                _hostLibraryViewModel?.ApplyGlobalTrackOrder(result.TrackIds);
+                
+                AlbumEntriesViewModel.SortMode = sortMode;
+                AlbumEntriesViewModel.SortAscending = ascending;
             }
 
             if (!Application.Current.Dispatcher.CheckAccess())
@@ -574,11 +556,5 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             return [T(LibraryDetailTabKey.Albums, "Albums"), T(LibraryDetailTabKey.Stats, "Stats")];
         }
 
-    }
-    public sealed class LibraryEntryStatsModel
-    {
-        public int AlbumsCount { get; init; }
-        public int TracksCount { get; init; }
-        public int ArtistsCount { get; init; }
     }
 }

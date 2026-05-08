@@ -216,13 +216,13 @@
                         <StackPanel Grid.Row="1" Orientation="Horizontal">
                             <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12" VerticalAlignment="Center"/>
                             <Button Style="{StaticResource SubtleButton}" Margin="4,0,0,0" ToolTip="Play" Click="PlaySelectedPlaylist_click">
-                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
                             </Button>
                             <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle" Click="ShufflePlaylist_click">
-                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
                             </Button>
                             <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle">
-                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE712;"/>
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE712;"/>
                             </Button>
                         </StackPanel>
                     </Grid>

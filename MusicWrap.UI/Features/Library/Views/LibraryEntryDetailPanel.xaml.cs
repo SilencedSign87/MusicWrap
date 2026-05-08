@@ -40,19 +40,6 @@ namespace MusicWrap.UI.Features.Library.Views
             get => (LibraryEntry?)GetValue(SelectedEntryProperty);
             set => SetValue(SelectedEntryProperty, value);
         }
-
-        public static readonly DependencyProperty LibraryViewModelProperty =
-            DependencyProperty.Register(
-                nameof(LibraryViewModel),
-                typeof(LibraryViewModel),
-                typeof(LibraryEntryDetailPanel),
-                new PropertyMetadata(null, OnLibraryViewModelChanged));
-
-        public LibraryViewModel? LibraryViewModel
-        {
-            get => (LibraryViewModel?)GetValue(LibraryViewModelProperty);
-            set => SetValue(LibraryViewModelProperty, value);
-        }
         #endregion
         private static void OnSelectedEntryChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -60,16 +47,6 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
 
             panel._viewModel.LoadEntry(e.NewValue as LibraryEntry);
-        }
-
-        private static void OnLibraryViewModelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is not LibraryEntryDetailPanel panel)
-            {
-                return;
-            }
-
-            panel._viewModel.AttachLibraryViewModel(e.NewValue as LibraryViewModel);
         }
     }
 }

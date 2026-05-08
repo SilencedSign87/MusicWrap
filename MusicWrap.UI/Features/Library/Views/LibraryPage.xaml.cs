@@ -19,6 +19,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -28,13 +29,7 @@ namespace MusicWrap.UI.Features.Library.Views
         private readonly CommandPaletteViewModel _commandPaletteViewModel;
         private readonly ILibraryCacheService _libraryCacheService;
         private bool _isCommandPaletteSubscribed;
-        private DispatcherTimer? _resizeThrottleTimer;
         private bool _disposed = false;
-
-        private int _lastColumns = -1;
-        private const int MinTileWidth = 150;
-        private const int Gutter = 16;
-        private const int MinColumns = 1;
 
         public LibraryPage()
         {
@@ -51,16 +46,6 @@ namespace MusicWrap.UI.Features.Library.Views
             // Subscribe to property changes
             vm.PropertyChanged += Vm_PropertyChanged;
 
-            // Initialize throttle timer (50ms to reduce excessive recalcs during drag resize)
-            _resizeThrottleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _resizeThrottleTimer.Tick += ResizeThrottleTimer_Tick;
-
-        }
-
-        private void ResizeThrottleTimer_Tick(object? sender, EventArgs e)
-        {
-            _resizeThrottleTimer?.Stop();
-            UpdateColumnsForViewportWidth();
         }
 
         private void LibraryPage_Loaded(object sender, RoutedEventArgs e)
@@ -100,75 +85,6 @@ namespace MusicWrap.UI.Features.Library.Views
         private void HandleSelectionChanged()
         {
             var selected = vm.SelectedEntry;
-            if (selected == null)
-            {
-                vm.CollapseAlbum();
-                _lastColumns = -1;
-                return;
-            }
-
-            // Keep collapsed by default. Album expansion is user-driven.
-            vm.CollapseAlbum();
-        }
-
-        private void AlbumButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.DataContext is LibraryViewModel.AlbumData albumData)
-            {
-                // Use the new ViewModel method to expand/collapse
-                vm.ExpandAlbum(albumData.Id, GetCurrentViewportWidth());
-            }
-        }
-
-        private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
-        {
-            vm.CollapseAlbum();
-        }
-
-        private void TracksContentPlaceholder_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is ContentControl contentControl && contentControl.DataContext is LibraryViewModel.AlbumGridRowModel row)
-            {
-                void RefreshTracksContent()
-                {
-                    if (row.ExpandedAlbumId == null)
-                    {
-                        contentControl.Content = null;
-                        return;
-                    }
-
-                    var library = vm.GetLibrary();
-                    var libCache = App.Services.GetRequiredService<ILibraryCacheService>();
-                    var tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
-
-                    var tracksViewModel = new AlbumTracksViewModel(
-                        library,
-                        libCache,
-                        tracksContextMenuService,
-                        row.ExpandedAlbumId.Value,
-                        row.ExpandedDominantColor,
-                        row.ExpandedForegroundColor,
-                        vm.ActiveSearchQuery
-                    );
-                    var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
-                    contentControl.Content = tracksPage;
-                }
-
-                RefreshTracksContent();
-
-                System.ComponentModel.PropertyChangedEventHandler onRowChanged = (_, args) =>
-                {
-                    if (args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedAlbumId) ||
-                        args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedDominantColor) ||
-                        args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedForegroundColor))
-                    {
-                        RefreshTracksContent();
-                    }
-                };
-
-                row.PropertyChanged += onRowChanged;
-                contentControl.Unloaded += (_, __) => row.PropertyChanged -= onRowChanged;
-            }
         }
 
         private void EntriesListView_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -216,55 +132,6 @@ namespace MusicWrap.UI.Features.Library.Views
             }
         }
 
-        private void AlbumsViewport_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (e.NewSize.Width > 0)
-            {
-                // Throttle resize events with 50ms timer: restart if already running
-                // (multiple rapid SizeChanged events will only result in one recalc after 50ms quiet)
-                if (_resizeThrottleTimer?.IsEnabled != true)
-                {
-                    _resizeThrottleTimer?.Start();
-                }
-            }
-        }
-
-        private void AlbumsViewport_Loaded(object sender, RoutedEventArgs e)
-        {
-            UpdateColumnsForViewportWidth(true);
-        }
-
-        private void AlbumsViewport_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            // This ListBox is used only as a virtualizing host; row selection is intentionally disabled.
-            if (sender is ListBox listBox && listBox.SelectedItem is not null)
-            {
-                listBox.SelectedItem = null;
-            }
-        }
-
-        private int GetCurrentViewportWidth()
-        {
-            var estimated = ActualWidth - 280;
-            return Math.Max(1, (int)estimated);
-        }
-
-        private int CalculateColumns(int width)
-        {
-            int tileFootprint = MinTileWidth + Gutter;
-            return Math.Max(MinColumns, Math.Max(1, width) / tileFootprint);
-        }
-        private void UpdateColumnsForViewportWidth(bool force = false)
-        {
-            int width = GetCurrentViewportWidth();
-            if (width <= 0) return;
-            int columns = CalculateColumns(width);
-            if (!force && columns == _lastColumns) return;
-
-            _lastColumns = columns;
-            vm.SetLayoutColumns(columns);
-        }
-
         private void LibraryContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is not ContextMenu contextMenu)
@@ -276,52 +143,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
 
             // Get track IDs based on entry type
-            var library = vm.GetLibrary();
-            List<int> trackIds = [];
-
-            switch (entry.Type)
-            {
-                case "Album":
-                    trackIds = [.. library.Tracks
-                        .Where(t => t.AlbumId == entry.Id)
-                        .OrderBy(t => t.Disk)
-                        .ThenBy(t => t.TrackNumber)
-                        .ThenBy(t => t.Title)
-                        .Select(t => t.Id)];
-                    break;
-
-                case "Artist":
-                    var artistAlbumIds = library.Albums
-                        .Where(a => a.ArtistIds.Contains(entry.Id))
-                        .Select(a => a.Id)
-                        .ToHashSet();
-                    trackIds = [.. library.Tracks
-                        .Where(t => artistAlbumIds.Contains(t.AlbumId))
-                        .OrderBy(t => t.Disk)
-                        .ThenBy(t => t.TrackNumber)
-                        .ThenBy(t => t.Title)
-                        .Select(t => t.Id)];
-                    break;
-
-                case "Genre":
-                    trackIds = [.. library.Tracks
-                        .Where(t => t.GenreIds.Contains(entry.Id))
-                        .OrderBy(t => t.TrackNumber)
-                        .ThenBy(t => t.Title)
-                        .Select(t => t.Id)];
-                    break;
-
-                case "Decade":
-                    if (int.TryParse(entry.Title.TrimEnd('s'), out int decade))
-                    {
-                        trackIds = [.. library.Tracks
-                            .Where(t => (library.Albums.FirstOrDefault(a => a.Id == t.AlbumId)?.Year / 10) * 10 == decade)
-                            .OrderBy(t => t.TrackNumber)
-                            .ThenBy(t => t.Title)
-                            .Select(t => t.Id)];
-                    }
-                    break;
-            }
+            List<int> trackIds = _libraryCacheService.GetTrackIdsForEntry(entry).ToList();
 
             // Find and set track IDs on the TrackToPlaylistMenu in the context menu
             var trackToPlaylistMenu = contextMenu.Items.OfType<MusicWrap.UI.Controls.Models.TrackToPlaylistMenu>().FirstOrDefault();
@@ -330,6 +152,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 trackToPlaylistMenu.TrackIds = trackIds;
             }
         }
+
         public void Dispose()
         {
             if (_disposed)
@@ -349,13 +172,6 @@ namespace MusicWrap.UI.Features.Library.Views
             }
 
             vm.PropertyChanged -= Vm_PropertyChanged;
-
-            if (_resizeThrottleTimer is not null)
-            {
-                _resizeThrottleTimer.Stop();
-                _resizeThrottleTimer.Tick -= ResizeThrottleTimer_Tick;
-                _resizeThrottleTimer = null;
-            }
 
             DataContext = null;
         }

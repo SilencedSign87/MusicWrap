@@ -13,7 +13,5 @@ namespace MusicWrap.Data.Playlist.Models
         [Key(2)] public List<PlaylistItem> Items { get; set; } = [];
         [Key(3)] public long CreatedAtUtcTicks { get; set; }
         [Key(4)] public long UpdatedAtUtcTicks { get; set; }
-
-        [Key(100)] public int CoverId;
     }
 }

@@ -44,10 +44,10 @@
                             <Run Text="{Binding HeaderTotalDurationText}"/>
                         </TextBlock>
                         <Button Style="{StaticResource SubtleButton}" Margin="8,0,0,0" Padding="0"  Width="26" Height="26" ToolTip="Play all" Command="{Binding PlayAllTracksCommand}">
-                            <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE768;"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
                         </Button>
                         <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle" Command="{Binding ShuffleAllTracksCommand}">
-                            <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
                         </Button>
                     </StackPanel>
 
@@ -159,7 +159,7 @@
         </Border>
         <Grid Grid.Row="1">
             <local:LibraryEntryAlbumsView
-                LibraryViewModel="{Binding LibraryViewModel, RelativeSource={RelativeSource AncestorType={x:Type local:LibraryEntryDetailPanel}}}"
+                ViewModel="{Binding AlbumEntriesViewModel}"
                 Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Albums}"/>
             <local:LibraryEntryTracksView 
                 Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}"/>

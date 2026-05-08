@@ -17,10 +17,10 @@
                 x:Name="PlaylistNameInput"
                 Margin="10"
                 PlaceholderText="Playlist name..."
-                KeyDown="PlaylistNameInput_KeyDown"
+                PreviewKeyDown="PlaylistNameInput_KeyDown"
                 >
                 <controls:CompactInputField.BeforeContent>
-                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE90B;"/>
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;"/>
                 </controls:CompactInputField.BeforeContent>
             </controls:CompactInputField>
             <Separator/>
