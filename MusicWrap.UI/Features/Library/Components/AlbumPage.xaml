@@ -11,7 +11,6 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumData}"
              d:DesignHeight="200" d:DesignWidth="200"
-             Width="180"
              Cursor="Hand">
     <UserControl.Resources>
         <converters:PathToImageConverter x:Key="PathToImageConverter"/>

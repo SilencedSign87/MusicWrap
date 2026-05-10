@@ -1,4 +1,5 @@
 using Hardcodet.Wpf.TaskbarNotification;
+using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Features.Favorites.Views;
@@ -46,7 +47,7 @@ namespace MusicWrap.UI.Shell.Windows
             return bitmap;
         }
 
-        public MainWindow(IMusicPlayerService playerService)
+        public MainWindow(IMusicPlayerService playerService, Tracker tracker)
         {
             InitializeComponent();
             _player = playerService;
@@ -60,6 +61,7 @@ namespace MusicWrap.UI.Shell.Windows
             NavigateToTab(0);
             PlayPauseButton.ImageSource = _playIcon;
 
+            tracker.Track(this);
         }
 
 

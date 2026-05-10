@@ -17,7 +17,7 @@ namespace MusicWrap.UI.Features.Library.Views
         private DispatcherTimer? _resizeThrottleTimer;
 
         private int _lastColumns = -1;
-        private const int MinTileWidth = 190;
+        private const int MinTileWidth = 160;
         private const int Gutter = 0;
         private const int MinColumns = 1;
 

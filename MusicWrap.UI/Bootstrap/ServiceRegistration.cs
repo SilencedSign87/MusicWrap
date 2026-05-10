@@ -1,4 +1,6 @@
 using System;
+using System.Windows;
+using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Metadata;
@@ -47,6 +49,12 @@ public static class ServiceRegistration
                        loggingBuilder.AddSerilog(dispose: true);
                    });
 
+        // window state
+        var Tracker = new Tracker();
+        ConfigureJot(Tracker);
+
+        services.AddSingleton(Tracker);
+
         services.AddSingleton<ITrayService, TrayService>();
 
         //Data layer
@@ -77,7 +85,7 @@ public static class ServiceRegistration
         // Providers
         services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();
         services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
-        
+
         services.AddTransient<IYoutubeResolutionService, YoutubeResolutionService>();
         services.AddTransient<IYoutubeStagingService, YoutubeStagingService>();
         services.AddTransient<IYoutubeSearchService, YoutubeSearchService>();
@@ -120,5 +128,13 @@ public static class ServiceRegistration
         services.AddTransient<IndexingWindow>();
         services.AddTransient<MetadataEditorWindow>();
         services.AddTransient<TrackInformationPage>();
+    }
+
+    private static void ConfigureJot(Tracker tracker)
+    {
+        tracker.Configure<Window>()
+            .Id(w => w.Name)
+            .Properties(w => new { w.Top, w.Left, w.Width, w.Height, w.WindowState })
+            .PersistOn(nameof(Window.Closing));
     }
 }

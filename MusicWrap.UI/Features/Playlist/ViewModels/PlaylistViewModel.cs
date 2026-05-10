@@ -55,7 +55,10 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
 
         private void _playlistService_PlaylistItemsChanged(object? sender, PlaylistItemsChangedEventArgs e)
         {
-            ConstructEntries();
+            if (e.PlaylistId == SelectedEntry?.id)
+            {
+                LoadPlaylistTracks();
+            }
         }
 
         private void _playlistService_PlaylistsChanged(object? sender, EventArgs e)

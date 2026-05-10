@@ -1,3 +1,4 @@
+using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Services;
@@ -30,7 +31,7 @@ namespace MusicWrap.UI.Shell.Windows
         private const int _expandedHeight = 700;
         private Window? _searcherWindow;
 
-        public CompactPlayer()
+        public CompactPlayer(Tracker tracker)
         {
             InitializeComponent();
             InitializeWindowSize();

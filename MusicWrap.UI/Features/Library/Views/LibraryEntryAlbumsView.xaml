@@ -70,8 +70,9 @@
                                     <Button BorderThickness="0"
                                             Padding="0"
                                             Cursor="Hand"
+                                            Width="160"
                                             Click="AlbumButton_Click"
-                                            Margin="0,0,16,0">
+                                            Margin="0,0,0,0">
                                         <Button.Style>
                                             <Style TargetType="Button">
                                                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -111,7 +112,7 @@
                                 DataContext="{Binding}"
                                 Visibility="{Binding ExpandedAlbumId, Converter={StaticResource NullToCollapseConverter}}"
                                 Margin="0,8,0,0"
-                                CornerRadius="4"
+                                CornerRadius="2"
                                 BorderThickness="0"
                                 HorizontalAlignment="Stretch">
                             <Border.Background>
