@@ -1,16 +1,15 @@
-using System.Timers;
-using System.Linq;
-using Un4seen.Bass;
-using MusicWrap.Data.Library.Models;
+using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Queue;
 using MusicWrap.Core.Sources.Contracts;
+using MusicWrap.Core.Sources.Providers.Queue;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User.Models;
-using Microsoft.Extensions.Logging;
-using MusicWrap.Core.Threading;
-using MusicWrap.Core.Queue;
-using MusicWrap.Core.Sources.Providers.Queue;
+using System.Timers;
+using Un4seen.Bass;
 
 namespace MusicWrap.Core.Services.Playback
 {
@@ -388,7 +387,7 @@ namespace MusicWrap.Core.Services.Playback
 
         public void Previous()
         {
-           var prev = _queue.Previous();
+            var prev = _queue.Previous();
             if (prev == null) return;
             StartPlaybackOfCurrent();
         }
@@ -620,8 +619,8 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             }
 
-            _selectedTrackDuration = track.Duration > 0 ? track.Duration : 0;
-            var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
+            _selectedTrackDuration = track.DurationSeconds > 0 ? track.DurationSeconds : 0;
+            var trackRef = string.IsNullOrWhiteSpace(track.FilePath) ? string.Empty : track.FilePath;
             _dispatcher.Invoke(() => TrackChanged?.Invoke(this, trackRef));
             BeginWaveformPipeline(track);
         }
@@ -953,7 +952,7 @@ namespace MusicWrap.Core.Services.Playback
 
             int requestedSampleRate = CurrentSampleRate > 0
                 ? CurrentSampleRate
-                : (track?.SamplingRate ?? 44100);
+                : (track?.SampleRate ?? 44100);
             int requestedChannels = track?.Channels > 0 ? track.Channels : 2;
 
             int effectiveSampleRate = _audioEngine.PrepareOutputForTrack(requestedSampleRate, requestedChannels);
@@ -1068,7 +1067,7 @@ namespace MusicWrap.Core.Services.Playback
             {
                 SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate });
                 var trackRef = track != null
-                    ? (string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path)
+                    ? (string.IsNullOrWhiteSpace(track.FilePath) ? string.Empty : track.FilePath)
                     : (item.DisplayTitle ?? item.Source);
                 TrackChanged?.Invoke(this, trackRef);
                 QueueChanged?.Invoke(this, snapshot);
@@ -1265,7 +1264,7 @@ namespace MusicWrap.Core.Services.Playback
 
             _ = Task.Run(async () =>
             {
-                var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
+                var waveform = await AudioEngine.GetWaveFromDataAsync(track.FilePath, WaveformDataPoints);
                 if (waveform.Length == 0)
                 {
                     waveform = CreateFallbackWaveForm(WaveformDataPoints);
@@ -1277,7 +1276,7 @@ namespace MusicWrap.Core.Services.Playback
         private async Task PreloadWaveformCacheAsync(Track track)
         {
             if (TryGetWaveformFromCache(track.Id, out _)) return; // Already cached
-            var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
+            var waveform = await AudioEngine.GetWaveFromDataAsync(track.FilePath, WaveformDataPoints);
             if (waveform.Length == 0) return;
             CacheWaveform(track.Id, waveform);
         }
@@ -1411,7 +1410,7 @@ namespace MusicWrap.Core.Services.Playback
             return new PlaybackQueueItem
             {
                 SourceType = QueueItemSourceType.LocalFile,
-                Source = track.Path,
+                Source = track.FilePath,
                 DisplayTitle = track.Title,
                 LibraryId = track.Id,
                 ExternalId = track.ExternalId

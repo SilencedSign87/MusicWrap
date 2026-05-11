@@ -1,19 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Features.Library.Services;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.UI.Services;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
     public partial class LibraryEntryAlbumViewModel : ObservableObject
     {
-        private readonly ILibraryCacheService _libraryCache;
-        private readonly MusicLibrary _library;
+        private readonly ILibraryService _libraryService;
         private readonly IImageService _imageService;
 
         [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
@@ -30,22 +26,19 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private const int IMAGE_BATCH = 5;
 
         public LibraryEntryAlbumViewModel(
-            ILibraryCacheService cacheService,
-            MusicLibrary library,
+            ILibraryService libraryService,
             IImageService imageService
             )
         {
-            _libraryCache = cacheService;
-            _library = library;
+            _libraryService = libraryService;
             _imageService = imageService;
         }
         #region Public
-        public MusicLibrary Library { get { return _library; } }
-        public ILibraryCacheService LibraryCache { get { return _libraryCache; } }
+        public ILibraryService LibraryService { get { return _libraryService; } }
         public void SetLayoutColumns(int columns)
         {
-            columns = Math.Max( 1, columns );
-            if ( columns != LayoutColumns)
+            columns = Math.Max(1, columns);
+            if (columns != LayoutColumns)
             {
                 LayoutColumns = columns;
             }
@@ -129,7 +122,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return;
             }
 
-            var albums = _libraryCache.GetAlbumsForEntry(SelectedEntry)
+            var albums = _libraryService.GetAlbumsForEntry(SelectedEntry)
                 .Select(s => new AlbumData
                 {
                     Id = s.Id,
@@ -182,7 +175,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 {
                     var expandedAlbum = expandedRow.Albums.First(a => a.Id == expandedAlbumIdSnapshot.Value);
                     expandedRow.ExpandedAlbumId = expandedAlbum.Id;
-                    expandedRow.ExpandedImagePath= expandedAlbum.BlurredImagePath;
+                    expandedRow.ExpandedImagePath = expandedAlbum.BlurredImagePath;
                     expandedRow.ExpandedDominantColor = expandedAlbum.DominantColor;
                     expandedRow.ExpandedForegroundColor = expandedAlbum.ForegroundColor;
                     ExpandedAlbumId = expandedAlbum.Id;
@@ -234,12 +227,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 case TrackSortMode.Duration:
                     sorted = SortAscending
                         ? source
-                            .OrderBy(s => _libraryCache.GetAlbumDuration(s.Id))
+                            .OrderBy(s => _libraryService.GetAlbumDuration(s.Id))
                             .ThenBy(s => s.Title, StringComparer.OrdinalIgnoreCase)
                             .ThenBy(s => s.ArtistNames, StringComparer.OrdinalIgnoreCase)
                             .ThenBy(s => s.Year)
                         : source
-                            .OrderByDescending(s => _libraryCache.GetAlbumDuration(s.Id))
+                            .OrderByDescending(s => _libraryService.GetAlbumDuration(s.Id))
                             .ThenByDescending(s => s.Title, StringComparer.OrdinalIgnoreCase)
                             .ThenByDescending(s => s.ArtistNames, StringComparer.OrdinalIgnoreCase)
                             .ThenByDescending(s => s.Year);

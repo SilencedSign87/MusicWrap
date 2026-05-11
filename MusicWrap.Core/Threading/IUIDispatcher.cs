@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MusicWrap.Core.Threading
+﻿namespace MusicWrap.Core.Threading
 {
     public interface IUIDispatcher
     {

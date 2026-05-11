@@ -1,7 +1,6 @@
 using MessagePack;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Player.Models;
-using System;
 using System.IO;
 
 namespace MusicWrap.Data.Player

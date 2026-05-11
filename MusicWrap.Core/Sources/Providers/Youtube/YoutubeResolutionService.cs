@@ -1,8 +1,5 @@
 ﻿using MusicWrap.Core.Sources.Contracts;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using YoutubeExplode;
 using YoutubeExplode.Common;
 

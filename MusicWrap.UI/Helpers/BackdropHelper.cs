@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MusicWrap.UI.Helpers
+﻿namespace MusicWrap.UI.Helpers
 {
     /// <summary>
     /// Copied from WPF gallery sample

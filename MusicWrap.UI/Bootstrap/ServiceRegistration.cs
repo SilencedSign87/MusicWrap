@@ -1,5 +1,3 @@
-using System;
-using System.Windows;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +18,6 @@ using MusicWrap.Data.Library;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Playlist;
 using MusicWrap.Data.User;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Playback.ViewModels;
 using MusicWrap.UI.Features.Playback.Views;
@@ -35,6 +32,7 @@ using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.ViewModels;
 using Serilog;
+using System.Windows;
 
 namespace MusicWrap.UI.Bootstrap;
 
@@ -66,7 +64,7 @@ public static class ServiceRegistration
         services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
         services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
         services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
-        services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
+        services.AddSingleton<ILibraryService, LibraryService>();
 
         // Services
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
@@ -74,12 +72,12 @@ public static class ServiceRegistration
         services.AddSingleton<TracksContextMenuService>();
         services.AddTransient<ILibraryScanner, LibraryScanner>();
         services.AddTransient<ILibraryIndexer, LibraryIndexer>();
-        services.AddSingleton<ILibraryCacheStore, LibraryCacheStoreAdapter>();
         services.AddSingleton<ISaveOrchestration, SaveOrchestration>();
         services.AddSingleton<ISaveStateProvider>(sp => (ISaveStateProvider)sp.GetRequiredService<ISaveOrchestration>());
         services.AddSingleton<ISaveCoordinator, SaveScheduler>();
         services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
         services.AddTransient<IEditMetadataService, EditMetadataService>();
+        services.AddSingleton<ITrackRowItemFactory, TrackRowItemFactory>();
         services.AddSingleton<IQueueManager, QueueManager>();
 
         // Providers

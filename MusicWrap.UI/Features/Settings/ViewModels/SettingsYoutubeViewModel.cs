@@ -2,17 +2,14 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace MusicWrap.UI.Features.Settings.ViewModels
 {
     public partial class SettingsYoutubeViewModel : ObservableObject
     {
         [ObservableProperty] private bool _useCustomFfmpegPath;
-        [ObservableProperty] private string _customFfmpegPath = string.Empty; 
+        [ObservableProperty] private string _customFfmpegPath = string.Empty;
         [ObservableProperty] private List<string> _supportedFormats = Enum.GetNames(typeof(SuportedFFMpegAudioFormat)).ToList();
         [ObservableProperty] private string _selectedFormat;
 

@@ -1,23 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Playlist;
+using MusicWrap.Core.Services.Playlists;
 using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using MusicWrap.Core.Services.Playlists;
 
 namespace MusicWrap.UI.Controls.Models
 {
@@ -76,7 +63,8 @@ namespace MusicWrap.UI.Controls.Models
         private void _playlistService_PlaylistItemsChanged(object? sender, PlaylistItemsChangedEventArgs e)
         {
             var currentTrackIds = TrackIds?.ToArray() ?? [];
-            if (e.TrackIds.Any(id => currentTrackIds.Contains(id))) {
+            if (e.TrackIds.Any(id => currentTrackIds.Contains(id)))
+            {
                 ReloadPlaylists();
             }
         }

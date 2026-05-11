@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MusicWrap.UI.Features.State.Models
+﻿namespace MusicWrap.UI.Features.State.Models
 {
-    public class StatusbarOperation: IDisposable
+    public class StatusbarOperation : IDisposable
     {
         private readonly Action _onDispose;
         private bool _disposed;

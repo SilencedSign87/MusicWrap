@@ -1,18 +1,15 @@
-using System;
-using System.ComponentModel;
-using System.Threading.Tasks;
-using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using Serilog;
+using System.ComponentModel;
+using System.Windows;
 
 namespace MusicWrap.UI.Bootstrap;
 
@@ -103,14 +100,14 @@ public static class StartupOrquestrator
             // initial behavior
             ApplyTrayBehavior(userSettings.KeepAppInTray, trayService);
 
-            // Library cache initialization (preserve previous defaults)
+            // Library service initialization (preserve previous defaults)
             var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)
-                ? "Artist"
+                ? "Album"
                 : userSettings.LibraryListBy;
             var ascending = userSettings.LibraryAscending;
 
-            var libraryCache = serviceProvider.GetRequiredService<ILibraryCacheService>();
-            await libraryCache.InitializeAsync(listBy, ascending);
+            //var libraryService = serviceProvider.GetRequiredService<ILibraryService>();
+            //libraryService.Initialize(listBy, ascending);
 
             // Pre-resolve important VMs / services
             serviceProvider.GetService<PlayerViewModel>();

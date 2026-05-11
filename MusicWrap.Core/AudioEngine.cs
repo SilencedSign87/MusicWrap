@@ -1,17 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using MusicWrap.Data.User.Models;
-using SixLabors.ImageSharp.Metadata;
-using System;
-using System.Collections.Generic;
+﻿using MusicWrap.Data.User.Models;
 using System.Diagnostics;
-using System.Drawing.Interop;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
-using System.Security.Principal;
-using System.Text;
 using Un4seen.Bass;
-using Un4seen.Bass.AddOn.Flac;
 using Un4seen.Bass.AddOn.Mix;
 using Un4seen.BassWasapi;
 
@@ -155,12 +144,13 @@ namespace MusicWrap.Core
             //nint UserAgentPtr = Marshal.StringToHGlobalAnsi("MusicWrap/1.0");
             //Bass.BASS_SetConfigPtr(BASSConfig.BASS_CONFIG_NET_AGENT, UserAgentPtr);
 
-            var flags = BASSFlag.BASS_STREAM_DECODE | 
-                        BASSFlag.BASS_SAMPLE_FLOAT | 
-                        BASSFlag.BASS_STREAM_PRESCAN | 
+            var flags = BASSFlag.BASS_STREAM_DECODE |
+                        BASSFlag.BASS_SAMPLE_FLOAT |
+                        BASSFlag.BASS_STREAM_PRESCAN |
                         BASSFlag.BASS_STREAM_BLOCK;
-            var task = Task.Run(()=> Bass.BASS_StreamCreateURL(url, 0, flags, null, IntPtr.Zero));
-            if (!task.Wait(TimeSpan.FromSeconds(10))){
+            var task = Task.Run(() => Bass.BASS_StreamCreateURL(url, 0, flags, null, IntPtr.Zero));
+            if (!task.Wait(TimeSpan.FromSeconds(10)))
+            {
                 Debug.WriteLine($"[AudioEngine] Timeout creating stream from URL: {url}");
                 return 0;
             }
@@ -509,7 +499,8 @@ namespace MusicWrap.Core
                 Bass.BASS_PluginFree(_flacPluginHandle);
                 _flacPluginHandle = 0;
             }
-            if (_opusPluginHandle != 0) {
+            if (_opusPluginHandle != 0)
+            {
                 Bass.BASS_PluginFree(_opusPluginHandle);
                 _opusPluginHandle = 0;
             }

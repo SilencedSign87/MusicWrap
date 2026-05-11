@@ -1,8 +1,4 @@
-using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace MusicWrap.Core.Metadata
 {
@@ -111,25 +107,40 @@ namespace MusicWrap.Core.Metadata
             }
 
             // Fast shape checks for library mutations that change counts.
-            if (_library.Artists.Count != _lastArtistsCount ||
-                _library.Albums.Count != _lastAlbumsCount ||
-                _library.Genres.Count != _lastGenresCount)
-            {
-                return true;
-            }
+            //if (_library.Artists.Count != _lastArtistsCount ||
+            //    _library.Albums.Count != _lastAlbumsCount ||
+            //    _library.Genres.Count != _lastGenresCount)
+            //{
+            //    return true;
+            //}
 
             return false;
         }
 
         private void RebuildCacheUnsafe()
         {
-            _cache[MetadataType.ArtistName] = BuildValues(_library.Artists.Select(a => a.Name));
-            _cache[MetadataType.AlbumTitle] = BuildValues(_library.Albums.Select(a => a.Title));
-            _cache[MetadataType.GenreName] = BuildValues(_library.Genres.Select(g => g.Name));
+            var artists = _library.Tracks
+                .SelectMany(t => t.AlbumArtists.Length > 0 ? t.AlbumArtists : t.Artists)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
 
-            _lastArtistsCount = _library.Artists.Count;
-            _lastAlbumsCount = _library.Albums.Count;
-            _lastGenresCount = _library.Genres.Count;
+            var albums = _library.Tracks
+                .Select(t => t.AlbumName)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            var genres = _library.Tracks
+                .SelectMany(t => t.Genres)
+                .Where(g => !string.IsNullOrWhiteSpace(g))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            _cache[MetadataType.ArtistName] = BuildValues(artists);
+            _cache[MetadataType.AlbumTitle] = BuildValues(albums);
+            _cache[MetadataType.GenreName] = BuildValues(genres);
+
+            _lastArtistsCount = artists.Count();
+            _lastAlbumsCount = albums.Count();
+            _lastGenresCount = genres.Count();
             _lastRefreshUtc = DateTime.UtcNow;
         }
 

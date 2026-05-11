@@ -1,25 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core;
-using MusicWrap.Data;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using MusicWrap.UI.ViewModels;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.UI.Features.Library.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using MusicWrap.UI.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
-using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -27,7 +14,7 @@ namespace MusicWrap.UI.Features.Library.Views
     {
         public LibraryViewModel vm;
         private readonly CommandPaletteViewModel _commandPaletteViewModel;
-        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly ILibraryService _libraryService;
         private bool _isCommandPaletteSubscribed;
         private bool _disposed = false;
 
@@ -36,7 +23,7 @@ namespace MusicWrap.UI.Features.Library.Views
             InitializeComponent();
 
             vm = App.Services.GetRequiredService<LibraryViewModel>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
+            _libraryService = App.Services.GetRequiredService<ILibraryService>();
             DataContext = vm;
 
             _commandPaletteViewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
@@ -139,11 +126,11 @@ namespace MusicWrap.UI.Features.Library.Views
 
             // Get the entry from the visual tree (the Grid containing this context menu)
             var grid = contextMenu.PlacementTarget as Grid;
-            if (grid?.DataContext is not MusicWrap.UI.Features.Library.Services.LibraryEntry entry)
+            if (grid?.DataContext is not LibraryEntry entry)
                 return;
 
             // Get track IDs based on entry type
-            List<int> trackIds = _libraryCacheService.GetTrackIdsForEntry(entry).ToList();
+            List<int> trackIds = _libraryService.GetTrackIdsForEntry(entry).ToList();
 
             // Find and set track IDs on the TrackToPlaylistMenu in the context menu
             var trackToPlaylistMenu = contextMenu.Items.OfType<MusicWrap.UI.Controls.Models.TrackToPlaylistMenu>().FirstOrDefault();

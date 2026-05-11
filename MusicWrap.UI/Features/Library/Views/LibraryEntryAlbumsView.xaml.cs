@@ -1,11 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
-using System;
+using MusicWrap.UI.Shared.Services;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -83,7 +80,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
         {
-                ViewModel?.CollapseAlbum();
+            ViewModel?.CollapseAlbum();
         }
 
         private void TracksContentPlaceholder_Loaded(object sender, RoutedEventArgs e)
@@ -104,13 +101,13 @@ namespace MusicWrap.UI.Features.Library.Views
                         return;
                     }
 
-                    var library = ViewModel.Library;
-                    var libraryCacheService = ViewModel.LibraryCache;
+                    var libraryService = ViewModel.LibraryService;
+                    var trackRowItemFactory = App.Services.GetRequiredService<ITrackRowItemFactory>();
                     var tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
 
                     var tracksViewModel = new AlbumTracksViewModel(
-                        library,
-                        libraryCacheService,
+                        libraryService,
+                        trackRowItemFactory,
                         tracksContextMenuService,
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,

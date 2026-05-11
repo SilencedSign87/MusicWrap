@@ -1,20 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
+using MusicWrap.Core.Services.Playback;
 using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Data;
 using ICommand = System.Windows.Input.ICommand;
-using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Controls.Models
 {
@@ -316,7 +308,7 @@ namespace MusicWrap.UI.Controls.Models
                 typeof(bool),
                 typeof(TracksView),
                 new PropertyMetadata(false));
-        public bool AutoScrollToCurrentTrack 
+        public bool AutoScrollToCurrentTrack
         {
             get => (bool)GetValue(AutoScrollToCurrentTrackProperty);
             set => SetValue(AutoScrollToCurrentTrackProperty, value);
@@ -596,7 +588,7 @@ namespace MusicWrap.UI.Controls.Models
                     return;
                 }
 
-            int index = _musicPlayerService.CurrentPlaybackIndex;
+                int index = _musicPlayerService.CurrentPlaybackIndex;
                 if (index < 0 || index >= TracksList.Items.Count)
                 {
                     return;

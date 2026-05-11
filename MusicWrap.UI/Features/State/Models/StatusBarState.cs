@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MusicWrap.UI.Features.State.Models
+﻿namespace MusicWrap.UI.Features.State.Models
 {
     public class StatusBarState
     {

@@ -1,10 +1,6 @@
-﻿using MessagePack.Formatters;
-using MusicWrap.Data.Library;
+﻿using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace MusicWrap.Core.Services.Library
 {
@@ -120,7 +116,7 @@ namespace MusicWrap.Core.Services.Library
             if (!keepTracks)
             {
                 var tracksToRemove = _library.Tracks.Where(t =>
-                    t.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase)).ToList();
+                    t.FilePath.StartsWith(path, StringComparison.OrdinalIgnoreCase)).ToList();
                 foreach (var track in tracksToRemove)
                     _library.Tracks.Remove(track);
             }
@@ -183,8 +179,8 @@ namespace MusicWrap.Core.Services.Library
 
                         if (trackByFingerprint.TryGetValue(key, out var existingTrack)) // file exists in the library
                         {
-                            if (!string.Equals(existingTrack.Path, filePath, StringComparison.OrdinalIgnoreCase))
-                                existingTrack.Path = filePath; // Update path if it has changed
+                            if (!string.Equals(existingTrack.FilePath, filePath, StringComparison.OrdinalIgnoreCase))
+                                existingTrack.FilePath = filePath; // Update path if it has changed
                         }
                         else
                         {

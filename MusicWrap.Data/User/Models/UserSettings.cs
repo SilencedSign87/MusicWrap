@@ -1,9 +1,6 @@
 ﻿using MessagePack;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace MusicWrap.Data.User.Models
 {
@@ -18,8 +15,10 @@ namespace MusicWrap.Data.User.Models
         [Key(4)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreQueueOnly;
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
         [Key(6)] public string LibraryListBy { get; set; } = "Artist";
-        [Key(7)] public bool LibraryAscending { get; set; } = false;
-        [Key(8)] public bool KeepAppInTray
+        [Key(7)] public bool LibraryAscending { get; set; } = true;
+
+        [Key(8)]
+        public bool KeepAppInTray
         {
             get => _keepAppInTray;
             set

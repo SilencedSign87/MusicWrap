@@ -1,13 +1,11 @@
 using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
-using System;
-using System.Collections.Generic;
+using MusicWrap.UI.Services;
 using System.IO;
-using System.Text;
 
 namespace MusicWrap.UI.Features.Providers.Services
 {
@@ -17,33 +15,35 @@ namespace MusicWrap.UI.Features.Providers.Services
     }
     public class YoutubeProviderService : IYoutubeProviderService
     {
-        private readonly MusicLibrary _library;
+        private readonly ILibraryService _libraryService;
         private readonly ILibraryIndexer _indexer;
-        private readonly ILibraryRepository _repository;
+        private readonly MusicLibrary _library;
         private readonly UserSettings _settings;
-        public YoutubeProviderService(MusicLibrary library, ILibraryIndexer indexer, ILibraryRepository repository, UserSettings settings)
+        private readonly ISaveCoordinator _saveOrchestration;
+        public YoutubeProviderService(ILibraryService libraryService, ILibraryIndexer indexer, MusicLibrary library, UserSettings settings, ISaveCoordinator saveOrchestration)
         {
-            _library = library;
+            _libraryService = libraryService;
             _indexer = indexer;
-            _repository = repository;
+            _library = library;
             _settings = settings;
+            _saveOrchestration = saveOrchestration;
 
         }
-        public Task<int> ApplyCachedTracksAsync(CancellationToken cancellationToken = default)
+        public async Task<int> ApplyCachedTracksAsync(CancellationToken cancellationToken = default)
         {
             int applied = 0;
             string cacheDir = Path.Combine(MusicWrapDirectories.CacheDirectory, "YoutubeAudio");
-            if (!Directory.Exists(cacheDir)) 
-                return Task.FromResult(0);
-            if (string.IsNullOrWhiteSpace(_settings.YoutubeSettings.YoutubeLibraryRootPath)||!Directory.Exists(_settings.YoutubeSettings.YoutubeLibraryRootPath)) 
-                return Task.FromResult(0);
+            if (!Directory.Exists(cacheDir))
+                return 0;
+            if (string.IsNullOrWhiteSpace(_settings.YoutubeSettings.YoutubeLibraryRootPath) || !Directory.Exists(_settings.YoutubeSettings.YoutubeLibraryRootPath))
+                return 0;
 
-            foreach(var track in _library.Tracks.Where(t=>t.Origin == TrackOrigin.Youtube && !string.IsNullOrWhiteSpace(t.ExternalId)))
+            foreach (var track in _library.Tracks.Where(t => t.Origin == TrackOrigin.Youtube && !string.IsNullOrWhiteSpace(t.ExternalId)))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 string? cacheFile = ResolveCachedAudioPath(cacheDir, track.ExternalId!);
-                if (!File.Exists(cacheFile)) 
+                if (!File.Exists(cacheFile))
                     continue;
 
                 string extension = Path.GetExtension(cacheFile);
@@ -66,8 +66,9 @@ namespace MusicWrap.UI.Features.Providers.Services
                 if (ok) applied++;
             }
 
-            _repository.Save(_library);
-            return Task.FromResult(applied);
+            //_repository.Save(library);
+            _saveOrchestration.Enqueue(SaveKind.Library);
+            return await Task.FromResult(applied);
 
         }
 
@@ -118,15 +119,12 @@ namespace MusicWrap.UI.Features.Providers.Services
 
         private string ResolveArtistName(Track track)
         {
-            var id = track.ArtistIds.FirstOrDefault();
-            var a = _library.Artists.FirstOrDefault(x => x.Id == id);
-            return a?.Name ?? "Unknown Artist";
+            return track.Artists.FirstOrDefault() ?? "Unknown Artist";
         }
 
         private string ResolveAlbumTitle(Track track)
         {
-            var album = _library.Albums.FirstOrDefault(a => a.Id == track.AlbumId);
-            return album?.Title ?? "Unknown Album";
+            return track.AlbumName ?? "Unknown Album";
         }
 
         private static string Sanitize(string value)

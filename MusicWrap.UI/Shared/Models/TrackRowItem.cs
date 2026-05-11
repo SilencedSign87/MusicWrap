@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace MusicWrap.UI.Controls.Models
 {
     public enum TrackVisualMode

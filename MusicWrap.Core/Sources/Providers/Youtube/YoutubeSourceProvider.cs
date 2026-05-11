@@ -1,10 +1,7 @@
 ﻿using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Library.Models;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 
 namespace MusicWrap.Core.Sources.Providers.Youtube
 {
@@ -22,12 +19,12 @@ namespace MusicWrap.Core.Sources.Providers.Youtube
 
         public bool TryResolve(Track track, out ResolvedPlaybackSource source)
         {
-            if (!string.IsNullOrWhiteSpace(track.Path) && File.Exists(track.Path))
+            if (!string.IsNullOrWhiteSpace(track.FilePath) && File.Exists(track.FilePath))
             {
                 source = new ResolvedPlaybackSource
                 {
                     Kind = PlaybackSourceKind.LocalFile,
-                    Input = track.Path,
+                    Input = track.FilePath,
                     Display = track.Title
                 };
                 return true;

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace MusicWrap.Core.Queue
 {
@@ -117,7 +115,7 @@ namespace MusicWrap.Core.Queue
 
             if (itemCount <= 0) return;
             int actualCount = Math.Min(itemCount, _internalItems.Count - index);
-            
+
             for (int i = index + actualCount - 1; i >= index; i--)
                 _internalItems.RemoveAt(i);
 

@@ -1,4 +1,3 @@
-using System;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Library.Models;
 
@@ -13,7 +12,7 @@ public sealed class LocalTrackSourceProvider : ITrackSourceProvider
 
     public bool TryResolve(Track track, out ResolvedPlaybackSource source)
     {
-         if (string.IsNullOrWhiteSpace(track.Path))
+        if (string.IsNullOrWhiteSpace(track.FilePath))
         {
             source = default!;
             return false;
@@ -22,8 +21,8 @@ public sealed class LocalTrackSourceProvider : ITrackSourceProvider
         source = new ResolvedPlaybackSource
         {
             Kind = PlaybackSourceKind.LocalFile,
-            Input = track.Path,
-            Display = track.Path
+            Input = track.FilePath,
+            Display = track.FilePath
         };
 
         return true;

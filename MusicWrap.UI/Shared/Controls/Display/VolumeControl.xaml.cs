@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.ViewModels;
-using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;

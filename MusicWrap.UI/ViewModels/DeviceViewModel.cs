@@ -3,9 +3,6 @@ using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.UI.ViewModels
 {

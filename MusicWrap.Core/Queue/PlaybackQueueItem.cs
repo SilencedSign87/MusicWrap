@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MusicWrap.Core.Queue
+﻿namespace MusicWrap.Core.Queue
 {
-   public enum QueueItemSourceType
+    public enum QueueItemSourceType
     {
         LocalFile,
         RemoteUrl,

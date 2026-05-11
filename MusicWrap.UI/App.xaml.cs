@@ -7,7 +7,6 @@ using MusicWrap.Data.Player;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Bootstrap;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Windows;
 using Serilog;
@@ -177,8 +176,6 @@ namespace MusicWrap.UI
                 if (Services is null) return;
                 var store = Services.GetService<ILibraryRepository>();
                 var library = Services.GetService<MusicLibrary>();
-                var libraryCache = Services.GetService<ILibraryCacheService>();
-                libraryCache?.SaveToDisk();
 
                 if (store != null && library != null)
                 {

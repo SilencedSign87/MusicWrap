@@ -1,17 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
-using System;
-using System.Collections.Generic;
+using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
@@ -46,9 +42,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
     public partial class LibraryEntryDetailPanelViewModel : ObservableObject
     {
-        private readonly ILibraryCacheService _libraryCache;
+        private readonly ILibraryService _libraryService;
+        private readonly ITrackRowItemFactory _trackRowItemFactory;
         private readonly TracksContextMenuService _tracksContextMenuService;
-        private readonly MusicLibrary _library;
         private readonly IMusicPlayerService _musicPlayerService;
         private int _headerStatsRequestId;
         private int _tracksViewRequestId;
@@ -77,15 +73,15 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private string trackSearchQuery = string.Empty;
 
         public LibraryEntryDetailPanelViewModel(
-            ILibraryCacheService libraryCache,
+            ILibraryService libraryService,
+            ITrackRowItemFactory trackRowItemFactory,
             TracksContextMenuService tracksContextMenuService,
-            MusicLibrary library,
             LibraryEntryAlbumViewModel albumViewModel,
             IMusicPlayerService musicPlayerService)
         {
-            _libraryCache = libraryCache;
+            _libraryService = libraryService;
+            _trackRowItemFactory = trackRowItemFactory;
             _tracksContextMenuService = tracksContextMenuService;
-            _library = library;
             _musicPlayerService = musicPlayerService;
             AlbumEntriesViewModel = albumViewModel;
         }
@@ -129,7 +125,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             async Task LoadTracksAsync()
             {
-                var trackIds = await Task.Run(() => _libraryCache.GetTrackIdsForEntry(entry));
+                var trackIds = await Task.Run(() => _libraryService.GetTrackIdsForEntry(entry));
                 if (requestId != Volatile.Read(ref _entryPreloadRequestId))
                 {
                     return;
@@ -154,13 +150,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             var stats = await Task.Run(() =>
             {
-                var albumCount = _libraryCache.GetAlbumsForEntry(entry).Count;
-                var trackIds = _libraryCache.GetTrackIdsForEntry(entry);
+                var albumCount = _libraryService.GetAlbumsForEntry(entry).Count;
+                var trackIds = _libraryService.GetTrackIdsForEntry(entry);
                 var totalSeconds = 0L;
 
                 foreach (var trackId in trackIds)
                 {
-                    totalSeconds += _libraryCache.GetTrackById(trackId)?.Duration ?? 0;
+                    totalSeconds += _libraryService.GetTrackById(trackId)?.DurationSeconds ?? 0;
                 }
 
                 return (albumCount, tracksCount: trackIds.Length, totalSeconds);
@@ -339,7 +335,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             OnPropertyChanged(nameof(IsSortAscending));
             OnPropertyChanged(nameof(IsSortDescending));
-            
+
             AlbumEntriesViewModel.SortAscending = value;
 
             _ = RefreshTracksViewAsync(false, true);
@@ -404,7 +400,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 Tracks = new ObservableCollection<TrackRowItem>(result.Rows);
                 AllTrackIds = result.TrackIds;
                 SelectedTrackIds = result.TrackIds.Where(previousSelection.Contains).ToList();
-                
+
                 AlbumEntriesViewModel.SortMode = sortMode;
                 AlbumEntriesViewModel.SortAscending = ascending;
             }
@@ -425,7 +421,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return ([], []);
             }
 
-            var rows = _libraryCache.TrackIdsToTrackRowItems(sourceIds);
+            var rows = _trackRowItemFactory.Build(sourceIds);
 
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -438,23 +434,34 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
 
             var trackById = sourceIds
-                .Select(id => _libraryCache.GetTrackById(id))
+                .Select(id => _libraryService.GetTrackById(id))
                 .Where(t => t is not null)
                 .Cast<Track>()
                 .ToDictionary(t => t.Id, t => t);
 
             var albumIds = rows
-                .Select(r => trackById.TryGetValue(r.Id, out var t) ? t.AlbumId : (int?)null)
+                .Select(r => trackById.TryGetValue(r.Id, out var t) ? _libraryService.GetAlbumIdForTrack(t.Id) : (int?)null)
                 .Where(id => id.HasValue)
                 .Select(id => id!.Value)
                 .Distinct()
                 .ToList();
 
-            var albumById = _library.Albums.ToDictionary(a => a.Id, a => a);
-            var albumArtistById = albumIds.ToDictionary(id => id, id => _libraryCache.GetArtistNamesForAlbum(id));
+            var albumById = albumIds.ToDictionary(
+                id => id,
+                id =>
+                {
+                    var firstTrack = trackById.Values.FirstOrDefault(track => _libraryService.GetAlbumIdForTrack(track.Id) == id);
+                    return new
+                    {
+                        Title = firstTrack?.AlbumName ?? string.Empty,
+                        Year = firstTrack?.ReleaseYear ?? int.MaxValue
+                    };
+                });
+
+            var albumArtistById = albumIds.ToDictionary(id => id, id => _libraryService.GetArtistNamesForAlbum(id));
             var albumDurationById = albumIds.ToDictionary(
                 id => id,
-                id => _libraryCache.GetTracksForAlbum(id).Sum(trackId => _libraryCache.GetTrackById(trackId)?.Duration ?? 0));
+                id => _libraryService.GetTrackQueueForAlbum(id).Sum(trackId => _libraryService.GetTrackById(trackId)?.DurationSeconds ?? 0));
 
             IEnumerable<int> orderedAlbumIds;
 
@@ -512,7 +519,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                         return int.MaxValue;
                     }
 
-                    return albumRankById.TryGetValue(track.AlbumId, out var rank) ? rank : int.MaxValue;
+                    return albumRankById.TryGetValue(_libraryService.GetAlbumIdForTrack(track.Id), out var rank) ? rank : int.MaxValue;
                 })
                 .ThenBy(r => r.DiskNumber)
                 .ThenBy(r => r.TrackNumber)

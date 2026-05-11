@@ -1,16 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.Features.Providers.ViewModels;
-using System;
-using System.Collections.Generic;
+using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MusicWrap.UI.Shell.Windows;
-using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
-using System.Linq;
 
 namespace MusicWrap.UI.Features.Providers.Views
 {

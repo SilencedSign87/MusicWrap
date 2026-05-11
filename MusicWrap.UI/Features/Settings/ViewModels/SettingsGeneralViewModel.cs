@@ -2,11 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security.Policy;
-using System.Text;
 
 namespace MusicWrap.UI.Features.Settings.ViewModels
 {
@@ -61,7 +57,8 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 
 
         #region Internal
-        private void LoadFromSettings() {
+        private void LoadFromSettings()
+        {
             RestoreQueueAndIndexOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueAndIndexOnly;
             RestoreQueueOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueOnly;
             StartClean = _settings.StartupBehavior == StartupBehavior.StartClean;

@@ -1,10 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.State.Models;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Timers;
 
 namespace MusicWrap.UI.Features.State.Services
 {

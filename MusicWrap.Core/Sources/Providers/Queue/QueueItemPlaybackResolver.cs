@@ -1,15 +1,12 @@
 ﻿using MusicWrap.Core.Queue;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Library.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace MusicWrap.Core.Sources.Providers.Queue
 {
     public interface IQueueItemPlaybackResolver
     {
-        bool TryResolve (PlaybackQueueItem item, out ResolvedPlaybackSource source);
+        bool TryResolve(PlaybackQueueItem item, out ResolvedPlaybackSource source);
     }
     public class QueueItemPlaybackResolver : IQueueItemPlaybackResolver
     {
@@ -23,7 +20,7 @@ namespace MusicWrap.Core.Sources.Providers.Queue
         {
             _library = library;
             _trackResolver = trackResolver;
-            
+
         }
         public bool TryResolve(PlaybackQueueItem item, out ResolvedPlaybackSource source)
         {

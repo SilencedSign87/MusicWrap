@@ -1,15 +1,15 @@
+using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
-using System.Net.Http;
 using System.Globalization;
+using System.Net.Http;
 using TagLib;
-using IOFile = System.IO.File;
 using IODirectory = System.IO.Directory;
+using IOFile = System.IO.File;
 using IOPath = System.IO.Path;
-using Microsoft.Extensions.Logging;
-using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.Core.Services.Providers.Youtube
 {
@@ -195,17 +195,17 @@ namespace MusicWrap.Core.Services.Providers.Youtube
                 t.Origin == TrackOrigin.Youtube &&
                 string.Equals(t.ExternalId, externalId, StringComparison.OrdinalIgnoreCase));
 
-            if (existing is null || string.IsNullOrWhiteSpace(existing.Path))
+            if (existing is null || string.IsNullOrWhiteSpace(existing.FilePath))
             {
                 return false;
             }
 
-            if (!IOFile.Exists(existing.Path))
+            if (!IOFile.Exists(existing.FilePath))
             {
                 return false;
             }
 
-            existingPath = existing.Path;
+            existingPath = existing.FilePath;
             return true;
         }
 
@@ -260,10 +260,13 @@ namespace MusicWrap.Core.Services.Providers.Youtube
                     continue;
                 }
 
-                var existing = _library.Artists.FirstOrDefault(a => NormalizeArtistKey(a.Name) == key);
-                if (existing is not null)
+                var existingArtist = _library.Tracks
+                    .SelectMany(t => t.AlbumArtists.Length > 0 ? t.AlbumArtists : t.Artists)
+                    .FirstOrDefault(a => NormalizeArtistKey(a) == key);
+
+                if (!string.IsNullOrWhiteSpace(existingArtist))
                 {
-                    return existing.Name;
+                    return existingArtist;
                 }
             }
 

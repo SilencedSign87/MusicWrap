@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace MusicWrap.Core.Sources.Contracts
+﻿namespace MusicWrap.Core.Sources.Contracts
 {
     public interface IYoutubeResolutionService
     {

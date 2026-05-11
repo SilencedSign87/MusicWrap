@@ -1,10 +1,10 @@
 using MusicWrap.Core.Sources.Contracts;
 using System.Net.Http;
+using YoutubeExplode;
 using YouTubeMusicAPI.Client;
 using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
 using YouTubeMusicAPI.Models.Search;
-using YoutubeExplode;
 
 namespace MusicWrap.Core.Sources.Providers.Youtube;
 

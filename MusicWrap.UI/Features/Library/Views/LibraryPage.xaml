@@ -13,6 +13,7 @@
          xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
          xmlns:views="clr-namespace:MusicWrap.UI.Features.Library.Views"
+             xmlns:models="clr-namespace:MusicWrap.Core.Services.Library.Models;assembly=MusicWrap.Core"
          mc:Ignorable="d" 
          Foreground="White"
          d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumGridRowModel}"
@@ -147,7 +148,7 @@
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
-                    <DataTemplate DataType="LibraryEntry">
+                    <DataTemplate DataType="models:LibraryEntry">
                         <Grid 
                             Margin="0"
                             ToolTipService.ToolTip="{Binding Title}"

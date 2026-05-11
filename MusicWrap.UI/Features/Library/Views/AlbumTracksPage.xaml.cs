@@ -1,17 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
-using System;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Linq;
-using MusicWrap.Data.Library.Models;
-using System.IO;
-using System.Diagnostics;
-using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -22,7 +19,7 @@ namespace MusicWrap.UI.Features.Library.Views
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly MusicLibrary _library;
-        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly ILibraryService _libraryService;
         private readonly IEditMetadataService _editMetadataService;
         private bool _playerEventsAttached;
 
@@ -31,7 +28,7 @@ namespace MusicWrap.UI.Features.Library.Views
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _library = App.Services.GetRequiredService<MusicLibrary>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
+            _libraryService = App.Services.GetRequiredService<ILibraryService>();
             _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
 
             Loaded += AlbumTracksPage_Loaded;
@@ -58,12 +55,13 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            var trackIds = _library.Tracks
-                .Where(t => t.AlbumId == vm.AlbumId)
-                .OrderBy(t => t.Disk)
-                .ThenBy(t => t.TrackNumber)
-                .ThenBy(t => t.Title)
-                .Select(t => t.Id)
+            var trackIds = _libraryService.GetTracksForAlbum(vm.AlbumId)
+                .OrderBy(id =>
+                {
+                    var t = _library.Tracks.FirstOrDefault(x => x.Id == id);
+                    return (t?.DiskNumber ?? 0, t?.TrackNumber ?? 0, t?.Title ?? "");
+                })
+                .Select(id => id)
                 .ToList();
 
             if (trackIds.Count == 0)
@@ -175,18 +173,18 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            var track = _libraryCacheService.GetTrackById(vm.SelectedTrackIds[0]);
-            if (track is null || string.IsNullOrWhiteSpace(track.Path))
+            var track = _libraryService.GetTrackById(vm.SelectedTrackIds[0]);
+            if (track is null || string.IsNullOrWhiteSpace(track.FilePath))
             {
                 return;
             }
 
-            if (!File.Exists(track.Path))
+            if (!File.Exists(track.FilePath))
             {
                 return;
             }
 
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{track.Path}\"")
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{track.FilePath}\"")
             {
                 UseShellExecute = true
             });
@@ -198,9 +196,7 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 return;
             }
-            var trackIds = _library.Tracks
-                .Where(t => t.AlbumId == vm.AlbumId)
-                .Select(t => t.Id)
+            var trackIds = _libraryService.GetTracksForAlbum(vm.AlbumId)
                 .ToList();
 
             if (trackIds.Count == 0)

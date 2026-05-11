@@ -1,15 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Controls
 {
@@ -189,7 +181,8 @@ namespace MusicWrap.UI.Controls
 
         private void Rectangle_MouseMove(object sender, MouseEventArgs e)
         {
-            if (_isDragging && e.LeftButton == MouseButtonState.Pressed) {
+            if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
+            {
                 double mousex = e.GetPosition(this).X;
                 UpdateVisualFromMouse(mousex);
                 UpdateSeekPopup(mousex);
@@ -213,7 +206,7 @@ namespace MusicWrap.UI.Controls
                 e.Handled = true;
                 return;
             }
-            double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0 ,1);
+            double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0, 1);
             double NewPosition = percentage * Duration;
             SeekEnded?.Invoke(this, NewPosition);
             e.Handled = true;

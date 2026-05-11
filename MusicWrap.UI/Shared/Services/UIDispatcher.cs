@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Threading;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 
 namespace MusicWrap.UI.Shared.Services

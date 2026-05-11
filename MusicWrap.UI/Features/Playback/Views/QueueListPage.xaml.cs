@@ -1,10 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Playback.ViewModels;
-using System.Collections.Generic;
-using System.Linq;
+using MusicWrap.UI.Services;
 using System.Windows;
 using System.Windows.Controls;
 

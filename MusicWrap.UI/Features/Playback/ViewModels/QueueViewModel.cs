@@ -1,16 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Data.Library.Models;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
+using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Text;
 using System.Windows.Media.Imaging;
-using MusicWrap.Core.Services.Playback;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {
@@ -31,12 +27,14 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         // Services
         private IMusicPlayerService _player = null!;
-        private ILibraryCacheService _libraryCache = null!;
+        private readonly ILibraryService _libraryService;
+        private readonly ITrackRowItemFactory _trackRowItemFactory;
         private readonly IImageService _imageService;
 
-        public QueueViewModel(IMusicPlayerService player, ILibraryCacheService libraryCache, IImageService imageService)
+        public QueueViewModel(IMusicPlayerService player, ILibraryService libraryService, ITrackRowItemFactory trackRowItemFactory, IImageService imageService)
         {
-            _libraryCache = libraryCache;
+            _libraryService = libraryService;
+            _trackRowItemFactory = trackRowItemFactory;
             _player = player;
             _imageService = imageService;
 
@@ -62,9 +60,9 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                     .Where(index => index >= 0 && index < baseQueue.Length)
                     .Select(index => baseQueue[index])
                     .ToArray();
-            var validQueue = orderedQueue.Where(id => _libraryCache.GetTrackById(id) is not null).ToArray();
+            var validQueue = orderedQueue.Where(id => _libraryService.GetTrackById(id) is not null).ToArray();
 
-            var rowItems = _libraryCache.TrackIdsToTrackRowItems(validQueue);
+            var rowItems = _trackRowItemFactory.Build(validQueue);
             QueueTrackRows = new ObservableCollection<TrackRowItem>(rowItems);
 
             while (QueueDataList.Count > rowItems.Count)
@@ -73,7 +71,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             for (int i = 0; i < rowItems.Count; i++)
             {
                 var rowItem = rowItems[i];
-                var track = _libraryCache.GetTrackById(rowItem.Id);
+                var track = _libraryService.GetTrackById(rowItem.Id);
                 if (track is null)
                 {
                     continue;
@@ -96,7 +94,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                     row.Title = rowItem.Title;
                     row.ArtistString = rowItem.ArtistNames;
                     row.DurationString = rowItem.DurationText;
-                    row.AlbumArt = GetAlbumArt(track.CoverId, rowItem.CoverAssetPath);
+                    row.AlbumArt = GetAlbumArt(track.CoverIds.FirstOrDefault(), rowItem.CoverAssetPath);
                 }
 
                 row.IsPlaying = i == currentPlaybackIndex;

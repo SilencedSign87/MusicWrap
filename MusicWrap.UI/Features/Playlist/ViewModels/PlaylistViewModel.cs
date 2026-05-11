@@ -1,25 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Playlists;
 using MusicWrap.Data.Infrastructure.Saving;
-using MusicWrap.Data.Playlist.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using MusicWrap.UI.Shell.Windows;
+using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Net.Sockets;
-using System.Text;
-using System.Xml.Serialization;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.Core.Services.Playlists;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
@@ -35,14 +25,16 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         [ObservableProperty] string selectedTab = "Tracks";
 
         private readonly ISaveCoordinator _saveCoordinator;
-        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly ILibraryService _libraryService;
+        private readonly ITrackRowItemFactory _trackRowItemFactory;
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly IPlaylistService _playlistService;
         private NewPlaylistWindow? _newPlaylistWindow;
 
-        public PlaylistViewModel(ILibraryCacheService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService)
+        public PlaylistViewModel(ILibraryService libraryService, ITrackRowItemFactory trackRowItemFactory, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService)
         {
-            _libraryCacheService = cache;
+            _libraryService = libraryService;
+            _trackRowItemFactory = trackRowItemFactory;
             _saveCoordinator = saveCoordinator;
             _musicPlayerService = musicPlayerService;
             _playlistService = playlistService;
@@ -143,7 +135,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private void PlayNextSelected()
         {
             if (SelectedEntry is null) return;
-            
+
         }
         #endregion
 
@@ -163,16 +155,16 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             Entries.Clear();
             var playlists = _playlistService.GetPlaylists();
-            
+
             foreach (var entry in playlists)
             {
-                var tracks =  entry.TrackIds;
+                var tracks = entry.TrackIds;
 
                 Entries.Add(
                     new PlaylistEntry(
                         entry.Id,
                         entry.Name,
-                        _libraryCacheService.FindCover(trackIds: tracks) ?? string.Empty,
+                        _libraryService.FindCover(trackIds: tracks) ?? string.Empty,
                         $"{tracks.Count} items"
                         )
                     );
@@ -192,7 +184,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             {
                 var ids = selectedPlaylist.TrackIds.ToList();
                 AllTrackIds = ids;
-                var trackRows = _libraryCacheService.TrackIdsToTrackRowItems(ids);
+                var trackRows = _trackRowItemFactory.Build(ids);
                 foreach (var row in trackRows)
                 {
                     Tracks.Add(row);

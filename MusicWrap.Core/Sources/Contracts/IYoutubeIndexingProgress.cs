@@ -46,7 +46,7 @@ public sealed class YoutubeIndexingProgress
         int stepOffset = Phase.Equals("indexing", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
         int totalSteps = TotalTracks * 2;
         int currentStep = (CurrentTrackIndex - 1) * 2 + stepOffset + 1;
-        
+
         return Math.Min(100, (currentStep * 100) / totalSteps);
     }
 }

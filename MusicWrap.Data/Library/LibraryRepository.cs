@@ -1,10 +1,7 @@
 ﻿using MessagePack;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library.Models;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace MusicWrap.Data.Library
 {
@@ -47,11 +44,13 @@ namespace MusicWrap.Data.Library
             lock (_lock)
             {
                 var data = MessagePackSerializer.Serialize(library);
-               AtomicFileStore.WriteAllBytes(LibraryFile, data, BackupFile);
+                AtomicFileStore.WriteAllBytes(LibraryFile, data, BackupFile);
             }
         }
-        public void Clear() {
-            lock (_lock) {
+        public void Clear()
+        {
+            lock (_lock)
+            {
                 if (!File.Exists(LibraryFile)) return;
                 File.Delete(LibraryFile);
             }
@@ -72,11 +71,8 @@ namespace MusicWrap.Data.Library
             return new MusicLibrary
             {
                 Tracks = [],
-                Albums = [],
-                Artists = [],
                 CoverAssets = [],
                 Directories = [],
-                Genres = [],
                 Version = 1
             };
         }

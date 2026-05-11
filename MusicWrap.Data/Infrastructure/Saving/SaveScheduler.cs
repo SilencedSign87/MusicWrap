@@ -60,7 +60,7 @@ namespace MusicWrap.Data.Infrastructure.Saving
         private readonly IPlaylistRepository _playlistRepository;
         private readonly PlaylistData _playlistData;
         private readonly ISaveStateProvider _saveStateProvider;
-        private readonly ILibraryCacheStore _libraryCacheStore;
+        //private readonly ILibraryCacheStore _libraryCacheStore;
 
         private SaveKind _pending;
         private DateTime _nextSettingsUtc = DateTime.MinValue;
@@ -77,8 +77,9 @@ namespace MusicWrap.Data.Infrastructure.Saving
             UserSettings userSettings,
             IPlaylistRepository playlistRepository,
             PlaylistData playlistData,
-            ISaveStateProvider saveStateProvider,
-            ILibraryCacheStore libraryCacheStore)
+            ISaveStateProvider saveStateProvider
+            //ILibraryCacheStore libraryCacheStore
+            )
         {
             _libraryRepository = libraryRepository;
             _library = library;
@@ -88,7 +89,7 @@ namespace MusicWrap.Data.Infrastructure.Saving
             _playlistRepository = playlistRepository;
             _playlistData = playlistData;
             _saveStateProvider = saveStateProvider;
-            _libraryCacheStore = libraryCacheStore;
+            //_libraryCacheStore = libraryCacheStore;
 
             _worker = Task.Run(() => WorkerLoopAsync(_cts.Token));
         }
@@ -202,7 +203,7 @@ namespace MusicWrap.Data.Infrastructure.Saving
                 {
                     try
                     {
-                        _libraryCacheStore.Save();
+                        //_libraryCacheStore.Save();
                     }
                     catch
                     {

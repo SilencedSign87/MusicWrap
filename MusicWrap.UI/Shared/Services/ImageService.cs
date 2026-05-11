@@ -1,9 +1,5 @@
 using MusicWrap.Data.Infrastructure;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.Services

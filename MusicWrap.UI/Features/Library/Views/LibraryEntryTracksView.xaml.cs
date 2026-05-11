@@ -1,12 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -15,7 +14,7 @@ namespace MusicWrap.UI.Features.Library.Views
     public partial class LibraryEntryTracksView : UserControl
     {
         private readonly IEditMetadataService _editMetadataService;
-        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly ILibraryService _libraryService;
         private readonly CommandPaletteViewModel _commandPaletteViewModel;
         private bool _isCommandPaletteSubscribed;
 
@@ -23,7 +22,7 @@ namespace MusicWrap.UI.Features.Library.Views
         {
             InitializeComponent();
             _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
+            _libraryService = App.Services.GetRequiredService<ILibraryService>();
             _commandPaletteViewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
 
             Loaded += LibraryEntryTracksView_Loaded;
@@ -102,18 +101,18 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            var track = _libraryCacheService.GetTrackById(vm.SelectedTrackIds[0]);
-            if (track is null || string.IsNullOrWhiteSpace(track.Path))
+            var track = _libraryService.GetTrackById(vm.SelectedTrackIds[0]);
+            if (track is null || string.IsNullOrWhiteSpace(track.FilePath))
             {
                 return;
             }
 
-            if (!File.Exists(track.Path))
+            if (!File.Exists(track.FilePath))
             {
                 return;
             }
 
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{track.Path}\"")
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{track.FilePath}\"")
             {
                 UseShellExecute = true
             });

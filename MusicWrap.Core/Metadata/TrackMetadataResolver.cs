@@ -1,7 +1,4 @@
 ﻿using MusicWrap.Core.Queue;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.Core.Metadata
 {

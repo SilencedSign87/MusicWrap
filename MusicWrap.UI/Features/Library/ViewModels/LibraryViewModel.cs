@@ -1,30 +1,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
-using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Models;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Helpers;
+using MusicWrap.UI.Features.State.Services;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.UI.Features.State.Services;
-using Microsoft.Extensions.Logging;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -32,7 +19,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     {
         [ObservableProperty] private string listBy = "Artist"; // Album, Artist, Genre, Decade
 
-        [ObservableProperty] private bool ascending = true;
+        [ObservableProperty] private bool ascending = false;
 
         [ObservableProperty] private IReadOnlyList<LibraryEntry> entries = [];
 
@@ -46,27 +33,25 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly IProgress<ScanProgress> _scanProgress;
 
         // Services
-        private readonly MusicLibrary _library;
         private readonly ILibraryScanner _scanner;
-        private readonly ILibraryCacheService _LibraryCache;
+        private readonly ILibraryService _libraryService;
         private readonly IMusicPlayerService _player;
         private readonly IStatusService _statusService;
         private readonly IImageService _imageService;
         private readonly ILogger<LibraryViewModel> _logger;
 
-        public LibraryViewModel(MusicLibrary library,
+        public LibraryViewModel(
             ILibraryScanner scanner,
-            ILibraryCacheService libraryCache,
+            ILibraryService libraryService,
             UserSettings settings,
             IMusicPlayerService player,
             IImageService imageService,
             IStatusService statusService,
             ILogger<LibraryViewModel> logger)
         {
-            _library = library;
             _scanner = scanner;
             _imageService = imageService;
-            _LibraryCache = libraryCache;
+            _libraryService = libraryService;
             _player = player;
             _statusService = statusService;
             _logger = logger;
@@ -135,7 +120,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             await RunWithStatusAsync("Rescanning Library...", async () =>
             {
                 await _scanner.ScanAllDirectories(_scanProgress, null);
-                _LibraryCache.InvalidateCache();
+                _libraryService.InvalidateCache();
                 _imageService.ClearCache();
                 await LoadEntriesAsync();
             }, "Library Rescan Complete");
@@ -159,7 +144,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             await RunWithStatusAsync("Scanning added folder...", async () =>
             {
                 await _scanner.ScanDirectory(selectedPath, _scanProgress, null);
-                _LibraryCache.InvalidateCache();
+                _libraryService.InvalidateCache();
                 await LoadEntriesAsync();
             }, "Folder folder added");
         }
@@ -180,7 +165,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             await RunWithStatusAsync("Scanning files...", async () =>
             {
                 await _scanner.ScanFiles(selectedFiles, _scanProgress, null);
-                _LibraryCache.InvalidateCache();
+                _libraryService.InvalidateCache();
                 await LoadEntriesAsync();
             }, "Files added");
 
@@ -191,7 +176,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             await RunWithStatusAsync("Reloading library", async () =>
             {
-                _LibraryCache.InvalidateCache();
+                _libraryService.InvalidateCache();
                 await LoadEntriesAsync();
             });
         }
@@ -257,7 +242,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             try
             {
                 DateTime timeStart = DateTime.Now;
-                var loadedEntries = await _LibraryCache.GetEntriesAsync(listBySnapshot, ascendingSnapshot);
+                var loadedEntries = await _libraryService.GetEntriesAsync(listBySnapshot, ascendingSnapshot);
 
                 if (requestId != Volatile.Read(ref _loadEntriesRequestId)) return;
 
@@ -350,42 +335,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return true;
             }
 
-            return _LibraryCache.GetTrackIdsForEntry(entry, query).Length > 0;
-        }
-
-        private IEnumerable<int> GetRelatedAlbumIds(LibraryEntry entry)
-        {
-            return entry.Type switch
-            {
-                "Album" => [entry.Id],
-                "Artist" => _library.Albums.Where(a => a.ArtistIds.Contains(entry.Id)).Select(a => a.Id),
-                "Genre" => _library.Tracks
-                    .Where(t => t.GenreIds.Contains(entry.Id))
-                    .Select(t => t.AlbumId)
-                    .Distinct(),
-                "Decade" => GetAlbumIdsForDecade(entry.Title),
-                _ => []
-            };
-        }
-
-        private IEnumerable<int> GetAlbumIdsForDecade(string decadeTitle)
-        {
-            if (string.IsNullOrWhiteSpace(decadeTitle))
-                return [];
-
-            var clean = decadeTitle.Trim().TrimEnd('s', 'S');
-            if (!int.TryParse(clean, out var decadeStart))
-                return [];
-
-            var decadeEnd = decadeStart + 10;
-            return _library.Albums
-                .Where(a => a.Year >= decadeStart && a.Year < decadeEnd)
-                .Select(a => a.Id);
+            return _libraryService.GetTrackIdsForEntry(entry, query).Length > 0;
         }
 
         public void PlayAlbum(int albumId)
         {
-            var allTracks = _LibraryCache.GetTrackQueueForAlbum(albumId);
+            var allTracks = _libraryService.GetTrackQueueForAlbum(albumId);
 
             _player.SetQueue(allTracks);
             _player.PlayIndex(0);

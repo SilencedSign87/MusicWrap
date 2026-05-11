@@ -1,15 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Models;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -39,16 +34,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         [ObservableProperty] private List<int> selectedTrackIds = [];
 
-        private readonly MusicLibrary _library;
-        private readonly ILibraryCacheService _libraryCache;
+        private readonly ILibraryService _libraryService;
+        private readonly ITrackRowItemFactory _trackRowItemFactory;
         private readonly TracksContextMenuService _tracksContextMenuService;
         private readonly string _searchQuery;
         private readonly TrackSortMode _sortMode;
         private HashSet<int> _albumTrackIds = [];
 
         public AlbumTracksViewModel(
-            MusicLibrary library,
-            ILibraryCacheService libraryCache,
+            ILibraryService libraryService,
+            ITrackRowItemFactory trackRowItemFactory,
             TracksContextMenuService tracksContextMenuService,
             int albumId,
             string dominantColor = "#1a1a1a",
@@ -56,8 +51,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             string? searchQuery = null,
             TrackSortMode sortMode = TrackSortMode.Year)
         {
-            _library = library;
-            _libraryCache = libraryCache;
+            _libraryService = libraryService;
+            _trackRowItemFactory = trackRowItemFactory;
             _tracksContextMenuService = tracksContextMenuService;
             _searchQuery = searchQuery?.Trim() ?? string.Empty;
             _sortMode = sortMode;
@@ -70,17 +65,18 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private void LoadAlbumAndTracks()
         {
-            var album = _library.Albums.FirstOrDefault(a => a.Id == AlbumId);
-            AlbumTitle = album?.Title ?? "Unknown Album";
-            AlbumYear = album?.Year ?? 0;
-            AlbumArtists = _libraryCache.GetArtistNamesForAlbum(AlbumId);
+            var allTrackIds = _libraryService.GetTracksForAlbum(AlbumId);
+            var firstTrack = allTrackIds.Length > 0 ? _libraryService.GetTrackById(allTrackIds[0]) : null;
 
-            var allTrackIds = _libraryCache.GetTracksForAlbum(AlbumId);
+            AlbumTitle = firstTrack?.AlbumName ?? "Unknown Album";
+            AlbumYear = firstTrack?.ReleaseYear ?? 0;
+            AlbumArtists = _libraryService.GetArtistNamesForAlbum(AlbumId);
+
             var displayTrackIds = string.IsNullOrWhiteSpace(_searchQuery)
                 ? allTrackIds
-                : _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
+                : _libraryService.GetTracksForAlbum(AlbumId, _searchQuery);
 
-            var trackRows = SortTracks(_libraryCache.TrackIdsToTrackRowItems(displayTrackIds)).ToList();
+            var trackRows = SortTracks(_trackRowItemFactory.Build(displayTrackIds)).ToList();
 
             Tracks = new ObservableCollection<TrackRowItem>(trackRows);
             AllTrackIds = trackRows.Select(t => t.Id).ToList();
@@ -110,7 +106,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (_sortMode == TrackSortMode.Duration)
             {
                 return rows
-                    .OrderBy(t => _libraryCache.GetTrackById(t.Id)?.Duration ?? int.MaxValue)
+                    .OrderBy(t => _libraryService.GetTrackById(t.Id)?.DurationSeconds ?? int.MaxValue)
                     .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase);
             }
 

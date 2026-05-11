@@ -1,20 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Data.Library;
-using MusicWrap.UI.Helpers;
-using System;
+using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Services;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
-using System.Windows.Media.Imaging;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.Data.Infrastructure;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Data.User.Models;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -22,7 +16,7 @@ namespace MusicWrap.UI.ViewModels
     {
         private bool _disposed = false;
         private readonly IMusicPlayerService _playerService;
-        private readonly MusicLibrary _library;
+        private readonly ILibraryService _libraryService;
 
         private readonly DispatcherTimer _uiPositionTmer;
         private double _lastEnginePosition = 0;
@@ -123,10 +117,10 @@ namespace MusicWrap.UI.ViewModels
             Process.Start(new ProcessStartInfo(ArtworkPath) { UseShellExecute = true });
         }
 
-        public PlayerViewModel(IMusicPlayerService service, MusicLibrary library, IImageService imageService)
+        public PlayerViewModel(IMusicPlayerService service, ILibraryService libraryService, IImageService imageService)
         {
             _playerService = service;
-            _library = library;
+            _libraryService = libraryService;
             _imageService = imageService;
 
 
@@ -502,14 +496,8 @@ namespace MusicWrap.UI.ViewModels
                 return;
             }
 
-            var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
-            CurrentTrackSampleRate = track != null ? $"{track.SamplingRate / 1000.0:F1} kHz" : "";
-            CurrentTrackFormat = track != null ? Path.GetExtension(track.Path).TrimStart('.').ToUpper() : "";
-            CurrentTrackBitrate = track != null ? $"{track.Bitrate} kbps" : "";
-            CurrentTrackBitDepth = track != null ? $"{track.BitDeph} bit" : "";
-            CurrentTrackChannels = track != null ? $"{track.Channels} channel{(track.Channels > 1 ? "s" : "")}" : "";
-
-            if (track == null)
+            var track = _libraryService.GetTrackById(trackId);
+            if (track is null)
             {
                 CurrentTrackTitle = "Unknown track";
                 CurrentTrackDominantColorHex = "#808080";
@@ -517,53 +505,25 @@ namespace MusicWrap.UI.ViewModels
                 return;
             }
 
-            CurrentTrackTitle = track.Title;
+            CurrentTrackTitle = track.Title ?? "Unknown track";
+            CurrentTrackSampleRate = track.SampleRate > 0 ? $"{track.SampleRate / 1000.0:F1} kHz" : string.Empty;
+            CurrentTrackFormat = string.IsNullOrWhiteSpace(track.FilePath) ? string.Empty : Path.GetExtension(track.FilePath).TrimStart('.').ToUpperInvariant();
+            CurrentTrackBitrate = track.BitRate > 0 ? $"{track.BitRate} kbps" : string.Empty;
+            CurrentTrackBitDepth = track.BitDepth > 0 ? $"{track.BitDepth} bit" : string.Empty;
+            CurrentTrackChannels = track.Channels > 0 ? $"{track.Channels} channel{(track.Channels > 1 ? "s" : "")}" : string.Empty;
+            CurrentTrackAlbum = string.IsNullOrWhiteSpace(track.AlbumName) ? "Unknown Album" : track.AlbumName;
+            CurrentTrackYear = track.ReleaseYear?.ToString() ?? "?";
+            CurrentTrackArtists = track.AlbumArtists.Length > 0 ? string.Join(", ", track.AlbumArtists) : track.Artists.Length > 0 ? string.Join(", ", track.Artists) : "Unknown Artist";
 
-            // Get Album
-            var album = _library.Albums.FirstOrDefault(a => a.Id == track.AlbumId);
-            CurrentTrackAlbum = album != null ? album.Title : "Unknown Album";
-            CurrentTrackYear = album != null ? album.Year.ToString() : "?";
-
-            // Get artists
-            var artists = _library.Artists
-                .Where(a => track.ArtistIds.Contains(a.Id))
-                .Select(a => a.Name);
-            CurrentTrackArtists = string.Join(", ", artists);
-
-            // Get cover
-            int coverId = track.CoverId;
-
-            if (coverId == 0)
+            var coverPath = _libraryService.FindCover(trackIds: [track.Id]);
+            if (!string.IsNullOrWhiteSpace(coverPath))
             {
-                if (album != null)
-                {
-                    coverId = album.CoverId;
-                }
+                CurrentTrackImagePath = coverPath;
+                ArtworkPath = _imageService.ResolvePath(coverPath, ImageVariant.Original) ?? string.Empty;
             }
 
-            if (coverId > 0)
-            {
-                var coverAsset = _library.CoverAssets.FirstOrDefault(c => c.Id == coverId);
-                if (coverAsset != null)
-                {
-                    CurrentTrackImagePath = coverAsset.FileName;
-                    ArtworkPath = _imageService.ResolvePath(coverAsset.FileName, ImageVariant.Original) ?? string.Empty;
-                    CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
-                    CurrentTrackForegroundColorHex = coverAsset.ForegroundColorHex;
-                }
-                else
-                {
-                    CurrentTrackImagePath = string.Empty;
-                    ArtworkPath = string.Empty;
-                    CurrentTrackDominantColorHex = "#808080";
-                    CurrentTrackForegroundColorHex = "#FFFFFF";
-                }
-            }
-            else
-            {
-                CurrentTrackDominantColorHex = "#808080";
-                CurrentTrackForegroundColorHex = "#FFFFFF";
-            }
+            CurrentTrackDominantColorHex = "#808080";
+            CurrentTrackForegroundColorHex = "#FFFFFF";
         }
 
         private void SyncCurrentTrackStateFromPlayer()
