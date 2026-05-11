@@ -88,7 +88,7 @@ namespace MusicWrap.UI.ViewModels
                     }
 
                     // track artist
-                    var trackArtist = string.Join(", ", track?.AlbumArtists.Length > 0 ? track.AlbumArtists : track?.Artists);
+                    var trackArtist = string.Join(", ", track?.AlbumArtists.Length > 0 ? track.AlbumArtists : track?.Artists ?? Array.Empty<string>());
                     if (string.IsNullOrEmpty(Artist) && ArtistPlaceholder != variousMetadata)
                     {
 
@@ -105,11 +105,11 @@ namespace MusicWrap.UI.ViewModels
 
                     if (string.IsNullOrEmpty(TrackNumber) && TrackNumberPlaceholder != variousMetadata)
                     {
-                        TrackNumber = track.TrackNumber.ToString();
-                        originalTrackNumber = track.TrackNumber.ToString();
+                        TrackNumber = track?.TrackNumber.ToString() ?? string.Empty;
+                        originalTrackNumber = track?.TrackNumber.ToString() ?? string.Empty;
                         TrackNumberPlaceholder = string.Empty;
                     }
-                    else if (!TrackNumber.Equals(track.TrackNumber.ToString()))
+                    else if (!TrackNumber.Equals(track?.TrackNumber.ToString() ?? string.Empty))
                     {
                         originalTrackNumber = string.Empty;
                         TrackNumberPlaceholder = variousMetadata;
@@ -118,18 +118,18 @@ namespace MusicWrap.UI.ViewModels
 
                     if (string.IsNullOrEmpty(DiskNumber) && DiskNumberPlaceholder != variousMetadata)
                     {
-                        DiskNumber = track.DiskNumber.ToString();
-                        originalDiskNumber = track.DiskNumber.ToString();
+                        DiskNumber = track?.DiskNumber.ToString() ?? string.Empty;
+                        originalDiskNumber = track?.DiskNumber.ToString() ?? string.Empty;
                         DiskNumberPlaceholder = string.Empty;
                     }
-                    else if (!DiskNumber.Equals(track.DiskNumber.ToString()))
+                    else if (!DiskNumber.Equals(track?.DiskNumber.ToString() ?? string.Empty))
                     {
                         originalDiskNumber = string.Empty;
                         DiskNumberPlaceholder = variousMetadata;
                         DiskNumber = string.Empty;
                     }
 
-                    var genreNames = string.Join(", ", track.Genres);
+                    var genreNames = string.Join(", ", track?.Genres ?? Array.Empty<string>());
                     if (string.IsNullOrEmpty(Genre) && GenrePlaceholder != variousMetadata)
                     {
                         Genre = genreNames;
@@ -146,18 +146,18 @@ namespace MusicWrap.UI.ViewModels
                     // Album Properties
                     if (string.IsNullOrEmpty(Album) && AlbumPlaceholder != variousMetadata)
                     {
-                        Album = track.AlbumName ?? string.Empty;
-                        originalAlbum = track.AlbumName ?? string.Empty;
+                        Album = track?.AlbumName ?? string.Empty;
+                        originalAlbum = track?.AlbumName ?? string.Empty;
                         AlbumPlaceholder = string.Empty;
                     }
-                    else if (!Album.Equals(track.AlbumName ?? string.Empty))
+                    else if (!Album.Equals(track?.AlbumName ?? string.Empty))
                     {
                         originalAlbum = string.Empty;
                         AlbumPlaceholder = variousMetadata;
                         Album = string.Empty;
                     }
 
-                    var albumArtists = string.Join(", ", track.AlbumArtists.Length > 0 ? track.AlbumArtists : track.Artists);
+                    var albumArtists = string.Join(", ", track?.AlbumArtists.Length > 0 ? track.AlbumArtists : track?.Artists ?? Array.Empty<string>());
                     if (string.IsNullOrEmpty(AlbumArtist) && AlbumArtistPlaceholder != variousMetadata)
                     {
                         AlbumArtist = albumArtists;
@@ -173,11 +173,11 @@ namespace MusicWrap.UI.ViewModels
 
                     if (string.IsNullOrEmpty(Year) && YearPlaceholder != variousMetadata)
                     {
-                        Year = track.ReleaseYear?.ToString() ?? string.Empty;
-                        originalYear = track.ReleaseYear?.ToString() ?? string.Empty;
+                        Year = track?.ReleaseYear?.ToString() ?? string.Empty;
+                        originalYear = track?.ReleaseYear?.ToString() ?? string.Empty;
                         YearPlaceholder = string.Empty;
                     }
-                    else if (!Year.Equals(track.ReleaseYear?.ToString() ?? string.Empty))
+                    else if (!Year.Equals(track?.ReleaseYear?.ToString() ?? string.Empty))
                     {
                         originalYear = string.Empty;
                         Year = string.Empty;
