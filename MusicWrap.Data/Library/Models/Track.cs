@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using System.Collections.Immutable;
 
 namespace MusicWrap.Data.Library.Models
 {
@@ -13,10 +14,10 @@ namespace MusicWrap.Data.Library.Models
 
         // Generic tags
         [Key(4)] public string? Title;
-        [Key(5)] public string[] Artists = [];
-        [Key(6)] public string[] AlbumArtists = [];
+        [Key(5)] public ImmutableArray<string> Artists = ImmutableArray<string>.Empty;
+        [Key(6)] public ImmutableArray<string> AlbumArtists = ImmutableArray<string>.Empty;
         [Key(7)] public string? AlbumName;
-        [Key(8)] public string[] Genres = [];
+        [Key(8)] public ImmutableArray<string> Genres = ImmutableArray<string>.Empty;
         [Key(9)] public int TrackNumber = 1;
         [Key(10)] public int DiskNumber = 1;
         [Key(11)] public int? ReleaseYear;

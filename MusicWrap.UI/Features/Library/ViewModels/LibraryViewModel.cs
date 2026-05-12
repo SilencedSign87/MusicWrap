@@ -17,7 +17,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 {
     public partial class LibraryViewModel : ObservableObject
     {
-        [ObservableProperty] private string listBy = "Artist"; // Album, Artist, Genre, Decade
+        [ObservableProperty] private string listBy = "AlbumArtist"; // Album, Artist, Genre, Decade
 
         [ObservableProperty] private bool ascending = false;
 
@@ -92,14 +92,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
 
         public bool IsAlbumView => ListBy == "Album";
-        public bool IsArtistView => ListBy == "Artist";
+        public bool IsAlbumArtistView => ListBy == "AlbumArtist";
+        public bool IsTrackArtistView => ListBy == "TrackArtist";
         public bool IsGenreView => ListBy == "Genre";
         public bool IsDecadeView => ListBy == "Decade";
 
         partial void OnListByChanged(string value)
         {
             OnPropertyChanged(nameof(IsAlbumView));
-            OnPropertyChanged(nameof(IsArtistView));
+            OnPropertyChanged(nameof(IsAlbumArtistView));
+            OnPropertyChanged(nameof(IsTrackArtistView));
             OnPropertyChanged(nameof(IsGenreView));
             OnPropertyChanged(nameof(IsDecadeView));
 

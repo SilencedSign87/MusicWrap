@@ -88,7 +88,7 @@ namespace MusicWrap.UI.ViewModels
                     }
 
                     // track artist
-                    var trackArtist = string.Join(", ", track?.AlbumArtists.Length > 0 ? track.AlbumArtists : track?.Artists ?? Array.Empty<string>());
+                    var trackArtist = string.Join(", ", track?.AlbumArtists.Length > 0 ? track.AlbumArtists : track?.Artists.ToArray() ?? Array.Empty<string>());
                     if (string.IsNullOrEmpty(Artist) && ArtistPlaceholder != variousMetadata)
                     {
 
@@ -129,7 +129,7 @@ namespace MusicWrap.UI.ViewModels
                         DiskNumber = string.Empty;
                     }
 
-                    var genreNames = string.Join(", ", track?.Genres ?? Array.Empty<string>());
+                    var genreNames = string.Join(", ", track?.Genres.ToArray() ?? Array.Empty<string>());
                     if (string.IsNullOrEmpty(Genre) && GenrePlaceholder != variousMetadata)
                     {
                         Genre = genreNames;
@@ -157,7 +157,7 @@ namespace MusicWrap.UI.ViewModels
                         Album = string.Empty;
                     }
 
-                    var albumArtists = string.Join(", ", track?.AlbumArtists.Length > 0 ? track.AlbumArtists : track?.Artists ?? Array.Empty<string>());
+                    var albumArtists = string.Join(", ", track?.AlbumArtists.Length > 0 ? track.AlbumArtists : track?.Artists.ToArray() ?? Array.Empty<string>());
                     if (string.IsNullOrEmpty(AlbumArtist) && AlbumArtistPlaceholder != variousMetadata)
                     {
                         AlbumArtist = albumArtists;

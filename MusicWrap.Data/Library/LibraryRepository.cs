@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using MusicWrap.Data.Helpers;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library.Models;
 using System.IO;
@@ -29,7 +30,9 @@ namespace MusicWrap.Data.Library
                 try
                 {
                     var data = File.ReadAllBytes(LibraryFile);
-                    return MessagePackSerializer.Deserialize<MusicLibrary>(data);
+                    var library = MessagePackSerializer.Deserialize<MusicLibrary>(data);
+                    Rewrite(library);
+                    return library;
                 }
                 catch
                 {
@@ -81,6 +84,19 @@ namespace MusicWrap.Data.Library
             var corrupted = LibraryFile + ".corrupted";
 
             File.Move(LibraryFile, corrupted, true);
+        }
+
+        private static void Rewrite(MusicLibrary musicLibrary)
+        {
+            foreach(var t in musicLibrary.Tracks)
+            {
+                t.Title = TrackStringPool.Intern(t.Title);
+                t.Artists = TrackStringPool.Intern(t.Artists);
+                t.AlbumArtists = TrackStringPool.Intern(t.AlbumArtists);
+                t.AlbumName = TrackStringPool.Intern(t.AlbumName);
+                t.Genres = TrackStringPool.Intern(t.Genres);
+            }
+
         }
     }
 }

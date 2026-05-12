@@ -1,4 +1,5 @@
-﻿using MusicWrap.Data.Infrastructure;
+﻿using MusicWrap.Data.Helpers;
+using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library.Models;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.ColorSpaces;
@@ -6,6 +7,7 @@ using SixLabors.ImageSharp.ColorSpaces.Conversion;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using System.Collections.Immutable;
 using System.IO;
 
 namespace MusicWrap.Core.Services.Library
@@ -95,11 +97,11 @@ namespace MusicWrap.Core.Services.Library
                 {
                     Id = _library.GenerateTrackId(),
                     FilePath = filePath,
-                    Title = tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(filePath),
-                    Artists = tagFile.Tag.Performers,
-                    AlbumArtists = tagFile.Tag.AlbumArtists,
-                    AlbumName = tagFile.Tag.Album,
-                    Genres = tagFile.Tag.Genres,
+                    Title = TrackStringPool.Intern(tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(filePath)),
+                    Artists = TrackStringPool.Intern(tagFile.Tag.Performers),
+                    AlbumArtists = TrackStringPool.Intern(tagFile.Tag.AlbumArtists),
+                    AlbumName = TrackStringPool.Intern(tagFile.Tag.Album),
+                    Genres = TrackStringPool.Intern(tagFile.Tag.Genres),
                     TrackNumber = (int)tagFile.Tag.Track,
                     DiskNumber = (int)tagFile.Tag.Disc,
                     ReleaseYear = (int)tagFile.Tag.Year,

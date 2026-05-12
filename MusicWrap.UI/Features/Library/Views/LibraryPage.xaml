@@ -48,14 +48,22 @@
                               Icon="{ex:Icon Glyph=E93C}"
                               />
 
-                    <MenuItem Header="Artist" 
+                    <MenuItem Header="Album Artist" 
                               Command="{Binding SetViewModeCommand}" 
-                              CommandParameter="Artist"
+                              CommandParameter="AlbumArtist"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsArtistView, Mode=OneWay}"
+                              IsChecked="{Binding IsAlbumArtistView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E77B}"
                               />
 
+                    <MenuItem Header="Track Artist" 
+                              Command="{Binding SetViewModeCommand}" 
+                              CommandParameter="TrackArtist"
+                              IsCheckable="True" 
+                              IsChecked="{Binding IsTrackArtistView, Mode=OneWay}"
+                              Icon="{ex:Icon Glyph=E77B}"
+                              />
+                    
                     <MenuItem Header="Genre" 
                               Command="{Binding SetViewModeCommand}" 
                               CommandParameter="Genre"
