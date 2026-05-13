@@ -113,7 +113,8 @@ namespace MusicWrap.UI.Features.Library.Views
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,
                         "",
-                        ViewModel.SortMode ?? TrackSortMode.Year
+                        ViewModel.SortMode ?? TrackSortMode.Year,
+                        ViewModel.SelectedEntry
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
                     contentControl.Content = tracksPage;

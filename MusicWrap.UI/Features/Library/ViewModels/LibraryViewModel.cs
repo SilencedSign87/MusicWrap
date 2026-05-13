@@ -82,7 +82,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             _isInitializing = true;
 
-            ListBy = string.IsNullOrWhiteSpace(settings.LibraryListBy) ? "Artist" : settings.LibraryListBy;
+            ListBy = string.IsNullOrWhiteSpace(settings.LibraryListBy) ? "AlbumArtist" : settings.LibraryListBy;
             Ascending = settings.LibraryAscending;
 
             _isInitializing = false;

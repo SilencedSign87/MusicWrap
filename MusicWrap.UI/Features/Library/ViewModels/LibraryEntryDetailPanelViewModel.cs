@@ -541,7 +541,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return [T(LibraryDetailTabKey.Tracks, "Tracks"), T(LibraryDetailTabKey.Stats, "Stats")];
             }
 
-            if (entryType.Equals("Artist", StringComparison.OrdinalIgnoreCase))
+            if (entryType is "Artist" or "AlbumArtist" or "TrackArtist")
             {
                 return [
                     T(LibraryDetailTabKey.Albums, "Albums"),

@@ -55,7 +55,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            var trackIds = _libraryService.GetTracksForAlbum(vm.AlbumId)
+            var trackIds = vm.AllTrackIds
                 .OrderBy(id =>
                 {
                     var t = _library.Tracks.FirstOrDefault(x => x.Id == id);
@@ -196,8 +196,7 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 return;
             }
-            var trackIds = _libraryService.GetTracksForAlbum(vm.AlbumId)
-                .ToList();
+            var trackIds = vm.AllTrackIds;
 
             if (trackIds.Count == 0)
             {

@@ -14,7 +14,7 @@ namespace MusicWrap.Data.User.Models
         [Key(3)] public float PreferredVolume { get; set; } = 1.0f;
         [Key(4)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreQueueOnly;
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
-        [Key(6)] public string LibraryListBy { get; set; } = "Artist";
+        [Key(6)] public string LibraryListBy { get; set; } = "AlbumArtist";
         [Key(7)] public bool LibraryAscending { get; set; } = true;
 
         [Key(8)]

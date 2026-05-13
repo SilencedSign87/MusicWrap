@@ -47,19 +47,22 @@ public sealed class LibraryService : ILibraryService
     private readonly ConcurrentDictionary<string, LibraryEntry[]> _entriesCache = new(StringComparer.OrdinalIgnoreCase);
 
     private LibraryEntry[]? _albumEntries;
-    private LibraryEntry[]? _artistEntries;
+    private LibraryEntry[]? _albumArtistEntries;
+    private LibraryEntry[]? _trackArtistEntries;
     private LibraryEntry[]? _genreEntries;
     private LibraryEntry[]? _decadeEntries;
 
-    private Dictionary<int, Track> _trackById = new();
-    private Dictionary<int, CoverAsset> _coverById = new();
-    private Dictionary<int, AlbumGroup> _albumGroupsById = new();
-    private Dictionary<int, int[]> _trackIdsByAlbumId = new();
-    private Dictionary<int, int[]> _trackIdsByArtistId = new();
-    private Dictionary<int, int[]> _trackIdsByGenreId = new();
+    private Dictionary<int, Track> _trackById = [];
+    private Dictionary<int, CoverAsset> _coverById = [];
+    private Dictionary<int, AlbumGroup> _albumGroupsById = [];
+    private Dictionary<int, int[]> _trackIdsByAlbumId = [];
+    private Dictionary<int, int[]> _trackIdsByAlbumArtistId = [];
+    private Dictionary<int, int[]> _trackIdsByGenreId = [];
+    private Dictionary<int, int[]> _trackIdsByTrackArtistId = [];
 
-    private Dictionary<int, string> _artistNameById = new();
-    private Dictionary<int, string> _genreNameById = new();
+    private Dictionary<int, string> _albumArtistNameById = [];
+    private Dictionary<int, string> _trackArtistNameById = [];
+    private Dictionary<int, string> _genreNameById = [];
 
     public event EventHandler? LibraryEntriesChanged;
     public event EventHandler? LibraryEntryItemsChanged;
@@ -135,17 +138,9 @@ public sealed class LibraryService : ILibraryService
     {
         EnsureIndexes();
 
-        var albumIds = GetAlbumIdsForEntry(entry);
-        var allTrackIds = albumIds.SelectMany(albumId =>
-            _trackIdsByAlbumId.TryGetValue(albumId, out var ids) ? ids : []);
+        int[] trackIds = GetDirectTrackIdsForEntry(entry);
 
-        var trackIds = allTrackIds;
-        if (!string.IsNullOrWhiteSpace(query))
-        {
-            var normalizedQuery = query.Trim();
-            trackIds = trackIds.Where(id => _trackById.TryGetValue(id, out var track) && TrackMatchesQuery(track, normalizedQuery));
-        }
-
+       
         return [.. trackIds];
     }
 
@@ -264,11 +259,27 @@ public sealed class LibraryService : ILibraryService
         lock (_indexLock)
         {
             _albumEntries = null;
-            _artistEntries = null;
+            _albumArtistEntries = null;
+            _trackArtistEntries = null;
             _genreEntries = null;
             _decadeEntries = null;
             _entriesCache.Clear();
         }
+    }
+
+    private int[] GetDirectTrackIdsForEntry(LibraryEntry entry)
+    {
+        return entry.Type switch
+        {
+            "Album" => _trackIdsByAlbumId.TryGetValue(entry.Id, out var ids) ? ids : [],
+            "AlbumArtist" => _trackIdsByAlbumArtistId.TryGetValue(entry.Id, out var ids) ? ids : [],
+            "TrackArtist" => _trackIdsByTrackArtistId.TryGetValue(entry.Id, out var ids) ? ids : [],
+            "Genre" => _trackIdsByGenreId.TryGetValue(entry.Id, out var ids) ? ids : [],
+            "Decade" => [.. _library.Tracks
+            .Where(t => t.ReleaseYear.HasValue && (t.ReleaseYear.Value / 10) * 10 == entry.Id)
+            .Select(t => t.Id)],
+            _ => []
+        };
     }
 
     private LibraryEntry[] GetEntriesInternal(string viewType, bool ascending)
@@ -284,13 +295,13 @@ public sealed class LibraryService : ILibraryService
         var entries = viewType switch
         {
             "Album" => GetAlbumEntries(ascending),
-            "AlbumArtist" => GetAlbumArtistEntries(ascending),
+            "AlbumArtist" or "Artist" => GetAlbumArtistEntries(ascending),
             "TrackArtist" => GetTrackArtistEntries(ascending),
             "Genre" => GetGenreEntries(ascending),
             "Decade" => GetDecadeEntries(ascending),
             _ => GetAlbumEntries(ascending)
         };
-        if(viewType != _userSettings.LibraryListBy || ascending != _userSettings.LibraryAscending)
+        if (viewType != _userSettings.LibraryListBy || ascending != _userSettings.LibraryAscending)
         {
             _userSettings.LibraryListBy = viewType;
             _userSettings.LibraryAscending = ascending;
@@ -327,18 +338,18 @@ public sealed class LibraryService : ILibraryService
 
     private LibraryEntry[] GetAlbumArtistEntries(bool ascending)
     {
-        if (_artistEntries is null)
+        if (_albumArtistEntries is null)
         {
-            _artistEntries = _trackIdsByArtistId.Select(kvp =>
+            _albumArtistEntries = _trackIdsByAlbumArtistId.Select(kvp =>
             {
                 var artistId = kvp.Key;
                 var trackIds = kvp.Value;
-                var displayName = _artistNameById.TryGetValue(artistId, out var name) ? name : "Unknown Artist";
+                var displayName = _albumArtistNameById.TryGetValue(artistId, out var name) ? name : "Unknown Artist";
 
                 return new LibraryEntry
                 {
                     Id = artistId,
-                    Type = "Artist",
+                    Type = "AlbumArtist",
                     Title = displayName,
                     ImagePath = FindCover(trackIds: trackIds),
                     Description = $"{GetAlbumIdsForTracks(trackIds).Distinct().Count()} album{(GetAlbumIdsForTracks(trackIds).Distinct().Count() == 1 ? string.Empty : "s")}",
@@ -348,12 +359,34 @@ public sealed class LibraryService : ILibraryService
         }
 
         return ascending
-            ? [.. _artistEntries.OrderBy(entry => entry.GroupKey).ThenBy(entry => entry.Title, StringComparer.OrdinalIgnoreCase)]
-            : [.. _artistEntries.OrderByDescending(entry => entry.GroupKey).ThenByDescending(entry => entry.Title, StringComparer.OrdinalIgnoreCase)];
+            ? [.. _albumArtistEntries.OrderBy(entry => entry.GroupKey).ThenBy(entry => entry.Title, StringComparer.OrdinalIgnoreCase)]
+            : [.. _albumArtistEntries.OrderByDescending(entry => entry.GroupKey).ThenByDescending(entry => entry.Title, StringComparer.OrdinalIgnoreCase)];
     }
     private LibraryEntry[] GetTrackArtistEntries(bool ascending)
     {
+        if (_trackArtistEntries is null)
+        {
+            _trackArtistEntries = _trackIdsByTrackArtistId.Select(kvp =>
+            {
+                var artistId = kvp.Key;
+                var trackIds = kvp.Value;
+                var displayName = _trackArtistNameById.TryGetValue(artistId, out var name) ? name : "Unknown Artist";
 
+                return new LibraryEntry
+                {
+                    Id = artistId,
+                    Type = "TrackArtist",
+                    Title = displayName,
+                    ImagePath = FindCover(trackIds: trackIds),
+                    Description = $"{trackIds.Length} track{(trackIds.Length == 1 ? string.Empty : "s")}",
+                    GroupKey = GetInitialGroup(displayName)
+                };
+            }).ToArray();
+        }
+
+        return ascending
+            ? [.. _trackArtistEntries.OrderBy(entry => entry.GroupKey).ThenBy(entry => entry.Title, StringComparer.OrdinalIgnoreCase)]
+            : [.. _trackArtistEntries.OrderByDescending(entry => entry.GroupKey).ThenByDescending(entry => entry.Title, StringComparer.OrdinalIgnoreCase)];
     }
 
     private LibraryEntry[] GetGenreEntries(bool ascending)
@@ -423,8 +456,11 @@ public sealed class LibraryService : ILibraryService
         return entry.Type switch
         {
             "Album" => [entry.Id],
-            "Artist" => _trackIdsByArtistId.TryGetValue(entry.Id, out var artistTrackIds)
+            "AlbumArtist" => _trackIdsByAlbumArtistId.TryGetValue(entry.Id, out var artistTrackIds)
                 ? GetAlbumIdsForTracks(artistTrackIds)
+                : [],
+            "TrackArtist" => _trackIdsByTrackArtistId.TryGetValue(entry.Id, out var trackArtistTrackIds)
+                ? GetAlbumIdsForTracks(trackArtistTrackIds)
                 : [],
             "Genre" => _trackIdsByGenreId.TryGetValue(entry.Id, out var genreTrackIds)
                 ? GetAlbumIdsForTracks(genreTrackIds)
@@ -489,26 +525,30 @@ public sealed class LibraryService : ILibraryService
 
     private void BuildArtistGroups()
     {
-        var groups = _library.Tracks
-        .SelectMany(track => GetArtistTokens(track)
-            .Select(artist => (Artist: artist, TrackId: track.Id)))
-        .GroupBy(item => NormalizeArtistKey(item.Artist))
-        .Select(group =>
-        {
-            var artistId = StableHash(group.Key);
-            var displayName = group.Select(x => x.Artist)
-                                   .FirstOrDefault(a => !string.IsNullOrWhiteSpace(a))
-                                ?? "Unknown Artist";
-            return new
+        var trackArtists = BuildArtistGroupInternal(false);
+        var albumArtists = BuildArtistGroupInternal(true);
+
+        _trackIdsByTrackArtistId = trackArtists.ToDictionary(g => g.Id, g => g.TrackIds);
+        _trackIdsByAlbumArtistId = albumArtists.ToDictionary(g => g.Id, g => g.TrackIds);
+        _trackArtistNameById = trackArtists.ToDictionary(g => g.Id, g => g.Name);
+        _albumArtistNameById = albumArtists.ToDictionary(g => g.Id, g => g.Name);
+    }
+
+    private (int Id, string Name, int[] TrackIds)[] BuildArtistGroupInternal(bool isAlbumArtist)
+    {
+        return _library.Tracks
+            .SelectMany(track => GetArtistTokens(track, isAlbumArtist)
+                .Select(artist => (Artist: artist, TrackId: track.Id)))
+            .GroupBy(item => NormalizeArtistKey(item.Artist))
+            .Select(group =>
             {
-                Id = artistId,
-                Name = displayName,
-                TrackIds = group.Select(x => x.TrackId).Distinct().ToArray()
-            };
-        })
-        .ToArray();
-        _trackIdsByArtistId = groups.ToDictionary(g => g.Id, g => g.TrackIds);
-        _artistNameById = groups.ToDictionary(g => g.Id, g => g.Name);
+                var artistId = StableHash(group.Key);
+                var displayName = group.Select(x => x.Artist)
+                                       .FirstOrDefault(a => !string.IsNullOrWhiteSpace(a))
+                                    ?? "Unknown Artist";
+                return (Id: artistId, Name: displayName, TrackIds: group.Select(x => x.TrackId).Distinct().ToArray());
+            })
+            .ToArray();
     }
 
     private void BuildGenreGroups()
@@ -552,9 +592,21 @@ public sealed class LibraryService : ILibraryService
         return $"{NormalizeKey(album)}";
     }
 
-    private static ImmutableArray<string> GetArtistTokens(Track track)
+    private static ImmutableArray<string> GetArtistTokens(Track track, bool isAlbumArtist)
     {
-        var artists = track.AlbumArtists.Length > 0 ? track.AlbumArtists : track.Artists;
+        ImmutableArray<string> artists;
+        if (isAlbumArtist && track.AlbumArtists.Length > 0)
+        {
+            artists = track.AlbumArtists;
+        }
+        else if (track.Artists.Length > 0)
+        {
+            artists = track.Artists;
+        }
+        else
+        {
+            artists = ImmutableArray<string>.Empty;
+        }
         if (artists.Length == 0 || artists.All(artist => string.IsNullOrWhiteSpace(artist)))
         {
             return ["Unknown Artist"];
@@ -659,13 +711,13 @@ public sealed class LibraryService : ILibraryService
         if (string.IsNullOrWhiteSpace(value)) return string.Empty;
         var normalized = value.Trim().ToLowerInvariant()
             .Normalize(NormalizationForm.FormD);
-        
+
         var sb = new StringBuilder(normalized.Length);
 
         foreach (var c in normalized)
         {
             var cat = CharUnicodeInfo.GetUnicodeCategory(c);
-            
+
             if (cat == UnicodeCategory.NonSpacingMark) continue;
 
             if (char.IsLetterOrDigit(c))

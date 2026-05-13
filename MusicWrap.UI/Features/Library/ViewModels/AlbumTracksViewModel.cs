@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
@@ -40,6 +41,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly string _searchQuery;
         private readonly TrackSortMode _sortMode;
         private HashSet<int> _albumTrackIds = [];
+        private readonly LibraryEntry? _entryContext;
 
         public AlbumTracksViewModel(
             ILibraryService libraryService,
@@ -49,12 +51,15 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             string dominantColor = "#1a1a1a",
             string foregroundColor = "#ffffff",
             string? searchQuery = null,
-            TrackSortMode sortMode = TrackSortMode.Year)
+            TrackSortMode sortMode = TrackSortMode.Year,
+            LibraryEntry? entryContext = null)
         {
             _libraryService = libraryService;
             _trackRowItemFactory = trackRowItemFactory;
             _tracksContextMenuService = tracksContextMenuService;
             _searchQuery = searchQuery?.Trim() ?? string.Empty;
+            _entryContext = entryContext;
+
             _sortMode = sortMode;
             this.albumId = albumId;
             this.dominantColor = dominantColor;
@@ -72,15 +77,21 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             AlbumYear = firstTrack?.ReleaseYear ?? 0;
             AlbumArtists = _libraryService.GetArtistNamesForAlbum(AlbumId);
 
-            var displayTrackIds = string.IsNullOrWhiteSpace(_searchQuery)
-                ? allTrackIds
-                : _libraryService.GetTracksForAlbum(AlbumId, _searchQuery);
+            IEnumerable<int> filteredTracks = allTrackIds;
 
-            var trackRows = SortTracks(_trackRowItemFactory.Build(displayTrackIds)).ToList();
+            // filter by entry context
+            if (_entryContext is not null)
+            {
+                var entryTracks = _libraryService.GetTrackIdsForEntry(_entryContext);
+                filteredTracks = filteredTracks.Where(t => entryTracks.Contains(t));
+            }
+
+            var displayTrackIds = filteredTracks.ToArray();
+            var trackRows = SortTracks(_trackRowItemFactory.Build(displayTrackIds));
 
             Tracks = new ObservableCollection<TrackRowItem>(trackRows);
-            AllTrackIds = trackRows.Select(t => t.Id).ToList();
-            _albumTrackIds = allTrackIds.ToHashSet();
+            AllTrackIds = [.. displayTrackIds];
+            _albumTrackIds = displayTrackIds.ToHashSet();
         }
 
         private IEnumerable<TrackRowItem> SortTracks(List<TrackRowItem> rows)
