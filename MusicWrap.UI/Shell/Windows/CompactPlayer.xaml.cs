@@ -16,8 +16,8 @@ namespace MusicWrap.UI.Shell.Windows
     {
         private PlayerViewModel? _viewModel;
         private bool _isQueueOpen = false;
-        private const int _playerWidth = 275;
-        private const int _compactHeight = 370;
+        private const int _playerWidth = 250;
+        private const int _compactHeight = 320;
         private const int _expandedHeight = 700;
         private Window? _searcherWindow;
 
@@ -60,13 +60,13 @@ namespace MusicWrap.UI.Shell.Windows
                 Height = _expandedHeight;
                 QueuePanel.Visibility = Visibility.Visible;
                 QueuePanel.Height = _expandedHeight - _compactHeight;
-                QueueFontIcon.Text = "\ue70e";
+                PanelIcon.Text = "\xE70E";
             }
             else
             {
                 QueuePanel.Visibility = Visibility.Collapsed;
                 Height = _compactHeight;
-                QueueFontIcon.Text = "\ue70d";
+                PanelIcon.Text = "\xE70D";
             }
         }
 
@@ -152,6 +152,16 @@ namespace MusicWrap.UI.Shell.Windows
             {
                 _viewModel.CancelSeekingCommand.Execute(null);
             }
+        }
+
+        private void TiblebarRegion_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            Titlebar.Visibility = Visibility.Visible;
+        }
+
+        private void TiblebarRegion_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            Titlebar.Visibility = Visibility.Hidden;
         }
     }
 }
