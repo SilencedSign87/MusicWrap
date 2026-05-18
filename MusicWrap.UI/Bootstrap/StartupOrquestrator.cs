@@ -48,37 +48,6 @@ public static class StartupOrquestrator
     {
         int windowToShow = 0;
 
-        void ApplyTrayBehavior(bool keepInTray, ITrayService? tray)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Application.Current.ShutdownMode = keepInTray
-                    ? ShutdownMode.OnExplicitShutdown
-                    : ShutdownMode.OnLastWindowClose;
-
-                tray?.SetEnabled(keepInTray);
-
-                if (!keepInTray)
-                {
-                    var current = App.CurrentWindow;
-
-                    if (current is not null
-                            && current.IsLoaded
-                            && !current.Dispatcher.HasShutdownStarted
-                            && !current.Dispatcher.HasShutdownFinished
-                            && !current.IsVisible)
-                    {
-                        try
-                        {
-                            current.Show();
-                            current.Activate();
-                        }
-                        catch { }
-                    }
-                }
-            });
-        }
-
         try
         {
             var musicLibrary = serviceProvider.GetService<MusicLibrary>();
@@ -86,19 +55,36 @@ public static class StartupOrquestrator
             var player = serviceProvider.GetRequiredService<IMusicPlayerService>();
             var trayService = serviceProvider.GetService<ITrayService>();
 
-            // subcribe to tray behavior changes
+            trayService?.Initialize();
+            
             void OnUserSettingsChanged(object? sender, PropertyChangedEventArgs e)
             {
                 if (e.PropertyName == nameof(UserSettings.KeepAppInTray))
                 {
-                    ApplyTrayBehavior(userSettings.KeepAppInTray, trayService);
+                    if (!userSettings.KeepAppInTray)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var current = App.CurrentWindow;
+                            if (current is not null
+                                    && current.IsLoaded
+                                    && !current.Dispatcher.HasShutdownStarted
+                                    && !current.Dispatcher.HasShutdownFinished
+                                    && !current.IsVisible)
+                            {
+                                try
+                                {
+                                    current.Show();
+                                    current.Activate();
+                                }
+                                catch { }
+                            }
+                        });
+                    }
                 }
             }
 
             userSettings.PropertyChanged += OnUserSettingsChanged;
-
-            // initial behavior
-            ApplyTrayBehavior(userSettings.KeepAppInTray, trayService);
 
             // Library service initialization (preserve previous defaults)
             var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)

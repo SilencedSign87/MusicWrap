@@ -79,6 +79,7 @@ public static class ServiceRegistration
         services.AddTransient<IEditMetadataService, EditMetadataService>();
         services.AddSingleton<ITrackRowItemFactory, TrackRowItemFactory>();
         services.AddSingleton<IQueueManager, QueueManager>();
+        services.AddTransient<ILibraryIntegrityService, LibraryIntegrityService>();
 
         // Providers
         services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();

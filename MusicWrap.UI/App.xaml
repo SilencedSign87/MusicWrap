@@ -5,6 +5,7 @@
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:tb="http://www.hardcodet.net/taskbar"
+             ShutdownMode="OnExplicitShutdown"
              ThemeMode="Dark"
              >
     <Application.Resources>

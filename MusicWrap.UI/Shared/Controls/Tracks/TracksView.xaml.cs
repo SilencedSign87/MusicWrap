@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Library.Models;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;

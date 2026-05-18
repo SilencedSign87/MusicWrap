@@ -87,8 +87,6 @@ namespace MusicWrap.Data.Player
             {
                 TrackIds = Array.Empty<int>(),
                 CurrentIndex = -1,
-                RepeatMode = 0,
-                ContinueMode = 0,
                 SavedAtUtc = DateTime.UtcNow
             };
         }

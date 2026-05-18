@@ -1,8 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Queue;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Services;
 using System.Diagnostics;
@@ -288,9 +290,9 @@ namespace MusicWrap.UI.ViewModels
         {
             _playerService.RepeatMode = SelectedRepeatMode switch
             {
-                RepeatMode.None => RepeatMode.RepeatTrack,
-                RepeatMode.RepeatTrack => RepeatMode.RepeatQueue,
-                RepeatMode.RepeatQueue => RepeatMode.None,
+                RepeatMode.None => RepeatMode.RepeatOne,
+                RepeatMode.RepeatOne => RepeatMode.RepeatAll,
+                RepeatMode.RepeatAll => RepeatMode.None,
                 _ => RepeatMode.None
             };
             UpdateRepeatModeIcon();
@@ -318,11 +320,11 @@ namespace MusicWrap.UI.ViewModels
                     RepeatModeIcon = "\uebe7"; // No repeat
                     RepeatModeTooltip = "No repeat";
                     break;
-                case RepeatMode.RepeatTrack:
+                case RepeatMode.RepeatOne:
                     RepeatModeIcon = "\ue8ed"; // Repeat one
                     RepeatModeTooltip = "Repeat current track";
                     break;
-                case RepeatMode.RepeatQueue:
+                case RepeatMode.RepeatAll:
                     RepeatModeIcon = "\ue8ee"; // Repeat all
                     RepeatModeTooltip = "Repeat entire queue";
                     break;
@@ -515,15 +517,15 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackYear = track.ReleaseYear?.ToString() ?? "?";
             CurrentTrackArtists = track.AlbumArtists.Length > 0 ? string.Join(", ", track.AlbumArtists) : track.Artists.Length > 0 ? string.Join(", ", track.Artists) : "Unknown Artist";
 
-            var coverPath = _libraryService.FindCover(trackIds: [track.Id]);
-            if (!string.IsNullOrWhiteSpace(coverPath))
+            var asset = _libraryService.FindCoverAssetByTrackIds(trackIds: [track.Id]);
+            if (!string.IsNullOrWhiteSpace(asset?.FileName))
             {
-                CurrentTrackImagePath = coverPath;
-                ArtworkPath = _imageService.ResolvePath(coverPath, ImageVariant.Original) ?? string.Empty;
+                CurrentTrackImagePath = asset.FileName;
+                ArtworkPath = _imageService.ResolvePath(asset.FileName, ImageVariant.Original) ?? string.Empty;
+                
+                CurrentTrackDominantColorHex = asset.DominantColorHex ?? "#808080";
+                CurrentTrackForegroundColorHex = asset.ForegroundColorHex ?? "#FFFFFF";
             }
-
-            CurrentTrackDominantColorHex = "#808080";
-            CurrentTrackForegroundColorHex = "#FFFFFF";
         }
 
         private void SyncCurrentTrackStateFromPlayer()

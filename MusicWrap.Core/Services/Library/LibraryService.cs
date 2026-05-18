@@ -29,8 +29,11 @@ public interface ILibraryService
 
     string? FindCover(IEnumerable<int>? albumIds = null, IEnumerable<int>? trackIds = null);
 
+    CoverAsset? FindCoverAssetByTrackIds(IEnumerable<int> trackIds);
+
     void Initialize(string initialView, bool ascending);
     void InvalidateCache();
+    void RequestLibraryUpdate();
 
     event EventHandler? LibraryEntriesChanged;
     event EventHandler? LibraryEntryItemsChanged;
@@ -140,7 +143,7 @@ public sealed class LibraryService : ILibraryService
 
         int[] trackIds = GetDirectTrackIdsForEntry(entry);
 
-       
+
         return [.. trackIds];
     }
 
@@ -253,6 +256,27 @@ public sealed class LibraryService : ILibraryService
 
         return null;
     }
+    public CoverAsset? FindCoverAssetByTrackIds(IEnumerable<int> trackIds)
+    {
+        foreach (var trackId in trackIds)
+        {
+            if (!_trackById.TryGetValue(trackId, out var track))
+            {
+                continue;
+            }
+            if (track.CoverIds.Length == 0)
+            {
+                continue;
+            }
+            var coverId = track.CoverIds[0];
+            if (_coverById.TryGetValue(coverId, out var cover))
+            {
+                return cover;
+            }
+        }
+        return null;
+    }
+
 
     public void InvalidateCache()
     {
@@ -264,6 +288,14 @@ public sealed class LibraryService : ILibraryService
             _genreEntries = null;
             _decadeEntries = null;
             _entriesCache.Clear();
+        }
+    }
+    public void RequestLibraryUpdate()
+    {
+        lock (_indexLock)
+        {
+            InvalidateCache();
+            BuildIndexes();
         }
     }
 
@@ -492,6 +524,7 @@ public sealed class LibraryService : ILibraryService
         BuildArtistGroups();
         BuildGenreGroups();
         _entriesCache.Clear();
+        LibraryEntriesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void BuildAlbumGroups()
@@ -578,17 +611,6 @@ public sealed class LibraryService : ILibraryService
     {
         var album = string.IsNullOrWhiteSpace(track.AlbumName) ? "Unknown Album" : track.AlbumName.Trim();
 
-        //var artists = GetArtistTokens(track)
-        //    .Select(artist => artist.Trim())
-        //    .Where(artist => !string.IsNullOrWhiteSpace(artist))
-        //    .OrderBy(artist => artist, StringComparer.OrdinalIgnoreCase)
-        //    .ToArray();
-
-        //if (artists.Length == 0)
-        //{
-        //    artists = ["Unknown Artist"];
-        //}
-
         return $"{NormalizeKey(album)}";
     }
 
@@ -637,28 +659,6 @@ public sealed class LibraryService : ILibraryService
 
         return null;
     }
-
-    private CoverAsset? FindCoverAssetByTrackIds(IEnumerable<int> trackIds)
-    {
-        foreach (var trackId in trackIds)
-        {
-            if (!_trackById.TryGetValue(trackId, out var track))
-            {
-                continue;
-            }
-            if (track.CoverIds.Length == 0)
-            {
-                continue;
-            }
-            var coverId = track.CoverIds[0];
-            if (_coverById.TryGetValue(coverId, out var cover))
-            {
-                return cover;
-            }
-        }
-        return null;
-    }
-
     private bool TrackMatchesQuery(Track track, string query)
     {
         if (track.Title?.Contains(query, StringComparison.OrdinalIgnoreCase) == true)

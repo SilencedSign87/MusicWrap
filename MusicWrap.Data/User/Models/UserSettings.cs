@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using MusicWrap.Data.Library.Models;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -8,10 +9,25 @@ namespace MusicWrap.Data.User.Models
     public sealed class UserSettings : INotifyPropertyChanged
     {
         private bool _keepAppInTray = false;
+        private float _preferredVolume = 1.0f;
+        private RepeatMode _repeatMode = RepeatMode.None;
+        private bool _isShuffleEnabled = false;
+        private ContinueMode _continueMode = ContinueMode.None;
         [Key(0)] public int PreferredDeviceIndex { get; set; } = -1; // default audio output
         [Key(1)] public SampleRatePreference PreferredSampleRate { get; set; } = SampleRatePreference.Auto;
         [Key(2)] public OutputMode PreferredOutputMode { get; set; } = OutputMode.WasapiShared;
-        [Key(3)] public float PreferredVolume { get; set; } = 1.0f;
+        [Key(3)] public float PreferredVolume
+        {
+            get => _preferredVolume;
+            set
+            {
+                value = Math.Clamp(value, 0.0f, 1.0f);
+                if (_preferredVolume != value) {
+                    _preferredVolume = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         [Key(4)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreQueueOnly;
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
         [Key(6)] public string LibraryListBy { get; set; } = "AlbumArtist";
@@ -36,6 +52,40 @@ namespace MusicWrap.Data.User.Models
         // YouTube library settings
         [Key(10)] public YoutubeSettings YoutubeSettings { get; set; } = new YoutubeSettings();
 
+        [Key(11)] public RepeatMode RepeatMode {
+            get => _repeatMode;
+            set
+            {
+                if (RepeatMode != value)
+                {
+                    _repeatMode = value;
+                    OnPropertyChanged();
+                }
+
+            }
+        }
+        [Key(12)] public bool IsShuffleEnabled {
+            get => _isShuffleEnabled;
+            set
+            {
+                if (_isShuffleEnabled != value)
+                {
+                    _isShuffleEnabled = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+        [Key(13)] public ContinueMode ContinueMode {
+            get => _continueMode;
+            set
+            {
+                if (_continueMode != value)
+                {
+                    _continueMode = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         // Misc settings
 

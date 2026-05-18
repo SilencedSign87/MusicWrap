@@ -1,6 +1,7 @@
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.Views;
@@ -53,7 +54,6 @@ namespace MusicWrap.UI.Shell.Windows
 
             tracker.Track(this);
         }
-
 
         private void _player_PlaybackStateChanged(object? sender, PlaybackState e)
         {

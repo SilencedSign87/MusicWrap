@@ -29,7 +29,7 @@ namespace MusicWrap.Data.Infrastructure.Saving
     public interface ISaveStateProvider
     {
         PlaybackQueueSnapshot BuildPlaybackSnapshot();
-        float GetCurrentVolume();
+        //float GetCurrentVolume();
         LastWindowMode GetCurrentWindowMode();
     }
 
@@ -236,7 +236,7 @@ namespace MusicWrap.Data.Infrastructure.Saving
                 {
                     try
                     {
-                        _userSettings.PreferredVolume = Math.Clamp(_saveStateProvider.GetCurrentVolume(), 0f, 1f);
+                        //_userSettings.PreferredVolume = Math.Clamp(_saveStateProvider.GetCurrentVolume(), 0f, 1f);
                         _userSettings.LastWindowMode = _saveStateProvider.GetCurrentWindowMode();
                         _userSettingsRepository.Save(_userSettings);
                     }

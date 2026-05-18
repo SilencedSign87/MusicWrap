@@ -242,6 +242,10 @@ namespace MusicWrap.UI
                 {
                     CurrentWindow = null;
                 }
+                if (!IsWindowTransitioning && !ShouldKeepAppInTray())
+                {
+                    RequestShutdown();
+                }
             };
         }
 

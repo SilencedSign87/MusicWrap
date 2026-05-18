@@ -13,23 +13,6 @@ using Un4seen.Bass;
 
 namespace MusicWrap.Core.Services.Playback
 {
-    public enum PlaybackState
-    {
-        Stopped,
-        Playing,
-        Paused
-    }
-    public enum RepeatMode
-    {
-        None, // When queue ends stop playback
-        RepeatTrack, // 
-        RepeatQueue
-    }
-    public enum ContinueMode
-    {
-        None, // when ends stop playback
-        DJEnd // add tracks following DJ parameters
-    }
     public interface IMusicPlayerService
     {
         int CurrentQueueIndex { get; }
@@ -107,6 +90,8 @@ namespace MusicWrap.Core.Services.Playback
         private readonly IPlaybackRepository _playbackRepository;
         private readonly IServiceProvider _serviceProvider;
         private readonly IUIDispatcher _dispatcher;
+        private readonly UserSettings _userSettings;
+        private ISaveCoordinator? _saveCoordinator;
 
         private const int MaxErrorCount = 5;
         private int _errorCount;
@@ -129,7 +114,7 @@ namespace MusicWrap.Core.Services.Playback
         private readonly SYNCPROC _preloadSync;
 
         private PlaybackState _playbackState = PlaybackState.Stopped;
-        private float _volume = 1.0f;
+        //private float _volume = 1.0f;
         private readonly SYNCPROC _endCallback;
         private readonly System.Timers.Timer _positionTimer;
 
@@ -191,14 +176,15 @@ namespace MusicWrap.Core.Services.Playback
 
         public float Volume
         {
-            get => _volume;
+            get => _userSettings.PreferredVolume;
             set
             {
                 var v = Math.Clamp(value, 0f, 1f);
-                if (Math.Abs(_volume - v) < 0.0001f) return;
-                _volume = v;
-                if (_currentStream != 0) _audioEngine.SetVolume(_currentStream, _volume);
-                _dispatcher.Invoke(() => VolumeChanged?.Invoke(this, _volume));
+                if (Math.Abs(_userSettings.PreferredVolume - v) < 0.0001f) return;
+                _userSettings.PreferredVolume = v;
+                if (_currentStream != 0) _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
+                _dispatcher.Invoke(() => VolumeChanged?.Invoke(this, _userSettings.PreferredVolume));
+                EnqueueSave(SaveKind.Settings);
             }
         }
 
@@ -207,38 +193,38 @@ namespace MusicWrap.Core.Services.Playback
         public string CurrentTrackPath => _queue.CurrentItem?.Source ?? string.Empty;
 
         public int QueueCount => _queue.Items.Count;
-        private RepeatMode _repeatMode = RepeatMode.None;
+        //private RepeatMode _repeatMode = RepeatMode.None;
         public RepeatMode RepeatMode
         {
-            get => _repeatMode;
+            get => _userSettings.RepeatMode;
             set
             {
-                if (_repeatMode == value)
+                if (_userSettings.RepeatMode == value)
                 {
                     return;
                 }
 
-                _repeatMode = value;
-                SyncQueueRepeatMode();
-                EnqueuePlaybackSave();
+                _userSettings.RepeatMode = value;
+                //SyncQueueRepeatMode();
+                EnqueueSave(SaveKind.Settings);
             }
         }
 
-        public bool IsShuffleEnabled => _queue.IsShuffleEnabled;
+        public bool IsShuffleEnabled => _userSettings.IsShuffleEnabled;
 
-        private ContinueMode _continueMode = ContinueMode.None;
+        //private ContinueMode _continueMode = ContinueMode.None;
         public ContinueMode ContinueMode
         {
-            get => _continueMode;
+            get => _userSettings.ContinueMode;
             set
             {
-                if (_continueMode == value)
+                if (_userSettings.ContinueMode == value)
                 {
                     return;
                 }
 
-                _continueMode = value;
-                EnqueuePlaybackSave();
+                _userSettings.ContinueMode = value;
+                EnqueueSave(SaveKind.Settings);
             }
         }
 
@@ -249,7 +235,8 @@ namespace MusicWrap.Core.Services.Playback
             IPlaybackRepository playbackRepository,
             IServiceProvider serviceProvider,
             ILogger<MusicPlayerService> logger,
-            IUIDispatcher dispatcher
+            IUIDispatcher dispatcher,
+            UserSettings userSettings
             )
         {
             _library = library;
@@ -259,6 +246,7 @@ namespace MusicWrap.Core.Services.Playback
             _serviceProvider = serviceProvider;
             _logger = logger;
             _dispatcher = dispatcher;
+            _userSettings = userSettings;
 
             _audioEngine = new AudioEngine();
 
@@ -281,7 +269,7 @@ namespace MusicWrap.Core.Services.Playback
 
             _queue.QueueChanged += QueueOnQueueChanged;
             _queue.CurrentChanged += QueueOnCurrentChanged;
-            SyncQueueRepeatMode();
+            //SyncQueueRepeatMode();
         }
 
         public event EventHandler<string>? TrackChanged;
@@ -336,7 +324,7 @@ namespace MusicWrap.Core.Services.Playback
             {
                 _ = ApplyPendingResumeSeekAsync("Play");
             }
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void Pause()
@@ -346,7 +334,7 @@ namespace MusicWrap.Core.Services.Playback
 
             _audioEngine.Pause(_mixerStream);
             SetPlaybackState(PlaybackState.Paused);
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void Stop()
@@ -371,7 +359,7 @@ namespace MusicWrap.Core.Services.Playback
             _mixerChannels = 2;
 
             SetPlaybackState(PlaybackState.Stopped);
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void Next()
@@ -411,7 +399,7 @@ namespace MusicWrap.Core.Services.Playback
 
                 //var pos = _audioEngine.GetMixerPosition(_currentStream);
                 _dispatcher.Invoke(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek
-                EnqueuePlaybackSave();
+                EnqueueSave(SaveKind.Playback);
             }
             else
             {
@@ -446,14 +434,15 @@ namespace MusicWrap.Core.Services.Playback
 
         public void ToggleShuffle()
         {
-            SetShuffle(!_queue.IsShuffleEnabled);
+            SetShuffle(!_userSettings.IsShuffleEnabled);
         }
 
         public void SetShuffle(bool enabled)
         {
-            if (_queue.IsShuffleEnabled == enabled) return;
-            _queue.SetShuffle(enabled);
-            ShuffleStateChanged?.Invoke(this, enabled);
+            if (_userSettings.IsShuffleEnabled == enabled) return;
+            _queue.SetShuffle(enabled); // delegate shuffle state management to queue
+            _dispatcher.Invoke(() => ShuffleStateChanged?.Invoke(this, enabled));
+            EnqueueSave(SaveKind.Settings);
         }
 
         public void SetSilentIndex(int index)
@@ -462,7 +451,7 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             _queue.Jump(index);
             UpdateSelectedTrackState();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void SetSilentPlaybackIndex(int index)
@@ -471,7 +460,7 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             _queue.JumpPlaybackIndex(index);
             UpdateSelectedTrackState();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void AddToQueue(int TrackId)
@@ -480,7 +469,7 @@ namespace MusicWrap.Core.Services.Playback
             if (item == null) return;
             _queue.AddLast([item]);
             NotifyQueueChanged();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void AddToQueue(IEnumerable<int> TrackIds)
@@ -492,7 +481,7 @@ namespace MusicWrap.Core.Services.Playback
             if (items.Count == 0) return;
             _queue.AddLast(items!);
             NotifyQueueChanged();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false)
@@ -521,7 +510,7 @@ namespace MusicWrap.Core.Services.Playback
             UpdateSelectedTrackState();
 
             NotifyQueueChanged();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void RemoveFromQueue(int index)
@@ -541,7 +530,7 @@ namespace MusicWrap.Core.Services.Playback
             UpdateSelectedTrackState();
 
             NotifyQueueChanged();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void ClearQueue()
@@ -550,7 +539,7 @@ namespace MusicWrap.Core.Services.Playback
             _queue.Clear();
             UpdateSelectedTrackState();
             NotifyQueueChanged();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public int[] GetQueue()
@@ -583,7 +572,7 @@ namespace MusicWrap.Core.Services.Playback
 
             _queue.Jump(index);
             StartPlaybackOfCurrent();
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         private void UpdateSelectedTrackState()
@@ -655,7 +644,7 @@ namespace MusicWrap.Core.Services.Playback
                 }
             }
             _dispatcher.Invoke(() => DeviceIndexChanged?.Invoke(this, CurrentDeviceIndex));
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void ChangeSampleRate(int sampleRate)
@@ -693,7 +682,7 @@ namespace MusicWrap.Core.Services.Playback
                 PreferedSampleRate = CurrentSampleRate,
                 EffectiveSampleRate = _audioEngine.CurrentOutputSampleRate
             }));
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void ChangeOutputMode(OutputMode outputMode)
@@ -727,7 +716,7 @@ namespace MusicWrap.Core.Services.Playback
             }
 
             _dispatcher.Invoke(() => OutputModeChanged?.Invoke(this, CurrentOutputMode));
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         public (int Index, string Name)[] GetAvailableDevices()
@@ -744,12 +733,9 @@ namespace MusicWrap.Core.Services.Playback
                 TrackIds = GetQueue(),
                 CurrentIndex = CurrentQueueIndex,
                 CurrentPlaybackIndex = CurrentPlaybackIndex,
-                IsShuffleEnabled = IsShuffleEnabled,
                 PlaybackOrderIndices = GetPlaybackOrder(),
                 PositionInSeconds = CurrentPosition,
-                RepeatMode = (int)RepeatMode,
-                ContinueMode = (int)ContinueMode,
-                PlaybackState = IsPlaying ? 1 : (IsPaused ? 2 : 0)
+                PlaybackState = _playbackState
             };
         }
 
@@ -791,13 +777,13 @@ namespace MusicWrap.Core.Services.Playback
                 }
 
                 SetQueue(queue, false);
-                SetShuffle(snapshot.IsShuffleEnabled);
-                if (snapshot.IsShuffleEnabled && snapshot.PlaybackOrderIndices is { Length: > 0 })
-                {
-                    SetPlaybackOrder(snapshot.PlaybackOrderIndices);
-                }
-                RepeatMode = (RepeatMode)snapshot.RepeatMode;
-                ContinueMode = (ContinueMode)snapshot.ContinueMode;
+                //SetShuffle(snapshot.IsShuffleEnabled);
+                //if (snapshot.IsShuffleEnabled && snapshot.PlaybackOrderIndices is { Length: > 0 })
+                //{
+                //    SetPlaybackOrder(snapshot.PlaybackOrderIndices);
+                //}
+                //RepeatMode = (RepeatMode)snapshot.RepeatMode;
+                //ContinueMode = (ContinueMode)snapshot.ContinueMode;
 
                 int index = snapshot.CurrentIndex;
                 if (index < 0 || index >= queue.Length)
@@ -833,7 +819,7 @@ namespace MusicWrap.Core.Services.Playback
 
                             switch (snapshot.PlaybackState)
                             {
-                                case 1:
+                                case PlaybackState.Playing:
                                     _logger.LogDebug("ResumePlayback: restoring state -> Play");
                                     Play();
                                     if (_pendingResumePositionSeconds.HasValue)
@@ -841,7 +827,7 @@ namespace MusicWrap.Core.Services.Playback
                                         _ = ApplyPendingResumeSeekAsync("ResumePlayback:Play");
                                     }
                                     break;
-                                case 2:
+                                case PlaybackState.Paused:
                                     _logger.LogDebug("ResumePlayback: restoring state -> Pause");
                                     Pause();
                                     break;
@@ -867,7 +853,7 @@ namespace MusicWrap.Core.Services.Playback
                 _isRestoringInitialState = false;
             }
 
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         private void ApplyPreferredAudioSettings(UserSettings settings)
@@ -913,25 +899,16 @@ namespace MusicWrap.Core.Services.Playback
 
             return ok;
         }
-
-        private void EnqueuePlaybackSave()
+        private void EnqueueSave(SaveKind kind)
         {
-            if (_isRestoringInitialState)
+            if (!_isRestoringInitialState)
             {
-                return;
+                if (_saveCoordinator is null)
+                {
+                    _saveCoordinator = _serviceProvider.GetService(typeof(ISaveCoordinator)) as ISaveCoordinator;
+                }
+                _saveCoordinator?.Enqueue(kind);
             }
-
-            var saveCoordinator = _serviceProvider.GetService(typeof(ISaveCoordinator)) as ISaveCoordinator;
-            saveCoordinator?.Enqueue(SaveKind.Playback);
-        }
-
-        private Track? GetCurrentTrack()
-        {
-            var id = CurrentTrackId;
-            if (id == 0)
-                return null;
-
-            return _library.Tracks.FirstOrDefault(t => t.Id == id);
         }
 
         private void StartPlaybackOfCurrent(bool autoplay = true)
@@ -1031,7 +1008,7 @@ namespace MusicWrap.Core.Services.Playback
                 FreeStream(previousStream);
             }
 
-            _audioEngine.SetVolume(_currentStream, _volume);
+            _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
             _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
             _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
@@ -1082,7 +1059,7 @@ namespace MusicWrap.Core.Services.Playback
                 _dispatcher.Invoke(() => WaveformDataChanged?.Invoke(this, _currentWaveform));
             }
             _errorCount = 0; // Reset error count on successful playback
-            EnqueuePlaybackSave();
+            EnqueueSave(SaveKind.Playback);
         }
 
         private void SetPlaybackState(PlaybackState state)
@@ -1124,8 +1101,8 @@ namespace MusicWrap.Core.Services.Playback
 
             _dispatcher.Invoke(() => TrackEnded?.Invoke(this, EventArgs.Empty));
 
-            // Handle RepeatTrack mode
-            if (RepeatMode == RepeatMode.RepeatTrack)
+            // Handle RepeatOne mode
+            if (RepeatMode == RepeatMode.RepeatOne)
             {
                 _audioEngine.SetPosition(_currentStream, 0.0);
 
@@ -1158,7 +1135,7 @@ namespace MusicWrap.Core.Services.Playback
                 _audioEngine.RemoveFromMixer(previousStream);
                 FreeStream(previousStream);
 
-                _audioEngine.SetVolume(_currentStream, _volume);
+                _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
                 _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
                 _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
@@ -1187,7 +1164,7 @@ namespace MusicWrap.Core.Services.Playback
         private void OnPreloadSync(int handle, int channel, int data, IntPtr user)
         {
             // Don't preload if we're in RepeatTrack mode
-            if (RepeatMode == RepeatMode.RepeatTrack) return;
+            if (RepeatMode == RepeatMode.RepeatOne) return;
 
             Task.Run(() =>
             {
@@ -1415,16 +1392,6 @@ namespace MusicWrap.Core.Services.Playback
                 LibraryId = track.Id,
                 ExternalId = track.ExternalId
             };
-        }
-        private void SyncQueueRepeatMode()
-        {
-            var mapped = _repeatMode switch
-            {
-                RepeatMode.RepeatQueue => Queue.RepeatMode.RepeatAll,
-                RepeatMode.RepeatTrack => Queue.RepeatMode.RepeatOne,
-                _ => Queue.RepeatMode.None
-            };
-            _queue.SetRepeatMode(mapped);
         }
         public void Dispose()
         {
