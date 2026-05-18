@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MusicWrap.Core.Services.Library;
 
@@ -611,7 +612,7 @@ public sealed class LibraryService : ILibraryService
     {
         var album = string.IsNullOrWhiteSpace(track.AlbumName) ? "Unknown Album" : track.AlbumName.Trim();
 
-        return $"{NormalizeKey(album)}";
+        return Regex.Replace(album, @"\s+", " ");
     }
 
     private static ImmutableArray<string> GetArtistTokens(Track track, bool isAlbumArtist)
