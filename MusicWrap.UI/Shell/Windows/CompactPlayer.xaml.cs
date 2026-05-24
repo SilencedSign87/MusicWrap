@@ -2,34 +2,20 @@ using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.ViewModels;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Xml.Serialization;
 
 namespace MusicWrap.UI.Shell.Windows
 {
-    /// <summary>
-    /// Lógica de interacción para CompactPlayer.xaml
-    /// </summary>
     public partial class CompactPlayer : Window
     {
         private PlayerViewModel? _viewModel;
         private bool _isQueueOpen = false;
-        private const int _playerWidth = 275;
-        private const int _compactHeight = 370;
+        private const int _playerWidth = 250;
+        private const int _compactHeight = 320;
         private const int _expandedHeight = 700;
-        private Window? _searcherWindow;
 
         public CompactPlayer(Tracker tracker)
         {
@@ -45,10 +31,6 @@ namespace MusicWrap.UI.Shell.Windows
         private void CompactPlayer_Closed(object? sender, EventArgs e)
         {
             Closed -= CompactPlayer_Closed;
-            if (_searcherWindow != null)
-            {
-                _searcherWindow.Close();
-            }
         }
 
         private void InitializeWindowSize()
@@ -70,13 +52,13 @@ namespace MusicWrap.UI.Shell.Windows
                 Height = _expandedHeight;
                 QueuePanel.Visibility = Visibility.Visible;
                 QueuePanel.Height = _expandedHeight - _compactHeight;
-                QueueFontIcon.Text = "\ue70e";
+                PanelIcon.Text = "\xE70E";
             }
             else
             {
                 QueuePanel.Visibility = Visibility.Collapsed;
                 Height = _compactHeight;
-                QueueFontIcon.Text = "\ue70d";
+                PanelIcon.Text = "\xE70D";
             }
         }
 
@@ -139,21 +121,6 @@ namespace MusicWrap.UI.Shell.Windows
             {
                 _viewModel.EndSeekingCommand.Execute(e);
             }
-        }
-
-        private void MoreButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_searcherWindow != null)
-            {
-                _searcherWindow.Activate();
-                return;
-            }
-            _searcherWindow = new LibrarySearcherWindow
-            {
-                Owner = this
-            };
-            _searcherWindow.Show();
-            _searcherWindow.Closed += (s, args) => _searcherWindow = null;
         }
 
         private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)

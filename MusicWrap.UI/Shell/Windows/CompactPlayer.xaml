@@ -12,12 +12,14 @@
         mc:Ignorable="d"
         Icon="/Resources/icon.ico" 
         Title="MusicWrap" 
-        Width="275" 
-        Height="390" 
+        Width="250" 
+        Height="320"
+        d:Height="700"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanMinimize"
         Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
         d:Background="#2c2c2c"
+        d:Foreground="White"
         >
     <Window.Background>
         <ImageBrush 
@@ -42,37 +44,73 @@
             <Setter Property="Height" Value="32"/>
             <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Window}}"/>
         </Style>
+        <Style x:Key="TitlebarButton" TargetType="Button" BasedOn="{StaticResource CompactPlayerButton}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ElementName=Titlebar, Path=IsMouseOver}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TitlebarCloseButton" TargetType="Button" BasedOn="{StaticResource CompactClosePlayerButton}">
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding ElementName=Titlebar, Path=IsMouseOver}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     <WindowChrome.WindowChrome>
         <WindowChrome
-        CaptionHeight="275"
+        CaptionHeight="250"
         ResizeBorderThickness="6"
         CornerRadius="8"
         GlassFrameThickness="1"
         UseAeroCaptionButtons="False"
         />
     </WindowChrome.WindowChrome>
-    <Border
-        >
+    <Border>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="275"/>
+                <RowDefinition Height="250"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
             <!--Artwork-->
-            <Grid Grid.Row="0">
+            <Grid Grid.Row="0" x:Name="ArtworkArea">
                 <Image
-                    Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=large:275}"
-                    Width="275"
+                    x:Name="ArtworkImage"
+                    Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=large:250}"
+                    Width="250"
                     RenderOptions.BitmapScalingMode="HighQuality"
                     />
+                <StackPanel 
+                    x:Name="Titlebar"
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    VerticalAlignment="Top" 
+                    WindowChrome.IsHitTestVisibleInChrome="True"
+                    Background="Transparent"
+                    Height="32"
+                    Width="128">
+                    <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" Click="HandleToggleAllwayOnTop">
+                        <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="13" />
+                    </Button>
+                    <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" Click="MinimizeClick" ToolTip="Minimize">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE921;" FontSize="10" />
+                    </Button>
+                    <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" ToolTip="Open main player" Click="HandleOpenMainPlayer">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE92D;" FontSize="10" />
+                    </Button>
+                    <Button Style="{StaticResource TitlebarCloseButton}" Width="32" Height="32" Click="HandleCloseApp" ToolTip="Close">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BB;" FontSize="10" />
+                    </Button>
+                </StackPanel>
             </Grid>
             <!--Controls-->
-            <Grid Grid.Row="1"
-                  >
+            <Grid Grid.Row="1">
                 <Grid.RowDefinitions>
                     <RowDefinition/>
-                    <RowDefinition Height="auto"/>
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="8,0">
@@ -81,7 +119,6 @@
                         <RowDefinition />
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
-
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20" />
                             <ColumnDefinition Width="*" />
@@ -101,7 +138,6 @@
                                 SeekStarted="WaveformPlayerControl_SeekStarted"
                                 SeekEnded="WaveformPlayerControl_SeekEnded"
                                 SeekCanceled="WaveformPlayerControl_SeekCanceled"
-
                             />
                         </Grid>
                         <TextBlock Grid.Column="2" 
@@ -112,32 +148,29 @@
                     </Grid>
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button x:Name="MoreButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Search in library" Click="MoreButton_Click">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE721;" FontSize="12"/>
+                        <Button x:Name="MoreButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Queue/Library" Click="HandleOpenQueue">
+                            <TextBlock x:Name="PanelIcon" FontFamily="Segoe Fluent Icons" Text="&#xE70D;" FontSize="14"/>
                         </Button>
                         <Button x:Name="RepeadButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="12"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
                         </Button>
                         <Button x:Name="PrevButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Previous track"
-                            Command="{Binding PreviousCommand}"
-                            >
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="12"/>
+                            Command="{Binding PreviousCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
                         </Button>
                         <Button x:Name="PlayButton" Style="{StaticResource CompactPlayerButton}" Padding="0"
-                            Command="{Binding PlayPauseCommand}"
-                            >
+                            Command="{Binding PlayPauseCommand}">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="16"/>
                         </Button>
                         <Button x:Name="NextButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Next track"
-                            Command="{Binding NextCommand}"
-                            >
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="12"/>
+                            Command="{Binding NextCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
                         </Button>
                         <Button x:Name="ShuffleButton" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="{Binding ShuffleTooltip}" Command="{Binding ToggleShuffleCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding ShuffleIcon}" FontSize="12"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding ShuffleIcon}" FontSize="14"/>
                         </Button>
                         <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Volume">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="12"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="14"/>
                         </Button>
                     </StackPanel>
                     <Popup
@@ -170,36 +203,13 @@
                                 </StackPanel>
                             </Border>
                         </Border>
-
                     </Popup>
-
-                </Grid>
-                <Grid Grid.Row="1">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" ToolTip="Open main player" Click="HandleOpenMainPlayer">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEE47;" FontSize="14" />
-                        </Button>
-                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" ToolTip="Show Queue" Click="HandleOpenQueue">
-                            <TextBlock x:Name="QueueFontIcon" FontFamily="Segoe Fluent Icons" Text="&#xe70d;" FontSize="14" />
-                        </Button>
-                        <Button Style="{StaticResource CompactPlayerButton}" Padding="8" Click="HandleToggleAllwayOnTop">
-                            <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="14" />
-                        </Button>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Style="{StaticResource CompactPlayerButton}" Click="MinimizeClick" Padding="8" ToolTip="Minimize">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE921;" FontSize="11" />
-                        </Button>
-                        <Button Style="{StaticResource CompactClosePlayerButton}" Padding="8" Click="HandleCloseApp" ToolTip="Close">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8bb;" FontSize="11" />
-                        </Button>
-                    </StackPanel>
                 </Grid>
                 <Grid
-                    Grid.Row="2"
+                    Grid.Row="1"
                     x:Name="QueuePanel"
                     Visibility="Collapsed"
-                    >
+                    d:Visibility="Visible">
                     <mw:QueueListPage />
                 </Grid>
             </Grid>

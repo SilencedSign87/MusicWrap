@@ -8,11 +8,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using System.Windows.Media.Imaging;
-using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -294,9 +294,9 @@ namespace MusicWrap.UI.ViewModels
         {
             _playerService.RepeatMode = SelectedRepeatMode switch
             {
-                RepeatMode.None => RepeatMode.RepeatTrack,
-                RepeatMode.RepeatTrack => RepeatMode.RepeatQueue,
-                RepeatMode.RepeatQueue => RepeatMode.None,
+                RepeatMode.None => RepeatMode.RepeatOne,
+                RepeatMode.RepeatOne => RepeatMode.RepeatAll,
+                RepeatMode.RepeatAll => RepeatMode.None,
                 _ => RepeatMode.None
             };
             UpdateRepeatModeIcon();
@@ -324,11 +324,11 @@ namespace MusicWrap.UI.ViewModels
                     RepeatModeIcon = "\uebe7"; // No repeat
                     RepeatModeTooltip = "No repeat";
                     break;
-                case RepeatMode.RepeatTrack:
+                case RepeatMode.RepeatOne:
                     RepeatModeIcon = "\ue8ed"; // Repeat one
                     RepeatModeTooltip = "Repeat current track";
                     break;
-                case RepeatMode.RepeatQueue:
+                case RepeatMode.RepeatAll:
                     RepeatModeIcon = "\ue8ee"; // Repeat all
                     RepeatModeTooltip = "Repeat entire queue";
                     break;

@@ -28,8 +28,6 @@ namespace MusicWrap.UI
         public static bool IsWindowTransitioning => _windowTransitionDepth > 0;
         public static IServiceProvider Services { get; private set; } = default!;
         private static int _windowTransitionDepth;
-        private ISaveCoordinator? _saveCoordinator;
-        private ISaveOrchestration? _saveOrchestration;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -89,16 +87,6 @@ namespace MusicWrap.UI
             }
             finally
             {
-                if (_saveCoordinator is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-
-                if (_saveOrchestration is IDisposable orchestrationDisposable)
-                {
-                    orchestrationDisposable.Dispose();
-                }
-
                 Log.Information("Application exiting");
                 Log.CloseAndFlush();
                 base.OnExit(e);
@@ -244,6 +232,11 @@ namespace MusicWrap.UI
                 if (ReferenceEquals(CurrentWindow, window))
                 {
                     CurrentWindow = null;
+                }
+
+                if (!IsWindowTransitioning && !ShouldKeepAppInTray())
+                {
+                    RequestShutdown();
                 }
             };
         }

@@ -2,6 +2,7 @@ using Hardcodet.Wpf.TaskbarNotification;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.Components;
 using MusicWrap.UI.Features.Library.Views;

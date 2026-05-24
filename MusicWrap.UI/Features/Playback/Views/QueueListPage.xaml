@@ -8,6 +8,7 @@
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
              mc:Ignorable="d"
+             Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Window}}"
              d:DataContext="{d:DesignInstance Type=vm:QueueViewModel}"
              d:DesignHeight="700" d:DesignWidth="500">
 

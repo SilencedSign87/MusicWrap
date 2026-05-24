@@ -89,6 +89,8 @@ public static class StartupOrquestrator
             var player = serviceProvider.GetRequiredService<IMusicPlayerService>();
             var trayService = serviceProvider.GetService<ITrayService>();
 
+            trayService?.Initialize();
+
             // subcribe to tray behavior changes
             void OnUserSettingsChanged(object? sender, PropertyChangedEventArgs e)
             {

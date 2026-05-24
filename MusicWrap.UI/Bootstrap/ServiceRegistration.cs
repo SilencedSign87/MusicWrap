@@ -81,6 +81,7 @@ public static class ServiceRegistration
         services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
         services.AddTransient<IEditMetadataService, EditMetadataService>();
         services.AddSingleton<IQueueManager, QueueManager>();
+        services.AddSingleton<ILibraryIntegrityService, LibraryIntegrityService>();
 
         // Providers
         services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();
