@@ -1,13 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Data;
 using ICommand = System.Windows.Input.ICommand;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Controls.Models
 {

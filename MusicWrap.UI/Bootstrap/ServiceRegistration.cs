@@ -1,10 +1,10 @@
-using System;
 using System.Windows;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Metadata;
 using MusicWrap.Core.Queue;
+using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Playlists;
@@ -20,7 +20,6 @@ using MusicWrap.Data.Library;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Playlist;
 using MusicWrap.Data.User;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Playback.ViewModels;
 using MusicWrap.UI.Features.Playback.Views;
@@ -66,7 +65,7 @@ public static class ServiceRegistration
         services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
         services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
         services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
-        services.AddSingleton<ILibraryCacheService, LibraryCacheService>();
+        services.AddSingleton<ILibraryService, LibraryService>();
 
         // Services
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
@@ -82,6 +81,8 @@ public static class ServiceRegistration
         services.AddTransient<IEditMetadataService, EditMetadataService>();
         services.AddSingleton<IQueueManager, QueueManager>();
         services.AddSingleton<ILibraryIntegrityService, LibraryIntegrityService>();
+        services.AddSingleton<SearchService>();
+        services.AddSingleton<ISearchQueryProvider, SearchService>(sp => sp.GetRequiredService<SearchService>());
 
         // Providers
         services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();

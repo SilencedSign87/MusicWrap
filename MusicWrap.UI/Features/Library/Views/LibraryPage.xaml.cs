@@ -1,34 +1,18 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core;
-using MusicWrap.Data;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.Features.Library.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
-using MusicWrap.Data.Library.Models;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
     public partial class LibraryPage : UserControl, IDisposable
     {
         public LibraryViewModel vm;
-        private readonly CommandPaletteViewModel _commandPaletteViewModel;
-        private readonly ILibraryCacheService _libraryCacheService;
-        private bool _isCommandPaletteSubscribed;
+        private readonly ILibraryService _libraryCacheService;
         private bool _disposed = false;
 
         public LibraryPage()
@@ -36,42 +20,12 @@ namespace MusicWrap.UI.Features.Library.Views
             InitializeComponent();
 
             vm = App.Services.GetRequiredService<LibraryViewModel>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
+            _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
             DataContext = vm;
-
-            _commandPaletteViewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
-            Loaded += LibraryPage_Loaded;
-            Unloaded += LibraryPage_Unloaded;
 
             // Subscribe to property changes
             vm.PropertyChanged += Vm_PropertyChanged;
 
-        }
-
-        private void LibraryPage_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (_isCommandPaletteSubscribed)
-                return;
-
-            _commandPaletteViewModel.QuerySubmitted += CommandPaletteViewModel_QuerySubmitted;
-            _isCommandPaletteSubscribed = true;
-        }
-
-        private void LibraryPage_Unloaded(object sender, RoutedEventArgs e)
-        {
-            if (!_isCommandPaletteSubscribed)
-                return;
-
-            _commandPaletteViewModel.QuerySubmitted -= CommandPaletteViewModel_QuerySubmitted;
-            _isCommandPaletteSubscribed = false;
-        }
-
-        private void CommandPaletteViewModel_QuerySubmitted(object? sender, string query)
-        {
-            if (!IsVisible)
-                return;
-
-            vm.ApplySearchFilter(query);
         }
 
         private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -139,7 +93,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
             // Get the entry from the visual tree (the Grid containing this context menu)
             var grid = contextMenu.PlacementTarget as Grid;
-            if (grid?.DataContext is not MusicWrap.UI.Features.Library.Services.LibraryEntry entry)
+            if (grid?.DataContext is not LibraryEntry entry)
                 return;
 
             // Get track IDs based on entry type
@@ -162,16 +116,8 @@ namespace MusicWrap.UI.Features.Library.Views
 
             _disposed = true;
 
-            Loaded -= LibraryPage_Loaded;
-            Unloaded -= LibraryPage_Unloaded;
-
-            if (_isCommandPaletteSubscribed)
-            {
-                _commandPaletteViewModel.QuerySubmitted -= CommandPaletteViewModel_QuerySubmitted;
-                _isCommandPaletteSubscribed = false;
-            }
-
             vm.PropertyChanged -= Vm_PropertyChanged;
+            vm.Dispose();
 
             DataContext = null;
         }

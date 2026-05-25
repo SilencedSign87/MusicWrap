@@ -134,10 +134,10 @@
                             </Border.Effect>
                             <StackPanel>
                                 <controls:VolumeControl DominantColorHex="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}"  
-                                                        Orientation="Vertical"
-                                                        Width="32"
-                                                        ShowMuteButton="False"
-                                                        Height="120"
+                                                        Orientation="Horizontal"
+                                                        Width="120"
+                                                        ShowMuteButton="True"
+                                                        Height="32"
                                                         />
                             </StackPanel>
                         </Border>

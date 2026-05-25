@@ -63,7 +63,7 @@
                             SnapsToDevicePixels="True"
                             UseLayoutRounding="True">
                         <Grid ClipToBounds="True">
-                            <Border x:Name="SelectedBackground"
+                            <!--<Border x:Name="SelectedBackground"
                                     Background="{DynamicResource AccentBrush100}"
                                     CornerRadius="4"
                                     Opacity="0"/>
@@ -71,33 +71,36 @@
                             <Border x:Name="HoverBackground"
                                     Background="{DynamicResource BackgroundLayerAlt}"
                                     CornerRadius="4"
-                                    Opacity="0"/>
+                                    Opacity="0"/>-->
 
                             <Border x:Name="SelectionIndicator"
-                                    Width="3"
-                                    Height="16"
-                                    CornerRadius="2"
+                                    Height="2"
+                                    Width="24"
+                                    CornerRadius="1.5"
                                     Background="{DynamicResource AccentBrush100}"
                                     Opacity="0"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"/>
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom"
+                                    />
 
                             <ContentPresenter x:Name="ContentSite"
                                               ContentSource="Header"
                                               Margin="8,6,8,6"
                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                              RecognizesAccessKey="True"/>
+                                              RecognizesAccessKey="True"
+                                              Opacity="0.8"
+                                              />
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="HoverBackground" Property="Opacity" Value="1"/>
+                            <!--<Setter TargetName="HoverBackground" Property="Opacity" Value="1"/>-->
+                            <Setter TargetName="ContentSite" Property="Opacity" Value="1"/>
                         </Trigger>
 
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="SelectedBackground" Property="Opacity" Value="0.18"/>
-                            <Setter TargetName="HoverBackground" Property="Opacity" Value="0"/>
+                            <Setter TargetName="ContentSite" Property="Opacity" Value="1"/>
                             <Setter TargetName="SelectionIndicator" Property="Opacity" Value="1"/>
                             <Setter Property="Foreground" Value="{DynamicResource AccentBrush100}"/>
                         </Trigger>
@@ -107,7 +110,8 @@
                                 <Condition Property="IsSelected" Value="True"/>
                                 <Condition Property="IsMouseOver" Value="True"/>
                             </MultiTrigger.Conditions>
-                            <Setter TargetName="SelectedBackground" Property="Opacity" Value="0.1"/>
+                            <Setter TargetName="ContentSite" Property="Opacity" Value="1"/>
+                            <Setter TargetName="SelectionIndicator" Property="Opacity" Value="1"/>
                         </MultiTrigger>
 
                         <Trigger Property="IsEnabled" Value="False">

@@ -1,29 +1,19 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core;
 using MusicWrap.Data.Infrastructure.Saving;
-using MusicWrap.Data.Playlist.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Net.Sockets;
-using System.Text;
-using System.Xml.Serialization;
 using MusicWrap.Core.Services.Playback;
-using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Services.Playlists;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
-    public partial class PlaylistViewModel : ObservableObject
+    public partial class PlaylistViewModel : ObservableObject, IDisposable
     {
         [ObservableProperty] ObservableCollection<PlaylistEntry> entries = [];
         [ObservableProperty] bool compactMode = true;
@@ -33,23 +23,34 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         [ObservableProperty] List<int> selectedTrackIds = [];
         [ObservableProperty] List<string> allTabs = ["Tracks", "Stats"];
         [ObservableProperty] string selectedTab = "Tracks";
+        private bool isDisposing = false;
 
         private readonly ISaveCoordinator _saveCoordinator;
-        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly ILibraryService _libraryCacheService;
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly IPlaylistService _playlistService;
+        private readonly SearchService _searchService;
         private NewPlaylistWindow? _newPlaylistWindow;
 
-        public PlaylistViewModel(ILibraryCacheService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService)
+        public PlaylistViewModel(ILibraryService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService, SearchService searchService)
         {
             _libraryCacheService = cache;
             _saveCoordinator = saveCoordinator;
             _musicPlayerService = musicPlayerService;
             _playlistService = playlistService;
             selectedTrackIds = [];
+
+            _searchService = searchService;
+            _searchService.SearchSubmitted += _searchService_SearchSubmitted;
+
             _playlistService.PlaylistsChanged += _playlistService_PlaylistsChanged;
             _playlistService.PlaylistItemsChanged += _playlistService_PlaylistItemsChanged;
 
+            ConstructEntries();
+        }
+
+        private void _searchService_SearchSubmitted(object? sender, string e)
+        {
             ConstructEntries();
         }
 
@@ -143,7 +144,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private void PlayNextSelected()
         {
             if (SelectedEntry is null) return;
-            
+
         }
         #endregion
 
@@ -162,11 +163,11 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private void ConstructEntries()
         {
             Entries.Clear();
-            var playlists = _playlistService.GetPlaylists();
-            
+            var playlists = _playlistService.GetPlaylists(true);
+
             foreach (var entry in playlists)
             {
-                var tracks =  entry.TrackIds;
+                var tracks = entry.TrackIds;
 
                 Entries.Add(
                     new PlaylistEntry(
@@ -202,6 +203,15 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             {
                 AllTrackIds = [];
             }
+        }
+
+        public void Dispose()
+        {
+            if (isDisposing) return;
+            isDisposing = true;
+            _searchService.SearchSubmitted -= _searchService_SearchSubmitted;
+            _playlistService.PlaylistsChanged -= _playlistService_PlaylistsChanged;
+            _playlistService.PlaylistItemsChanged -= _playlistService_PlaylistItemsChanged;
         }
     }
     public record PlaylistEntry(

@@ -1,20 +1,19 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
-using System;
-using System.Collections.Generic;
+using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
-using System.Text;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
     public partial class LibraryEntryAlbumViewModel : ObservableObject
     {
-        private readonly ILibraryCacheService _libraryCache;
-        private readonly MusicLibrary _library;
+        private readonly ILibraryService _libraryCache;
         private readonly IImageService _imageService;
+        private readonly SearchService _searchService;
 
         [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
         [ObservableProperty] private int layoutColumns = 1;
@@ -30,18 +29,18 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private const int IMAGE_BATCH = 5;
 
         public LibraryEntryAlbumViewModel(
-            ILibraryCacheService cacheService,
+            ILibraryService cacheService,
             MusicLibrary library,
-            IImageService imageService
+            IImageService imageService,
+            SearchService searchService
             )
         {
             _libraryCache = cacheService;
-            _library = library;
             _imageService = imageService;
+            _searchService = searchService;
         }
         #region Public
-        public MusicLibrary Library { get { return _library; } }
-        public ILibraryCacheService LibraryCache { get { return _libraryCache; } }
+        public ILibraryService LibraryCache { get { return _libraryCache; } }
         public void SetLayoutColumns(int columns)
         {
             columns = Math.Max( 1, columns );
@@ -129,7 +128,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return;
             }
 
-            var albums = _libraryCache.GetAlbumsForEntry(SelectedEntry)
+            var albums = _libraryCache.GetAlbumsForEntry(SelectedEntry, true)
                 .Select(s => new AlbumData
                 {
                     Id = s.Id,

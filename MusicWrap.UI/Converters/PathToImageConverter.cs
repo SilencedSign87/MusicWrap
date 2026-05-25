@@ -1,15 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
 using System.Globalization;
-using System.IO;
-using System.Text;
 using System.Windows.Data;
-using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.Converters
 {

@@ -1,15 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Collections.ObjectModel;
-using System.Linq;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -39,16 +33,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         [ObservableProperty] private List<int> selectedTrackIds = [];
 
-        private readonly MusicLibrary _library;
-        private readonly ILibraryCacheService _libraryCache;
+        private readonly ILibraryService _libraryCache;
+        private readonly SearchService _searchService;
         private readonly TracksContextMenuService _tracksContextMenuService;
         private readonly string _searchQuery;
         private readonly TrackSortMode _sortMode;
         private HashSet<int> _albumTrackIds = [];
 
         public AlbumTracksViewModel(
-            MusicLibrary library,
-            ILibraryCacheService libraryCache,
+            ILibraryService libraryCache,
+            SearchService searchService,
             TracksContextMenuService tracksContextMenuService,
             int albumId,
             string dominantColor = "#1a1a1a",
@@ -56,8 +50,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             string? searchQuery = null,
             TrackSortMode sortMode = TrackSortMode.Year)
         {
-            _library = library;
             _libraryCache = libraryCache;
+            _searchService = searchService;
             _tracksContextMenuService = tracksContextMenuService;
             _searchQuery = searchQuery?.Trim() ?? string.Empty;
             _sortMode = sortMode;
@@ -70,17 +64,18 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private void LoadAlbumAndTracks()
         {
-            var album = _library.Albums.FirstOrDefault(a => a.Id == AlbumId);
+            //var album = _libraryCache.Albums.FirstOrDefault(a => a.Id == AlbumId);
+            var album = _libraryCache.GetAlbumById(AlbumId);
             AlbumTitle = album?.Title ?? "Unknown Album";
             AlbumYear = album?.Year ?? 0;
             AlbumArtists = _libraryCache.GetArtistNamesForAlbum(AlbumId);
 
-            var allTrackIds = _libraryCache.GetTracksForAlbum(AlbumId);
-            var displayTrackIds = string.IsNullOrWhiteSpace(_searchQuery)
-                ? allTrackIds
-                : _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
+            var allTrackIds = _libraryCache.GetTracksForAlbum(AlbumId, true);
+            //var displayTrackIds = string.IsNullOrWhiteSpace(_searchQuery)
+            //    ? allTrackIds
+            //    : _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
 
-            var trackRows = SortTracks(_libraryCache.TrackIdsToTrackRowItems(displayTrackIds)).ToList();
+            var trackRows = SortTracks(_libraryCache.TrackIdsToTrackRowItems(allTrackIds)).ToList();
 
             Tracks = new ObservableCollection<TrackRowItem>(trackRows);
             AllTrackIds = trackRows.Select(t => t.Id).ToList();

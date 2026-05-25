@@ -4,9 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.UI.Models;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
 using System.Windows;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.ViewModels;
 
@@ -19,12 +18,12 @@ public sealed partial class IndexingViewModel : ObservableObject
 
     private readonly Dictionary<string, StagedArtworkNode> _artworksByUrl = new(StringComparer.OrdinalIgnoreCase);
     private readonly IYoutubeIndexingWorkflowService _youtubeIndexingWorkflowService;
-    private readonly ILibraryCacheService _libraryCacheService;
+    private readonly ILibraryService _libraryCacheService;
     private bool _isUpdatingSelectionEditors;
 
     public IndexingViewModel(
         IYoutubeIndexingWorkflowService youtubeIndexingWorkflowService,
-        ILibraryCacheService libraryCacheService)
+        ILibraryService libraryCacheService)
     {
         _youtubeIndexingWorkflowService = youtubeIndexingWorkflowService;
         _libraryCacheService = libraryCacheService;

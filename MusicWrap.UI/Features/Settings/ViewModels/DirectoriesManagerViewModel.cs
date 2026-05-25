@@ -2,17 +2,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Windows;
-using System.Xml.Serialization;
 using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Features.Settings.ViewModels
@@ -47,14 +39,12 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         private CancellationTokenSource _scanCancellationTokenSource;
 
         private readonly ILibraryScanner _scanner;
-        private readonly MusicLibrary _library;
-        private readonly ILibraryCacheService _cache;
+        private readonly ILibraryService _libraryService;
 
-        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryCacheService cache, MusicLibrary library)
+        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService)
         {
             _scanner = scanner;
-            _library = library;
-            _cache = cache;
+            _libraryService = libraryService;
 
 
             _scanCancellationTokenSource = new CancellationTokenSource();
@@ -129,7 +119,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
                 {
                     await _scanner.ScanAllDirectories(_scanningProgress, cancelationToken);
                 }
-                _cache.InvalidateCache();
+                _libraryService.InvalidateCache();
             }
             catch (OperationCanceledException)
             {
@@ -169,7 +159,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 
         private void UpdateDirectories()
         {
-            Directories = [.. _library.Directories];
+            Directories = [.. _libraryService.GetDirectories()];
         }
 
     }

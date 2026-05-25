@@ -6,5 +6,6 @@
         <ResourceDictionary Source="/Styles/TabControls.xaml"/>
         <ResourceDictionary Source="/Styles/TextInputStyles.xaml"/>
         <ResourceDictionary Source="/Styles/MenuStyles.xaml"/>
+        <ResourceDictionary Source="/Styles/ShellTabStyles.xaml" />
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

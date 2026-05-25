@@ -32,7 +32,6 @@ namespace MusicWrap.UI.Shell.Windows
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly Dictionary<int, UserControl> _pageCache = [];
         private readonly IMusicPlayerService _player;
         private readonly BitmapImage _playIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
         private readonly BitmapImage _pauseIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png");
@@ -126,14 +125,6 @@ namespace MusicWrap.UI.Shell.Windows
 
             _player.PlaybackStateChanged -= _player_PlaybackStateChanged;
             MainFrame.Content = null;
-            foreach (var cachedPage in _pageCache.Values)
-            {
-                if (cachedPage is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-            }
-            _pageCache.Clear();
         }
         private void CloseButtonClick(object sender, RoutedEventArgs e)
         {
@@ -191,45 +182,22 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void NavigateToTab(int index)
         {
-            if (!_pageCache.TryGetValue(index, out var page))
+            object page = index switch
             {
-                page = index switch
-                {
-                    0 => new LibraryPage(),
-                    1 => new PlaylistPage(),
-                    2 => new FavoritesPage(),
-                    3 => new ServicesPage(),
-                    4 => new NowPlayingPage(),
-                    _ => new LibraryPage()
-                };
-                _pageCache[index] = page;
+                0 => new LibraryPage(),
+                1 => new PlaylistPage(),
+                2 => new FavoritesPage(),
+                3 => new ServicesPage(),
+                4 => new NowPlayingPage(),
+                _ => new LibraryPage()
+            };
+
+            if (MainFrame.Content is IDisposable disposable)
+            {
+                disposable.Dispose();
             }
 
             MainFrame.Content = page;
-
-            TrimPageCache(index);
-        }
-
-        private void TrimPageCache(int currentIndex)
-        {
-            const int libraryIndex = 0;
-            var keysToRemove = _pageCache.Keys
-                .Where(k => k != libraryIndex && k != currentIndex)
-                .ToList();
-
-            foreach (var key in keysToRemove)
-            {
-                if (!_pageCache.TryGetValue(key, out var cachedPage))
-                    continue;
-
-                if (ReferenceEquals(MainFrame.Content, cachedPage))
-                    MainFrame.Content = null;
-
-                if (cachedPage is IDisposable disposable)
-                    disposable.Dispose();
-
-                _pageCache.Remove(key);
-            }
         }
 
         private void ThumbButtonInfo_Previous(object sender, EventArgs e)

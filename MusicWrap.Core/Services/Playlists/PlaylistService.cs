@@ -1,4 +1,6 @@
-﻿using MusicWrap.Data.Playlist.Models;
+﻿using MusicWrap.Core.Services.Contracts;
+using MusicWrap.Core.Sources.Contracts;
+using MusicWrap.Data.Playlist.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +10,7 @@ namespace MusicWrap.Core.Services.Playlists
     public interface IPlaylistService
     {
         // READ
-        IReadOnlyList<PlaylistDto> GetPlaylists();
+        IReadOnlyList<PlaylistDto> GetPlaylists(bool useSearchQuery = false);
         PlaylistDto? GetPlaylistById(int playlistId);
         List<int> GetTracksByPlaylistId(int playlistId);
 
@@ -29,26 +31,38 @@ namespace MusicWrap.Core.Services.Playlists
     public class PlaylistService : IPlaylistService
     {
         private readonly PlaylistData _playlists;
+        private readonly ISearchQueryProvider searchQueryProvider;
         public event EventHandler? PlaylistsChanged;
         public event EventHandler<PlaylistItemsChangedEventArgs>? PlaylistItemsChanged;
 
         private Dictionary<int, int[]>? TrackIdsByPlaylistId = null;
 
-        public PlaylistService(PlaylistData playlist)
+        public PlaylistService(PlaylistData playlist, ISearchQueryProvider searchQueryProvider)
         {
             _playlists = playlist;
+            this.searchQueryProvider = searchQueryProvider;
             EnsureCache();
         }
 
-        public IReadOnlyList<PlaylistDto> GetPlaylists()
+        public IReadOnlyList<PlaylistDto> GetPlaylists(bool useSearchQuery = false)
         {
             EnsureCache();
-            return [.. _playlists.Playlists.Select(p => new PlaylistDto(
+
+            var allData = _playlists.Playlists.Select(p => new PlaylistDto(
                 p.Id,
                 p.Name,
                 p.UpdatedAtUtcTicks,
                 TrackIdsByPlaylistId!.TryGetValue(p.Id, out var trackIds) ? trackIds : []
-                ))];
+                )).ToList();
+
+            if (useSearchQuery)
+            {
+                return allData.Where(p => p.Name.Contains(searchQueryProvider.ActiveQuery ?? string.Empty, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+            else
+            {
+                return allData;
+            }
         }
         public PlaylistDto? GetPlaylistById(int playlistId)
         {

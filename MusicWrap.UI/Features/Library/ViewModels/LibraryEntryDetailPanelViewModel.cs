@@ -1,17 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
-using System;
-using System.Collections.Generic;
+using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
@@ -46,14 +41,14 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
     public partial class LibraryEntryDetailPanelViewModel : ObservableObject
     {
-        private readonly ILibraryCacheService _libraryCache;
+        private readonly ILibraryService _libraryCache;
         private readonly TracksContextMenuService _tracksContextMenuService;
-        private readonly MusicLibrary _library;
         private readonly IMusicPlayerService _musicPlayerService;
         private int _headerStatsRequestId;
         private int _tracksViewRequestId;
         private int _entryPreloadRequestId;
         private List<int> _entryTrackIds = [];
+        private readonly SearchService _searchService;
 
         public LibraryEntryAlbumViewModel AlbumEntriesViewModel { get; set; }
 
@@ -77,16 +72,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private string trackSearchQuery = string.Empty;
 
         public LibraryEntryDetailPanelViewModel(
-            ILibraryCacheService libraryCache,
+            ILibraryService libraryCache,
             TracksContextMenuService tracksContextMenuService,
-            MusicLibrary library,
             LibraryEntryAlbumViewModel albumViewModel,
-            IMusicPlayerService musicPlayerService)
+            IMusicPlayerService musicPlayerService,
+            SearchService searchService
+            )
         {
             _libraryCache = libraryCache;
             _tracksContextMenuService = tracksContextMenuService;
-            _library = library;
             _musicPlayerService = musicPlayerService;
+            _searchService = searchService;
             AlbumEntriesViewModel = albumViewModel;
         }
 
@@ -129,7 +125,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             async Task LoadTracksAsync()
             {
-                var trackIds = await Task.Run(() => _libraryCache.GetTrackIdsForEntry(entry));
+                var trackIds = await Task.Run(() => _libraryCache.GetTrackIdsForEntry(entry, true));
                 if (requestId != Volatile.Read(ref _entryPreloadRequestId))
                 {
                     return;
@@ -339,7 +335,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             OnPropertyChanged(nameof(IsSortAscending));
             OnPropertyChanged(nameof(IsSortDescending));
-            
+
             AlbumEntriesViewModel.SortAscending = value;
 
             _ = RefreshTracksViewAsync(false, true);
@@ -404,7 +400,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 Tracks = new ObservableCollection<TrackRowItem>(result.Rows);
                 AllTrackIds = result.TrackIds;
                 SelectedTrackIds = result.TrackIds.Where(previousSelection.Contains).ToList();
-                
+
                 AlbumEntriesViewModel.SortMode = sortMode;
                 AlbumEntriesViewModel.SortAscending = ascending;
             }
@@ -450,7 +446,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 .Distinct()
                 .ToList();
 
-            var albumById = _library.Albums.ToDictionary(a => a.Id, a => a);
+            var albumById = albumIds.ToDictionary(id => id, id => _libraryCache.GetAlbumById(id));
+
             var albumArtistById = albumIds.ToDictionary(id => id, id => _libraryCache.GetArtistNamesForAlbum(id));
             var albumDurationById = albumIds.ToDictionary(
                 id => id,
@@ -461,22 +458,22 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (sortMode == TrackSortMode.Title)
             {
                 orderedAlbumIds = albumIds
-                    .OrderBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(id => albumById.TryGetValue(id, out var album) ? album?.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Year : int.MaxValue);
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album?.Year : int.MaxValue);
             }
             else if (sortMode == TrackSortMode.ArtistName)
             {
                 orderedAlbumIds = albumIds
                     .OrderBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Year : int.MaxValue);
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album?.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album?.Year : int.MaxValue);
             }
             else if (sortMode == TrackSortMode.Duration)
             {
                 orderedAlbumIds = albumIds
                     .OrderBy(id => albumDurationById[id])
-                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album?.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase);
             }
             else
@@ -484,14 +481,14 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 orderedAlbumIds = albumIds
                     .OrderBy(id =>
                     {
-                        if (!albumById.TryGetValue(id, out var album) || album.Year <= 0)
+                        if (!albumById.TryGetValue(id, out var album) || album?.Year <= 0)
                         {
                             return int.MaxValue;
                         }
 
-                        return album.Year;
+                        return album?.Year;
                     })
-                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(id => albumById.TryGetValue(id, out var album) ? album?.Title : string.Empty, StringComparer.OrdinalIgnoreCase)
                     .ThenBy(id => albumArtistById[id], StringComparer.OrdinalIgnoreCase);
             }
 

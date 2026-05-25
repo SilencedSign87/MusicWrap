@@ -1,17 +1,14 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
-using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Linq;
 using MusicWrap.Data.Library.Models;
 using System.IO;
 using System.Diagnostics;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -21,8 +18,7 @@ namespace MusicWrap.UI.Features.Library.Views
     public partial class AlbumTracksPage : UserControl
     {
         private readonly IMusicPlayerService _musicPlayerService;
-        private readonly MusicLibrary _library;
-        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly ILibraryService _libraryCacheService;
         private readonly IEditMetadataService _editMetadataService;
         private bool _playerEventsAttached;
 
@@ -30,8 +26,7 @@ namespace MusicWrap.UI.Features.Library.Views
         {
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
-            _library = App.Services.GetRequiredService<MusicLibrary>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
+            _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
             _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
 
             Loaded += AlbumTracksPage_Loaded;
@@ -58,14 +53,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            var trackIds = _library.Tracks
-                .Where(t => t.AlbumId == vm.AlbumId)
-                .OrderBy(t => t.Disk)
-                .ThenBy(t => t.TrackNumber)
-                .ThenBy(t => t.Title)
-                .Select(t => t.Id)
-                .ToList();
-
+            var trackIds = _libraryCacheService.GetTrackQueueForAlbum(vm.AlbumId).ToList();
             if (trackIds.Count == 0)
             {
                 return;
@@ -198,10 +186,7 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 return;
             }
-            var trackIds = _library.Tracks
-                .Where(t => t.AlbumId == vm.AlbumId)
-                .Select(t => t.Id)
-                .ToList();
+            var trackIds = _libraryCacheService.GetTracksForAlbum(vm.AlbumId).ToList();
 
             if (trackIds.Count == 0)
             {

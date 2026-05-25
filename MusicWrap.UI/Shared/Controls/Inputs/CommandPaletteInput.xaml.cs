@@ -46,6 +46,18 @@ namespace MusicWrap.UI.Controls
                 _viewModel.SubmitQueryCommand.Execute(null);
             }
         }
+
+        private void CommandInput_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                if (_viewModel.ClearQueryCommand.CanExecute(null))
+                {
+                    _viewModel.ClearQueryCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+        }
     }
 }
 

@@ -1,12 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.ViewModels;
+using MusicWrap.UI.Shared.Services;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -15,16 +14,16 @@ namespace MusicWrap.UI.Features.Library.Views
     public partial class LibraryEntryTracksView : UserControl
     {
         private readonly IEditMetadataService _editMetadataService;
-        private readonly ILibraryCacheService _libraryCacheService;
-        private readonly CommandPaletteViewModel _commandPaletteViewModel;
+        private readonly ILibraryService _libraryCacheService;
+        private readonly SearchService _searchService;
         private bool _isCommandPaletteSubscribed;
 
         public LibraryEntryTracksView()
         {
             InitializeComponent();
             _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryCacheService>();
-            _commandPaletteViewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
+            _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
+            _searchService = App.Services.GetRequiredService<SearchService>();
 
             Loaded += LibraryEntryTracksView_Loaded;
             Unloaded += LibraryEntryTracksView_Unloaded;
@@ -37,7 +36,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            _commandPaletteViewModel.QuerySubmitted += CommandPaletteViewModel_QuerySubmitted;
+            _searchService.SearchSubmitted += CommandPaletteViewModel_QuerySubmitted;
             _isCommandPaletteSubscribed = true;
         }
 
@@ -48,7 +47,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            _commandPaletteViewModel.QuerySubmitted -= CommandPaletteViewModel_QuerySubmitted;
+            _searchService.SearchSubmitted -= CommandPaletteViewModel_QuerySubmitted;
             _isCommandPaletteSubscribed = false;
         }
 

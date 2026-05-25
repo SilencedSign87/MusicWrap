@@ -1,16 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Text;
 using System.Windows.Media.Imaging;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {
@@ -31,10 +26,10 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         // Services
         private IMusicPlayerService _player = null!;
-        private ILibraryCacheService _libraryCache = null!;
+        private ILibraryService _libraryCache = null!;
         private readonly IImageService _imageService;
 
-        public QueueViewModel(IMusicPlayerService player, ILibraryCacheService libraryCache, IImageService imageService)
+        public QueueViewModel(IMusicPlayerService player, ILibraryService libraryCache, IImageService imageService)
         {
             _libraryCache = libraryCache;
             _player = player;

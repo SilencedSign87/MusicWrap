@@ -1,15 +1,12 @@
-using System;
 using System.ComponentModel;
-using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using Serilog;
@@ -51,37 +48,6 @@ public static class StartupOrquestrator
     {
         int windowToShow = 0;
 
-        void ApplyTrayBehavior(bool keepInTray, ITrayService? tray)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Application.Current.ShutdownMode = keepInTray
-                    ? ShutdownMode.OnExplicitShutdown
-                    : ShutdownMode.OnLastWindowClose;
-
-                tray?.SetEnabled(keepInTray);
-
-                if (!keepInTray)
-                {
-                    var current = App.CurrentWindow;
-
-                    if (current is not null
-                            && current.IsLoaded
-                            && !current.Dispatcher.HasShutdownStarted
-                            && !current.Dispatcher.HasShutdownFinished
-                            && !current.IsVisible)
-                    {
-                        try
-                        {
-                            current.Show();
-                            current.Activate();
-                        }
-                        catch { }
-                    }
-                }
-            });
-        }
-
         try
         {
             var musicLibrary = serviceProvider.GetService<MusicLibrary>();
@@ -96,14 +62,30 @@ public static class StartupOrquestrator
             {
                 if (e.PropertyName == nameof(UserSettings.KeepAppInTray))
                 {
-                    ApplyTrayBehavior(userSettings.KeepAppInTray, trayService);
+                    if (!userSettings.KeepAppInTray)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            var current = App.CurrentWindow;
+                            if (current is not null
+                            && current.IsLoaded
+                            && !current.Dispatcher.HasShutdownStarted
+                            && !current.Dispatcher.HasShutdownFinished
+                            && !current.IsVisible
+                            ) {
+                                try
+                                {
+                                    current.Show();
+                                    current.Activate();
+                                }
+                                catch { }
+                            }
+                        });
+                    }
                 }
             }
 
             userSettings.PropertyChanged += OnUserSettingsChanged;
-
-            // initial behavior
-            ApplyTrayBehavior(userSettings.KeepAppInTray, trayService);
 
             // Library cache initialization (preserve previous defaults)
             var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)
@@ -111,8 +93,8 @@ public static class StartupOrquestrator
                 : userSettings.LibraryListBy;
             var ascending = userSettings.LibraryAscending;
 
-            var libraryCache = serviceProvider.GetRequiredService<ILibraryCacheService>();
-            await libraryCache.InitializeAsync(listBy, ascending);
+            var libraryCache = serviceProvider.GetRequiredService<ILibraryService>();
+            //await libraryCache.InitializeAsync(listBy, ascending);
 
             // Pre-resolve important VMs / services
             serviceProvider.GetService<PlayerViewModel>();

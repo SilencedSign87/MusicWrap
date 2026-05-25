@@ -210,7 +210,25 @@
                     x:Name="QueuePanel"
                     Visibility="Collapsed"
                     d:Visibility="Visible">
-                    <mw:QueueListPage />
+                    <TabControl Style="{StaticResource SubtleTabControl}" >
+                        <TabItem Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}">
+                            <TabItem.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Queue" />
+                                </StackPanel>
+                            </TabItem.Header>
+
+                            <mw:QueueListPage />
+                        </TabItem>
+                        <TabItem Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}">
+                            <TabItem.Header>
+                                <StackPanel>
+                                    <TextBlock Text="Library" />
+                                </StackPanel>
+                            </TabItem.Header>
+
+                        </TabItem>
+                    </TabControl>
                 </Grid>
             </Grid>
         </Grid>

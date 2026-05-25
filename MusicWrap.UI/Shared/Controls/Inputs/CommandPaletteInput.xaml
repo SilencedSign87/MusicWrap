@@ -14,7 +14,9 @@
                              HorizontalAlignment="Stretch"
                              Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
-                             EnterPressed="CommandInput_EnterPressed">
+                             EnterPressed="CommandInput_EnterPressed"
+                             PreviewKeyDown="CommandInput_PreviewKeyDown"
+                             >
         <local:CompactInputField.BeforeContent>
             <TextBlock Text="&#xE721;"
                        FontFamily="Segoe Fluent Icons"

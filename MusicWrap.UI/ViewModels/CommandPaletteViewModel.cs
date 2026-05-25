@@ -1,36 +1,37 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.ViewModels
 {
     public partial class CommandPaletteViewModel : ObservableObject
     {
         [ObservableProperty] private string query = string.Empty;
-        public event EventHandler<string>? QuerySubmitted;
 
-        public CommandPaletteViewModel()
+        private readonly SearchService _searchService;
+
+
+        public CommandPaletteViewModel(SearchService searchService)
         {
+            _searchService = searchService;
         }
 
         partial void OnQueryChanged(string value)
         {
-            _ = value;
+            _searchService.SetQuery(value);
         }
 
         [RelayCommand]
         private void SubmitQuery()
         {
-            QuerySubmitted?.Invoke(this, Query?.Trim() ?? string.Empty);
+            _searchService.Submit();
         }
 
         [RelayCommand]
         private void ClearQuery()
         {
             Query = string.Empty;
-            QuerySubmitted?.Invoke(this, string.Empty);
+            _searchService.Clear();
         }
     }
 }

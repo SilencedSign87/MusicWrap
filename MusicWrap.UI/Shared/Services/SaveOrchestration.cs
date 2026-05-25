@@ -2,11 +2,9 @@ using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User.Models;
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Shell.Windows;
-using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Services
 {
@@ -78,9 +76,9 @@ namespace MusicWrap.UI.Services
 
     public sealed class LibraryCacheStoreAdapter : ILibraryCacheStore
     {
-        private readonly ILibraryCacheService _libraryCacheService;
+        private readonly ILibraryService _libraryCacheService;
 
-        public LibraryCacheStoreAdapter(ILibraryCacheService libraryCacheService)
+        public LibraryCacheStoreAdapter(ILibraryService libraryCacheService)
         {
             _libraryCacheService = libraryCacheService;
         }

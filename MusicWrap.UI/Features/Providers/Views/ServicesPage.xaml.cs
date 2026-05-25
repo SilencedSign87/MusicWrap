@@ -1,25 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Library;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Web;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Features.Providers.Views
 {

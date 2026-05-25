@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
@@ -7,7 +8,6 @@ using MusicWrap.Data.Player;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Bootstrap;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Windows;
 using Serilog;
@@ -165,7 +165,7 @@ namespace MusicWrap.UI
                 if (Services is null) return;
                 var store = Services.GetService<ILibraryRepository>();
                 var library = Services.GetService<MusicLibrary>();
-                var libraryCache = Services.GetService<ILibraryCacheService>();
+                var libraryCache = Services.GetService<ILibraryService>();
                 libraryCache?.SaveToDisk();
 
                 if (store != null && library != null)

@@ -1,0 +1,93 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation">
+
+    <!-- ShellTabControl style -->
+    <Style TargetType="local:ShellTabControl">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:ShellTabControl">
+                    <Grid KeyboardNavigation.TabNavigation="Local">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header area -->
+                        <Grid Grid.Row="0">
+                            <StackPanel x:Name="HeaderPanel"
+                                        IsItemsHost="True"
+                                        Orientation="Horizontal"
+                                        Background="Transparent"
+                                        Margin="0,0,0,10"/>
+
+                            <!-- Sliding indicator (bottom center of selected tab) -->
+                            <Border x:Name="SelectionIndicator"
+                                    Width="24"
+                                    Height="3"
+                                    CornerRadius="1.5"
+                                    Background="{DynamicResource AccentBrush100}"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Bottom"
+                                    IsHitTestVisible="False"
+                                    Margin="0,0,0,8">
+                                <Border.RenderTransform>
+                                    <TranslateTransform/>
+                                </Border.RenderTransform>
+                            </Border>
+                        </Grid>
+
+                        <!-- Content area -->
+                        <ContentPresenter x:Name="PART_SelectedContentHost"
+                                          Grid.Row="1"
+                                          ContentSource="SelectedContent"
+                                          SnapsToDevicePixels="True"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ShellTabItem style -->
+    <Style TargetType="local:ShellTabItem">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="Margin" Value="2,0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:ShellTabItem">
+                    <Border x:Name="Root"
+                            Background="Transparent"
+                            SnapsToDevicePixels="True"
+                            UseLayoutRounding="True">
+                        <ContentPresenter x:Name="ContentSite"
+                                          ContentSource="Header"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          RecognizesAccessKey="True"
+                                          Opacity="0.6"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ContentSite" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="ContentSite" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

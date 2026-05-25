@@ -11,6 +11,7 @@ using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Tray;
 using System.Linq;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Providers.Views
 {
@@ -20,7 +21,7 @@ namespace MusicWrap.UI.Features.Providers.Views
     public partial class YoutubeProviderPage : UserControl
     {
         private readonly YoutubeProviderViewModel _viewModel;
-        private readonly CommandPaletteViewModel _commandPaletteViewModel;
+        private readonly SearchService _searchService;
         private IndexingWindow? _indexingWindow;
         private bool _isSubscribed;
         private bool _isClearingTrackSelections;
@@ -32,7 +33,7 @@ namespace MusicWrap.UI.Features.Providers.Views
             InitializeComponent();
 
             _viewModel = App.Services.GetRequiredService<YoutubeProviderViewModel>();
-            _commandPaletteViewModel = App.Services.GetRequiredService<CommandPaletteViewModel>();
+            _searchService = App.Services.GetRequiredService<SearchService>();
 
             DataContext = _viewModel;
 
@@ -47,7 +48,7 @@ namespace MusicWrap.UI.Features.Providers.Views
                 return;
             }
 
-            _commandPaletteViewModel.QuerySubmitted += OnQuerySubmitted;
+            _searchService.SearchSubmitted += SearchService_SearchSubmitted;
             _isSubscribed = true;
         }
 
@@ -58,11 +59,11 @@ namespace MusicWrap.UI.Features.Providers.Views
                 return;
             }
 
-            _commandPaletteViewModel.QuerySubmitted -= OnQuerySubmitted;
+            _searchService.SearchSubmitted -= SearchService_SearchSubmitted;
             _isSubscribed = false;
         }
 
-        private async void OnQuerySubmitted(object? sender, string query)
+        private async void SearchService_SearchSubmitted(object? sender, string query)
         {
             if (!IsVisible)
             {

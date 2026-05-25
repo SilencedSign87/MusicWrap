@@ -8,6 +8,7 @@
         xmlns:status="clr-namespace:MusicWrap.UI.Features.State"
         xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+        xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
         xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
         mc:Ignorable="d"
         x:Name="MainWindowRoot"
@@ -16,7 +17,7 @@
         Height="800"
         Width="1200"
         MinHeight="670"
-        MinWidth="1000"
+        MinWidth="925"
         WindowStartupLocation="CenterScreen"
         d:Background="#000000"
         ResizeMode="CanResize"
@@ -128,7 +129,14 @@
                         Margin="8,4,4,4"
                         RenderOptions.BitmapScalingMode="HighQuality"
                         />
-                    <TabControl
+                    <nav:ShellTabControl x:Name="SystemTabs" SelectionChanged="TabControl_SelectionChanged" WindowChrome.IsHitTestVisibleInChrome="True" CompactWidthThreshold="1100">
+                        <nav:ShellTabItem Icon="&#xe8f1;" Text="Library" TabIndex="0" ToolTip="Library"/>
+                        <nav:ShellTabItem Icon="&#xe90b;" Text="Playlists" TabIndex="1" ToolTip="Playlists"/>
+                        <nav:ShellTabItem Icon="&#xE704;" Text="Radio" TabIndex="2" ToolTip="Radio"/>
+                        <nav:ShellTabItem Icon="&#xECAA;" Text="Services" TabIndex="3" ToolTip="Services"/>
+                        <nav:ShellTabItem Icon="&#xF61F;" Text="Now Playing" TabIndex="4" ToolTip="Now Playing"/>
+                    </nav:ShellTabControl>
+                    <!--<TabControl
                         Margin="0,2"
                         SelectionChanged="TabControl_SelectionChanged"
                         WindowChrome.IsHitTestVisibleInChrome="True"
@@ -174,7 +182,7 @@
                                 </StackPanel>
                             </TabItem.Header>
                         </TabItem>
-                    </TabControl>
+                    </TabControl>-->
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
                     <controls:CommandPaletteInput VerticalAlignment="Center" Width="200" Height="32" PlaceholderText="Search..."/>

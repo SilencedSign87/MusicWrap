@@ -1,11 +1,6 @@
-﻿using Acornima.Ast;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.UI.Features.Library.Services;
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Text;
+using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -55,8 +50,8 @@ namespace MusicWrap.UI.ViewModels
             ;
 
         private readonly string variousMetadata = "--mixed--";
-        private readonly ILibraryCacheService _libraryCache;
-        public MetadataEditorViewModel(ILibraryCacheService libraryCacheService)
+        private readonly ILibraryService _libraryCache;
+        public MetadataEditorViewModel(ILibraryService libraryCacheService)
         {
             _libraryCache = libraryCacheService;
         }

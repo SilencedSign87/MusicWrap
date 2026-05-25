@@ -1,11 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
-using System;
+using MusicWrap.UI.Shared.Services;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -14,7 +11,7 @@ namespace MusicWrap.UI.Features.Library.Views
 {
     public partial class LibraryEntryAlbumsView : UserControl
     {
-        private DispatcherTimer? _resizeThrottleTimer;
+        private readonly DispatcherTimer? _resizeThrottleTimer;
 
         private int _lastColumns = -1;
         private const int MinTileWidth = 160;
@@ -49,23 +46,8 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void LibraryEntryAlbumsView_Loaded(object sender, RoutedEventArgs e)
         {
-            //    if (_subscribedViewModel is null && AlbumViewModel is not null)
-            //    {
-            //        AlbumViewModel.PropertyChanged += ViewModel_PropertyChanged;
-            //        _subscribedViewModel = AlbumViewModel;
-            //    }
 
             UpdateColumnsForViewportWidth(true);
-            //    //HandleSelectionChanged();
-        }
-
-        private void LibraryEntryAlbumsView_Unloaded(object sender, RoutedEventArgs e)
-        {
-            //    if (_subscribedViewModel is not null)
-            //    {
-            //        _subscribedViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-            //        _subscribedViewModel = null;
-            //    }
         }
 
         private void AlbumButton_Click(object sender, RoutedEventArgs e)
@@ -103,14 +85,13 @@ namespace MusicWrap.UI.Features.Library.Views
                         contentControl.Content = null;
                         return;
                     }
-
-                    var library = ViewModel.Library;
                     var libraryCacheService = ViewModel.LibraryCache;
                     var tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
+                    var searchService = App.Services.GetRequiredService<SearchService>();
 
                     var tracksViewModel = new AlbumTracksViewModel(
-                        library,
                         libraryCacheService,
+                        searchService,
                         tracksContextMenuService,
                         row.ExpandedAlbumId.Value,
                         row.ExpandedDominantColor,
