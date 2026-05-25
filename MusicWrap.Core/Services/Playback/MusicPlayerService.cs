@@ -159,7 +159,7 @@ namespace MusicWrap.Core.Services.Playback
 
         // Waveform
         private const int MaxWaveformCacheEntries = 256;
-        private const int WaveformDataPoints = 2000;
+        private const int WaveformDataPoints = 500;
         private readonly Dictionary<int, float[]> _waveformCache = [];
         private readonly Dictionary<int, LinkedListNode<int>> _waveformCacheNodes = [];
         private readonly LinkedList<int> _waveformCacheLru = [];
