@@ -24,12 +24,6 @@ namespace MusicWrap.UI.ViewModels
         private double _lastEnginePosition = 0;
         private DateTime _lastEnginePositionAtUTC = DateTime.UtcNow;
 
-        private double? _pendingSeekTarget = null;
-        private DateTime _pendingSeekUntilUtc = DateTime.MinValue;
-        private const double SeekConfirmToleranceSeconds = 0.12;
-        private static readonly TimeSpan SeekGuardWindow = TimeSpan.FromMilliseconds(900);
-        private static readonly TimeSpan SeekFallbackUnlock = TimeSpan.FromMilliseconds(1300);
-
         [ObservableProperty]
         private bool isPlaying = false;
 
@@ -43,8 +37,8 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string djTooltip = "Toggle DJ mode";
 
-        [ObservableProperty]
-        private RepeatMode selectedRepeatMode = RepeatMode.None;
+        public RepeatMode SelectedRepeatMode => _playerService.RepeatMode;
+
         [ObservableProperty]
         private string repeatModeIcon = "";
         [ObservableProperty]
@@ -162,17 +156,7 @@ namespace MusicWrap.UI.ViewModels
                 return;
             }
 
-            try
-            {
-                if (settings.StartupBehavior == StartupBehavior.ResumePlayback)
-                {
-                    settings.StartupBehavior = StartupBehavior.RestoreQueueAndIndexOnly;
-                }
-                _playerService.LoadInitialState(settings);
-            }
-            catch
-            {
-            }
+            _playerService.LoadInitialState();
 
             SyncCurrentTrackStateFromPlayer();
         }
@@ -253,16 +237,13 @@ namespace MusicWrap.UI.ViewModels
         {
             var target = Math.Clamp(position, 0, Duration > 0 ? Duration : position);
 
-            _pendingSeekTarget = target;
-            _pendingSeekUntilUtc = DateTime.UtcNow.Add(SeekGuardWindow);
-
             _lastEnginePosition = target;
             _lastEnginePositionAtUTC = DateTime.UtcNow;
 
             CurrentPosition = target;
             UpdateFormattedPosition(target);
 
-            _isSeekingPosition = true; // keep lock until confirmend by the engine
+            _isSeekingPosition = false;
 
             _playerService.Seek(target);
         }
@@ -270,8 +251,6 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void CancelSeeking()
         {
-            _pendingSeekTarget = null;
-            _pendingSeekUntilUtc = DateTime.MinValue;
 
             double enginePosition = _playerService.CurrentPosition;
             double target = Math.Clamp(enginePosition, 0, Duration > 0 ? Duration : enginePosition);
@@ -313,7 +292,6 @@ namespace MusicWrap.UI.ViewModels
 
         private void UpdateRepeatModeIcon()
         {
-            SelectedRepeatMode = _playerService.RepeatMode;
             switch (SelectedRepeatMode)
             {
                 case RepeatMode.None:
@@ -329,6 +307,7 @@ namespace MusicWrap.UI.ViewModels
                     RepeatModeTooltip = "Repeat entire queue";
                     break;
             }
+            OnPropertyChanged(nameof(SelectedRepeatMode));
         }
 
         private void UpdateShuffleState()
@@ -383,17 +362,10 @@ namespace MusicWrap.UI.ViewModels
             }
         }
 
-        private void SyncPredictionBaselineToEngine(bool updateUiPosition)
+        private void SyncPredictionBaselineToEngine()
         {
-            var now = DateTime.UtcNow;
-            var enginePosition = _playerService.CurrentPosition;
-            _lastEnginePosition = enginePosition;
-            _lastEnginePositionAtUTC = now;
-            if (updateUiPosition && !_isSeekingPosition)
-            {
-                CurrentPosition = Math.Clamp(enginePosition, 0, Duration > 0 ? Duration : enginePosition);
-                UpdateFormattedPosition(CurrentPosition);
-            }
+            _lastEnginePosition = _playerService.CurrentPosition;
+            _lastEnginePositionAtUTC = DateTime.UtcNow;
         }
         private void OnPlaybackStateChanged(object? sender, PlaybackState state)
         {
@@ -403,14 +375,7 @@ namespace MusicWrap.UI.ViewModels
                 IsPaused = state == PlaybackState.Paused;
                 UpdatePlaybackState(IsPlaying);
 
-                if (state == PlaybackState.Playing)
-                {
-                    SyncPredictionBaselineToEngine(updateUiPosition: true);
-                }
-                else
-                {
-                    SyncPredictionBaselineToEngine(updateUiPosition: true);
-                }
+                SyncPredictionBaselineToEngine();
             });
         }
 
@@ -433,36 +398,8 @@ namespace MusicWrap.UI.ViewModels
         {
             Application.Current?.Dispatcher.Invoke(() =>
             {
-                var now = DateTime.UtcNow;
-
-                if (_pendingSeekTarget.HasValue)
-                {
-                    var target = _pendingSeekTarget.Value;
-                    var delta = Math.Abs(position - target);
-
-                    if (delta <= SeekConfirmToleranceSeconds) // seek is close
-                    {
-                        // Confirmed seek
-                        _pendingSeekTarget = null;
-                        _isSeekingPosition = false;
-                    }
-                    else if (now <= _pendingSeekUntilUtc) // incoherent seek
-                    {
-                        return;
-                    }
-                    else if (position < target - 0.20 && now <= _pendingSeekUntilUtc - SeekFallbackUnlock)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        _pendingSeekTarget = null;
-                        _isSeekingPosition = false;
-                    }
-                }
-
                 _lastEnginePosition = position;
-                _lastEnginePositionAtUTC = now;
+                _lastEnginePositionAtUTC = DateTime.UtcNow;
 
                 if (!_isSeekingPosition)
                 {
@@ -482,7 +419,7 @@ namespace MusicWrap.UI.ViewModels
         {
             ClearCurrentTrackInfo();
 
-            var currentIndex = _playerService.CurrentQueueIndex;
+            var currentIndex = _playerService.CurrentIndex;
             if (currentIndex < 0)
             {
                 CurrentTrackTitle = "No track playing";
@@ -565,7 +502,7 @@ namespace MusicWrap.UI.ViewModels
         {
             UpdateCurrentTrackInfo();
 
-            var currentIndex = _playerService.CurrentQueueIndex;
+            var currentIndex = _playerService.CurrentIndex;
             if (currentIndex < 0)
             {
                 CurrentPosition = 0;
@@ -622,7 +559,6 @@ namespace MusicWrap.UI.ViewModels
             {
                 return;
             }
-
 
             var elapsed = (DateTime.UtcNow - _lastEnginePositionAtUTC).TotalSeconds;
             var predicted = _lastEnginePosition + elapsed;

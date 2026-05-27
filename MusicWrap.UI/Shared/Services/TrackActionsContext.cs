@@ -143,7 +143,7 @@ namespace MusicWrap.UI.Services
 
             filtered.InsertRange(insertionIndex, selectedInQueueOrder);
             _musicPlayerService.SetQueue(filtered, false);
-            _musicPlayerService.PlayPlaybackIndex(insertionIndex);
+            _musicPlayerService.PlayIndex(insertionIndex);
         }
 
         // Queue-specific behavior: move selected items to play right after current track.

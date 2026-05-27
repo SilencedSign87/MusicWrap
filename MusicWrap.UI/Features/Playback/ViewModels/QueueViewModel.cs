@@ -38,14 +38,14 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             QueueDataList = [];
 
             var currentQueue = _player.GetPlaybackOrder();
-            LoadQueueData(currentQueue, _player.CurrentPlaybackIndex);
+            LoadQueueData(currentQueue, _player.CurrentIndex);
 
             _player.QueueChanged += _player_QueueChanged;
         }
 
         private void _player_QueueChanged(object? sender, int[] e)
         {
-            LoadQueueData(_player.GetPlaybackOrder(), _player.CurrentPlaybackIndex);
+            LoadQueueData(_player.GetPlaybackOrder(), _player.CurrentIndex);
         }
 
         private void LoadQueueData(int[] playbackOrder, int currentPlaybackIndex)
@@ -106,7 +106,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             var filtered = currentQueue.Where(id => !removeSet.Contains(id)).ToList();
             if (removeSet.Contains(_player.CurrentTrackId))
             {
-                _player.SetSilentPlaybackIndex(-1); // prevent auto-advance to next track
+                _player.SetSilentIndex(-1); // prevent auto-advance to next track
                 _player.Stop();
             }
             _player.SetQueue(filtered, true);
@@ -231,7 +231,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
             filtered.InsertRange(insertionIndex, selectedInQueueOrder);
             _player.SetQueue(filtered, false);
-            _player.PlayPlaybackIndex(insertionIndex);
+            _player.PlayIndex(insertionIndex);
         }
 
         public void SetSelectedTracksToPlayNext(List<int> trackIDs)

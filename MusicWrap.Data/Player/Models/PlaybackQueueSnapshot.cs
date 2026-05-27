@@ -9,7 +9,6 @@ namespace MusicWrap.Data.Player.Models
     {
         [Key(0)] public int[] TrackIds { get; set; } = Array.Empty<int>();
         [Key(1)] public int CurrentIndex { get; set; } = -1;
-        [Key(2)] public int CurrentPlaybackIndex { get; set; } = -1;
         [Key(3)] public int[] PlaybackOrderIndices { get; set; } = Array.Empty<int>();
         [Key(4)] public double PositionInSeconds { get; set; } = 0;
         [Key(5)] public PlaybackState PlaybackState { get; set; } = PlaybackState.Stopped;

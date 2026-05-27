@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +21,7 @@ namespace MusicWrap.UI.Controls
     {
         private bool _isDragging = false;
         private bool _dragCanceled = false;
+        private const double minWavePointHeight = 0.5;
         private UIElement? _dragCaptureElement;
 
         public WaveformPlayerControl()
@@ -88,8 +90,6 @@ namespace MusicWrap.UI.Controls
         private static void OnProgressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var control = (WaveformPlayerControl)d;
-            // Solo actualizamos visualmente si NO estamos arrastrando
-            // (para evitar que el timer del player pelee con el ratón del usuario)
             if (!control._isDragging)
             {
                 control.UpdateProgressVisual(control.Position);
@@ -119,14 +119,16 @@ namespace MusicWrap.UI.Controls
                 for (int i = 0; i < WaveformData.Length; i++)
                 {
                     double x = (i / (double)(WaveformData.Length - 1)) * width;
-                    double y = midY - (WaveformData[i] * midY);
+                    double amplitude = Math.Max(WaveformData[i] * midY, minWavePointHeight); // ensure minimum height
+                    double y = midY - amplitude;
                     context.LineTo(new Point(x, y), true, false);
                 }
                 // draw down (mirrored)
                 for (int i = WaveformData.Length - 1; i >= 0; i--)
                 {
                     double x = (i / (double)(WaveformData.Length - 1)) * width;
-                    double y = midY + (WaveformData[i] * midY);
+                    double amplitude = Math.Max(WaveformData[i] * midY, minWavePointHeight); // ensure minimum height
+                    double y = midY + amplitude;
                     context.LineTo(new Point(x, y), true, false);
                 }
             }
@@ -139,11 +141,6 @@ namespace MusicWrap.UI.Controls
 
         private void UpdateProgressVisual(double currentPosition)
         {
-            //if (ActualWidth > 0 && ActualHeight > 0 && Duration > 0)
-            //{
-            //    double percentage = Math.Clamp(currentPosition / Duration, 0, 1);
-            //    ProgressClip.Rect = new Rect(0, 0, ActualWidth * percentage, ActualHeight);
-            //}
             if (ActualWidth <= 0 || ActualHeight <= 0 || Duration <= 0)
             {
                 ProgressClip.Rect = new Rect(0, 0, 0, 0);
@@ -189,7 +186,8 @@ namespace MusicWrap.UI.Controls
 
         private void Rectangle_MouseMove(object sender, MouseEventArgs e)
         {
-            if (_isDragging && e.LeftButton == MouseButtonState.Pressed) {
+            if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
+            {
                 double mousex = e.GetPosition(this).X;
                 UpdateVisualFromMouse(mousex);
                 UpdateSeekPopup(mousex);
@@ -213,7 +211,7 @@ namespace MusicWrap.UI.Controls
                 e.Handled = true;
                 return;
             }
-            double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0 ,1);
+            double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0, 1);
             double NewPosition = percentage * Duration;
             SeekEnded?.Invoke(this, NewPosition);
             e.Handled = true;

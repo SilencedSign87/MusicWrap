@@ -117,7 +117,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             {
                 _musicPlayerService.ToggleShuffle();
             }
-            _musicPlayerService.PlayPlaybackIndex(0);
+            _musicPlayerService.PlayIndex(0);
         }
         [RelayCommand]
         private void RemoveSelectedTracks(List<int> trackIds)

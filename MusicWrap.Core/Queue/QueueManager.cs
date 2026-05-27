@@ -1,31 +1,31 @@
-﻿using System;
+﻿using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.User.Models;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace MusicWrap.Core.Queue
 {
-    public enum RepeatMode { None, RepeatAll, RepeatOne }
     public interface IQueueManager
     {
         ReadOnlyObservableCollection<PlaybackQueueItem> Items { get; }
         int CurrentIndex { get; }
-        int CurrentPlaybackIndex { get; }
         PlaybackQueueItem? CurrentItem { get; }
         bool IsShuffleEnabled { get; }
         RepeatMode RepeatMode { get; }
 
         void Jump(int index);
-        void JumpPlaybackIndex(int index);
         void AddNext(IEnumerable<PlaybackQueueItem> item);
         void AddLast(IEnumerable<PlaybackQueueItem> item);
         void RemoveAt(int index, int itemCount = 1);
-        void Move(IEnumerable<int> fromIndex, int toIndex);
+        void Move(IEnumerable<int> fromIndices, int toIndex);
         void Clear();
 
         void SetShuffle(bool enabled);
         void SetRepeatMode(RepeatMode repeatMode);
 
         void Set(IEnumerable<PlaybackQueueItem> items, int startAt = 0);
+        int GetIndexForTrackId(int trackId);
 
         PlaybackQueueItem? Next();
         PlaybackQueueItem? Previous();
@@ -38,45 +38,50 @@ namespace MusicWrap.Core.Queue
     }
     public class QueueManager : IQueueManager
     {
+        private UserSettings _userSettings { get; set; }
         private readonly ObservableCollection<PlaybackQueueItem> _internalItems = new();
         public ReadOnlyObservableCollection<PlaybackQueueItem> Items { get; }
         private int _currentIndex = -1;
-        public int CurrentIndex => _currentIndex;
-        public int CurrentPlaybackIndex => _currentIndex < 0
+        public int CurrentIndex => _currentIndex < 0
             ? -1
             : (_isShuffleEnabled ? _shuffleCursor : _currentIndex);
         public PlaybackQueueItem? CurrentItem => (_currentIndex >= 0 && _currentIndex < _internalItems.Count)
             ? _internalItems[_currentIndex] : null;
         private bool _isShuffleEnabled;
         public bool IsShuffleEnabled => _isShuffleEnabled;
-        private RepeatMode _repeatMode = RepeatMode.None;
-        public RepeatMode RepeatMode => _repeatMode;
+        public RepeatMode RepeatMode
+        {
+            get => _userSettings.RepeatMode;
+            set
+            {
+                if (_userSettings.RepeatMode != value)
+                {
+                    _userSettings.RepeatMode = value;
+                    OnQueueChanged();
+                }
+            }
+        }
         private List<int> _shuffleOrder = [];
         private int _shuffleCursor = 0;
         public event EventHandler? QueueChanged;
         public event EventHandler? CurrentChanged;
 
-        public QueueManager()
+        public QueueManager(UserSettings userSettings)
         {
+            _userSettings = userSettings;
             Items = new ReadOnlyObservableCollection<PlaybackQueueItem>(_internalItems);
         }
         public void Jump(int index)
         {
             if (index < 0 || index >= _internalItems.Count)
                 return;
+            if (_isShuffleEnabled && index >= _shuffleOrder.Count)
+                return;
 
-            _currentIndex = index;
-            _shuffleCursor = _isShuffleEnabled ? _shuffleOrder.IndexOf(index) : index;
-            OnCurrentChanged();
-        }
-
-        public void JumpPlaybackIndex(int index)
-        {
-            int baseIndex = GetBaseIndexFromPlaybackIndex(index);
-            if (baseIndex < 0) return;
-
-            _currentIndex = baseIndex;
-            _shuffleCursor = _isShuffleEnabled ? Math.Clamp(index, 0, _shuffleOrder.Count - 1) : baseIndex;
+            _currentIndex = _isShuffleEnabled
+                ? _shuffleOrder[index]
+                : index;
+            _shuffleCursor = _isShuffleEnabled ? index : _currentIndex;
             OnCurrentChanged();
         }
         public void Set(IEnumerable<PlaybackQueueItem> items, int startAt = 0)
@@ -110,24 +115,24 @@ namespace MusicWrap.Core.Queue
             OnQueueChanged();
         }
 
-        public void RemoveAt(int index, int itemCount = 1)
+        public void RemoveAt(int playbackIndex, int itemCount = 1)
         {
-            if (index < 0 || index >= _internalItems.Count)
+            int internalIndex = _isShuffleEnabled && _shuffleOrder.Count > 0
+                ? _shuffleOrder[playbackIndex]
+                : playbackIndex;
+
+            if (internalIndex < 0 || internalIndex >= _internalItems.Count)
                 return;
-
             if (itemCount <= 0) return;
-            int actualCount = Math.Min(itemCount, _internalItems.Count - index);
-            
-            for (int i = index + actualCount - 1; i >= index; i--)
-                _internalItems.RemoveAt(i);
 
-            // Recalculate currentIndex
-            if (_currentIndex >= index && _currentIndex < index + actualCount)
+            int actualCount = Math.Min(itemCount, _internalItems.Count - internalIndex);
+            for (int i = internalIndex + actualCount - 1; i >= internalIndex; i--)
+                _internalItems.RemoveAt(i);
+            if (_currentIndex >= internalIndex && _currentIndex < internalIndex + actualCount)
             {
-                // was removed
-                _currentIndex = Math.Min(index, _internalItems.Count - 1);
+                _currentIndex = Math.Min(internalIndex, _internalItems.Count - 1);
             }
-            else if (_currentIndex > index)
+            else if (_currentIndex > internalIndex)
             {
                 _currentIndex -= actualCount;
             }
@@ -138,27 +143,39 @@ namespace MusicWrap.Core.Queue
             OnCurrentChanged();
         }
 
-        public void Move(IEnumerable<int> fromIndices, int toIndex)
+        public void Move(IEnumerable<int> fromPlaybackIndices, int toPlaybackIndex)
         {
-            var ordered = fromIndices.ToList();
-            if (ordered.Count == 0) return;
+            var fromList = new List<int>(fromPlaybackIndices);
+            if (fromList.Count == 0) return;
+
+            var ordered = fromList
+                .Select(pb => _isShuffleEnabled && _shuffleOrder.Count > 0
+                ? _shuffleOrder[pb]
+                : pb
+                ).ToList();
+
+            int toIndex = _isShuffleEnabled && _shuffleOrder.Count > 0
+                ? _shuffleOrder[toPlaybackIndex]
+                : toPlaybackIndex;
 
             if (ordered.Any(i => i < 0 || i >= _internalItems.Count))
                 return;
 
             var itemsToMove = ordered.Select(i => _internalItems[i]).ToList();
 
-            foreach (var idx in ordered.Distinct().OrderByDescending(i => i))
-                _internalItems.RemoveAt(idx);
-
+            foreach (var item in ordered.Distinct().OrderByDescending(i => i))
+            {
+                _internalItems.RemoveAt(item);
+            }
             var removedBeforeTarget = ordered.Distinct().Count(i => i < toIndex);
             toIndex -= removedBeforeTarget;
             toIndex = Math.Clamp(toIndex, 0, _internalItems.Count);
 
             for (int i = 0; i < itemsToMove.Count; i++)
+            {
                 _internalItems.Insert(toIndex + i, itemsToMove[i]);
+            }
 
-            // Recalculate currentIndex
             if (ordered.Contains(_currentIndex))
             {
                 var rel = ordered.IndexOf(_currentIndex);
@@ -170,6 +187,7 @@ namespace MusicWrap.Core.Queue
                 _currentIndex -= ordered.Distinct().Count(i => i < _currentIndex);
                 if (_currentIndex < 0) _currentIndex = -1;
             }
+
             ResetShuffle();
             OnQueueChanged();
         }
@@ -193,16 +211,17 @@ namespace MusicWrap.Core.Queue
 
         public void SetRepeatMode(RepeatMode repeatMode)
         {
-            if (_repeatMode == repeatMode) return;
-            _repeatMode = repeatMode;
+            if (_userSettings.RepeatMode == repeatMode) return;
+            _userSettings.RepeatMode = repeatMode;
         }
 
         public PlaybackQueueItem? Next()
         {
             if (_internalItems.Count == 0) return null;
 
-            if (_repeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
+            if (_userSettings.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
                 return _internalItems[_currentIndex];
+
 
             if (_currentIndex < 0)
             {
@@ -226,7 +245,7 @@ namespace MusicWrap.Core.Queue
                 _shuffleCursor++;
                 if (_shuffleCursor >= _shuffleOrder.Count)
                 {
-                    if (_repeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
                     {
                         ResetShuffle();
                         _shuffleCursor = 0;
@@ -244,7 +263,7 @@ namespace MusicWrap.Core.Queue
                 newIndex = _currentIndex + 1;
                 if (newIndex >= _internalItems.Count)
                 {
-                    if (_repeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
                         newIndex = 0;
                     else
                         return null;
@@ -259,7 +278,7 @@ namespace MusicWrap.Core.Queue
         {
             if (_internalItems.Count == 0) return null;
 
-            if (_repeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
+            if (_userSettings.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
                 return _internalItems[_currentIndex];
 
             if (_currentIndex < 0)
@@ -283,7 +302,7 @@ namespace MusicWrap.Core.Queue
                 _shuffleCursor--;
                 if (_shuffleCursor < 0)
                 {
-                    if (_repeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
                     {
                         _shuffleCursor = _shuffleOrder.Count - 1;
                     }
@@ -300,7 +319,7 @@ namespace MusicWrap.Core.Queue
                 prevIndex = _currentIndex - 1;
                 if (prevIndex < 0)
                 {
-                    if (_repeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
                         prevIndex = _internalItems.Count - 1;
                     else
                         return null;
@@ -315,7 +334,7 @@ namespace MusicWrap.Core.Queue
         {
             if (_internalItems.Count == 0) return null;
 
-            if (_repeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
+            if (_userSettings.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
                 return _internalItems[_currentIndex];
 
             if (_currentIndex < 0)
@@ -336,7 +355,7 @@ namespace MusicWrap.Core.Queue
                 var nextCursor = _shuffleCursor + 1;
                 if (nextCursor >= _shuffleOrder.Count)
                 {
-                    if (_repeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
                     {
                         nextCursor = 0;
                     }
@@ -352,7 +371,7 @@ namespace MusicWrap.Core.Queue
                 nextIndex = _currentIndex + 1;
                 if (nextIndex >= _internalItems.Count)
                 {
-                    if (_repeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
                         nextIndex = 0;
                     else
                         return null;
@@ -410,15 +429,16 @@ namespace MusicWrap.Core.Queue
                      : 0;
             if (_shuffleCursor < 0) _shuffleCursor = 0;
         }
-        private int GetBaseIndexFromPlaybackIndex(int playbackIndex)
+        public int GetIndexForTrackId(int trackId)
         {
-            if (playbackIndex < 0 || playbackIndex >= _internalItems.Count)
-                return -1;
-            if (!_isShuffleEnabled) return playbackIndex;
-            if (_shuffleOrder.Count == 0) ResetShuffle();
-            if (playbackIndex < 0 || playbackIndex >= _shuffleOrder.Count)
-                return -1;
-            return _shuffleOrder[playbackIndex];
+            for (int i = 0; i < _internalItems.Count; i++)
+            {
+                if (_internalItems[i].SourceType == QueueItemSourceType.LocalFile && _internalItems[i].LibraryId == trackId)
+                {
+                    return _isShuffleEnabled ? _shuffleOrder.IndexOf(i) : i;
+                }
+            }
+            return -1;
         }
         private void OnQueueChanged() => QueueChanged?.Invoke(this, EventArgs.Empty);
         private void OnCurrentChanged() => CurrentChanged?.Invoke(this, EventArgs.Empty);

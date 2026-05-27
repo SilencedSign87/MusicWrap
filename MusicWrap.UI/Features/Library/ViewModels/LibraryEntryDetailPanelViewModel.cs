@@ -260,7 +260,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
 
             _musicPlayerService.SetQueue(AllTrackIds);
-            _musicPlayerService.PlayPlaybackIndex(0);
+            _musicPlayerService.PlayIndex(0);
         }
         [RelayCommand]
         private void ShuffleAllTracks()
@@ -270,7 +270,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (!_musicPlayerService.IsShuffleEnabled)
                 _musicPlayerService.ToggleShuffle();
 
-            _musicPlayerService.PlayPlaybackIndex(0);
+            _musicPlayerService.PlayIndex(0);
 
         }
 

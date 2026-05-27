@@ -11,13 +11,13 @@ using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Threading;
 using MusicWrap.Core.Queue;
 using MusicWrap.Core.Sources.Providers.Queue;
+using System.Diagnostics;
 
 namespace MusicWrap.Core.Services.Playback
 {
     public interface IMusicPlayerService
     {
-        int CurrentQueueIndex { get; }
-        int CurrentPlaybackIndex { get; }
+        int CurrentIndex { get; }
         int[] GetPlaybackOrder();
         bool IsPlaying { get; }
         bool IsPaused { get; }
@@ -48,22 +48,22 @@ namespace MusicWrap.Core.Services.Playback
         event EventHandler<float[]>? WaveformDataChanged;
         event EventHandler<float>? VolumeChanged;
         void LoadIndex(int index, bool autoPlay);
-        void LoadPlaybackIndex(int index, bool autoPlay);
+        //void LoadPlaybackIndex(int index, bool autoPlay);
         void Play();
         void Pause();
-        void Stop();
+        void Stop(bool hardStop = false);
         void Next();
         void Previous();
         void Seek(double seconds);
         void FlushPlaybackState();
         void SetVolume(float volume);
         void PlayIndex(int index);
-        void PlayPlaybackIndex(int index);
+        //void PlayPlaybackIndex(int index);
         void ToggleShuffle();
         void SetShuffle(bool enabled);
 
         void SetSilentIndex(int index);
-        void SetSilentPlaybackIndex(int index);
+        //void SetSilentPlaybackIndex(int index);
         void AddToQueue(int TrackId);
         void AddToQueue(IEnumerable<int> TrackIds);
         void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false);
@@ -78,7 +78,7 @@ namespace MusicWrap.Core.Services.Playback
         void ChangeOutputMode(OutputMode mode);
         (int Index, string Name)[] GetAvailableDevices();
         PlaybackQueueSnapshot BuildPlaybackSnapshot();
-        void LoadInitialState(UserSettings settings);
+        void LoadInitialState();
     }
     public class MusicPlayerService : IMusicPlayerService, IDisposable
     {
@@ -97,14 +97,11 @@ namespace MusicWrap.Core.Services.Playback
         private const int MaxErrorCount = 5;
         private int _errorCount;
 
-        //private readonly List<int> _queue = [];
-
         private int _mixerStream = 0;
         private int _mixerSampleRate = 0;
         private int _mixerChannels = 2;
 
-        public int CurrentQueueIndex => _queue.CurrentIndex;
-        public int CurrentPlaybackIndex => _queue.CurrentPlaybackIndex;
+        public int CurrentIndex => _queue.CurrentIndex;
 
         private int _currentStream;
         private double _selectedTrackDuration;
@@ -116,7 +113,7 @@ namespace MusicWrap.Core.Services.Playback
 
         private PlaybackState _playbackState = PlaybackState.Stopped;
         private readonly SYNCPROC _endCallback;
-        private readonly System.Timers.Timer _positionTimer;
+        //private readonly System.Timers.Timer _positionTimer;
 
 
         private int _currentDeviceIndex = -1;
@@ -154,25 +151,19 @@ namespace MusicWrap.Core.Services.Playback
 
         private double _currentTrackDuration;
 
-        private const double PositionTimerPlayingIntervalMs = 50;
-        private const double PositionTimerIdleIntervalMs = 500;
 
         // Waveform
-        private const int MaxWaveformCacheEntries = 256;
-        private const int WaveformDataPoints = 500;
+        private const int MaxWaveformCacheEntries = 32;
+        private const int WaveformDataPoints = 1000;
         private readonly Dictionary<int, float[]> _waveformCache = [];
         private readonly Dictionary<int, LinkedListNode<int>> _waveformCacheNodes = [];
         private readonly LinkedList<int> _waveformCacheLru = [];
         private readonly object _waveformCacheLock = new object();
         private int _waveformVersion = 0;
+        private static readonly SemaphoreSlim _waveformThrottle = new(2);
 
-        private DateTime _suppressPositionUntilUtc = DateTime.MinValue;
-
-        private int _positionDebugRemaining = 5;
-
-        private double? _pendingResumePositionSeconds;
-
-        private bool _isRestoringInitialState;
+        private double _trackedPositon = 0.0;
+        private DateTime _trackedPositionUtc = DateTime.MinValue;
 
         public float Volume
         {
@@ -257,15 +248,16 @@ namespace MusicWrap.Core.Services.Playback
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
 
-            _positionTimer = new System.Timers.Timer(PositionTimerIdleIntervalMs)
-            {
-                AutoReset = true
-            };
-            _positionTimer.Elapsed += PositionTimerOnElapsed;
-            _positionTimer.Start();
+            //_positionTimer = new System.Timers.Timer(PositionTimerIdleIntervalMs)
+            //{
+            //    AutoReset = true
+            //};
+            //_positionTimer.Elapsed += PositionTimerOnElapsed;
+            //_positionTimer.Start();
 
             _queue.QueueChanged += QueueOnQueueChanged;
             _queue.CurrentChanged += QueueOnCurrentChanged;
+            //LoadInitialState();
         }
 
         public event EventHandler<string>? TrackChanged;
@@ -288,13 +280,6 @@ namespace MusicWrap.Core.Services.Playback
             StartPlaybackOfCurrent(autoplay);
         }
 
-        public void LoadPlaybackIndex(int index, bool autoplay)
-        {
-            if (index < 0 || index >= _queue.Items.Count)
-                return;
-            _queue.JumpPlaybackIndex(index);
-            StartPlaybackOfCurrent(autoplay);
-        }
         public void Play()
         {
             if (_currentStream == 0)
@@ -309,17 +294,9 @@ namespace MusicWrap.Core.Services.Playback
             }
 
             _audioEngine.Play(_mixerStream, false);
+            _trackedPositionUtc = DateTime.UtcNow;
             SetPlaybackState(PlaybackState.Playing);
-            _positionDebugRemaining = 5;
-            var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
-            var streamPos = _audioEngine.GetPosition(_currentStream);
-            var effectivePos = GetEffectivePosition();
-            _logger.LogDebug("Play: mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s, effectivePos={EffectivePos:0.000}s",
-                mixerPos, streamPos, effectivePos);
-            if (_pendingResumePositionSeconds.HasValue)
-            {
-                _ = ApplyPendingResumeSeekAsync("Play");
-            }
+
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -329,32 +306,40 @@ namespace MusicWrap.Core.Services.Playback
                 return;
 
             _audioEngine.Pause(_mixerStream);
+            _trackedPositon = GetEffectivePosition();
+            _dispatcher.Invoke(() => PositionChanged?.Invoke(this, _trackedPositon));
             SetPlaybackState(PlaybackState.Paused);
             EnqueueSave(SaveKind.Playback);
         }
 
-        public void Stop()
+        public void Stop(bool hardStop = false)
         {
-            if (_currentStream != 0) _audioEngine.RemoveFromMixer(_currentStream);
-            FreeStream(_currentStream);
-            _currentStream = 0;
-            _currentTrackDuration = 0.0;
+            Pause();
+            Seek(0.0);
+            SetPlaybackState(PlaybackState.Stopped);
 
-            if (_preloadedStream != 0) FreeStream(_preloadedStream);
-            _preloadedStream = 0;
-            _preloadedQueueItem = null;
-
-            if (_mixerStream != 0)
+            if (hardStop)
             {
-                _audioEngine.Stop(_mixerStream);
-                FreeStream(_mixerStream);
+                _trackedPositon = 0.0;
+                _trackedPositionUtc = DateTime.MinValue;
+
+                if (_currentStream != 0) _audioEngine.RemoveFromMixer(_currentStream);
+                FreeStream(_currentStream);
+                _currentStream = 0;
+                _currentTrackDuration = 0.0;
+                if (_preloadedStream != 0) FreeStream(_preloadedStream);
+                _preloadedStream = 0;
+                _preloadedQueueItem = null;
+                if (_mixerStream != 0)
+                {
+                    _audioEngine.Stop(_mixerStream);
+                    FreeStream(_mixerStream);
+                }
+                _mixerStream = 0;
+                _mixerSampleRate = 0;
+                _mixerChannels = 2;
             }
 
-            _mixerStream = 0;
-            _mixerSampleRate = 0;
-            _mixerChannels = 2;
-
-            SetPlaybackState(PlaybackState.Stopped);
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -371,37 +356,38 @@ namespace MusicWrap.Core.Services.Playback
 
         public void Previous()
         {
-           var prev = _queue.Previous();
+            var prev = _queue.Previous();
             if (prev == null) return;
             StartPlaybackOfCurrent();
         }
 
         public void Seek(double seconds)
         {
-            if (_currentStream == 0)
-                return;
+            if (_currentStream == 0) return;
 
+            var target = Math.Clamp(seconds, 0.0, Duration);
             var seekOk = _audioEngine.SetPosition(_currentStream, seconds);
+
+            if (!seekOk && _audioEngine.GetLastError() == Un4seen.Bass.BASSError.BASS_ERROR_POSITION)
+            {
+                if (RebuildCurrentStreamAt(target))
+                {
+                    EnqueueSave(SaveKind.Playback);
+                    return;
+                }
+            }
+
             if (seekOk)
             {
-                var target = Math.Clamp(seconds, 0.0, Duration);
-                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
-                var streamPos = _audioEngine.GetPosition(_currentStream);
-                _logger.LogDebug("Seek applied: target={Target:0.000}s, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s", target, mixerPos, streamPos);
+                _trackedPositon = target;
+                _trackedPositionUtc = DateTime.UtcNow;
 
-                int latencyMs = _audioEngine.GetDeviceLatencyMs();
-                int suppressMs = Math.Clamp(latencyMs * 2 + 40, 250, 900);
-                _suppressPositionUntilUtc = DateTime.UtcNow.AddMilliseconds(suppressMs);
-
-                //var pos = _audioEngine.GetMixerPosition(_currentStream);
                 _dispatcher.Invoke(() => PositionChanged?.Invoke(this, target)); // update position immediately after seek
                 EnqueueSave(SaveKind.Playback);
             }
             else
             {
-                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
-                var streamPos = _audioEngine.GetPosition(_currentStream);
-                _logger.LogWarning("Seek failed: target={Target:0.000}s, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s", seconds, mixerPos, streamPos);
+                _logger.LogWarning("Failed to seek to {Seconds:0.00}s, error code: {ErrorCode}", seconds, _audioEngine.GetLastError());
             }
         }
 
@@ -417,14 +403,6 @@ namespace MusicWrap.Core.Services.Playback
             if (index < 0 || index >= _queue.Items.Count)
                 return;
             _queue.Jump(index);
-            StartPlaybackOfCurrent();
-        }
-
-        public void PlayPlaybackIndex(int index)
-        {
-            if (index < 0 || index >= _queue.Items.Count)
-                return;
-            _queue.JumpPlaybackIndex(index);
             StartPlaybackOfCurrent();
         }
 
@@ -447,15 +425,6 @@ namespace MusicWrap.Core.Services.Playback
             if (index < 0 || index >= _queue.Items.Count)
                 return;
             _queue.Jump(index);
-            UpdateSelectedTrackState();
-            EnqueueSave(SaveKind.Playback);
-        }
-
-        public void SetSilentPlaybackIndex(int index)
-        {
-            if (index < 0 || index >= _queue.Items.Count)
-                return;
-            _queue.JumpPlaybackIndex(index);
             UpdateSelectedTrackState();
             EnqueueSave(SaveKind.Playback);
         }
@@ -532,7 +501,7 @@ namespace MusicWrap.Core.Services.Playback
 
         public void ClearQueue()
         {
-            Stop();
+            Stop(true);
             _queue.Clear();
             UpdateSelectedTrackState();
             NotifyQueueChanged();
@@ -558,7 +527,7 @@ namespace MusicWrap.Core.Services.Playback
 
         public void PlayTrack(int TrackId)
         {
-            int index = _queue.Items.ToList().FindIndex(item => item.LibraryId == TrackId);
+            int index = _queue.GetIndexForTrackId(TrackId);
             if (index < 0)
             {
                 var item = CreateQueueItemFromTrackId(TrackId);
@@ -619,7 +588,7 @@ namespace MusicWrap.Core.Services.Playback
 
             double position = CurrentPosition;
 
-            Stop();
+            Stop(true);
 
             int sr = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
             bool appliedPreferred = TryReinitializeOutput(deviceIndex, sr, CurrentOutputMode);
@@ -651,7 +620,7 @@ namespace MusicWrap.Core.Services.Playback
             bool shouldResume = IsPlaying;
             var position = CurrentPosition;
 
-            Stop();
+            Stop(true);
             int currentSampleRate = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
             int targetSampleRate = sampleRate > 0 ? sampleRate : currentSampleRate;
             bool appliedPreferred = TryReinitializeOutput(CurrentDeviceIndex, targetSampleRate, CurrentOutputMode);
@@ -688,7 +657,7 @@ namespace MusicWrap.Core.Services.Playback
 
             bool shouldResume = IsPlaying;
             double position = CurrentPosition;
-            Stop();
+            Stop(true);
             int sr = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
             bool appliedPreferred = TryReinitializeOutput(CurrentDeviceIndex, sr, outputMode);
             if (!appliedPreferred && !TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
@@ -728,28 +697,26 @@ namespace MusicWrap.Core.Services.Playback
             return new PlaybackQueueSnapshot
             {
                 TrackIds = GetQueue(),
-                CurrentIndex = CurrentQueueIndex,
-                CurrentPlaybackIndex = CurrentPlaybackIndex,
+                CurrentIndex = CurrentIndex,
                 PlaybackOrderIndices = GetPlaybackOrder(),
                 PositionInSeconds = CurrentPosition,
                 PlaybackState = _playbackState
             };
         }
 
-        public void LoadInitialState(UserSettings settings)
+        public void LoadInitialState()
         {
-            if (settings == null)
+            if (_userSettings == null)
             {
                 return;
             }
 
-            _isRestoringInitialState = true;
             try
             {
-                ApplyPreferredAudioSettings(settings);
-                Volume = Math.Clamp(settings.PreferredVolume, 0f, 1f);
+                ApplyPreferredAudioSettings(_userSettings);
+                Volume = Math.Clamp(_userSettings.PreferredVolume, 0f, 1f);
 
-                var startupBehavior = settings.StartupBehavior;
+                var startupBehavior = _userSettings.StartupBehavior;
                 if (startupBehavior == StartupBehavior.StartClean)
                 {
                     _playbackRepository.Clear();
@@ -782,57 +749,23 @@ namespace MusicWrap.Core.Services.Playback
 
                 int index = snapshot.CurrentIndex;
                 if (index < 0 || index >= queue.Length)
-                {
                     index = 0;
+
+                if (queue.Length > 0)
+                {
+                    LoadIndex(index, false);
                 }
+
 
                 switch (startupBehavior)
                 {
+                    case StartupBehavior.StartClean:
+
+                        break;
                     case StartupBehavior.RestoreQueueOnly:
-                        Stop();
                         break;
                     case StartupBehavior.RestoreQueueAndIndexOnly:
-                        SetSilentPlaybackIndex(snapshot.CurrentPlaybackIndex >= 0 ? snapshot.CurrentPlaybackIndex : index);
-                        Stop();
                         break;
-                    case StartupBehavior.ResumePlayback:
-                        {
-                            var playbackIndex = snapshot.CurrentPlaybackIndex >= 0
-                                ? snapshot.CurrentPlaybackIndex
-                                : index;
-                            SetSilentPlaybackIndex(playbackIndex);
-                            LoadPlaybackIndex(playbackIndex, autoplay: false);
-
-                            _logger.LogDebug("ResumePlayback: index={Index}, playbackIndex={PlaybackIndex}, savedPos={SavedPos:0.000}s", index, playbackIndex, snapshot.PositionInSeconds);
-
-                            var position = Math.Clamp(snapshot.PositionInSeconds, 0, Duration);
-                            if (position > 0)
-                            {
-                                _pendingResumePositionSeconds = position;
-                                Seek(position);
-                            }
-
-                            switch (snapshot.PlaybackState)
-                            {
-                                case PlaybackState.Playing:
-                                    _logger.LogDebug("ResumePlayback: restoring state -> Play");
-                                    Play();
-                                    if (_pendingResumePositionSeconds.HasValue)
-                                    {
-                                        _ = ApplyPendingResumeSeekAsync("ResumePlayback:Play");
-                                    }
-                                    break;
-                                case PlaybackState.Paused:
-                                    _logger.LogDebug("ResumePlayback: restoring state -> Pause");
-                                    Pause();
-                                    break;
-                                default:
-                                    _logger.LogDebug("ResumePlayback: restoring state -> Stop");
-                                    Stop();
-                                    break;
-                            }
-                            break;
-                        }
                     default:
                         Stop();
                         break;
@@ -842,10 +775,6 @@ namespace MusicWrap.Core.Services.Playback
             {
                 _logger.LogWarning(ex, "Failed to restore initial player state, starting clean");
                 ClearQueue();
-            }
-            finally
-            {
-                _isRestoringInitialState = false;
             }
 
             EnqueueSave(SaveKind.Playback);
@@ -897,10 +826,6 @@ namespace MusicWrap.Core.Services.Playback
 
         private void EnqueueSave(SaveKind kind)
         {
-            if (_isRestoringInitialState)
-            {
-                return;
-            }
 
             if (_saveCoordinator is null)
             {
@@ -1021,7 +946,6 @@ namespace MusicWrap.Core.Services.Playback
 
             if (autoplay)
             {
-
                 _audioEngine.Play(_mixerStream, false);
                 SetPlaybackState(PlaybackState.Playing);
             }
@@ -1030,14 +954,11 @@ namespace MusicWrap.Core.Services.Playback
                 _audioEngine.Pause(_mixerStream);
                 SetPlaybackState(PlaybackState.Paused);
             }
-            var inmidiatePos = GetEffectivePosition();
-            var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
-            var streamPos = _audioEngine.GetPosition(_currentStream);
-            _logger.LogDebug("StartPlaybackOfCurrent: autoplay={Autoplay}, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s, effectivePos={EffectivePos:0.000}s",
-                autoplay, mixerPos, streamPos, inmidiatePos);
-            _dispatcher.Invoke(() => PositionChanged?.Invoke(this, inmidiatePos)); // update position immediately on track change
 
+            _trackedPositon = 0.0;
+            _trackedPositionUtc = DateTime.UtcNow;
             var snapshot = CreateQueueSnapshot();
+
             _dispatcher.Invoke(() =>
             {
                 SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs { PreferedSampleRate = CurrentSampleRate, EffectiveSampleRate = effectiveSampleRate });
@@ -1046,6 +967,7 @@ namespace MusicWrap.Core.Services.Playback
                     : (item.DisplayTitle ?? item.Source);
                 TrackChanged?.Invoke(this, trackRef);
                 QueueChanged?.Invoke(this, snapshot);
+                PositionChanged?.Invoke(this, 0.0);
             });
             if (track != null)
             {
@@ -1067,31 +989,20 @@ namespace MusicWrap.Core.Services.Playback
 
             _playbackState = state;
 
-            _positionTimer.Interval = _playbackState == PlaybackState.Playing
-                ? PositionTimerPlayingIntervalMs
-                : PositionTimerIdleIntervalMs;
-
             _dispatcher.Invoke(() => PlaybackStateChanged?.Invoke(this, _playbackState));
         }
 
-        private void PositionTimerOnElapsed(object? sender, ElapsedEventArgs e)
-        {
-            if (!IsPlaying || _currentStream == 0)
-                return;
-            if (DateTime.UtcNow < _suppressPositionUntilUtc)
-                return; // Suppress position updates for a short time after seeking to avoid UI jitter
+        //private void PositionTimerOnElapsed(object? sender, ElapsedEventArgs e)
+        //{
+        //    if (!IsPlaying || _currentStream == 0)
+        //        return;
+        //    //if (DateTime.UtcNow < _suppressPositionUntilUtc)
+        //    //    return;
 
-            var position = GetEffectivePosition();
-            if (_positionDebugRemaining > 0)
-            {
-                _positionDebugRemaining--;
-                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
-                var streamPos = _audioEngine.GetPosition(_currentStream);
-                _logger.LogDebug("PositionTick: mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s, effectivePos={EffectivePos:0.000}s",
-                    mixerPos, streamPos, position);
-            }
-            _dispatcher.Invoke(() => PositionChanged?.Invoke(this, position));
-        }
+        //    var position = GetEffectivePosition();
+
+        //    _dispatcher.Invoke(() => PositionChanged?.Invoke(this, position));
+        //}
 
         private void OnTrackEndedInternal(int handle, int channel, int data, IntPtr user)
         {
@@ -1104,7 +1015,6 @@ namespace MusicWrap.Core.Services.Playback
             {
                 _audioEngine.SetPosition(_currentStream, 0.0);
 
-                // Re-setup callbacks for the repeated track
                 double duration = _audioEngine.GetDuration(_currentStream);
                 _currentTrackDuration = duration;
                 const double preloadLeadSeconds = 0.75;
@@ -1239,21 +1149,42 @@ namespace MusicWrap.Core.Services.Playback
 
             _ = Task.Run(async () =>
             {
-                var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
-                if (waveform.Length == 0)
+                await _waveformThrottle.WaitAsync();
+                try
                 {
-                    waveform = CreateFallbackWaveForm(WaveformDataPoints);
+
+                    var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
+                    if (waveform.Length == 0)
+                    {
+                        waveform = CreateFallbackWaveForm(WaveformDataPoints);
+                    }
+                    CacheWaveform(track.Id, waveform);
+                    PublishWaveformIfCurrent(track.Id, requestVersion, waveform);
                 }
-                CacheWaveform(track.Id, waveform);
-                PublishWaveformIfCurrent(track.Id, requestVersion, waveform);
+                finally
+                {
+                    _waveformThrottle.Release();
+                }
             });
         }
         private async Task PreloadWaveformCacheAsync(Track track)
         {
             if (TryGetWaveformFromCache(track.Id, out _)) return; // Already cached
-            var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
-            if (waveform.Length == 0) return;
-            CacheWaveform(track.Id, waveform);
+
+            await _waveformThrottle.WaitAsync();
+
+            try
+            {
+                if (TryGetWaveformFromCache(track.Id, out _)) return; // Just in case
+
+                var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
+                if (waveform.Length == 0) return;
+                CacheWaveform(track.Id, waveform);
+            }
+            finally
+            {
+                _waveformThrottle.Release();
+            }
         }
         private bool TryGetWaveformFromCache(int trackId, out float[]? data)
         {
@@ -1333,36 +1264,61 @@ namespace MusicWrap.Core.Services.Playback
             Array.Fill(data, 1f);
             return data;
         }
-        private async Task ApplyPendingResumeSeekAsync(string reason)
-        {
-            if (!_pendingResumePositionSeconds.HasValue || _currentStream == 0) return;
-
-            var target = _pendingResumePositionSeconds.Value;
-            for (int attempt = 1; attempt <= 3; attempt++)
-            {
-                await Task.Delay(150 * attempt).ConfigureAwait(false);
-                if (_currentStream == 0) return;
-
-                _audioEngine.SetPosition(_currentStream, target);
-                var mixerPos = _audioEngine.GetMixerPosition(_currentStream);
-                var streamPos = _audioEngine.GetPosition(_currentStream);
-                _logger.LogDebug("ApplyPendingResumeSeek({Reason}) attempt {Attempt}: target={Target:0.000}s, mixerPos={MixerPos:0.000}s, streamPos={StreamPos:0.000}s",
-                    reason, attempt, target, mixerPos, streamPos);
-
-                if (Math.Abs(streamPos - target) <= 0.25 || Math.Abs(mixerPos - target) <= 0.25)
-                {
-                    _pendingResumePositionSeconds = null;
-                    _dispatcher.Invoke(() => PositionChanged?.Invoke(this, target));
-                    return;
-                }
-            }
-        }
         private double GetEffectivePosition()
         {
-            if (_currentStream == 0) return 0.0;
-            var pos = _audioEngine.GetMixerPosition(_currentStream);
-            if (pos > 0.0001) return pos;
-            return _audioEngine.GetPosition(_currentStream);
+            if (_currentStream == 0)
+                return 0.0;
+
+            if (_playbackState != PlaybackState.Playing)
+                return _trackedPositon;
+
+            return _trackedPositon + (DateTime.UtcNow - _trackedPositionUtc).TotalSeconds;
+        }
+        private bool RebuildCurrentStreamAt(double targetSeconds)
+        {
+            var item = _queue.CurrentItem;
+            if (item == null) return false;
+            if (!_queueItemResolver.TryResolve(item, out var resolved))
+                return false;
+            bool wasPlaying = IsPlaying;
+            if (_currentStream != 0)
+            {
+                _audioEngine.RemoveFromMixer(_currentStream);
+                FreeStream(_currentStream);
+                _currentStream = 0;
+            }
+            int newStream = resolved.Kind switch
+            {
+                PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolved.Input),
+                PlaybackSourceKind.RemoteUrl => _audioEngine.CreateDecodeStreamFromUrl(resolved.Input),
+                _ => 0
+            };
+            if (newStream == 0) return false;
+
+            _currentStream = newStream;
+            _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
+            _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
+            _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
+            double duration = _audioEngine.GetDuration(_currentStream);
+            _currentTrackDuration = duration;
+            const double preloadLeadSeconds = 0.75;
+            if (duration > preloadLeadSeconds)
+            {
+                _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
+            }
+            var target = Math.Clamp(targetSeconds, 0.0, Duration);
+            bool seekOk = _audioEngine.SetPosition(_currentStream, target);
+            if (wasPlaying)
+                _audioEngine.Play(_mixerStream, false);
+            else
+                _audioEngine.Pause(_mixerStream);
+            if (!seekOk)
+                return false;
+            _trackedPositon = target;
+            _trackedPositionUtc = DateTime.UtcNow;
+            _dispatcher.Invoke(() => PositionChanged?.Invoke(this, target));
+            return true;
+
         }
         private void NotifyQueueChanged()
         {
@@ -1393,14 +1349,11 @@ namespace MusicWrap.Core.Services.Playback
         }
         public void Dispose()
         {
-            _positionTimer.Elapsed -= PositionTimerOnElapsed;
-            _positionTimer.Stop();
-            _positionTimer.Dispose();
 
             _queue.QueueChanged -= QueueOnQueueChanged;
             _queue.CurrentChanged -= QueueOnCurrentChanged;
 
-            Stop();
+            Stop(true);
             FreeStream(_mixerStream);
 
             lock (_waveformCacheLock)

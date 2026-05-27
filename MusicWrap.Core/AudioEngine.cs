@@ -333,7 +333,7 @@ namespace MusicWrap.Core
         }
         public double GetPosition(int stream)
         {
-            long pos = Bass.BASS_ChannelGetPosition(stream);
+            long pos = Bass.BASS_ChannelGetPosition(stream,BASSMode.BASS_POS_DECODE);
             if (pos < 0) return 0.0;
             return Bass.BASS_ChannelBytes2Seconds(stream, pos);
         }

@@ -145,7 +145,8 @@ namespace MusicWrap.Data.User.Models
         StartClean = 0,
         RestoreQueueOnly = 1,
         RestoreQueueAndIndexOnly = 2,
-        ResumePlayback = 3
+        ResporePosition = 3,
+        RestorePlayback = 4
     }
     public enum SuportedFFMpegAudioFormat
     {
