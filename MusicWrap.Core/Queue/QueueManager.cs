@@ -17,6 +17,8 @@ namespace MusicWrap.Core.Queue
         void Jump(int index);
         void AddNext(IEnumerable<PlaybackQueueItem> item);
         void AddLast(IEnumerable<PlaybackQueueItem> item);
+        void Remove(int index);
+        void Remove(IEnumerable<int> indices);
         void RemoveAt(int index, int itemCount = 1);
         void Move(IEnumerable<int> fromIndices, int toIndex);
         void Clear();
@@ -113,6 +115,47 @@ namespace MusicWrap.Core.Queue
                 _internalItems.Add(item);
             ResetShuffle();
             OnQueueChanged();
+        }
+        public void Remove(int index)
+        {
+            RemoveAt(index);
+        }
+
+        public void Remove(IEnumerable<int> indices)
+        {
+            var list = indices.ToList();
+            if (list.Count == 0) return;
+
+            var internalIndices = list.Select(i => _isShuffleEnabled && _shuffleOrder.Count > 0
+                ? _shuffleOrder[i]
+                : i)
+                .OrderByDescending(i => i)
+                .ToList();
+            if (internalIndices.Any(i => i < 0 || i >= _internalItems.Count)) return;
+
+            bool currentRemoved = false;
+            foreach (var internalIndex in internalIndices)
+            {
+                _internalItems.RemoveAt(internalIndex);
+                if (internalIndex == _currentIndex)
+                    currentRemoved = true;
+            }
+            if (currentRemoved)
+            {
+                _currentIndex = Math.Min(internalIndices.Last(), _internalItems.Count - 1);
+            }
+            else
+            {
+                var removedBeforeCurrent = internalIndices.Count(i => i < _currentIndex);
+                _currentIndex -= removedBeforeCurrent;
+            }
+
+            if (_internalItems.Count == 0)
+                _currentIndex = -1;
+
+            ResetShuffle();
+            OnQueueChanged();
+            OnCurrentChanged();
         }
 
         public void RemoveAt(int playbackIndex, int itemCount = 1)

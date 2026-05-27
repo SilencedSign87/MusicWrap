@@ -31,31 +31,7 @@ namespace MusicWrap.UI.Services
 
         public void PlayNext(IReadOnlyList<int> selectedTrackIds, IReadOnlyList<int>? contextTrackIds = null)
         {
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            var currentQueue = _musicPlayerService.GetQueue() ?? [];
-            var newQueue = new List<int>();
-            bool inserted = false;
-
-            foreach (var trackId in currentQueue)
-            {
-                newQueue.Add(trackId);
-                if (!inserted && trackId == _musicPlayerService.CurrentTrackId)
-                {
-                    newQueue.AddRange(selectedTrackIds);
-                    inserted = true;
-                }
-            }
-
-            if (!inserted)
-            {
-                newQueue.AddRange(selectedTrackIds);
-            }
-
-            _musicPlayerService.SetQueue(newQueue, true);
+            _musicPlayerService.AddToNextInQueue(selectedTrackIds);
         }
 
         public void AddToQueue(IReadOnlyList<int> selectedTrackIds)

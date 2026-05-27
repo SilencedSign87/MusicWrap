@@ -1,5 +1,3 @@
-using System.Timers;
-using System.Linq;
 using Un4seen.Bass;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Sources.Contracts;
@@ -11,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Threading;
 using MusicWrap.Core.Queue;
 using MusicWrap.Core.Sources.Providers.Queue;
-using System.Diagnostics;
 
 namespace MusicWrap.Core.Services.Playback
 {
@@ -32,8 +29,8 @@ namespace MusicWrap.Core.Services.Playback
         OutputMode CurrentOutputMode { get; }
         float[] CurrentWaveformData { get; }
 
-        Data.Library.Models.RepeatMode RepeatMode { get; set; }
-        Data.Library.Models.ContinueMode ContinueMode { get; set; }
+        RepeatMode RepeatMode { get; set; }
+        ContinueMode ContinueMode { get; set; }
         bool IsShuffleEnabled { get; }
         event EventHandler<bool>? ShuffleStateChanged;
 
@@ -66,8 +63,11 @@ namespace MusicWrap.Core.Services.Playback
         //void SetSilentPlaybackIndex(int index);
         void AddToQueue(int TrackId);
         void AddToQueue(IEnumerable<int> TrackIds);
+        void AddToNextInQueue(IEnumerable<int> TrackIds);
         void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false);
         void RemoveFromQueue(int index);
+        void RemoveFromQueue(IEnumerable<int> indices);
+        void ReorderQueue(IEnumerable<int> fromIndices, int toIndex);
         void ClearQueue();
         int[] GetQueue();
         void PlayTrack(int TrackId);
@@ -513,7 +513,7 @@ namespace MusicWrap.Core.Services.Playback
             var item = CreateQueueItemFromTrackId(TrackId);
             if (item == null) return;
             _queue.AddLast([item]);
-            NotifyQueueChanged();
+            //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -525,10 +525,20 @@ namespace MusicWrap.Core.Services.Playback
                 .ToList();
             if (items.Count == 0) return;
             _queue.AddLast(items!);
-            NotifyQueueChanged();
+            //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
-
+        public void AddToNextInQueue(IEnumerable<int> TrackIds)
+        {
+            var items = TrackIds
+                .Select(CreateQueueItemFromTrackId)
+                .Where(item => item != null)
+                .ToList();
+            if (items.Count == 0) return;
+            _queue.AddNext(items!);
+            //NotifyQueueChanged();
+            EnqueueSave(SaveKind.Playback);
+        }
         public void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false)
         {
             var list = TrackIds as IList<int> ?? TrackIds.ToList();
@@ -552,9 +562,9 @@ namespace MusicWrap.Core.Services.Playback
                 .Where(item => item != null)
                 .ToList();
             _queue.Set(items!, newIndex);
-            UpdateSelectedTrackState();
+            //UpdateSelectedTrackState();
 
-            NotifyQueueChanged();
+            //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -572,9 +582,9 @@ namespace MusicWrap.Core.Services.Playback
                 Stop();
             }
 
-            UpdateSelectedTrackState();
+            //UpdateSelectedTrackState();
 
-            NotifyQueueChanged();
+            //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -582,8 +592,29 @@ namespace MusicWrap.Core.Services.Playback
         {
             Stop(true);
             _queue.Clear();
-            UpdateSelectedTrackState();
-            NotifyQueueChanged();
+            //UpdateSelectedTrackState();
+            //NotifyQueueChanged();
+            EnqueueSave(SaveKind.Playback);
+        }
+
+        public void RemoveFromQueue(IEnumerable<int> indices)
+        {
+            //foreach(var index in indices.OrderByDescending(i => i))
+            //{
+            //    if (index < 0 || index >= _queue.Items.Count)
+            //        continue;
+            //    bool removingCurrent = index == _queue.CurrentIndex;
+            //    _queue.RemoveAt(index);
+            //    if (removingCurrent)
+            //    {
+            //        Stop();
+            //    }
+            //}
+        }
+
+        public void ReorderQueue(IEnumerable<int> fromIndices, int toIndex)
+        {
+            _queue.Move(fromIndices, toIndex);
             EnqueueSave(SaveKind.Playback);
         }
 

@@ -116,41 +116,17 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private void ReorderTrack(TrackReorderRequest request)
         {
             var currentQueue = _player.GetPlaybackOrder();
-            if (currentQueue.Length == 0)
-            {
-                return;
-            }
+            if (currentQueue.Length == 0) return;
 
             var baseQueue = _player.GetQueue();
-            var sourceIndex = Array.IndexOf(currentQueue.Select(i => baseQueue[i]).ToArray(), request.SourceTrackId);
-            var targetIndex = Array.IndexOf(currentQueue.Select(i => baseQueue[i]).ToArray(), request.TargetTrackId);
-            if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex)
-            {
-                return;
-            }
-
-            var queue = currentQueue.ToList();
-            var movedIndex = queue[sourceIndex];
-            queue.RemoveAt(sourceIndex);
-
-            if (sourceIndex < targetIndex)
-            {
-                targetIndex--;
-            }
-
-            var insertIndex = request.PlaceAfterTarget ? targetIndex + 1 : targetIndex;
-            insertIndex = Math.Clamp(insertIndex, 0, queue.Count);
-            queue.Insert(insertIndex, movedIndex);
-
-            if (_player.IsShuffleEnabled)
-            {
-                _player.SetPlaybackOrder(queue.ToArray());
-            }
-            else
-            {
-                var reorderedIds = queue.Select(i => baseQueue[i]).ToList();
-                _player.SetQueue(reorderedIds, true);
-            }
+            var sourceIndex = Array.IndexOf(
+        currentQueue.Select(i => baseQueue[i]).ToArray(), request.SourceTrackId);
+            var targetIndex = Array.IndexOf(
+                currentQueue.Select(i => baseQueue[i]).ToArray(), request.TargetTrackId);
+            if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex) return;
+            var toIndex = request.PlaceAfterTarget ? targetIndex + 1 : targetIndex;
+            toIndex = Math.Clamp(toIndex, 0, currentQueue.Length);
+            _player.ReorderQueue([sourceIndex], toIndex);
         }
 
         [RelayCommand]

@@ -27,13 +27,13 @@
         
         <controls:SectionTitleSeparator Title="App startup" IconGlyph="&#xE7E8;" Margin="0,8"/>
 
-        <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
+        <StackPanel Orientation="Vertical" Margin="0,0,0,16">
             <RadioButton GroupName="start"
-                 Content="Restore everything (queue, current track, and position)"
+                 Content="Restore everything (queue, current track, position and playback)"
                  Margin="8,0"
                  IsChecked="{Binding RestoreEverything, Mode=TwoWay}" />
             <RadioButton GroupName="start"
-                 Content="Restore queue, track and position"
+                 Content="Restore queue, current track and position"
                  Margin="8,0"
                  IsChecked="{Binding RestoreCurrentTrackAndPosition, Mode=TwoWay}" />
             <RadioButton GroupName="start"
@@ -50,7 +50,7 @@
                  Content="Nothing"
                  Margin="8,0"
                  IsChecked="{Binding StartClean, Mode=TwoWay}" />
-        </WrapPanel>
+        </StackPanel>
 
     </StackPanel>
 </UserControl>
