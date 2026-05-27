@@ -248,16 +248,95 @@ namespace MusicWrap.Core.Services.Playback
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
 
-            //_positionTimer = new System.Timers.Timer(PositionTimerIdleIntervalMs)
-            //{
-            //    AutoReset = true
-            //};
-            //_positionTimer.Elapsed += PositionTimerOnElapsed;
-            //_positionTimer.Start();
-
             _queue.QueueChanged += QueueOnQueueChanged;
             _queue.CurrentChanged += QueueOnCurrentChanged;
-            //LoadInitialState();
+        }
+
+        public void LoadInitialState()
+        {
+            if (_userSettings == null)
+            {
+                return;
+            }
+
+            try
+            {
+                ApplyPreferredAudioSettings(_userSettings);
+                Volume = Math.Clamp(_userSettings.PreferredVolume, 0f, 1f);
+
+                var startupBehavior = _userSettings.StartupBehavior;
+                if (startupBehavior == StartupBehavior.StartClean)
+                {
+                    _playbackRepository.Clear();
+                    ClearQueue();
+                    return;
+                }
+
+                var snapshot = _playbackRepository.Load();
+                if (snapshot.TrackIds == null || snapshot.TrackIds.Length == 0)
+                {
+                    ClearQueue();
+                    return;
+                }
+
+                var validIds = new HashSet<int>(_library.Tracks.Select(t => t.Id));
+                var queue = snapshot.TrackIds.Where(validIds.Contains).ToArray();
+                if (queue.Length == 0)
+                {
+                    _playbackRepository.Clear();
+                    ClearQueue();
+                    return;
+                }
+
+                SetQueue(queue, false);
+                _queue.SetShuffle(_userSettings.IsShuffleEnabled);
+                if (_userSettings.IsShuffleEnabled && snapshot.PlaybackOrderIndices is { Length: > 0 })
+                {
+                    SetPlaybackOrder(snapshot.PlaybackOrderIndices);
+                }
+
+                int index = snapshot.CurrentIndex;
+                if (index < 0 || index >= queue.Length)
+                    index = 0;
+
+                if (queue.Length > 0)
+                {
+                    LoadIndex(index, false);
+                }
+
+
+                switch (startupBehavior)
+                {
+                    case StartupBehavior.StartClean:
+
+                        break;
+                    case StartupBehavior.RestoreQueueOnly:
+                        break;
+                    case StartupBehavior.RestoreQueueAndIndexOnly:
+                        break;
+
+                    case StartupBehavior.RestorePosition:
+                        Seek(snapshot.PositionInSeconds);
+                        break;
+                    case StartupBehavior.RestorePlayback:
+                        Seek(snapshot.PositionInSeconds);
+                        if (snapshot.PlaybackState == PlaybackState.Playing)
+                        {
+                            Play();
+                        }
+                        break;
+                    default:
+                        Stop();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to restore initial player state, starting clean");
+                ClearQueue();
+            }
+
+            EnqueueSave(SaveKind.Playback);
         }
 
         public event EventHandler<string>? TrackChanged;
@@ -702,82 +781,6 @@ namespace MusicWrap.Core.Services.Playback
                 PositionInSeconds = CurrentPosition,
                 PlaybackState = _playbackState
             };
-        }
-
-        public void LoadInitialState()
-        {
-            if (_userSettings == null)
-            {
-                return;
-            }
-
-            try
-            {
-                ApplyPreferredAudioSettings(_userSettings);
-                Volume = Math.Clamp(_userSettings.PreferredVolume, 0f, 1f);
-
-                var startupBehavior = _userSettings.StartupBehavior;
-                if (startupBehavior == StartupBehavior.StartClean)
-                {
-                    _playbackRepository.Clear();
-                    ClearQueue();
-                    return;
-                }
-
-                var snapshot = _playbackRepository.Load();
-                if (snapshot.TrackIds == null || snapshot.TrackIds.Length == 0)
-                {
-                    ClearQueue();
-                    return;
-                }
-
-                var validIds = new HashSet<int>(_library.Tracks.Select(t => t.Id));
-                var queue = snapshot.TrackIds.Where(validIds.Contains).ToArray();
-                if (queue.Length == 0)
-                {
-                    _playbackRepository.Clear();
-                    ClearQueue();
-                    return;
-                }
-
-                SetQueue(queue, false);
-                _queue.SetShuffle(_userSettings.IsShuffleEnabled);
-                if (_userSettings.IsShuffleEnabled && snapshot.PlaybackOrderIndices is { Length: > 0 })
-                {
-                    SetPlaybackOrder(snapshot.PlaybackOrderIndices);
-                }
-
-                int index = snapshot.CurrentIndex;
-                if (index < 0 || index >= queue.Length)
-                    index = 0;
-
-                if (queue.Length > 0)
-                {
-                    LoadIndex(index, false);
-                }
-
-
-                switch (startupBehavior)
-                {
-                    case StartupBehavior.StartClean:
-
-                        break;
-                    case StartupBehavior.RestoreQueueOnly:
-                        break;
-                    case StartupBehavior.RestoreQueueAndIndexOnly:
-                        break;
-                    default:
-                        Stop();
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to restore initial player state, starting clean");
-                ClearQueue();
-            }
-
-            EnqueueSave(SaveKind.Playback);
         }
 
         private void ApplyPreferredAudioSettings(UserSettings settings)

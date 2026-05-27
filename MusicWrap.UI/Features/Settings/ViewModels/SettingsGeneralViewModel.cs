@@ -14,12 +14,16 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
     {
         private readonly UserSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
-
+        
+        [ObservableProperty] private bool _restoreEverything;
+        [ObservableProperty] private bool _restoreCurrentTrackAndPosition;
         [ObservableProperty] private bool _restoreQueueAndIndexOnly;
         [ObservableProperty] private bool _restoreQueueOnly;
         [ObservableProperty] private bool _startClean;
+
         [ObservableProperty] private bool _minimizeToTray;
         [ObservableProperty] private bool _exitAppOnClose;
+
         [ObservableProperty] private bool _useCustomFfmpegPath;
         [ObservableProperty] private string _customFfmpegPath = string.Empty;
         private bool _updatingCloseBehavior;
@@ -65,6 +69,8 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             RestoreQueueAndIndexOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueAndIndexOnly;
             RestoreQueueOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueOnly;
             StartClean = _settings.StartupBehavior == StartupBehavior.StartClean;
+            RestoreEverything = _settings.StartupBehavior == StartupBehavior.RestorePlayback;
+            RestoreCurrentTrackAndPosition = _settings.StartupBehavior == StartupBehavior.RestorePosition;
             MinimizeToTray = _settings.KeepAppInTray;
             ExitAppOnClose = !_settings.KeepAppInTray;
             UseCustomFfmpegPath = _settings.FFMpegSettings.UseCustomFfmpegPath;
@@ -73,6 +79,18 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         #endregion
 
         #region Partials
+        partial void OnRestoreEverythingChanged(bool value)
+        {
+            if (!value) return;
+            _settings.StartupBehavior = StartupBehavior.RestorePlayback;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+        partial void OnRestoreCurrentTrackAndPositionChanged(bool value)
+        {
+            if (!value) return;
+            _settings.StartupBehavior = StartupBehavior.RestorePosition;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
         partial void OnRestoreQueueAndIndexOnlyChanged(bool value)
         {
             if (!value) return;

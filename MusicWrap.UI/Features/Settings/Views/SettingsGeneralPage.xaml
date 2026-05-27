@@ -29,12 +29,20 @@
 
         <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
             <RadioButton GroupName="start"
-                 Content="Preserve queue and current track"
+                 Content="Restore everything (queue, current track, and position)"
+                 Margin="8,0"
+                 IsChecked="{Binding RestoreEverything, Mode=TwoWay}" />
+            <RadioButton GroupName="start"
+                 Content="Restore queue, track and position"
+                 Margin="8,0"
+                 IsChecked="{Binding RestoreCurrentTrackAndPosition, Mode=TwoWay}" />
+            <RadioButton GroupName="start"
+                 Content="Restore queue and current track"
                  Margin="8,0"
                  IsChecked="{Binding RestoreQueueAndIndexOnly, Mode=TwoWay}" />
 
             <RadioButton GroupName="start"
-                 Content="Preserve queue"
+                 Content="Restore queue"
                  Margin="8,0"
                  IsChecked="{Binding RestoreQueueOnly, Mode=TwoWay}" />
 
