@@ -52,7 +52,7 @@
                     </Button>
                     <Button x:Name="PlayButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" Command="{Binding PlayPauseCommand}"
                                 >
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="20"/>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon, Mode=OneWay}" FontSize="20"/>
                     </Button>
                     <Button x:Name="NextButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="Next track" Command="{Binding NextCommand}"
                                 >
@@ -73,7 +73,6 @@
                             />
             </Grid>
 
-            <!--Volume-->
             <Grid Grid.Column="2">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11">

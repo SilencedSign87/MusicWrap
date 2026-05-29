@@ -86,14 +86,6 @@ namespace MusicWrap.UI.Controls
 
         #endregion
 
-        //#region Events
-
-        //public event EventHandler? SeekStarted;
-        //public event EventHandler<double>? SeekEnded;
-        //public event EventHandler? SeekCanceled;
-
-        //#endregion
-
         #region Lifecycle
 
         private void WaveformPlayerControl_Loaded(object sender, RoutedEventArgs e)
@@ -394,7 +386,6 @@ namespace MusicWrap.UI.Controls
                 _dragCaptureElement = null;
             }
 
-            // Vuelve al valor real del player.
             UpdateProgressVisual(_position);
         }
 

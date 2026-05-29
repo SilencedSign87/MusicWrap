@@ -151,6 +151,9 @@ namespace MusicWrap.Core.Services.Playback
 
         private double _currentTrackDuration;
 
+        private bool _isTransitioningTrack = false;
+        private bool _disposed;
+
 
         // Waveform
         private const int MaxWaveformCacheEntries = 32;
@@ -355,8 +358,16 @@ namespace MusicWrap.Core.Services.Playback
         {
             if (index < 0 || index >= _queue.Items.Count)
                 return;
-            _queue.Jump(index);
-            StartPlaybackOfCurrent(autoplay);
+            _isTransitioningTrack = true;
+            try
+            {
+                _queue.Jump(index);
+                StartPlaybackOfCurrent(autoplay);
+            }
+            finally
+            {
+                _isTransitioningTrack = false;
+            }
         }
 
         public void Play()
@@ -365,10 +376,19 @@ namespace MusicWrap.Core.Services.Playback
             {
                 if (_queue.Items.Count == 0) return;
 
-                if (_queue.CurrentIndex < 0 || _queue.CurrentIndex >= _queue.Items.Count)
-                    _queue.Jump(0);
+                _isTransitioningTrack = true;
+                try
+                {
+                    if (_queue.CurrentIndex < 0 || _queue.CurrentIndex >= _queue.Items.Count)
+                        _queue.Jump(0);
 
-                StartPlaybackOfCurrent();
+                    StartPlaybackOfCurrent();
+                }
+                finally
+                {
+                    _isTransitioningTrack = false;
+                }
+
                 return;
             }
 
@@ -424,20 +444,36 @@ namespace MusicWrap.Core.Services.Playback
 
         public void Next()
         {
-            var next = _queue.Next();
-            if (next == null)
+            _isTransitioningTrack = true;
+            try
             {
-                Stop();
-                return;
+                var next = _queue.Next();
+                if (next == null)
+                {
+                    Stop();
+                    return;
+                }
+                StartPlaybackOfCurrent();
             }
-            StartPlaybackOfCurrent();
+            finally
+            {
+                _isTransitioningTrack = false;
+            }
         }
 
         public void Previous()
         {
-            var prev = _queue.Previous();
-            if (prev == null) return;
-            StartPlaybackOfCurrent();
+            _isTransitioningTrack = true;
+            try
+            {
+                var prev = _queue.Previous();
+                if (prev == null) return;
+                StartPlaybackOfCurrent();
+            }
+            finally
+            {
+                _isTransitioningTrack = false;
+            }
         }
 
         public void Seek(double seconds)
@@ -481,8 +517,17 @@ namespace MusicWrap.Core.Services.Playback
         {
             if (index < 0 || index >= _queue.Items.Count)
                 return;
-            _queue.Jump(index);
-            StartPlaybackOfCurrent();
+
+            _isTransitioningTrack = true;
+            try
+            {
+                _queue.Jump(index);
+                StartPlaybackOfCurrent();
+            }
+            finally
+            {
+                _isTransitioningTrack = false;
+            }
         }
 
         public void ToggleShuffle()
@@ -493,7 +538,6 @@ namespace MusicWrap.Core.Services.Playback
         public void SetShuffle(bool enabled)
         {
             if (_userSettings.IsShuffleEnabled == enabled) return;
-            _userSettings.IsShuffleEnabled = enabled;
             _queue.SetShuffle(enabled);
             _dispatcher.Invoke(() => ShuffleStateChanged?.Invoke(this, enabled));
             EnqueueSave(SaveKind.Settings);
@@ -646,8 +690,16 @@ namespace MusicWrap.Core.Services.Playback
                 index = _queue.Items.Count - 1;
             }
 
-            _queue.Jump(index);
-            StartPlaybackOfCurrent();
+            _isTransitioningTrack = true;
+            try
+            {
+                _queue.Jump(index);
+                StartPlaybackOfCurrent();
+            }
+            finally
+            {
+                _isTransitioningTrack = false;
+            }
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -658,11 +710,15 @@ namespace MusicWrap.Core.Services.Playback
             {
                 _selectedTrackDuration = 0;
                 _currentWaveform = Array.Empty<float>();
-                _dispatcher.Invoke(() =>
+
+                if (!_isTransitioningTrack)
                 {
-                    TrackChanged?.Invoke(this, string.Empty);
-                    WaveformDataChanged?.Invoke(this, Array.Empty<float>());
-                });
+                    _dispatcher.Invoke(() =>
+                    {
+                        TrackChanged?.Invoke(this, string.Empty);
+                        WaveformDataChanged?.Invoke(this, Array.Empty<float>());
+                    });
+                }
                 return;
             }
 
@@ -676,17 +732,25 @@ namespace MusicWrap.Core.Services.Playback
             {
                 _selectedTrackDuration = 0;
                 _currentWaveform = CreateFallbackWaveForm(WaveformDataPoints);
-                _dispatcher.Invoke(() =>
+
+                if (!_isTransitioningTrack)
                 {
-                    TrackChanged?.Invoke(this, item.DisplayTitle ?? item.Source);
-                    WaveformDataChanged?.Invoke(this, _currentWaveform);
-                });
+                    _dispatcher.Invoke(() =>
+                    {
+                        TrackChanged?.Invoke(this, item.DisplayTitle ?? item.Source);
+                        WaveformDataChanged?.Invoke(this, _currentWaveform);
+                    });
+                }
                 return;
             }
 
             _selectedTrackDuration = track.Duration > 0 ? track.Duration : 0;
             var trackRef = string.IsNullOrWhiteSpace(track.Path) ? (track.SourceUri ?? string.Empty) : track.Path;
-            _dispatcher.Invoke(() => TrackChanged?.Invoke(this, trackRef));
+            if (!_isTransitioningTrack)
+            {
+                _dispatcher.Invoke(() => TrackChanged?.Invoke(this, trackRef));
+            }
+
             BeginWaveformPipeline(track);
         }
 
@@ -1026,18 +1090,6 @@ namespace MusicWrap.Core.Services.Playback
             _dispatcher.Invoke(() => PlaybackStateChanged?.Invoke(this, _playbackState));
         }
 
-        //private void PositionTimerOnElapsed(object? sender, ElapsedEventArgs e)
-        //{
-        //    if (!IsPlaying || _currentStream == 0)
-        //        return;
-        //    //if (DateTime.UtcNow < _suppressPositionUntilUtc)
-        //    //    return;
-
-        //    var position = GetEffectivePosition();
-
-        //    _dispatcher.Invoke(() => PositionChanged?.Invoke(this, position));
-        //}
-
         private void OnTrackEndedInternal(int handle, int channel, int data, IntPtr user)
         {
             if (channel != _currentStream) return;
@@ -1060,47 +1112,62 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             }
 
-            var nextItem = _queue.Next();
-            if (nextItem == null)
+            _isTransitioningTrack = true;
+            try
             {
-                Stop();
-                return;
-            }
-
-            if (_preloadedStream != 0 && _preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, nextItem))
-            {
-                int previousStream = _currentStream;
-                _currentStream = _preloadedStream;
-                _preloadedStream = 0;
-                _preloadedQueueItem = null;
-
-                _audioEngine.RemoveFromMixer(previousStream);
-                FreeStream(previousStream);
-
-                _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
-                _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
-                _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
-
-                double duration = _audioEngine.GetDuration(_currentStream);
-                const double preloadLeadSeconds = 0.75;
-                if (duration > preloadLeadSeconds)
+                var nextItem = _queue.Next();
+                if (nextItem == null)
                 {
-                    _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
+                    Stop();
+                    return;
                 }
 
-                var snapshot = CreateQueueSnapshot();
-                _dispatcher.Invoke(() =>
+                if (_preloadedStream != 0 && _preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, nextItem))
                 {
-                    var trackRef = nextItem.Source;
-                    TrackChanged?.Invoke(this, trackRef);
-                    QueueChanged?.Invoke(this, snapshot);
-                });
+                    int previousStream = _currentStream;
+                    _currentStream = _preloadedStream;
+                    _preloadedStream = 0;
+                    _preloadedQueueItem = null;
 
-                UpdateSelectedTrackState();
-                return;
+                    _audioEngine.RemoveFromMixer(previousStream);
+                    FreeStream(previousStream);
+
+                    _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
+                    _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
+                    _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
+
+                    double duration = _audioEngine.GetDuration(_currentStream);
+                    _currentTrackDuration = duration;
+                    const double preloadLeadSeconds = 0.75;
+
+                    if (duration > preloadLeadSeconds)
+                    {
+                        _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
+                    }
+
+                    _trackedPositon = 0.0;
+                    _trackedPositionUtc = DateTime.UtcNow;
+
+                    var snapshot = CreateQueueSnapshot();
+                    _dispatcher.Invoke(() =>
+                    {
+                        var trackRef = nextItem.Source;
+                        TrackChanged?.Invoke(this, trackRef);
+                        QueueChanged?.Invoke(this, snapshot);
+                        PositionChanged?.Invoke(this, 0.0);
+                    });
+
+                    UpdateSelectedTrackState();
+                    return;
+                }
+
+                StartPlaybackOfCurrent();
+            }
+            finally
+            {
+                _isTransitioningTrack = false;
             }
 
-            StartPlaybackOfCurrent();
         }
 
         private void OnPreloadSync(int handle, int channel, int data, IntPtr user)
@@ -1383,6 +1450,8 @@ namespace MusicWrap.Core.Services.Playback
         }
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
 
             _queue.QueueChanged -= QueueOnQueueChanged;
             _queue.CurrentChanged -= QueueOnCurrentChanged;
