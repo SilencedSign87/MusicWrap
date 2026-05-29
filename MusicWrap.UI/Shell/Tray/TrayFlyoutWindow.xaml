@@ -11,7 +11,7 @@
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         Topmost="True"
-        Height="100" 
+        Height="108" 
         x:Name="RootWindow"
         Width="350"
         WindowStyle="SingleBorderWindow"
@@ -54,13 +54,18 @@
             <ColumnDefinition Width="4"/>
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="8"/>
+        </Grid.RowDefinitions>
         <Image
+                Grid.Row="0"
                 Grid.Column="0"
                 Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:100}"
                 RenderOptions.BitmapScalingMode="LowQuality"
                 />
 
-        <Border Grid.Column="2" Padding="8,8,8,0">
+        <Border Grid.Row="0" Grid.Column="2" Padding="8,8,8,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
@@ -76,10 +81,10 @@
                             <Run Text="{Binding CurrentTrackTitle}" />
                         </TextBlock>
                         <TextBlock FontSize="11" Text="{Binding CurrentTrackArtists}" />
-                        <TextBlock FontSize="11">
-                            <Run Text="{Binding FormattedPosition}" />
-                            <Run Text=" / "/>
-                            <Run Text="{Binding FormattedDuration}" />
+                        <TextBlock FontSize="10" HorizontalAlignment="Left">
+                            <Run Text="{Binding FormattedPosition, ElementName=TrayWaveForm, Mode=OneWay}" />
+                            <Run Text=" / " />
+                            <Run Text="{Binding FormattedDuration, ElementName=TrayWaveForm, Mode=OneWay}" />
                         </TextBlock>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
@@ -147,8 +152,17 @@
             </Grid>
         </Border>
 
+        <controls:WaveformPlayerControl
+                    x:Name="TrayWaveForm"
+                    Grid.Row="1"
+                    Grid.ColumnSpan="3"
+                    UsePlaceholderWaveform="True"
+                    DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Stretch"
+                    Height="8"
+                    />
     </Grid>
-    <!--</Border>-->
 </Window>
 
 

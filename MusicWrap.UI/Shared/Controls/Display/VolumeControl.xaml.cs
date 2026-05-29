@@ -17,9 +17,9 @@ namespace MusicWrap.UI.Controls
         private bool isSubscribed;
         private bool isDisposed;
 
-        private const double MaxThickness = 12d;
-        private const double InnerPadding = 2d;
-        private const double ControlGap = 2d;
+        private const double TrackThickness = 4d;
+        private const double ThumbWidth = 4d;
+        private const double ThumbLength = 16d;
 
         public VolumeControl()
         {
@@ -51,11 +51,12 @@ namespace MusicWrap.UI.Controls
                 Loaded -= VolumeControl_Loaded;
                 Unloaded -= VolumeControl_Unloaded;
                 isSubscribed = false;
-                //_viewModel.Dispose();
             }
             isDragging = false;
             HideVolumePopup();
         }
+
+        #region Dependency Properties
 
         public string DominantColorHex
         {
@@ -85,6 +86,8 @@ namespace MusicWrap.UI.Controls
         public static readonly DependencyProperty ShowMuteButtonProperty =
             DependencyProperty.Register(nameof(ShowMuteButton), typeof(bool), typeof(VolumeControl),
                 new PropertyMetadata(true, OnLayoutPropertyChanged));
+
+        #endregion
 
         private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -118,12 +121,14 @@ namespace MusicWrap.UI.Controls
             UpdateVolumeVisual(_viewModel.Volume);
         }
 
+        #region Layout
+
         private void ApplyLayout()
         {
             if (VolumeContainer == null) return;
 
             ApplyRootLayout();
-            ApplyPillLayout();
+            ApplyTrackLayout();
         }
 
         private void ApplyRootLayout()
@@ -135,7 +140,7 @@ namespace MusicWrap.UI.Controls
             if (Orientation == Orientation.Horizontal)
             {
                 ColButton.Width = ShowMuteButton ? GridLength.Auto : new GridLength(0);
-                ColSpacer.Width = ShowMuteButton ? new GridLength(ControlGap) : new GridLength(0);
+                ColSpacer.Width = ShowMuteButton ? new GridLength(4) : new GridLength(0);
                 ColVolume.Width = new GridLength(1, GridUnitType.Star);
 
                 RowVolume.Height = new GridLength(1, GridUnitType.Star);
@@ -156,7 +161,7 @@ namespace MusicWrap.UI.Controls
                 ColVolume.Width = new GridLength(0);
 
                 RowVolume.Height = new GridLength(1, GridUnitType.Star);
-                RowSpacer.Height = ShowMuteButton ? new GridLength(ControlGap) : new GridLength(0);
+                RowSpacer.Height = ShowMuteButton ? new GridLength(4) : new GridLength(0);
                 RowButton.Height = ShowMuteButton ? GridLength.Auto : new GridLength(0);
 
                 Grid.SetRow(VolumeHost, 0); Grid.SetColumn(VolumeHost, 0);
@@ -168,35 +173,47 @@ namespace MusicWrap.UI.Controls
             }
         }
 
-        private void ApplyPillLayout()
+        private void ApplyTrackLayout()
         {
-            double thickness = Orientation == Orientation.Horizontal
-                ? Math.Min(MaxThickness, Math.Max(1, VolumeContainer.ActualHeight))
-                : Math.Min(MaxThickness, Math.Max(1, VolumeContainer.ActualWidth));
-
-            double innerThickness = Math.Max(1, thickness - (InnerPadding * 2));
-
-            PillBackground.CornerRadius = new CornerRadius(thickness / 2d);
-            FillHost.CornerRadius = new CornerRadius(innerThickness / 2d);
-            PillForeground.CornerRadius = new CornerRadius(innerThickness / 2d);
-
             if (Orientation == Orientation.Horizontal)
             {
-                VolumeContainer.MaxHeight = MaxThickness;
-                VolumeContainer.ClearValue(WidthProperty);
+                TrackBackground.ClearValue(WidthProperty);
+                TrackBackground.Height = TrackThickness;
+                TrackBackground.HorizontalAlignment = HorizontalAlignment.Stretch;
+                TrackBackground.VerticalAlignment = VerticalAlignment.Center;
 
-                PillForeground.HorizontalAlignment = HorizontalAlignment.Left;
-                PillForeground.VerticalAlignment = VerticalAlignment.Stretch;
+                TrackForeground.ClearValue(WidthProperty);
+                TrackForeground.Height = TrackThickness;
+                TrackForeground.HorizontalAlignment = HorizontalAlignment.Left;
+                TrackForeground.VerticalAlignment = VerticalAlignment.Center;
+
+                Thumb.Width = ThumbWidth;
+                Thumb.Height = ThumbLength;
+                Thumb.HorizontalAlignment = HorizontalAlignment.Left;
+                Thumb.VerticalAlignment = VerticalAlignment.Center;
             }
             else
             {
-                VolumeContainer.MaxWidth = MaxThickness;
-                VolumeContainer.ClearValue(HeightProperty);
+                TrackBackground.Width = TrackThickness;
+                TrackBackground.ClearValue(HeightProperty);
+                TrackBackground.HorizontalAlignment = HorizontalAlignment.Center;
+                TrackBackground.VerticalAlignment = VerticalAlignment.Stretch;
 
-                PillForeground.HorizontalAlignment = HorizontalAlignment.Stretch;
-                PillForeground.VerticalAlignment = VerticalAlignment.Bottom;
+                TrackForeground.Width = TrackThickness;
+                TrackForeground.ClearValue(HeightProperty);
+                TrackForeground.HorizontalAlignment = HorizontalAlignment.Center;
+                TrackForeground.VerticalAlignment = VerticalAlignment.Bottom;
+
+                Thumb.Width = ThumbLength;
+                Thumb.Height = ThumbWidth;
+                Thumb.HorizontalAlignment = HorizontalAlignment.Center;
+                Thumb.VerticalAlignment = VerticalAlignment.Top;
             }
         }
+
+        #endregion
+
+        #region Mouse to Value
 
         private (double normalized, Point pos) GetNormalizedFromMouse(MouseEventArgs e)
         {
@@ -206,38 +223,15 @@ namespace MusicWrap.UI.Controls
                 ? VolumeContainer.ActualWidth
                 : VolumeContainer.ActualHeight;
 
-            double start = InnerPadding;
-            double end = Math.Max(start, total - InnerPadding);
-            double length = Math.Max(1, end - start);
+            if (total <= 0) return (0, pos);
 
             double axis = Orientation == Orientation.Horizontal ? pos.X : pos.Y;
-            double raw = (axis - start) / length;
+            double normalized = Orientation == Orientation.Horizontal
+                ? axis / total
+                : 1.0 - (axis / total);
 
-            double normalized = Orientation == Orientation.Horizontal ? raw : 1d - raw;
-            normalized = Math.Clamp(normalized, 0d, 1d);
-
+            normalized = Math.Clamp(normalized, 0.0, 1.0);
             return (normalized, pos);
-        }
-
-        private void UpdateVolumeVisual(double volume)
-        {
-            double total = Orientation == Orientation.Horizontal
-                ? VolumeContainer.ActualWidth
-                : VolumeContainer.ActualHeight;
-
-            double usable = Math.Max(0, total - (InnerPadding * 2));
-            double percentage = Math.Clamp(volume, 0d, 1d);
-
-            if (Orientation == Orientation.Horizontal)
-            {
-                PillForeground.Width = usable * percentage;
-                PillForeground.ClearValue(HeightProperty);
-            }
-            else
-            {
-                PillForeground.Height = usable * percentage;
-                PillForeground.ClearValue(WidthProperty);
-            }
         }
 
         private void SetVolumeFromMouse(MouseEventArgs e)
@@ -245,6 +239,44 @@ namespace MusicWrap.UI.Controls
             var (normalized, _) = GetNormalizedFromMouse(e);
             _viewModel.Volume = (float)normalized;
         }
+
+        #endregion
+
+        #region Visual Update
+
+        private void UpdateVolumeVisual(double volume)
+        {
+            double percentage = Math.Clamp(volume, 0.0, 1.0);
+
+            if (Orientation == Orientation.Horizontal)
+            {
+                double totalWidth = VolumeContainer.ActualWidth;
+                if (totalWidth <= 0) return;
+
+                double fillWidth = totalWidth * percentage;
+                TrackForeground.Width = fillWidth;
+
+                double thumbLeft = fillWidth - ThumbWidth / 2.0;
+                thumbLeft = Math.Clamp(thumbLeft, 0, Math.Max(0, totalWidth - ThumbWidth));
+                Thumb.Margin = new Thickness(thumbLeft, 0, 0, 0);
+            }
+            else
+            {
+                double totalHeight = VolumeContainer.ActualHeight;
+                if (totalHeight <= 0) return;
+
+                double fillHeight = totalHeight * percentage;
+                TrackForeground.Height = fillHeight;
+
+                double thumbTop = (totalHeight - fillHeight) - ThumbLength / 2.0;
+                thumbTop = Math.Clamp(thumbTop, 0, Math.Max(0, totalHeight - ThumbWidth));
+                Thumb.Margin = new Thickness(0, thumbTop, 0, 0);
+            }
+        }
+
+        #endregion
+
+        #region Volume Popup
 
         private void UpdateVolumePopup(MouseEventArgs e)
         {
@@ -267,6 +299,10 @@ namespace MusicWrap.UI.Controls
 
         private void HideVolumePopup() => VolumePopup.IsOpen = false;
 
+        #endregion
+
+        #region Mouse Handlers
+
         private void InteractiveLayer_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.LeftButton != MouseButtonState.Pressed) return;
@@ -283,22 +319,22 @@ namespace MusicWrap.UI.Controls
 
             isDragging = false;
             InteractiveLayer.ReleaseMouseCapture();
-
-            if (!InteractiveLayer.IsMouseOver)
-            {
-                HideVolumePopup();
-            }
+            HideVolumePopup();
         }
 
         private void InteractiveLayer_MouseMove(object sender, MouseEventArgs e)
         {
+            if (!isDragging) return;
+
             UpdateVolumePopup(e);
-            if (isDragging) SetVolumeFromMouse(e);
+            SetVolumeFromMouse(e);
         }
 
         private void InteractiveLayer_MouseLeave(object sender, MouseEventArgs e)
         {
             if (!isDragging) HideVolumePopup();
         }
+
+        #endregion
     }
 }

@@ -188,51 +188,76 @@ namespace MusicWrap.Core.Queue
 
         public void Move(IEnumerable<int> fromPlaybackIndices, int toPlaybackIndex)
         {
-            var fromList = new List<int>(fromPlaybackIndices);
+            var fromList = fromPlaybackIndices.ToList();
             if (fromList.Count == 0) return;
 
-            var ordered = fromList
-                .Select(pb => IsShuffleEnabled && _shuffleOrder.Count > 0
-                ? _shuffleOrder[pb]
-                : pb
-                ).ToList();
+            if (IsShuffleEnabled)
+            {
+                if (_shuffleOrder.Count == 0)
+                    _shuffleOrder = Enumerable.Range(0, _internalItems.Count).ToList();
 
-            int toIndex = IsShuffleEnabled && _shuffleOrder.Count > 0
-                ? _shuffleOrder[toPlaybackIndex]
-                : toPlaybackIndex;
+                var ordered = fromList.Distinct().OrderByDescending(x => x).ToList();
 
-            if (ordered.Any(i => i < 0 || i >= _internalItems.Count))
+                if (ordered.Any(i => i < 0 || i >= _shuffleOrder.Count)) return;
+
+                var movedValues = ordered.AsEnumerable().Reverse().Select(i => _shuffleOrder[i]).ToList();
+
+                foreach (var value in ordered)
+                    _shuffleOrder.RemoveAt(value);
+
+                var removedBeforeTarget = ordered.Count(i => i < toPlaybackIndex);
+                int adjustedTarget = Math.Clamp(toPlaybackIndex - removedBeforeTarget, 0, _shuffleOrder.Count);
+
+                for (int i = 0; i < movedValues.Count; i++)
+                    _shuffleOrder.Insert(adjustedTarget + i, movedValues[i]);
+
+                if (ordered.Contains(_shuffleCursor))
+                {
+                    var rel = ordered.AsEnumerable().Reverse().ToList().IndexOf(_shuffleCursor);
+                    _shuffleCursor = adjustedTarget + rel;
+                }
+                else
+                {
+                    var removedBeforeCursor = ordered.Count(i => i < _shuffleCursor);
+                    _shuffleCursor -= removedBeforeCursor;
+                    _shuffleCursor = Math.Clamp(_shuffleCursor, 0, Math.Max(0, _shuffleOrder.Count - 1));
+                }
+                OnQueueChanged();
                 return;
-
-            var itemsToMove = ordered.Select(i => _internalItems[i]).ToList();
-
-            foreach (var item in ordered.Distinct().OrderByDescending(i => i))
-            {
-                _internalItems.RemoveAt(item);
-            }
-            var removedBeforeTarget = ordered.Distinct().Count(i => i < toIndex);
-            toIndex -= removedBeforeTarget;
-            toIndex = Math.Clamp(toIndex, 0, _internalItems.Count);
-
-            for (int i = 0; i < itemsToMove.Count; i++)
-            {
-                _internalItems.Insert(toIndex + i, itemsToMove[i]);
-            }
-
-            if (ordered.Contains(_currentIndex))
-            {
-                var rel = ordered.IndexOf(_currentIndex);
-                _currentIndex = toIndex + rel;
-                OnCurrentChanged();
             }
             else
             {
-                _currentIndex -= ordered.Distinct().Count(i => i < _currentIndex);
-                if (_currentIndex < 0) _currentIndex = -1;
-            }
+                var internalFrom = fromList.ToList();
+                if (internalFrom.Any(i => i < 0 || i >= _internalItems.Count))
+                    return;
+                if (toPlaybackIndex < 0 || toPlaybackIndex > _internalItems.Count)
+                    return;
+                var itemsToMove = internalFrom.Select(i => _internalItems[i]).ToList();
 
-            ResetShuffle();
-            OnQueueChanged();
+                foreach (var idx in internalFrom.OrderByDescending(i => i))
+                    _internalItems.RemoveAt(idx);
+
+                var removedBefore = internalFrom.Count(i => i < toPlaybackIndex);
+                int adjustedTarget = Math.Clamp(toPlaybackIndex - removedBefore, 0, _internalItems.Count);
+
+                for (int i = 0; i < itemsToMove.Count; i++)
+                    _internalItems.Insert(adjustedTarget + i, itemsToMove[i]);
+
+                if (internalFrom.Contains(_currentIndex))
+                {
+                    var rel = internalFrom.IndexOf(_currentIndex);
+                    _currentIndex = adjustedTarget + rel;
+                    OnCurrentChanged();
+                }
+                else
+                {
+                    var removedBeforeCurrent = internalFrom.Count(i => i < _currentIndex);
+                    _currentIndex -= removedBeforeCurrent;
+                    if (_currentIndex < 0) _currentIndex = -1;
+                }
+                ResetShuffle();
+                OnQueueChanged();
+            }
         }
 
         public void Clear()

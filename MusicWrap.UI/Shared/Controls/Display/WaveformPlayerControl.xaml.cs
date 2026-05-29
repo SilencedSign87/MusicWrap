@@ -66,22 +66,35 @@ namespace MusicWrap.UI.Controls
           DependencyProperty.RegisterReadOnly(nameof(FormattedPosition), typeof(string), typeof(WaveformPlayerControl),
               new PropertyMetadata("0:00"));
         public string FormattedPosition => (string)GetValue(FormattedPositionPropertyKey.DependencyProperty);
+
         private static readonly DependencyPropertyKey FormattedDurationPropertyKey =
             DependencyProperty.RegisterReadOnly(nameof(FormattedDuration), typeof(string), typeof(WaveformPlayerControl),
                 new PropertyMetadata("0:00"));
         public string FormattedDuration => (string)GetValue(FormattedDurationPropertyKey.DependencyProperty);
 
         public static readonly DependencyProperty DominantColorHexProperty =
-    DependencyProperty.Register(
-        "DominantColorHex",
-        typeof(string),
-        typeof(WaveformPlayerControl),
-        new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+            DependencyProperty.Register(
+            "DominantColorHex",
+            typeof(string),
+            typeof(WaveformPlayerControl),
+            new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
         public string? DominantColorHex
         {
             get => (string?)GetValue(DominantColorHexProperty);
             set => SetValue(DominantColorHexProperty, value);
+        }
+
+        public static readonly DependencyProperty UsePlaceholderWaveformProperty =
+            DependencyProperty.Register(
+            nameof(UsePlaceholderWaveform),
+            typeof(bool),
+            typeof(WaveformPlayerControl),
+            new PropertyMetadata(false));
+        public bool UsePlaceholderWaveform
+        {
+            get => (bool)GetValue(UsePlaceholderWaveformProperty);
+            set => SetValue(UsePlaceholderWaveformProperty, value);
         }
 
         #endregion
@@ -91,11 +104,19 @@ namespace MusicWrap.UI.Controls
         private void WaveformPlayerControl_Loaded(object sender, RoutedEventArgs e)
         {
             _musicService.PositionChanged += OnServicePositionChanged;
-            _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
             _musicService.TrackChanged += OnServiceTrackChanged;
             _musicService.PlaybackStateChanged += OnServicePlaybackStateChanged;
 
-            _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
+            if (!UsePlaceholderWaveform)
+            {
+                _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
+                _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
+            }
+            else
+            {
+                _waveformData = Enumerable.Repeat(1f, 1000).ToArray();
+            }
+
             _duration = _musicService.Duration;
             _isPlaying = _musicService.IsPlaying;
             SyncBaseline();
@@ -110,9 +131,11 @@ namespace MusicWrap.UI.Controls
         {
             _positionTimer.Stop();
             _musicService.PositionChanged -= OnServicePositionChanged;
-            _musicService.WaveformDataChanged -= OnServiceWaveformDataChanged;
             _musicService.TrackChanged -= OnServiceTrackChanged;
             _musicService.PlaybackStateChanged -= OnServicePlaybackStateChanged;
+
+            if (!UsePlaceholderWaveform)
+                _musicService.WaveformDataChanged -= OnServiceWaveformDataChanged;
 
         }
 
@@ -159,7 +182,10 @@ namespace MusicWrap.UI.Controls
         {
             Dispatcher.Invoke(() =>
             {
-                _waveformData = _musicService.CurrentWaveformData;
+                if (!UsePlaceholderWaveform)
+                {
+                    _waveformData = _musicService.CurrentWaveformData;
+                }
                 _position = 0;
                 _duration = _musicService.Duration;
                 SyncBaseline();
@@ -372,7 +398,7 @@ namespace MusicWrap.UI.Controls
         private void CancelSeek()
         {
             if (!_isDragging) return;
-            
+
 
             _dragCanceled = true;
             _isDragging = false;

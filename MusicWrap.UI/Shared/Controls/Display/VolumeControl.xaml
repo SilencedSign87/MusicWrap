@@ -3,7 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:MusicWrap.UI.Controls"
              xmlns:vm="clr-namespace:MusicWrap.UI.Shared.Controls.ViewModel"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:VolumeControlViewModel}"
@@ -25,12 +24,10 @@
         </Grid.RowDefinitions>
 
         <Button x:Name="MuteButton"
-                Grid.Row="0"
-                Grid.Column="0"
+                Grid.Row="0" Grid.Column="0"
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
-                Width="32"
-                Height="32"
+                Width="32" Height="32"
                 Padding="1"
                 Style="{StaticResource SubtleButton}"
                 Foreground="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
@@ -42,27 +39,38 @@
         </Button>
 
         <Border x:Name="LayoutSpacer"
-                Grid.Row="0"
-                Grid.Column="1"
+                Grid.Row="0" Grid.Column="1"
                 Background="Transparent"/>
 
         <Border x:Name="VolumeHost"
-                Grid.Row="0"
-                Grid.Column="2">
+                Grid.Row="0" Grid.Column="2">
             <Grid x:Name="VolumeContainer" Background="Transparent">
 
-                <Border x:Name="PillBackground"
-                        Background="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
-                        Opacity="0.18"/>
+                <!-- Track Background (unfilled portion) -->
+                <Rectangle x:Name="TrackBackground"
+                           Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                           Opacity="0.18"
+                           RadiusX="2" RadiusY="2"/>
 
-                <Border x:Name="FillHost"
-                        Margin="4"
-                        ClipToBounds="True"
-                        Background="Transparent">
-                    <Border x:Name="PillForeground"
-                            Background="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"/>
-                </Border>
+                <!-- Track Foreground (filled portion) -->
+                <Rectangle x:Name="TrackForeground"
+                           Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                           RadiusX="2" RadiusY="2"/>
 
+                <!-- Thumb -->
+                <Rectangle x:Name="Thumb"
+                           Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                           RadiusX="2" RadiusY="2"/>
+
+                <!-- Interactive Layer -->
+                <Rectangle x:Name="InteractiveLayer"
+                           Fill="Transparent"
+                           MouseDown="InteractiveLayer_MouseDown"
+                           MouseUp="InteractiveLayer_MouseUp"
+                           MouseMove="InteractiveLayer_MouseMove"
+                           MouseLeave="InteractiveLayer_MouseLeave"/>
+
+                <!-- Volume Popup (visible only during drag) -->
                 <Popup x:Name="VolumePopup"
                        Placement="Relative"
                        PlacementTarget="{Binding ElementName=VolumeContainer}"
@@ -82,12 +90,6 @@
                     </Border>
                 </Popup>
 
-                <Rectangle x:Name="InteractiveLayer"
-                           Fill="Transparent"
-                           MouseDown="InteractiveLayer_MouseDown"
-                           MouseUp="InteractiveLayer_MouseUp"
-                           MouseMove="InteractiveLayer_MouseMove"
-                           MouseLeave="InteractiveLayer_MouseLeave"/>
             </Grid>
         </Border>
     </Grid>
