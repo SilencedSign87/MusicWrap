@@ -66,15 +66,10 @@
             <!--Controls-->
             <Grid Grid.Column="1" HorizontalAlignment="Stretch">
                 <controls:WaveformPlayerControl
+                    x:Name="WaveformPlayer"
                     Margin="16,4"
                             HorizontalAlignment="Stretch"
-                            WaveformData="{Binding Waveform}"
-                            Position="{Binding CurrentPosition}"
-                            Duration="{Binding Duration}"
                             DominantColorHex="#ffffff"
-                            SeekStarted="WaveformPlayerControl_SeekStarted"
-                            SeekEnded="WaveformPlayerControl_SeekEnded"
-                            SeekCanceled="WaveformPlayerControl_SeekCanceled"
                             />
             </Grid>
 
@@ -82,9 +77,9 @@
             <Grid Grid.Column="2">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <TextBlock VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11">
-                        <Run Text="{Binding FormattedPosition}"/>
+                        <Run Text="{Binding FormattedPosition, ElementName=WaveformPlayer, Mode=OneWay}"/>
                         <Run Text="/"/>
-                        <Run Text="{Binding FormattedDuration}"/>
+                        <Run Text="{Binding FormattedDuration, ElementName=WaveformPlayer, Mode=OneWay}"/>
                     </TextBlock>
                     <Button x:Name="RepeadButton" Style="{StaticResource PlayerButton}" Padding="0" Width="40" Height="40" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>

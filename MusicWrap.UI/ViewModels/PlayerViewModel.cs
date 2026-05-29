@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System.Windows.Threading;
 using MusicWrap.UI.Services;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
@@ -18,11 +17,6 @@ namespace MusicWrap.UI.ViewModels
         private bool _disposed = false;
         private readonly IMusicPlayerService _playerService;
         private readonly ILibraryService _libraryService;
-        //private readonly MusicLibrary _library;
-
-        private readonly DispatcherTimer _uiPositionTmer;
-        private double _lastEnginePosition = 0;
-        private DateTime _lastEnginePositionAtUTC = DateTime.UtcNow;
 
         [ObservableProperty]
         private bool isPlaying = false;
@@ -77,33 +71,28 @@ namespace MusicWrap.UI.ViewModels
         private string? currentTrackDominantColorHex;
         [ObservableProperty]
         private string? currentTrackForegroundColorHex;
-        [ObservableProperty]
-        private double currentPosition = 0;
 
-        [ObservableProperty]
-        private double duration = 0;
+        //[ObservableProperty] private double currentPosition = 0;
 
-        [ObservableProperty] private float[] waveform;
+        //[ObservableProperty] private double duration = 0;
 
-        [ObservableProperty]
-        private string formattedPosition = "0:00";
+        //[ObservableProperty] private float[] waveform;
 
-        [ObservableProperty]
-        private string formattedDuration = "0:00";
+        //[ObservableProperty] private string formattedPosition = "0:00";
 
-        [ObservableProperty]
-        private float volume = 1.0f;
+        //[ObservableProperty] private string formattedDuration = "0:00";
 
-        [ObservableProperty]
-        private string playPauseIcon = "\ue768"; // Play icon
+        //[ObservableProperty] private float volume = 1.0f;
 
-        [ObservableProperty]
-        private bool isMuted = false;
-        private float previousVolume = 1.0f;
-        [ObservableProperty]
-        private string muteButtonIcon = "\xE767"; // Volume on icon
+        [ObservableProperty] private string playPauseIcon = "\ue768"; // Play icon
 
-        private bool _isSeekingPosition = false;
+        //[ObservableProperty] private bool isMuted = false;
+
+        //private float previousVolume = 1.0f;
+
+        //[ObservableProperty] private string muteButtonIcon = "\xE767"; // Volume on icon
+
+        //private bool _isSeekingPosition = false;
         private string ArtworkPath = "";
 
         private readonly IImageService _imageService;
@@ -123,77 +112,73 @@ namespace MusicWrap.UI.ViewModels
             // Subscribe to player events
             _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
             _playerService.TrackChanged += OnTrackChanged;
-            _playerService.PositionChanged += OnPositionChanged;
-            _playerService.WaveformDataChanged += _playerService_WaveformDataChanged;
-            _playerService.VolumeChanged += _playerService_VolumeChanged;
             _playerService.ShuffleStateChanged += _playerService_ShuffleStateChanged;
+            //_playerService.WaveformDataChanged += _playerService_WaveformDataChanged;
+            //_playerService.PositionChanged += OnPositionChanged;
+            //_playerService.VolumeChanged += _playerService_VolumeChanged;
 
             // Load initial states
             UpdateDJButtonIcon();
             UpdateRepeatModeIcon();
             UpdateShuffleState();
-            Waveform = _playerService.CurrentWaveformData;
-            Volume = _playerService.Volume;
-            RestorePlaybackState();
 
-            _uiPositionTmer = new DispatcherTimer(DispatcherPriority.Render)
-            {
-                Interval = TimeSpan.FromMilliseconds(33)
-            };
-            _uiPositionTmer.Tick += UiPositionTimerOnTick;
-            _uiPositionTmer.Start();
+            UpdateCurrentTrackInfo();
+            //Waveform = _playerService.CurrentWaveformData;
+            //Volume = _playerService.Volume;
+            //RestorePlaybackState();
+
+            //_uiPositionTmer = new DispatcherTimer(DispatcherPriority.Render)
+            //{
+            //    Interval = TimeSpan.FromMilliseconds(33)
+            //};
+            //_uiPositionTmer.Tick += UiPositionTimerOnTick;
+            //_uiPositionTmer.Start();
 
             // Initialize state
             UpdatePlaybackState(_playerService.IsPlaying);
         }
 
-        private void RestorePlaybackState()
-        {
-            var settings = App.Services.GetRequiredService<UserSettings>();
-            if (settings == null)
-            {
-                SyncCurrentTrackStateFromPlayer();
-                return;
-            }
+        //private void RestorePlaybackState()
+        //{
+        //    var settings = App.Services.GetRequiredService<UserSettings>();
+        //    if (settings == null)
+        //    {
+        //        SyncCurrentTrackStateFromPlayer();
+        //        return;
+        //    }
 
-            _playerService.LoadInitialState();
+        //    _playerService.LoadInitialState();
 
-            SyncCurrentTrackStateFromPlayer();
-        }
-
-        private void _playerService_VolumeChanged(object? sender, float e)
-        {
-            if (Math.Abs(Volume - e) > 0.0001f)
-                Volume = e;
-        }
+        //    SyncCurrentTrackStateFromPlayer();
+        //}
 
         private void _playerService_ShuffleStateChanged(object? sender, bool enabled)
         {
             Application.Current?.Dispatcher.Invoke(UpdateShuffleState);
         }
 
-        private void _playerService_WaveformDataChanged(object? sender, float[] e)
-        {
-            Waveform = e.Length == 0 ? Array.Empty<float>() : [.. e];
-        }
+        //private void _playerService_WaveformDataChanged(object? sender, float[] e)
+        //{
+        //    Waveform = e.Length == 0 ? Array.Empty<float>() : [.. e];
+        //}
 
-        [RelayCommand]
-        private void ToggleMute()
-        {
-            if (IsMuted)
-            {
-                Volume = previousVolume;
-                IsMuted = false;
-                UpdateVolumeIcon(Volume);
-            }
-            else
-            {
-                previousVolume = Volume;
-                Volume = 0;
-                IsMuted = true;
-                MuteButtonIcon = "\xE74F";
-            }
-        }
+        //[RelayCommand]
+        //private void ToggleMute()
+        //{
+        //    if (IsMuted)
+        //    {
+        //        Volume = previousVolume;
+        //        IsMuted = false;
+        //        UpdateVolumeIcon(Volume);
+        //    }
+        //    else
+        //    {
+        //        previousVolume = Volume;
+        //        Volume = 0;
+        //        IsMuted = true;
+        //        MuteButtonIcon = "\xE74F";
+        //    }
+        //}
 
         [RelayCommand]
         private void PlayPause()
@@ -220,49 +205,49 @@ namespace MusicWrap.UI.ViewModels
             _playerService.Previous();
         }
 
-        [RelayCommand]
-        private void Seek(double position)
-        {
-            _playerService.Seek(position);
-        }
+        //[RelayCommand]
+        //private void Seek(double position)
+        //{
+        //    _playerService.Seek(position);
+        //}
 
-        [RelayCommand]
-        private void StartSeeking()
-        {
-            _isSeekingPosition = true;
-        }
+        //[RelayCommand]
+        //private void StartSeeking()
+        //{
+        //    _isSeekingPosition = true;
+        //}
 
-        [RelayCommand]
-        private void EndSeeking(double position)
-        {
-            var target = Math.Clamp(position, 0, Duration > 0 ? Duration : position);
+        //[RelayCommand]
+        //private void EndSeeking(double position)
+        //{
+        //    var target = Math.Clamp(position, 0, Duration > 0 ? Duration : position);
 
-            _lastEnginePosition = target;
-            _lastEnginePositionAtUTC = DateTime.UtcNow;
+        //    _lastEnginePosition = target;
+        //    _lastEnginePositionAtUTC = DateTime.UtcNow;
 
-            CurrentPosition = target;
-            UpdateFormattedPosition(target);
+        //    CurrentPosition = target;
+        //    UpdateFormattedPosition(target);
 
-            _isSeekingPosition = false;
+        //    _isSeekingPosition = false;
 
-            _playerService.Seek(target);
-        }
+        //    _playerService.Seek(target);
+        //}
 
-        [RelayCommand]
-        private void CancelSeeking()
-        {
+        //[RelayCommand]
+        //private void CancelSeeking()
+        //{
 
-            double enginePosition = _playerService.CurrentPosition;
-            double target = Math.Clamp(enginePosition, 0, Duration > 0 ? Duration : enginePosition);
+        //    double enginePosition = _playerService.CurrentPosition;
+        //    double target = Math.Clamp(enginePosition, 0, Duration > 0 ? Duration : enginePosition);
 
-            _lastEnginePosition = target;
-            _lastEnginePositionAtUTC = DateTime.UtcNow;
+        //    _lastEnginePosition = target;
+        //    _lastEnginePositionAtUTC = DateTime.UtcNow;
 
-            CurrentPosition = target;
-            UpdateFormattedPosition(target);
+        //    CurrentPosition = target;
+        //    UpdateFormattedPosition(target);
 
-            _isSeekingPosition = false;
-        }
+        //    _isSeekingPosition = false;
+        //}
 
         [RelayCommand]
         private void CicleRepeatMode()
@@ -329,44 +314,44 @@ namespace MusicWrap.UI.ViewModels
             DjButtonIcon = IsDJOn ? "\ue7f6" : "\ue738"; // DJ On : DJ Off
             DjTooltip = IsDJOn ? "DJ mode is ON" : "DJ mode is OFF";
         }
-        partial void OnVolumeChanged(float value)
-        {
-            if (IsMuted && value > 0)
-            {
-                IsMuted = false;
-            }
-            if (!IsMuted)
-            {
-                UpdateVolumeIcon(value);
-            }
-            if (Math.Abs(_playerService.Volume - value) > 0.0001f)
-                _playerService.SetVolume(value);
-            //_playerService.SetVolume(value);
-        }
-        private void UpdateVolumeIcon(float value)
-        {
-            switch (value)
-            {
-                case 0:
-                    MuteButtonIcon = "\xE992";
-                    break;
-                case < 0.35f:
-                    MuteButtonIcon = "\xE993";
-                    break;
-                case < 0.75f:
-                    MuteButtonIcon = "\xE994";
-                    break;
-                default:
-                    MuteButtonIcon = "\xE767";
-                    break;
-            }
-        }
+        //partial void OnVolumeChanged(float value)
+        //{
+        //    if (IsMuted && value > 0)
+        //    {
+        //        IsMuted = false;
+        //    }
+        //    if (!IsMuted)
+        //    {
+        //        UpdateVolumeIcon(value);
+        //    }
+        //    if (Math.Abs(_playerService.Volume - value) > 0.0001f)
+        //        _playerService.SetVolume(value);
+        //    //_playerService.SetVolume(value);
+        //}
+        //private void UpdateVolumeIcon(float value)
+        //{
+        //    switch (value)
+        //    {
+        //        case 0:
+        //            MuteButtonIcon = "\xE992";
+        //            break;
+        //        case < 0.35f:
+        //            MuteButtonIcon = "\xE993";
+        //            break;
+        //        case < 0.75f:
+        //            MuteButtonIcon = "\xE994";
+        //            break;
+        //        default:
+        //            MuteButtonIcon = "\xE767";
+        //            break;
+        //    }
+        //}
 
-        private void SyncPredictionBaselineToEngine()
-        {
-            _lastEnginePosition = _playerService.CurrentPosition;
-            _lastEnginePositionAtUTC = DateTime.UtcNow;
-        }
+        //private void SyncPredictionBaselineToEngine()
+        //{
+        //    _lastEnginePosition = _playerService.CurrentPosition;
+        //    _lastEnginePositionAtUTC = DateTime.UtcNow;
+        //}
         private void OnPlaybackStateChanged(object? sender, PlaybackState state)
         {
             Application.Current?.Dispatcher.Invoke(() =>
@@ -375,7 +360,7 @@ namespace MusicWrap.UI.ViewModels
                 IsPaused = state == PlaybackState.Paused;
                 UpdatePlaybackState(IsPlaying);
 
-                SyncPredictionBaselineToEngine();
+                //SyncPredictionBaselineToEngine();
             });
         }
 
@@ -385,30 +370,30 @@ namespace MusicWrap.UI.ViewModels
             {
                 SyncCurrentTrackStateFromPlayer();
 
-                CurrentPosition = 0;
-                _lastEnginePosition = 0;
-                _lastEnginePositionAtUTC = DateTime.UtcNow;
-                UpdateFormattedPosition(0);
-                Duration = _playerService.Duration;
-                FormattedDuration = FormatTime(Duration);
+                //CurrentPosition = 0;
+                //_lastEnginePosition = 0;
+                //_lastEnginePositionAtUTC = DateTime.UtcNow;
+                //UpdateFormattedPosition(0);
+                //Duration = _playerService.Duration;
+                //FormattedDuration = FormatTime(Duration);
             });
         }
 
-        private void OnPositionChanged(object? sender, double position)
-        {
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                _lastEnginePosition = position;
-                _lastEnginePositionAtUTC = DateTime.UtcNow;
+        //private void OnPositionChanged(object? sender, double position)
+        //{
+        //    Application.Current?.Dispatcher.Invoke(() =>
+        //    {
+        //        _lastEnginePosition = position;
+        //        _lastEnginePositionAtUTC = DateTime.UtcNow;
 
-                if (!_isSeekingPosition)
-                {
-                    CurrentPosition = position;
-                    //FormattedPosition = FormatTime(position);
-                    UpdateFormattedPosition(position);
-                }
-            });
-        }
+        //        if (!_isSeekingPosition)
+        //        {
+        //            CurrentPosition = position;
+        //            //FormattedPosition = FormatTime(position);
+        //            UpdateFormattedPosition(position);
+        //        }
+        //    });
+        //}
 
         private void UpdatePlaybackState(bool playing)
         {
@@ -502,26 +487,31 @@ namespace MusicWrap.UI.ViewModels
         {
             UpdateCurrentTrackInfo();
 
-            var currentIndex = _playerService.CurrentIndex;
-            if (currentIndex < 0)
+            if (_playerService.CurrentIndex <= 0)
             {
-                CurrentPosition = 0;
-                Duration = 0;
-                FormattedPosition = "0:00";
-                FormattedDuration = "0:00";
                 UpdatePlaybackState(false);
-                return;
             }
 
-            Duration = _playerService.Duration;
-            FormattedDuration = FormatTime(Duration);
+            //var currentIndex = _playerService.CurrentIndex;
+            //if (currentIndex < 0)
+            //{
+            //    CurrentPosition = 0;
+            //    Duration = 0;
+            //    FormattedPosition = "0:00";
+            //    FormattedDuration = "0:00";
+            //    UpdatePlaybackState(false);
+            //    return;
+            //}
 
-            var position = Math.Clamp(_playerService.CurrentPosition, 0, Duration > 0 ? Duration : _playerService.CurrentPosition);
-            CurrentPosition = position;
-            UpdateFormattedPosition(position);
-            _lastEnginePosition = position;
-            _lastEnginePositionAtUTC = DateTime.UtcNow;
-            _isSeekingPosition = false;
+            //Duration = _playerService.Duration;
+            //FormattedDuration = FormatTime(Duration);
+
+            //var position = Math.Clamp(_playerService.CurrentPosition, 0, Duration > 0 ? Duration : _playerService.CurrentPosition);
+            //CurrentPosition = position;
+            //UpdateFormattedPosition(position);
+            //_lastEnginePosition = position;
+            //_lastEnginePositionAtUTC = DateTime.UtcNow;
+            //_isSeekingPosition = false;
         }
 
         private void ClearCurrentTrackInfo()
@@ -541,63 +531,63 @@ namespace MusicWrap.UI.ViewModels
             ArtworkPath = string.Empty;
         }
 
-        private static string FormatTime(double seconds)
-        {
-            var time = TimeSpan.FromSeconds(seconds);
-            if (time.TotalHours >= 1)
-            {
-                return time.ToString(@"h\:mm\:ss");
-            }
-            return time.ToString(@"m\:ss");
-        }
+        //private static string FormatTime(double seconds)
+        //{
+        //    var time = TimeSpan.FromSeconds(seconds);
+        //    if (time.TotalHours >= 1)
+        //    {
+        //        return time.ToString(@"h\:mm\:ss");
+        //    }
+        //    return time.ToString(@"m\:ss");
+        //}
 
-        private void UiPositionTimerOnTick(object? sender, EventArgs e)
-        {
-            if (_isSeekingPosition || Duration <= 0) return;
+        //private void UiPositionTimerOnTick(object? sender, EventArgs e)
+        //{
+        //    if (_isSeekingPosition || Duration <= 0) return;
 
-            if (!IsPlaying || _playerService.IsPaused || !_playerService.IsPlaying)
-            {
-                return;
-            }
+        //    if (!IsPlaying || _playerService.IsPaused || !_playerService.IsPlaying)
+        //    {
+        //        return;
+        //    }
 
-            var elapsed = (DateTime.UtcNow - _lastEnginePositionAtUTC).TotalSeconds;
-            var predicted = _lastEnginePosition + elapsed;
-            if (predicted < 0) predicted = 0;
-            if (predicted > Duration) predicted = Duration;
+        //    var elapsed = (DateTime.UtcNow - _lastEnginePositionAtUTC).TotalSeconds;
+        //    var predicted = _lastEnginePosition + elapsed;
+        //    if (predicted < 0) predicted = 0;
+        //    if (predicted > Duration) predicted = Duration;
 
-            if (Math.Abs(predicted - CurrentPosition) >= 0.01)
-            {
-                CurrentPosition = predicted;
-                UpdateFormattedPosition(predicted);
-            }
-        }
-        private void UpdateFormattedPosition(double position)
-        {
-            var time = TimeSpan.FromSeconds(position);
-            if (time.TotalHours >= 1)
-            {
-                FormattedPosition = time.ToString(@"h\:mm\:ss");
-            }
-            else
-            {
-                FormattedPosition = time.ToString(@"m\:ss");
-            }
-        }
+        //    if (Math.Abs(predicted - CurrentPosition) >= 0.01)
+        //    {
+        //        CurrentPosition = predicted;
+        //        UpdateFormattedPosition(predicted);
+        //    }
+        //}
+        //private void UpdateFormattedPosition(double position)
+        //{
+        //    var time = TimeSpan.FromSeconds(position);
+        //    if (time.TotalHours >= 1)
+        //    {
+        //        FormattedPosition = time.ToString(@"h\:mm\:ss");
+        //    }
+        //    else
+        //    {
+        //        FormattedPosition = time.ToString(@"m\:ss");
+        //    }
+        //}
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
 
-            _uiPositionTmer.Stop();
-            _uiPositionTmer.Tick -= UiPositionTimerOnTick;
+            //_uiPositionTmer.Stop();
+            //_uiPositionTmer.Tick -= UiPositionTimerOnTick;
 
             _playerService.PlaybackStateChanged -= OnPlaybackStateChanged;
             _playerService.TrackChanged -= OnTrackChanged;
-            _playerService.PositionChanged -= OnPositionChanged;
-            _playerService.WaveformDataChanged -= _playerService_WaveformDataChanged;
+            //_playerService.PositionChanged -= OnPositionChanged;
+            //_playerService.WaveformDataChanged -= _playerService_WaveformDataChanged;
             _playerService.ShuffleStateChanged -= _playerService_ShuffleStateChanged;
 
-            Waveform = Array.Empty<float>();
+            //Waveform = Array.Empty<float>();
         }
     }
 }

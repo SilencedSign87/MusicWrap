@@ -31,6 +31,7 @@ namespace MusicWrap.UI.Shell.Windows
         private void CompactPlayer_Closed(object? sender, EventArgs e)
         {
             Closed -= CompactPlayer_Closed;
+            _viewModel?.Dispose();
         }
 
         private void InitializeWindowSize()
@@ -107,29 +108,29 @@ namespace MusicWrap.UI.Shell.Windows
             VolumePopup.IsOpen = true;
         }
 
-        private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
-        {
-            if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
-            {
-                _viewModel.StartSeekingCommand.Execute(null);
-            }
-        }
+        //private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
+        //{
+        //    if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
+        //    {
+        //        _viewModel.StartSeekingCommand.Execute(null);
+        //    }
+        //}
 
-        private void WaveformPlayerControl_SeekEnded(object sender, double e)
-        {
-            if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
-            {
-                _viewModel.EndSeekingCommand.Execute(e);
-            }
-        }
+        //private void WaveformPlayerControl_SeekEnded(object sender, double e)
+        //{
+        //    if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
+        //    {
+        //        _viewModel.EndSeekingCommand.Execute(e);
+        //    }
+        //}
 
-        private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
-        {
-            if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
-            {
-                _viewModel.CancelSeekingCommand.Execute(null);
-            }
-        }
+        //private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
+        //{
+        //    if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
+        //    {
+        //        _viewModel.CancelSeekingCommand.Execute(null);
+        //    }
+        //}
     }
 }
 

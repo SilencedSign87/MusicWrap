@@ -4,9 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Controls"
-             xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Shared.Controls.ViewModel"
              mc:Ignorable="d"
-             d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
+             d:DataContext="{d:DesignInstance Type=vm:VolumeControlViewModel}"
              Loaded="UserControl_Loaded"
              SizeChanged="UserControl_SizeChanged"
              d:DesignHeight="32" d:DesignWidth="200">

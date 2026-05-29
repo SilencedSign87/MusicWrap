@@ -12,6 +12,7 @@
         ShowInTaskbar="False"
         Topmost="True"
         Height="100" 
+        x:Name="RootWindow"
         Width="350"
         WindowStyle="SingleBorderWindow"
         Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
@@ -107,7 +108,7 @@
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
                     </Button>
                     <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Volume">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="14"/>
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE767;" FontSize="14"/>
                     </Button>
                 </StackPanel>
                 <Popup
@@ -133,7 +134,7 @@
                                         Opacity="0.5"/>
                             </Border.Effect>
                             <StackPanel>
-                                <controls:VolumeControl DominantColorHex="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}"  
+                                <controls:VolumeControl DominantColorHex="{Binding DataContext.CurrentTrackForegroundColorHex, ElementName=RootWindow,  Converter={StaticResource HexToBrushConverter}}"  
                                                         Orientation="Horizontal"
                                                         Width="120"
                                                         ShowMuteButton="True"

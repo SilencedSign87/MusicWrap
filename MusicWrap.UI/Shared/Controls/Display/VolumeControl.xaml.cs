@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Shared.Controls.ViewModel;
 using MusicWrap.UI.ViewModels;
 using System;
 using System.ComponentModel;
@@ -11,9 +12,10 @@ namespace MusicWrap.UI.Controls
 {
     public partial class VolumeControl : UserControl
     {
-        private readonly PlayerViewModel playerViewModel;
+        private readonly VolumeControlViewModel _viewModel;
         private bool isDragging;
         private bool isSubscribed;
+        private bool isDisposed;
 
         private const double MaxThickness = 12d;
         private const double InnerPadding = 2d;
@@ -26,29 +28,30 @@ namespace MusicWrap.UI.Controls
             Loaded += VolumeControl_Loaded;
             Unloaded += VolumeControl_Unloaded;
 
-            playerViewModel = App.Services.GetRequiredService<PlayerViewModel>();
-            DataContext = playerViewModel;
+            _viewModel = App.Services.GetRequiredService<VolumeControlViewModel>();
+            DataContext = _viewModel;
         }
 
         private void VolumeControl_Loaded(object sender, RoutedEventArgs e)
         {
             if (!isSubscribed)
             {
-                playerViewModel.PropertyChanged += PlayerViewModel_PropertyChanged;
+                _viewModel.PropertyChanged += PlayerViewModel_PropertyChanged;
                 isSubscribed = true;
             }
             ApplyLayout();
-            UpdateVolumeVisual(playerViewModel.Volume);
+            UpdateVolumeVisual(_viewModel.Volume);
         }
 
         private void VolumeControl_Unloaded(object sender, RoutedEventArgs e)
         {
             if (isSubscribed)
             {
-                playerViewModel.PropertyChanged -= PlayerViewModel_PropertyChanged;
+                _viewModel.PropertyChanged -= PlayerViewModel_PropertyChanged;
                 Loaded -= VolumeControl_Loaded;
                 Unloaded -= VolumeControl_Unloaded;
                 isSubscribed = false;
+                //_viewModel.Dispose();
             }
             isDragging = false;
             HideVolumePopup();
@@ -88,15 +91,15 @@ namespace MusicWrap.UI.Controls
             if (d is VolumeControl control)
             {
                 control.ApplyLayout();
-                control.UpdateVolumeVisual(control.playerViewModel.Volume);
+                control.UpdateVolumeVisual(control._viewModel.Volume);
             }
         }
 
         private void PlayerViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(PlayerViewModel.Volume))
+            if (e.PropertyName == nameof(VolumeControlViewModel.Volume))
             {
-                UpdateVolumeVisual(playerViewModel.Volume);
+                UpdateVolumeVisual(_viewModel.Volume);
             }
         }
 
@@ -105,14 +108,14 @@ namespace MusicWrap.UI.Controls
             Dispatcher.BeginInvoke(() =>
             {
                 ApplyLayout();
-                UpdateVolumeVisual(playerViewModel.Volume);
+                UpdateVolumeVisual(_viewModel.Volume);
             }, DispatcherPriority.Loaded);
         }
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             ApplyLayout();
-            UpdateVolumeVisual(playerViewModel.Volume);
+            UpdateVolumeVisual(_viewModel.Volume);
         }
 
         private void ApplyLayout()
@@ -240,7 +243,7 @@ namespace MusicWrap.UI.Controls
         private void SetVolumeFromMouse(MouseEventArgs e)
         {
             var (normalized, _) = GetNormalizedFromMouse(e);
-            playerViewModel.Volume = (float)normalized;
+            _viewModel.Volume = (float)normalized;
         }
 
         private void UpdateVolumePopup(MouseEventArgs e)

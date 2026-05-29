@@ -32,32 +32,32 @@ namespace MusicWrap.UI.Features.Playback.Views
 
         }
 
-        private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
-        {
+        //private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
+        //{
 
-            if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
-            {
-                _viewModel.StartSeekingCommand.Execute(null);
-            }
-        }
+        //    if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
+        //    {
+        //        _viewModel.StartSeekingCommand.Execute(null);
+        //    }
+        //}
 
-        private void WaveformPlayerControl_SeekEnded(object sender, double e)
-        {
+        //private void WaveformPlayerControl_SeekEnded(object sender, double e)
+        //{
 
-            if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
-            {
-                _viewModel.EndSeekingCommand.Execute(e);
-            }
-        }
+        //    if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
+        //    {
+        //        _viewModel.EndSeekingCommand.Execute(e);
+        //    }
+        //}
 
-        private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
-        {
+        //private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
+        //{
 
-            if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
-            {
-                _viewModel.CancelSeekingCommand.Execute(null);
-            }
-        }
+        //    if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
+        //    {
+        //        _viewModel.CancelSeekingCommand.Execute(null);
+        //    }
+        //}
     }
 }
 

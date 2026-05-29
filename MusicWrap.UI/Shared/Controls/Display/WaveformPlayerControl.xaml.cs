@@ -1,3 +1,6 @@
+using Acornima;
+using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Playback;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace MusicWrap.UI.Controls
 {
@@ -19,45 +23,53 @@ namespace MusicWrap.UI.Controls
     /// </summary>
     public partial class WaveformPlayerControl : UserControl
     {
+        // Services
+        private readonly IMusicPlayerService _musicService;
+        private readonly DispatcherTimer _positionTimer;
+        // Data
+        private float[] _waveformData = Array.Empty<float>();
+
+        // State
+        private double _position = 0;
+        private double _duration = 0;
+        private double _lastEnginePosition = 0;
+        private DateTime _lastEnginePositionAtUTC = DateTime.MinValue;
+
+        private bool _isSeeking = false;
+        private bool _isPlaying = false;
+
         private bool _isDragging = false;
         private bool _dragCanceled = false;
+
         private const double minWavePointHeight = 0.5;
         private UIElement? _dragCaptureElement;
+
+        private bool _disposed = false;
 
         public WaveformPlayerControl()
         {
             InitializeComponent();
+            _musicService = App.Services.GetRequiredService<IMusicPlayerService>();
+            _positionTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(33)
+            };
+            _positionTimer.Tick += _positionTimer_Tick;
+
+            Loaded += WaveformPlayerControl_Loaded;
+            Unloaded += WaveformPlayerControl_Unloaded;
         }
 
         #region Dependency Properties
 
-        public static readonly DependencyProperty WaveformDataProperty =
-            DependencyProperty.Register("WaveformData", typeof(float[]), typeof(WaveformPlayerControl),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender, OnWaveformDataChanged));
-        public float[] WaveformData
-        {
-            get => (float[])GetValue(WaveformDataProperty);
-            set => SetValue(WaveformDataProperty, value);
-        }
-        public static readonly DependencyProperty PositionProperty =
-           DependencyProperty.Register("Position", typeof(double), typeof(WaveformPlayerControl),
-               new FrameworkPropertyMetadata(0.0, FrameworkPropertyMetadataOptions.AffectsRender, OnProgressChanged));
-
-        public double Position
-        {
-            get => (double)GetValue(PositionProperty);
-            set => SetValue(PositionProperty, value);
-        }
-
-        public static readonly DependencyProperty DurationProperty =
-            DependencyProperty.Register("Duration", typeof(double), typeof(WaveformPlayerControl),
-                new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender, OnProgressChanged));
-
-        public double Duration
-        {
-            get => (double)GetValue(DurationProperty);
-            set => SetValue(DurationProperty, value);
-        }
+        private static readonly DependencyPropertyKey FormattedPositionPropertyKey =
+          DependencyProperty.RegisterReadOnly(nameof(FormattedPosition), typeof(string), typeof(WaveformPlayerControl),
+              new PropertyMetadata("0:00"));
+        public string FormattedPosition => (string)GetValue(FormattedPositionPropertyKey.DependencyProperty);
+        private static readonly DependencyPropertyKey FormattedDurationPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(FormattedDuration), typeof(string), typeof(WaveformPlayerControl),
+                new PropertyMetadata("0:00"));
+        public string FormattedDuration => (string)GetValue(FormattedDurationPropertyKey.DependencyProperty);
 
         public static readonly DependencyProperty DominantColorHexProperty =
     DependencyProperty.Register(
@@ -74,31 +86,121 @@ namespace MusicWrap.UI.Controls
 
         #endregion
 
-        #region Events
+        //#region Events
 
-        public event EventHandler? SeekStarted;
-        public event EventHandler<double>? SeekEnded;
-        public event EventHandler? SeekCanceled;
+        //public event EventHandler? SeekStarted;
+        //public event EventHandler<double>? SeekEnded;
+        //public event EventHandler? SeekCanceled;
 
-        #endregion
+        //#endregion
 
-        private static void OnWaveformDataChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        #region Lifecycle
+
+        private void WaveformPlayerControl_Loaded(object sender, RoutedEventArgs e)
         {
-            ((WaveformPlayerControl)d).DrawWaveform();
+            _musicService.PositionChanged += OnServicePositionChanged;
+            _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
+            _musicService.TrackChanged += OnServiceTrackChanged;
+            _musicService.PlaybackStateChanged += OnServicePlaybackStateChanged;
+
+            _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
+            _duration = _musicService.Duration;
+            _isPlaying = _musicService.IsPlaying;
+            SyncBaseline();
+
+            DrawWaveform();
+            UpdateProgressVisual(_position);
+            UpdateFormattedDuration();
+            _positionTimer.Start();
         }
 
-        private static void OnProgressChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private void WaveformPlayerControl_Unloaded(object sender, RoutedEventArgs e)
         {
-            var control = (WaveformPlayerControl)d;
-            if (!control._isDragging)
+            _positionTimer.Stop();
+            _musicService.PositionChanged -= OnServicePositionChanged;
+            _musicService.WaveformDataChanged -= OnServiceWaveformDataChanged;
+            _musicService.TrackChanged -= OnServiceTrackChanged;
+            _musicService.PlaybackStateChanged -= OnServicePlaybackStateChanged;
+
+        }
+
+        private void _positionTimer_Tick(object? sender, EventArgs e)
+        {
+            if (_isSeeking || _isDragging || _duration <= 0 || !_isPlaying) return;
+            var elapsed = (DateTime.UtcNow - _lastEnginePositionAtUTC).TotalSeconds;
+            var predicted = _lastEnginePosition + elapsed;
+            predicted = Math.Clamp(predicted, 0, _duration);
+            if (Math.Abs(predicted - _position) >= 0.01)
             {
-                control.UpdateProgressVisual(control.Position);
+                _position = predicted;
+                UpdateProgressVisual(predicted);
+                UpdateFormattedPosition(predicted);
             }
         }
+        #endregion
+
+        #region Service Events
+        private void OnServicePositionChanged(object? sender, double position)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                _lastEnginePosition = position;
+                _lastEnginePositionAtUTC = DateTime.UtcNow;
+
+                if (!_isSeeking && !_isDragging)
+                {
+                    _position = position;
+                    UpdateProgressVisual(position);
+                    UpdateFormattedPosition(position);
+                }
+            });
+        }
+        private void OnServiceWaveformDataChanged(object? sender, float[] e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                _waveformData = e.Length > 0 ? e : Array.Empty<float>();
+                DrawWaveform();
+            });
+        }
+        private void OnServiceTrackChanged(object? sender, string e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                _waveformData = _musicService.CurrentWaveformData;
+                _position = 0;
+                _duration = _musicService.Duration;
+                SyncBaseline();
+                DrawWaveform();
+                UpdateProgressVisual(0);
+                UpdateFormattedPosition(0);
+                UpdateFormattedDuration();
+            });
+        }
+        private void OnServicePlaybackStateChanged(object? sender, Data.Library.Models.PlaybackState state)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                _isPlaying = state == Data.Library.Models.PlaybackState.Playing;
+
+                if (_isPlaying)
+                    SyncBaseline();
+            });
+        }
+        #endregion
+
+        private void SyncBaseline()
+        {
+            _lastEnginePosition = _musicService.CurrentPosition;
+            _lastEnginePositionAtUTC = DateTime.UtcNow;
+        }
+
+        #region Rendering
+
 
         private void DrawWaveform()
         {
-            if (WaveformData == null || WaveformData.Length == 0 || ActualWidth == 0 || ActualHeight == 0)
+            if (_waveformData == null || _waveformData.Length == 0 || ActualWidth == 0 || ActualHeight == 0)
             {
                 PathBackground.Data = null;
                 PathForeground.Data = null;
@@ -116,18 +218,18 @@ namespace MusicWrap.UI.Controls
                 context.BeginFigure(new Point(0, midY), true, true);
 
                 // draw up
-                for (int i = 0; i < WaveformData.Length; i++)
+                for (int i = 0; i < _waveformData.Length; i++)
                 {
-                    double x = (i / (double)(WaveformData.Length - 1)) * width;
-                    double amplitude = Math.Max(WaveformData[i] * midY, minWavePointHeight); // ensure minimum height
+                    double x = (i / (double)(_waveformData.Length - 1)) * width;
+                    double amplitude = Math.Max(_waveformData[i] * midY, minWavePointHeight); // ensure minimum height
                     double y = midY - amplitude;
                     context.LineTo(new Point(x, y), true, false);
                 }
                 // draw down (mirrored)
-                for (int i = WaveformData.Length - 1; i >= 0; i--)
+                for (int i = _waveformData.Length - 1; i >= 0; i--)
                 {
-                    double x = (i / (double)(WaveformData.Length - 1)) * width;
-                    double amplitude = Math.Max(WaveformData[i] * midY, minWavePointHeight); // ensure minimum height
+                    double x = (i / (double)(_waveformData.Length - 1)) * width;
+                    double amplitude = Math.Max(_waveformData[i] * midY, minWavePointHeight); // ensure minimum height
                     double y = midY + amplitude;
                     context.LineTo(new Point(x, y), true, false);
                 }
@@ -136,19 +238,19 @@ namespace MusicWrap.UI.Controls
             PathBackground.Data = geometry;
             PathForeground.Data = geometry;
 
-            UpdateProgressVisual(Position);
+            UpdateProgressVisual(_position);
         }
 
         private void UpdateProgressVisual(double currentPosition)
         {
-            if (ActualWidth <= 0 || ActualHeight <= 0 || Duration <= 0)
+            if (ActualWidth <= 0 || ActualHeight <= 0 || _duration <= 0)
             {
                 ProgressClip.Rect = new Rect(0, 0, 0, 0);
                 PositionThumb.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            double percentage = Math.Clamp(currentPosition / Duration, 0, 1);
+            double percentage = Math.Clamp(currentPosition / _duration, 0, 1);
             double x = ActualWidth * percentage;
 
             ProgressClip.Rect = new Rect(0, 0, x, ActualHeight);
@@ -159,12 +261,13 @@ namespace MusicWrap.UI.Controls
             PositionThumb.Y2 = ActualHeight;
             PositionThumb.Visibility = Visibility.Visible;
         }
+        #endregion
 
         #region Mouse Events
 
         private void Rectangle_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && Duration > 0)
+            if (e.LeftButton == MouseButtonState.Pressed && _duration > 0)
             {
                 _dragCanceled = false;
                 _isDragging = true;
@@ -173,8 +276,6 @@ namespace MusicWrap.UI.Controls
 
                 Focus();
                 Keyboard.Focus(this);
-
-                SeekStarted?.Invoke(this, EventArgs.Empty); // notify the viewmodel to stop updating the position while dragging
 
                 double mousex = e.GetPosition(this).X;
                 UpdateVisualFromMouse(mousex);
@@ -200,6 +301,7 @@ namespace MusicWrap.UI.Controls
 
             _isDragging = false;
             HideSeekPopup();
+
             if (_dragCaptureElement is not null)
             {
                 _dragCaptureElement.ReleaseMouseCapture();
@@ -208,74 +310,60 @@ namespace MusicWrap.UI.Controls
             if (_dragCanceled)
             {
                 _dragCanceled = false;
+                _isSeeking = false;
                 e.Handled = true;
                 return;
             }
             double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0, 1);
-            double NewPosition = percentage * Duration;
-            SeekEnded?.Invoke(this, NewPosition);
+            double target = percentage * _duration;
+
+            _musicService.Seek(target);
+            SyncBaseline();
+            _isSeeking = false;
+            _position = target;
+            UpdateProgressVisual(target);
+            UpdateFormattedPosition(target);
+
             e.Handled = true;
         }
         private void Rectangle_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (_isDragging)
-            {
-                CancelSeek();
-                e.Handled = true;
-            }
+            if (!_isDragging) return;
+
+            CancelSeek();
+            e.Handled = true;
+
         }
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape && _isDragging)
-            {
-                CancelSeek();
-                e.Handled = true;
-            }
+            if (e.Key != Key.Escape || !_isDragging) return;
+
+            CancelSeek();
+            e.Handled = true;
+
         }
 
         private void UpdateVisualFromMouse(double mouseX)
         {
             double percentage = Math.Clamp(mouseX / ActualWidth, 0, 1);
-            double visualPosition = percentage * Duration;
+            double visualPosition = percentage * _duration;
             UpdateProgressVisual(visualPosition); // update mask
         }
         #endregion
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            DrawWaveform();
-            UpdateProgressVisual(Position);
-        }
-
-        private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            DrawWaveform();
-            UpdateProgressVisual(Position);
-        }
-
-
-        private static string FormatTime(double seconds)
-        {
-            var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
-            if (ts.TotalHours >= 1)
-            {
-                return ts.ToString(@"h\:mm\:ss");
-            }
-
-            return ts.ToString(@"m\:ss");
-        }
+        #region Seek Popup
 
         private void UpdateSeekPopup(double mouseX)
         {
-            if (Duration <= 0 || ActualWidth <= 0)
+            if (_duration <= 0 || ActualWidth <= 0)
             {
                 return;
             }
 
             double clampedX = Math.Clamp(mouseX, 0, ActualWidth);
             double percentage = clampedX / ActualWidth;
-            double visualPosition = percentage * Duration;
+            double visualPosition = percentage * _duration;
 
             SeekPopupText.Text = FormatTime(visualPosition);
 
@@ -291,13 +379,12 @@ namespace MusicWrap.UI.Controls
 
         private void CancelSeek()
         {
-            if (!_isDragging)
-            {
-                return;
-            }
+            if (!_isDragging) return;
+            
 
             _dragCanceled = true;
             _isDragging = false;
+            _isSeeking = false;
 
             HideSeekPopup();
 
@@ -308,10 +395,36 @@ namespace MusicWrap.UI.Controls
             }
 
             // Vuelve al valor real del player.
-            UpdateProgressVisual(Position);
-
-            SeekCanceled?.Invoke(this, EventArgs.Empty);
+            UpdateProgressVisual(_position);
         }
+
+        #endregion
+
+        #region Loaded / Sizing
+        private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            DrawWaveform();
+            UpdateProgressVisual(_position);
+        }
+        #endregion
+
+        #region Formatting
+
+        private static string FormatTime(double seconds)
+        {
+            var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
+            return ts.TotalHours >= 1 ? ts.ToString(@"h\:mm\:ss") : ts.ToString(@"m\:ss");
+        }
+        private void UpdateFormattedPosition(double position)
+        {
+            SetValue(FormattedPositionPropertyKey, FormatTime(position));
+        }
+        private void UpdateFormattedDuration()
+        {
+            SetValue(FormattedDurationPropertyKey, FormatTime(_duration));
+        }
+        #endregion
+
     }
 }
 

@@ -29,6 +29,7 @@ using MusicWrap.UI.Features.Settings.ViewModels;
 using MusicWrap.UI.Features.State.Services;
 using MusicWrap.UI.Features.State.ViewModels;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Controls.ViewModel;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Windows;
@@ -115,6 +116,7 @@ public static class ServiceRegistration
         services.AddSingleton<QueueViewModel>();
         services.AddTransient<DeviceViewModel>();
         services.AddSingleton<PlayerViewModel>();
+        services.AddTransient<VolumeControlViewModel>();
         services.AddSingleton<CommandPaletteViewModel>();
         services.AddTransient<TaskbarIconViewModel>();
         services.AddTransient<MetadataEditorViewModel>();

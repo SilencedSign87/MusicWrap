@@ -125,23 +125,18 @@
                             <ColumnDefinition Width="20" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" 
-                            Text="{Binding FormattedPosition}" 
+                            Text="{Binding FormattedPosition, ElementName=WaveFormPlayer, Mode=OneWay}" 
                             FontWeight="Light" 
                             FontSize="11" 
                             VerticalAlignment="Center"/>
                         <Grid Grid.Column="1" Margin="8,4">
                             <controls:WaveformPlayerControl
-                                WaveformData="{Binding Waveform}"
-                                Position="{Binding CurrentPosition}"
-                                Duration="{Binding Duration}"
+                                x:Name="WaveFormPlayer"
                                 DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
-                                SeekStarted="WaveformPlayerControl_SeekStarted"
-                                SeekEnded="WaveformPlayerControl_SeekEnded"
-                                SeekCanceled="WaveformPlayerControl_SeekCanceled"
                             />
                         </Grid>
                         <TextBlock Grid.Column="2" 
-                            Text="{Binding FormattedDuration}" 
+                            Text="{Binding FormattedDuration, ElementName=WaveFormPlayer, Mode=OneWay}" 
                             FontWeight="Light" 
                             FontSize="11" 
                             VerticalAlignment="Center"/>
@@ -170,7 +165,7 @@
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding ShuffleIcon}" FontSize="14"/>
                         </Button>
                         <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource CompactPlayerButton}" Padding="0" ToolTip="Volume">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding MuteButtonIcon}" FontSize="14"/>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE767;" FontSize="14"/>
                         </Button>
                     </StackPanel>
                     <Popup
@@ -197,7 +192,7 @@
                                 </Border.Effect>
                                 <StackPanel>
                                     <controls:VolumeControl
-                                        DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
+                                        DominantColorHex="{Binding DataContext.CurrentTrackForegroundColorHex, ElementName=MusicWrapCompactWindow, Converter={StaticResource HexToBrushConverter}}"
                                         Width="150"
                                         Height="32"/>
                                 </StackPanel>

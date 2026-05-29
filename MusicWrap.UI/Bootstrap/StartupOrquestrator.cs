@@ -52,7 +52,7 @@ public static class StartupOrquestrator
         {
             var musicLibrary = serviceProvider.GetService<MusicLibrary>();
             var userSettings = serviceProvider.GetRequiredService<UserSettings>();
-            var player = serviceProvider.GetRequiredService<IMusicPlayerService>();
+            //var player = serviceProvider.GetRequiredService<IMusicPlayerService>();
             var trayService = serviceProvider.GetService<ITrayService>();
 
             trayService?.Initialize();
