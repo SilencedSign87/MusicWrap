@@ -5,11 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI"
         xmlns:pages="clr-namespace:MusicWrap.UI.Features.Playback.Views"
-        xmlns:status="clr-namespace:MusicWrap.UI.Features.State"
         xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
         xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+        xmlns:act="clr-namespace:MusicWrap.UI.Features.Activity.View"
         mc:Ignorable="d"
         x:Name="MainWindowRoot"
         Icon="/Resources/icon.ico"
@@ -112,7 +112,6 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="32" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="28" />
                 <RowDefinition Height="40" />
             </Grid.RowDefinitions>
             <!--Titlebar-->
@@ -136,66 +135,53 @@
                         <nav:ShellTabItem Icon="&#xECAA;" Text="Services" TabIndex="3" ToolTip="Services"/>
                         <nav:ShellTabItem Icon="&#xF61F;" Text="Now Playing" TabIndex="4" ToolTip="Now Playing"/>
                     </nav:ShellTabControl>
-                    <!--<TabControl
-                        Margin="0,2"
-                        SelectionChanged="TabControl_SelectionChanged"
-                        WindowChrome.IsHitTestVisibleInChrome="True"
-                        Padding="0"
-                        Style="{StaticResource CustomTabControl}">
-                        <TabItem Style="{StaticResource CustomTabItem}" TabIndex="0">
-                            <TabItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xe8f1;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                                    <TextBlock Text="Library" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </TabItem.Header>
-                        </TabItem>
-                        <TabItem Style="{StaticResource CustomTabItem}" TabIndex="1">
-                            <TabItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xe90b;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                                    <TextBlock Text="Playlists" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </TabItem.Header>
-                        </TabItem>
-                        <TabItem Style="{StaticResource CustomTabItem}" TabIndex="2">
-                            <TabItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE704;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                                    <TextBlock Text="Radio" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </TabItem.Header>
-                        </TabItem>
-                        <TabItem Style="{StaticResource CustomTabItem}" TabIndex="3">
-                            <TabItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xECAA;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                                    <TextBlock Text="Services" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </TabItem.Header>
-                        </TabItem>
-                        <TabItem Style="{StaticResource CustomTabItem}" TabIndex="4">
-                            <TabItem.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xF61F;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                                    <TextBlock Text="Now playing" Margin="4,0,0,0" FontSize="12" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </TabItem.Header>
-                        </TabItem>
-                    </TabControl>-->
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
                     <controls:CommandPaletteInput VerticalAlignment="Center" Width="200" Height="32" PlaceholderText="Search..."/>
-                    <!--<Border Margin="0,4" Width="1" Background="#333">
-                    </Border>-->
+                    <Border Margin="0,4" Width="1" Background="#333"/>
+
+                    <Button x:Name="TasksButton" Style="{StaticResource TransparentTitleButton}" Click="TasksButton_Click" ToolTip="Activity Center">
+                        <TextBlock Text="&#xE9A4;" FontFamily="Segoe Fluent Icons" FontSize="16" />
+                    </Button>
+                    <Popup
+                        x:Name="TasksPopup"
+                        PlacementTarget="{Binding ElementName=TasksButton}"
+                        Placement="Bottom"
+                        PopupAnimation="Slide"
+                        StaysOpen="False"
+                        AllowsTransparency="True"
+                        Width="400"
+                        MinHeight="120"
+                        MaxHeight="500"
+                        HorizontalOffset="-150"
+                        >
+                        <Border>
+                            <Border 
+                                Background="#2c2c2c" 
+                                BorderBrush="{StaticResource StrokeFloating}" 
+                                BorderThickness="1" 
+                                CornerRadius="8"
+                                Margin="8,0,8,8"
+                                Padding="16,12">
+                                <Border.Effect>
+                                    <DropShadowEffect
+                                        BlurRadius="16"
+                                        Opacity="0.4"
+                                        />
+                                </Border.Effect>
+                                <act:ActivityCenterView/>
+                            </Border>
+                        </Border>
+                    </Popup>
+
+                    <Border Margin="0,4" Width="1" Background="#333"/>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">
                         <TextBlock Text="&#xe713;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenMiniPlayer" ToolTip="MiniPlayer">
                         <TextBlock Text="&#xee49;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
-                    <Border Margin="0,4" Width="1" Background="#333">
-                    </Border>
+                    <Border Margin="0,4" Width="1" Background="#333"/>
                 </StackPanel>
 
             </Grid>
@@ -266,12 +252,9 @@
                     </Expander>
                 </Grid>
             </Grid>
-            <Grid Grid.Row="2">
-                <status:StatusbarControl />
-            </Grid>
             <!--Player-->
             <Grid
-                Grid.Row="3">
+                Grid.Row="2">
                 <pages:PlayerPage />
             </Grid>
         </Grid>

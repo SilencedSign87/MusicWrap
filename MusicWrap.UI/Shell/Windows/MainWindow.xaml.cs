@@ -9,7 +9,6 @@ using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Providers.Views;
-using MusicWrap.UI.Features.State.ViewModels;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
@@ -233,6 +232,14 @@ namespace MusicWrap.UI.Shell.Windows
         private void TrackExpander_Collapsed(object sender, RoutedEventArgs e)
         {
             TrackInformationHost.Content = null;
+        }
+
+        private void TasksButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!TasksPopup.IsOpen)
+            {
+                TasksPopup.IsOpen = true;
+            }
         }
     }
 }

@@ -1,11 +1,14 @@
+using Acornima.Ast;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.UI.Features.Activity.Models;
+using MusicWrap.UI.Features.Activity.Services;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Features.Settings.ViewModels
 {
@@ -35,31 +38,17 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         [ObservableProperty]
         private double progressPercentage = 0;
 
-        private IProgress<ScanProgress>? _scanningProgress;
-        private CancellationTokenSource _scanCancellationTokenSource;
-
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryService _libraryService;
+        private readonly ActivityService _activityService;
 
-        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService)
+        private ActivityScope? _currentScanScope;
+
+        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService, ActivityService activityService)
         {
             _scanner = scanner;
             _libraryService = libraryService;
-
-
-            _scanCancellationTokenSource = new CancellationTokenSource();
-
-            _scanningProgress = new Progress<ScanProgress>(progress =>
-            {
-                TotalFiles = progress.TotalFiles;
-                FilesProcessed = progress.FilesProcessed;
-                CurrentFile = string.IsNullOrEmpty(progress.CurrentFile)
-                    ? string.Empty
-                    : System.IO.Path.GetFileName(progress.CurrentFile);
-                ProgressPercentage = progress.TotalFiles > 0
-                    ? (double)progress.FilesProcessed / progress.TotalFiles * 100
-                    : 0;
-            });
+            _activityService = activityService;
 
             UpdateDirectories();
         }
@@ -103,44 +92,94 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         [RelayCommand]
         private async Task ScanSelected()
         {
+            _currentScanScope?.Dispose();
+
+            var title = SelectedDirectories.Count > 0
+            ? "Scanning directories"
+            : "Scanning all directories";
+            var description = "Preparing to scan...";
+
+            _currentScanScope = _activityService.Start(title, description, cancellable:true);
+
+            var activity = _currentScanScope.Activity;
+
             IsScanning = Visibility.Visible;
-            _scanCancellationTokenSource = new CancellationTokenSource();
 
             try
             {
-                var cancelationToken = _scanCancellationTokenSource.Token;
+                var progress = new Progress<ScanProgress>(p =>
+                {
+                    // Local
+                    TotalFiles = p.TotalFiles;
+                    FilesProcessed = p.FilesProcessed;
+                    CurrentFile = string.IsNullOrEmpty(p.CurrentFile)
+                        ? string.Empty
+                        : Path.GetFileName(p.CurrentFile);
+                    ProgressPercentage = p.TotalFiles > 0
+                        ? (double)p.FilesProcessed / p.TotalFiles * 100
+                        : 0;
+
+                    //Activity Center
+                    var phase = p.State switch
+                    {
+                        ScanState.Fingerprinting => "Fingerprinting",
+                        ScanState.Scanning => "Scanning",
+                        ScanState.Saving => "Saving",
+                        _ => "Processing"
+                    };
+                    var detail = string.IsNullOrWhiteSpace(p.CurrentFile)
+                        ? phase
+                        : $"{phase} — {Path.GetFileName(p.CurrentFile)}";
+                    activity.ReportProgress(
+                        p.TotalFiles > 0 ? (double)p.FilesProcessed / p.TotalFiles : 0,
+                        detail);
+                });
+
+                var token = _currentScanScope.CancellationToken ?? CancellationToken.None;
 
                 if (SelectedDirectories.Count > 0)
                 {
                     var paths = SelectedDirectories.Select(d => d.Path).ToArray();
-                    await _scanner.ScanSpecificDirectories(paths, _scanningProgress, cancelationToken);
+                    await _scanner.ScanSpecificDirectories(paths, progress, token);
                 }
                 else
                 {
-                    await _scanner.ScanAllDirectories(_scanningProgress, cancelationToken);
+                    await _scanner.ScanAllDirectories(progress, token);
                 }
                 _libraryService.InvalidateCache();
+                activity.Complete();
             }
             catch (OperationCanceledException)
             {
-                Debug.WriteLine("Scan was canceled by user");
+                if (activity.Status == ActivityStatus.Running)
+                    activity.MarkCancelled();
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error during scanning: {ex.Message}");
+                activity.Fail(ex.Message);
             }
             finally
             {
 
-                UpdateDirectories();
-                IsScanning = Visibility.Hidden;
+                if (Application.Current?.Dispatcher?.HasShutdownStarted == false)
+                {
+                    UpdateDirectories();
+                    IsScanning = Visibility.Hidden;
+                    TotalFiles = 0;
+                    FilesProcessed = 0;
+                    CurrentFile = string.Empty;
+                    ProgressPercentage = 0;
+                }
             }
         }
 
         [RelayCommand]
         private void CancelScan()
         {
-            _scanCancellationTokenSource?.Cancel();
+            if(_currentScanScope is not null)
+            {
+                _activityService.Cancel(_currentScanScope.Activity.Id);
+            }
         }
 
         [RelayCommand]
@@ -161,7 +200,6 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         {
             Directories = [.. _libraryService.GetDirectories()];
         }
-
     }
 }
 

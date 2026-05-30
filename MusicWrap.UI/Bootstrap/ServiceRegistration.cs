@@ -1,4 +1,3 @@
-using System.Windows;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,14 +19,14 @@ using MusicWrap.Data.Library;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Playlist;
 using MusicWrap.Data.User;
+using MusicWrap.UI.Features.Activity.Services;
+using MusicWrap.UI.Features.Activity.Viewmodel;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Playback.ViewModels;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.ViewModels;
 using MusicWrap.UI.Features.Providers.ViewModels;
 using MusicWrap.UI.Features.Settings.ViewModels;
-using MusicWrap.UI.Features.State.Services;
-using MusicWrap.UI.Features.State.ViewModels;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Controls.ViewModel;
 using MusicWrap.UI.Shared.Services;
@@ -35,6 +34,7 @@ using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.ViewModels;
 using Serilog;
+using System.Windows;
 
 namespace MusicWrap.UI.Bootstrap;
 
@@ -67,6 +67,7 @@ public static class ServiceRegistration
         services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
         services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
         services.AddSingleton<ILibraryService, LibraryService>();
+        services.AddSingleton<ActivityService>();
 
         // Services
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
@@ -98,7 +99,6 @@ public static class ServiceRegistration
         services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
         services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
         services.AddSingleton<IPlaylistService, PlaylistService>();
-        services.AddSingleton<IStatusService, StatusService>();
 
         //Player
         services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
@@ -121,9 +121,9 @@ public static class ServiceRegistration
         services.AddTransient<TaskbarIconViewModel>();
         services.AddTransient<MetadataEditorViewModel>();
         services.AddTransient<DJControlViewModel>();
-        services.AddSingleton<StatusbarViewModel>();
         services.AddTransient<LibraryEntryDetailPanelViewModel>();
         services.AddTransient<LibraryEntryAlbumViewModel>();
+        services.AddTransient<ActivityCenterViewModel>();
 
         // UI
         services.AddTransient<MainWindow>();

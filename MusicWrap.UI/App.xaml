@@ -27,6 +27,7 @@
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
             <converters:TabStringToVisibilityConverter x:Key="TabStringToVisibilityConverter"/>
+            <converters:ItemCountToVisibilityConverter x:Key="ItemCountToVisibilityConverter"/>
 
             <tb:TaskbarIcon
                 x:Key="TrayIcon"

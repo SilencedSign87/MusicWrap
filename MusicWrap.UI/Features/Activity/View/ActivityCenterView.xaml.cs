@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Features.State.ViewModels;
+using MusicWrap.UI.Features.Activity.Viewmodel;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,16 +13,18 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace MusicWrap.UI.Features.State
+namespace MusicWrap.UI.Features.Activity.View
 {
-    public partial class StatusbarControl : UserControl
+    /// <summary>
+    /// Lógica de interacción para ActivityCenterView.xaml
+    /// </summary>
+    public partial class ActivityCenterView : UserControl
     {
-        private readonly StatusbarViewModel _viewModel;
-        public StatusbarControl()
+        public ActivityCenterView()
         {
             InitializeComponent();
-            _viewModel = App.Services.GetRequiredService<StatusbarViewModel>();
-            DataContext = _viewModel;
+            var viewModel = App.Services.GetRequiredService<ActivityCenterViewModel>();
+            DataContext = viewModel;
         }
     }
 }

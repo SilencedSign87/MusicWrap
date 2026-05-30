@@ -8,10 +8,11 @@ using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Library;
-using MusicWrap.UI.Features.State.Services;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.UI.Shared.Services;
+using MusicWrap.UI.Features.Activity.Services;
+using System.IO;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -36,10 +37,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryService _LibraryCache;
         private readonly IMusicPlayerService _player;
-        private readonly IStatusService _statusService;
         private readonly IImageService _imageService;
         private readonly ILogger<LibraryViewModel> _logger;
         private readonly SearchService _searchService;
+        private readonly ActivityService _activityService;
 
         public LibraryViewModel(
             ILibraryScanner scanner,
@@ -47,15 +48,15 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             UserSettings settings,
             IMusicPlayerService player,
             IImageService imageService,
-            IStatusService statusService,
             SearchService searchService,
+            ActivityService activityService,
             ILogger<LibraryViewModel> logger)
         {
             _scanner = scanner;
             _imageService = imageService;
             _LibraryCache = libraryCache;
+            _activityService = activityService;
             _player = player;
-            _statusService = statusService;
             _logger = logger;
             _searchService = searchService;
 
@@ -73,14 +74,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 var detail = string.IsNullOrWhiteSpace(progress.CurrentFile)
                 ? phase
                 : $"{phase} ({progress.FilesProcessed}/{progress.TotalFiles})";
-
-                _statusService.ReportProgress(
-                    progress.FilesProcessed,
-                    maximun,
-                    false,
-                    detail,
-                    StatusbarSlotKind.Left
-                    );
             });
 
             _isInitializing = true;
@@ -127,13 +120,51 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private async Task RescanAllDirectories()
         {
-            await RunWithStatusAsync("Rescanning Library...", async () =>
+            using var scope = _activityService.Start(
+                "Rescanning library",
+                "Preparing scan...",
+                cancellable: true
+                );
+
+            var activity = scope.Activity;
+
+            try
             {
-                await _scanner.ScanAllDirectories(_scanProgress, null);
+                var progress = new Progress<ScanProgress>(p =>
+                {
+                    var phase = p.State switch
+                    {
+                        ScanState.Fingerprinting => "Fingerprinting",
+                        ScanState.Scanning => "Scanning",
+                        ScanState.Saving => "Saving",
+                        _ => "Processing"
+                    };
+
+                    var total = Math.Max(1, p.TotalFiles);
+                    var detail = string.IsNullOrWhiteSpace(p.CurrentFile)
+                        ? phase
+                        : $"{phase} — {p.CurrentFile}";
+                    activity.ReportProgress((double)p.FilesProcessed / total, detail);
+                });
+
+                await _scanner.ScanAllDirectories(progress, scope.CancellationToken);
+
                 _LibraryCache.InvalidateCache();
                 _imageService.ClearCache();
                 await LoadEntriesAsync();
-            }, "Library Rescan Complete");
+
+                activity.Complete();
+            }
+            catch (OperationCanceledException)
+            {
+                activity.MarkCancelled();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rescanning library");
+                activity.Fail(ex.Message);
+            }
+
         }
 
         [RelayCommand]
@@ -151,12 +182,32 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             _scanner.AddDirectory(selectedPath, true);
 
-            await RunWithStatusAsync("Scanning added folder...", async () =>
+            using var scope = _activityService.Start("Adding folder", Path.GetFileName(selectedPath), cancellable: true);
+            var activity = scope.Activity;
+            try
             {
-                await _scanner.ScanDirectory(selectedPath, _scanProgress, null);
+                var progress = new Progress<ScanProgress>(p =>
+                {
+                    var total = Math.Max(1, p.TotalFiles);
+                    var detail = string.IsNullOrWhiteSpace(p.CurrentFile)
+                        ? p.State.ToString()
+                        : $"{p.State} — {Path.GetFileName(p.CurrentFile)}";
+                    activity.ReportProgress((double)p.FilesProcessed / total, detail);
+                });
+                await _scanner.ScanDirectory(selectedPath, progress, scope.CancellationToken);
                 _LibraryCache.InvalidateCache();
                 await LoadEntriesAsync();
-            }, "Folder folder added");
+                activity.Complete();
+            }
+            catch (OperationCanceledException)
+            {
+                activity.MarkCancelled();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding folder {Path}", selectedPath);
+                activity.Fail(ex.Message);
+            }
         }
 
         [RelayCommand]
@@ -172,12 +223,36 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             var selectedFiles = dialog.FileNames;
             if (selectedFiles is null || selectedFiles.Length == 0) return;
 
-            await RunWithStatusAsync("Scanning files...", async () =>
+            using var scope = _activityService.Start(
+                "Adding files",
+                $"{selectedFiles.Length} file(s) selected",
+                cancellable: true);
+
+            var activity = scope.Activity;
+            try
             {
-                await _scanner.ScanFiles(selectedFiles, _scanProgress, null);
+                var progress = new Progress<ScanProgress>(p =>
+                {
+                    var total = Math.Max(1, p.TotalFiles);
+                    var detail = string.IsNullOrWhiteSpace(p.CurrentFile)
+                        ? p.State.ToString()
+                        : $"{p.State} — {Path.GetFileName(p.CurrentFile)}";
+                    activity.ReportProgress((double)p.FilesProcessed / total, detail);
+                });
+                await _scanner.ScanFiles(selectedFiles, progress, scope.CancellationToken);
                 _LibraryCache.InvalidateCache();
                 await LoadEntriesAsync();
-            }, "Files added");
+                activity.Complete();
+            }
+            catch (OperationCanceledException)
+            {
+                activity.MarkCancelled();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding files");
+                activity.Fail(ex.Message);
+            }
 
         }
 
@@ -193,25 +268,25 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private async Task RunWithStatusAsync(string title, Func<Task> work, string? successMessage = null)
         {
-            _statusService.PublishState(StatusbarSlotKind.Left, title);
+            //_statusService.PublishState(StatusbarSlotKind.Left, title);
 
-            try
-            {
-                await work();
+            //try
+            //{
+            //    await work();
 
-                if (!string.IsNullOrWhiteSpace(successMessage))
-                {
-                    _statusService.PublishState(StatusbarSlotKind.Left, successMessage);
-                    await Task.Delay(2000);
+            //    if (!string.IsNullOrWhiteSpace(successMessage))
+            //    {
+            //        _statusService.PublishState(StatusbarSlotKind.Left, successMessage);
+            //        await Task.Delay(2000);
 
-                    _statusService.ClearSlot(StatusbarSlotKind.Left);
-                }
-            }
-            finally
-            {
-                _statusService.ClearSlot(StatusbarSlotKind.Left);
-                _statusService.ClearProgress();
-            }
+            //        _statusService.ClearSlot(StatusbarSlotKind.Left);
+            //    }
+            //}
+            //finally
+            //{
+            //    _statusService.ClearSlot(StatusbarSlotKind.Left);
+            //    _statusService.ClearProgress();
+            //}
         }
 
         public void NotifySearchSubmitted()
