@@ -8,17 +8,21 @@
              d:DesignHeight="100" d:DesignWidth="800"
              SizeChanged="UserControl_SizeChanged"
              PreviewKeyDown="UserControl_PreviewKeyDown"
+             SnapsToDevicePixels="True"
              Focusable="True"
              >
     <Border Padding="2">
         <Grid x:Name="WaveformContainer">
             <!-- Back waveform -->
-            <Path x:Name="PathBackground" StrokeThickness="1" Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}" Stretch="Fill" Opacity="0.22"/>
+            <Path x:Name="PathBackground" 
+                  Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}" 
+                  Stretch="None" 
+                  Opacity="0.3"/>
             <!-- Front filled waveform -->
             <Path x:Name="PathForeground" 
-                  StrokeThickness="1" 
                   Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}" 
-                  Stretch="Fill">
+                  Stretch="None"
+                  >
                 <Path.Clip>
                     <RectangleGeometry x:Name="ProgressClip" Rect="0,0,0,0"/>
                 </Path.Clip>
@@ -27,7 +31,6 @@
             <Line x:Name="PositionThumb"
               Stroke="White"
               StrokeThickness="1"
-              SnapsToDevicePixels="True"
               IsHitTestVisible="False"
               Visibility="Collapsed"
             />

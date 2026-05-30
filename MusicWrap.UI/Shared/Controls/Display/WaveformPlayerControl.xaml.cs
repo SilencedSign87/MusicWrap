@@ -41,7 +41,6 @@ namespace MusicWrap.UI.Controls
         private bool _isDragging = false;
         private bool _dragCanceled = false;
 
-        private const double minWavePointHeight = 0.5;
         private UIElement? _dragCaptureElement;
 
         private bool _disposed = false;
@@ -120,6 +119,8 @@ namespace MusicWrap.UI.Controls
             _duration = _musicService.Duration;
             _isPlaying = _musicService.IsPlaying;
             SyncBaseline();
+
+            _position = _musicService.CurrentPosition;
 
             DrawWaveform();
             UpdateProgressVisual(_position);
@@ -211,6 +212,7 @@ namespace MusicWrap.UI.Controls
         {
             _lastEnginePosition = _musicService.CurrentPosition;
             _lastEnginePositionAtUTC = DateTime.UtcNow;
+            _position = _lastEnginePosition;
         }
 
         #region Rendering
@@ -218,7 +220,10 @@ namespace MusicWrap.UI.Controls
 
         private void DrawWaveform()
         {
-            if (_waveformData == null || _waveformData.Length == 0 || ActualWidth == 0 || ActualHeight == 0)
+            double width = WaveformContainer.ActualWidth;
+            double height = WaveformContainer.ActualHeight;
+
+            if (_waveformData == null || _waveformData.Length == 0 || width == 0 || height == 0)
             {
                 PathBackground.Data = null;
                 PathForeground.Data = null;
@@ -226,32 +231,30 @@ namespace MusicWrap.UI.Controls
                 return;
             }
 
-            double width = ActualWidth;
-            double height = ActualHeight;
             double midY = height / 2;
+            double maxAmplitude = midY;
 
             StreamGeometry geometry = new StreamGeometry();
-            using (StreamGeometryContext context = geometry.Open())
+            using (StreamGeometryContext ctx = geometry.Open())
             {
-                context.BeginFigure(new Point(0, midY), true, true);
+                ctx.BeginFigure(new Point(0, midY), true, true);
+                
 
-                // draw up
                 for (int i = 0; i < _waveformData.Length; i++)
                 {
                     double x = (i / (double)(_waveformData.Length - 1)) * width;
-                    double amplitude = Math.Max(_waveformData[i] * midY, minWavePointHeight); // ensure minimum height
-                    double y = midY - amplitude;
-                    context.LineTo(new Point(x, y), true, false);
+                    double amplitude = Math.Max(_waveformData[i] * maxAmplitude, 0.5);
+                    ctx.LineTo(new Point(x, midY - amplitude), true, false);
                 }
-                // draw down (mirrored)
+                
                 for (int i = _waveformData.Length - 1; i >= 0; i--)
                 {
                     double x = (i / (double)(_waveformData.Length - 1)) * width;
-                    double amplitude = Math.Max(_waveformData[i] * midY, minWavePointHeight); // ensure minimum height
-                    double y = midY + amplitude;
-                    context.LineTo(new Point(x, y), true, false);
+                    double amplitude = Math.Max(_waveformData[i] * maxAmplitude, 0.5);
+                    ctx.LineTo(new Point(x, midY + amplitude), true, false);
                 }
             }
+
             geometry.Freeze();
             PathBackground.Data = geometry;
             PathForeground.Data = geometry;
@@ -261,7 +264,10 @@ namespace MusicWrap.UI.Controls
 
         private void UpdateProgressVisual(double currentPosition)
         {
-            if (ActualWidth <= 0 || ActualHeight <= 0 || _duration <= 0)
+            double width = WaveformContainer.ActualWidth;
+            double height = WaveformContainer.ActualHeight;
+
+            if (width <= 0 || height <= 0 || _duration <= 0)
             {
                 ProgressClip.Rect = new Rect(0, 0, 0, 0);
                 PositionThumb.Visibility = Visibility.Collapsed;
@@ -269,14 +275,14 @@ namespace MusicWrap.UI.Controls
             }
 
             double percentage = Math.Clamp(currentPosition / _duration, 0, 1);
-            double x = ActualWidth * percentage;
+            double x = width * percentage;
 
-            ProgressClip.Rect = new Rect(0, 0, x, ActualHeight);
+            ProgressClip.Rect = new Rect(0, 0, x, height);
 
             PositionThumb.X1 = x;
             PositionThumb.X2 = x;
             PositionThumb.Y1 = 0;
-            PositionThumb.Y2 = ActualHeight;
+            PositionThumb.Y2 = height;
             PositionThumb.Visibility = Visibility.Visible;
         }
         #endregion
@@ -295,7 +301,7 @@ namespace MusicWrap.UI.Controls
                 Focus();
                 Keyboard.Focus(this);
 
-                double mousex = e.GetPosition(this).X;
+                double mousex = e.GetPosition(WaveformContainer).X;
                 UpdateVisualFromMouse(mousex);
                 UpdateSeekPopup(mousex);
 
@@ -307,7 +313,7 @@ namespace MusicWrap.UI.Controls
         {
             if (_isDragging && e.LeftButton == MouseButtonState.Pressed)
             {
-                double mousex = e.GetPosition(this).X;
+                double mousex = e.GetPosition(WaveformContainer).X;
                 UpdateVisualFromMouse(mousex);
                 UpdateSeekPopup(mousex);
             }
@@ -332,7 +338,7 @@ namespace MusicWrap.UI.Controls
                 e.Handled = true;
                 return;
             }
-            double percentage = Math.Clamp(e.GetPosition(this).X / ActualWidth, 0, 1);
+            double percentage = Math.Clamp(e.GetPosition(WaveformContainer).X / WaveformContainer.ActualWidth, 0, 1);
             double target = percentage * _duration;
 
             _musicService.Seek(target);
@@ -364,7 +370,7 @@ namespace MusicWrap.UI.Controls
 
         private void UpdateVisualFromMouse(double mouseX)
         {
-            double percentage = Math.Clamp(mouseX / ActualWidth, 0, 1);
+            double percentage = Math.Clamp(mouseX / WaveformContainer.ActualWidth, 0, 1);
             double visualPosition = percentage * _duration;
             UpdateProgressVisual(visualPosition); // update mask
         }
@@ -374,13 +380,13 @@ namespace MusicWrap.UI.Controls
 
         private void UpdateSeekPopup(double mouseX)
         {
-            if (_duration <= 0 || ActualWidth <= 0)
+            if (_duration <= 0 || WaveformContainer.ActualWidth <= 0)
             {
                 return;
             }
 
-            double clampedX = Math.Clamp(mouseX, 0, ActualWidth);
-            double percentage = clampedX / ActualWidth;
+            double clampedX = Math.Clamp(mouseX, 0, WaveformContainer.ActualWidth);
+            double percentage = clampedX / WaveformContainer.ActualWidth;
             double visualPosition = percentage * _duration;
 
             SeekPopupText.Text = FormatTime(visualPosition);

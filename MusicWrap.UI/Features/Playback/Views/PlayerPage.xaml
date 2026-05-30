@@ -67,10 +67,12 @@
             <Grid Grid.Column="1" HorizontalAlignment="Stretch">
                 <controls:WaveformPlayerControl
                     x:Name="WaveformPlayer"
-                    Margin="16,4"
-                            HorizontalAlignment="Stretch"
-                            DominantColorHex="#ffffff"
-                            />
+                    Margin="8,0"
+                    Height="36"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
+                    DominantColorHex="#ffffff"
+                    />
             </Grid>
 
             <Grid Grid.Column="2">

@@ -16,6 +16,8 @@ namespace MusicWrap.Core.Services.Playback
     {
         int CurrentIndex { get; }
         int[] GetPlaybackOrder();
+        int[] GetPlaybackOrderTracks();
+        int CurrentplaybackIndex { get; }
         bool IsPlaying { get; }
         bool IsPaused { get; }
         double CurrentPosition { get; }
@@ -55,12 +57,9 @@ namespace MusicWrap.Core.Services.Playback
         void FlushPlaybackState();
         void SetVolume(float volume);
         void PlayIndex(int index);
-        //void PlayPlaybackIndex(int index);
         void ToggleShuffle();
         void SetShuffle(bool enabled);
-
         void SetSilentIndex(int index);
-        //void SetSilentPlaybackIndex(int index);
         void AddToQueue(int TrackId);
         void AddToQueue(IEnumerable<int> TrackIds);
         void AddToNextInQueue(IEnumerable<int> TrackIds);
@@ -68,6 +67,7 @@ namespace MusicWrap.Core.Services.Playback
         void RemoveFromQueue(int index);
         void RemoveFromQueue(IEnumerable<int> indices);
         void ReorderQueue(IEnumerable<int> fromIndices, int toIndex);
+        void ReorderTrackById(int sourceTrackId, int targetTrackId, bool placeAfterTarget);
         void ClearQueue();
         int[] GetQueue();
         void PlayTrack(int TrackId);
@@ -113,8 +113,6 @@ namespace MusicWrap.Core.Services.Playback
 
         private PlaybackState _playbackState = PlaybackState.Stopped;
         private readonly SYNCPROC _endCallback;
-        //private readonly System.Timers.Timer _positionTimer;
-
 
         private int _currentDeviceIndex = -1;
         public int CurrentDeviceIndex
@@ -216,6 +214,19 @@ namespace MusicWrap.Core.Services.Playback
 
                 _userSettings.ContinueMode = value;
                 EnqueueSave(SaveKind.Settings);
+            }
+        }
+
+        public int CurrentplaybackIndex
+        {
+            get
+            {
+                var order = GetPlaybackOrder();
+                if (order.Length == 0)
+                    return 0;
+
+                int idx = Array.IndexOf(order, _queue.CurrentIndex);
+                return idx >= 0 ? idx : 0;
             }
         }
 
@@ -661,6 +672,17 @@ namespace MusicWrap.Core.Services.Playback
             _queue.Move(fromIndices, toIndex);
             EnqueueSave(SaveKind.Playback);
         }
+        public void ReorderTrackById(int sourceTrackId, int targetTrackId, bool placeAfterTarget)
+        {
+            int sourcePlaybackIndex = _queue.GetIndexForTrackId(sourceTrackId);
+            int targetPlaybackIndex = _queue.GetIndexForTrackId(targetTrackId);
+            if (sourcePlaybackIndex < 0 || targetPlaybackIndex < 0 || sourcePlaybackIndex == targetPlaybackIndex)
+                return;
+            int toIndex = placeAfterTarget ? targetPlaybackIndex + 1 : targetPlaybackIndex;
+            toIndex = Math.Clamp(toIndex, 0, _queue.Items.Count);
+            _queue.Move([sourcePlaybackIndex], toIndex);
+            EnqueueSave(SaveKind.Playback);
+        }
 
         public int[] GetQueue()
         {
@@ -672,6 +694,19 @@ namespace MusicWrap.Core.Services.Playback
         public int[] GetPlaybackOrder()
         {
             return _queue.GetPlaybackOrderIndices();
+        }
+        public int[] GetPlaybackOrderTracks()
+        {
+            var baseQueue = GetQueue();
+            var order = GetPlaybackOrder();
+
+            if (order.Length == 0)
+                return baseQueue;
+
+            return order
+                .Where(i=>i>=0 && i<baseQueue.Length)
+                .Select(i=>baseQueue[i])
+                .ToArray();
         }
 
         public void SetPlaybackOrder(int[] playbackOrderIndices)
