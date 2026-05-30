@@ -9,7 +9,6 @@
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
         xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
-        xmlns:act="clr-namespace:MusicWrap.UI.Features.Activity.View"
         mc:Ignorable="d"
         x:Name="MainWindowRoot"
         Icon="/Resources/icon.ico"
@@ -57,53 +56,6 @@
         </TaskbarItemInfo>
     </Window.TaskbarItemInfo>
 
-    <Window.Resources>
-        <Style x:Key="TransparentTitleButton" TargetType="Button">
-            <Setter Property="Height" Value="32" />
-            <Setter Property="Width" Value="32" />
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="0"
-                                >
-                            <ContentPresenter HorizontalAlignment="Center"
-                                VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <!-- Hover -->
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource BackgroundLayerAlt}"/>
-                </Trigger>
-                <!-- Pressed -->
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="{StaticResource BackgroundLayer}"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="CloseTitleButton" TargetType="Button" BasedOn="{StaticResource TransparentTitleButton}">
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E81123"/>
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#C50F1F"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-    </Window.Resources>
-
     <!--Window-->
     <Border
         x:Name="BorderWindow"
@@ -138,41 +90,9 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
                     <controls:CommandPaletteInput VerticalAlignment="Center" Width="200" Height="32" PlaceholderText="Search..."/>
-                    <Border Margin="0,4" Width="1" Background="#333"/>
+                    <Border Margin="4,4,2,4" Width="1" Background="#333"/>
 
-                    <Button x:Name="TasksButton" Style="{StaticResource TransparentTitleButton}" Click="TasksButton_Click" ToolTip="Activity Center">
-                        <TextBlock Text="&#xE9A4;" FontFamily="Segoe Fluent Icons" FontSize="16" />
-                    </Button>
-                    <Popup
-                        x:Name="TasksPopup"
-                        PlacementTarget="{Binding ElementName=TasksButton}"
-                        Placement="Bottom"
-                        PopupAnimation="Slide"
-                        StaysOpen="False"
-                        AllowsTransparency="True"
-                        Width="400"
-                        MinHeight="120"
-                        MaxHeight="500"
-                        HorizontalOffset="-150"
-                        >
-                        <Border>
-                            <Border 
-                                Background="#2c2c2c" 
-                                BorderBrush="{StaticResource StrokeFloating}" 
-                                BorderThickness="1" 
-                                CornerRadius="8"
-                                Margin="8,0,8,8"
-                                Padding="16,12">
-                                <Border.Effect>
-                                    <DropShadowEffect
-                                        BlurRadius="16"
-                                        Opacity="0.4"
-                                        />
-                                </Border.Effect>
-                                <act:ActivityCenterView/>
-                            </Border>
-                        </Border>
-                    </Popup>
+                    <controls:ActivityButton/>
 
                     <Border Margin="0,4" Width="1" Background="#333"/>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">

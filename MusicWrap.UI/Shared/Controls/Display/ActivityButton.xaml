@@ -1,0 +1,87 @@
+﻿<UserControl x:Class="MusicWrap.UI.Controls.ActivityButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:act="clr-namespace:MusicWrap.UI.Features.Activity.View"
+             mc:Ignorable="d" 
+             x:Name="Root"
+             d:DesignWidth="32" d:DesignHeight="32">
+    <Grid>
+        <Button x:Name="PART_Button"
+                Style="{StaticResource TransparentTitleButton}"
+                Click="OnButtonClick"
+                Padding="0"
+                ToolTip="Activity Center">
+            <Grid Width="32" Height="32">
+                <!-- Default icon (idle / fallback) -->
+                <TextBlock x:Name="IdleIcon"
+                           Text="&#xE9A4;"
+                           FontFamily="Segoe Fluent Icons"
+                           FontSize="16"
+                           Foreground="White"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+                <!-- Check icon (all completed) -->
+                <Border x:Name="CompletedOverlay"
+                        Background="Transparent"
+                        Visibility="Collapsed">
+                    <TextBlock Text="&#xE930;"
+                               FontFamily="Segoe Fluent Icons"
+                               FontSize="18"
+                               Foreground="#107C10"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+                <!-- Badge (pending count) -->
+                <Border x:Name="RunningBadge"
+                        BorderBrush="#FFB900"
+                        BorderThickness="2"
+                        Background="Transparent"
+                        CornerRadius="10"
+                        Width="20" Height="20"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="0,2,2,0"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="CountText"
+                               Text="0"
+                               FontSize="10"
+                               FontWeight="Bold"
+                               Foreground="#FFB900"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Button>
+        <!-- Popup del Activity Center -->
+        <Popup x:Name="PART_Popup"
+               PlacementTarget="{Binding ElementName=Root}"
+               Placement="Bottom"
+               PopupAnimation="Slide"
+               StaysOpen="False"
+               AllowsTransparency="True"
+               Width="400"
+               MinHeight="120"
+               MaxHeight="500"
+               HorizontalOffset="-130"
+               VerticalOffset="-12"
+               >
+            <Border CornerRadius="8"
+                    Margin="8,0,8,8"
+                    Padding="16,12">
+                <Border Background="#2c2c2c"
+                        BorderBrush="{StaticResource StrokeFloating}"
+                        BorderThickness="1"
+                        Padding="16,12"
+                        CornerRadius="8">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="16" Opacity="0.4"/>
+                    </Border.Effect>
+                    <act:ActivityCenterView/>
+                </Border>
+            </Border>
+        </Popup>
+    </Grid>
+</UserControl>

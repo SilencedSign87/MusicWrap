@@ -78,7 +78,7 @@ namespace MusicWrap.UI.Features.Activity.Services
     public sealed class ActivityScope : IDisposable
     {
         public ActivityModel Activity { get; }
-        public CancellationToken? CancellationToken => _cts?.Token;
+        public CancellationToken CancellationToken => _cts?.Token ?? CancellationToken.None;
         private readonly CancellationTokenSource? _cts;
         private readonly ActivityService _service;
         

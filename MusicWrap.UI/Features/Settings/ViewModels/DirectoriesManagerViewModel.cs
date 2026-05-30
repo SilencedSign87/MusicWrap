@@ -135,16 +135,14 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
                         detail);
                 });
 
-                var token = _currentScanScope.CancellationToken ?? CancellationToken.None;
-
                 if (SelectedDirectories.Count > 0)
                 {
                     var paths = SelectedDirectories.Select(d => d.Path).ToArray();
-                    await _scanner.ScanSpecificDirectories(paths, progress, token);
+                    await _scanner.ScanSpecificDirectories(paths, progress, _currentScanScope.CancellationToken);
                 }
                 else
                 {
-                    await _scanner.ScanAllDirectories(progress, token);
+                    await _scanner.ScanAllDirectories(progress, _currentScanScope.CancellationToken);
                 }
                 _libraryService.InvalidateCache();
                 activity.Complete();

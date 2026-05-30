@@ -233,14 +233,6 @@ namespace MusicWrap.UI.Shell.Windows
         {
             TrackInformationHost.Content = null;
         }
-
-        private void TasksButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!TasksPopup.IsOpen)
-            {
-                TasksPopup.IsOpen = true;
-            }
-        }
     }
 }
 
