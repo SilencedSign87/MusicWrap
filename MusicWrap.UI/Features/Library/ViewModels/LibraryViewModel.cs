@@ -259,34 +259,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private async Task Refresh()
         {
-            await RunWithStatusAsync("Reloading library", async () =>
-            {
-                _LibraryCache.InvalidateCache();
-                await LoadEntriesAsync();
-            });
-        }
-
-        private async Task RunWithStatusAsync(string title, Func<Task> work, string? successMessage = null)
-        {
-            //_statusService.PublishState(StatusbarSlotKind.Left, title);
-
-            //try
-            //{
-            //    await work();
-
-            //    if (!string.IsNullOrWhiteSpace(successMessage))
-            //    {
-            //        _statusService.PublishState(StatusbarSlotKind.Left, successMessage);
-            //        await Task.Delay(2000);
-
-            //        _statusService.ClearSlot(StatusbarSlotKind.Left);
-            //    }
-            //}
-            //finally
-            //{
-            //    _statusService.ClearSlot(StatusbarSlotKind.Left);
-            //    _statusService.ClearProgress();
-            //}
+            _LibraryCache.InvalidateCache();
+            await LoadEntriesAsync();
         }
 
         public void NotifySearchSubmitted()
