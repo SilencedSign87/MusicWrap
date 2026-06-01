@@ -61,14 +61,14 @@
             <Setter Property="BorderBrush" Value="{StaticResource StrokeDivider}"/>
         </Style>
 
-        <ContextMenu x:Key="PlaylistTracksContextMenu" Opened="PlaylistTracksContextMenu_Opened">
+        <ContextMenu x:Key="PlaylistTracksContextMenu">
             <MenuItem Header="Play now" Icon="{ex:Icon Glyph=E768}" Click="PlaylistPlayNow_Click"/>
             <Separator/>
             <MenuItem Header="Add next" Icon="{ex:Icon Glyph=E893}" Click="PlaylistPlayNext_Click"/>
             <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E710}" Click="PlaylistAddToQueue_Click"/>
-            <controlsM:TrackToPlaylistMenu x:Name="PlaylistTrackToPlaylistMenu"/>
+            <controlsM:TrackToPlaylistMenu x:Name="PlaylistTrackToPlaylistMenu" TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
             <Separator/>
-            <MenuItem Header="Remove from playlist" Icon="{ex:Icon Glyph=E74D}" Click="PlaylistRemoveSelected_Click"/>
+            <MenuItem Header="Remove from playlist" Icon="{ex:Icon Glyph=E74D}" Command="{Binding RemoveSelectedTracksCommand}"/>
         </ContextMenu>
     </UserControl.Resources>
     <Grid>

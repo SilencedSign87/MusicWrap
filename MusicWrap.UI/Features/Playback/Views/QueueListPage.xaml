@@ -6,26 +6,27 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
-             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playback.ViewModels"
              mc:Ignorable="d"
              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Window}}"
              d:DataContext="{d:DesignInstance Type=vm:QueueViewModel}"
              d:DesignHeight="700" d:DesignWidth="500">
 
     <UserControl.Resources>
-        <ContextMenu x:Key="QueueTracksContextMenu" Opened="QueueTracksContextMenu_Opened">
-            <MenuItem Header="Play now" Icon="{ex:Icon Glyph=E768}" Click="QueuePlayNow_Click"/>
-            <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}" Click="QueuePlayNext_Click"/>
+        <ContextMenu x:Key="QueueTracksContextMenu">
+            <MenuItem Header="Play now" Icon="{ex:Icon Glyph=E768}" Command="{Binding PlayTracksCommand}"/>
+            <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}" Command="{Binding MoveToNextCommand}"/>
             <Separator/>
-            <controlsM:TrackToPlaylistMenu x:Name="QueueTrackToPlaylistMenu"/>
+            <controlsM:TrackToPlaylistMenu x:Name="QueueTrackToPlaylistMenu" TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
             <Separator/>
-            <MenuItem Header="Remove from queue" Icon="{ex:Icon Glyph=E738}" Click="QueueRemove_Click"/>
+            <MenuItem Header="Remove from queue" Icon="{ex:Icon Glyph=E738}" Command="{Binding RemoveFromQueueCommand}"/>
         </ContextMenu>
     </UserControl.Resources>
 
     <controlsM:TracksView
         x:Name="QueueTracksView"
         ItemsSource="{Binding QueueTrackRows}"
+        SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
         ContextMenu="{StaticResource QueueTracksContextMenu}"
         VisualMode="WithCoverArt"
         IndexMode="None"

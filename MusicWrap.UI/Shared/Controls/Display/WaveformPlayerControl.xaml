@@ -11,7 +11,7 @@
              SnapsToDevicePixels="True"
              Focusable="True"
              >
-    <Border Padding="2">
+    <Border>
         <Grid x:Name="WaveformContainer">
             <!-- Back waveform -->
             <Path x:Name="PathBackground" 

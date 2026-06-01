@@ -120,16 +120,12 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             _musicPlayerService.PlayIndex(0);
         }
         [RelayCommand]
-        private void RemoveSelectedTracks(List<int> trackIds)
+        private void RemoveSelectedTracks()
         {
-            if (SelectedEntry is null || trackIds.Count == 0)
-            {
-                return;
-            }
+            if (SelectedEntry is null || SelectedTrackIds.Count == 0) return;
 
-            _playlistService.RemoveTracksFromPlaylist(trackIds, SelectedEntry.id);
-
-            _saveCoordinator.Enqueue(SaveKind.Playlist);
+            _playlistService.RemoveTracksFromPlaylist(SelectedTrackIds, SelectedEntry.id);
+            _saveCoordinator?.Enqueue(SaveKind.Playlist);
         }
         [RelayCommand]
         private void PlaySelected()

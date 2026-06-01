@@ -25,24 +25,6 @@ namespace MusicWrap.UI.Features.Playlist.Views
             DataContext = _vm;
         }
 
-        private void PlaylistTracksContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ContextMenu contextMenu)
-            {
-                return;
-            }
-
-            if (DataContext is not PlaylistViewModel vm)
-            {
-                return;
-            }
-
-            if (contextMenu.Items.OfType<TrackToPlaylistMenu>().FirstOrDefault() is TrackToPlaylistMenu playlistMenu)
-            {
-                playlistMenu.TrackIds = vm.SelectedTrackIds.ToList();
-            }
-        }
-
         private void PlaylistPlayNow_Click(object sender, RoutedEventArgs e)
         {
             var tracksView = ResolveTracksViewFromMenuSender(sender);
@@ -77,29 +59,6 @@ namespace MusicWrap.UI.Features.Playlist.Views
 
             var selected = tracksView.GetSelectedTrackIds();
             _tracksContextMenuService.AddToQueue(selected);
-        }
-
-        private void PlaylistRemoveSelected_Click(object sender, RoutedEventArgs e)
-        {
-            var tracksView = ResolveTracksViewFromMenuSender(sender);
-            if (tracksView == null)
-            {
-                return;
-            }
-
-            var selected = tracksView.GetSelectedTrackIds();
-            if (selected.Count == 0)
-            {
-                return;
-            }
-
-            if (DataContext is PlaylistViewModel vm)
-            {
-                if (vm.RemoveSelectedTracksCommand.CanExecute(selected))
-                {
-                    vm.RemoveSelectedTracksCommand.Execute(selected);
-                }
-            }
         }
 
         private static TracksView? ResolveTracksViewFromMenuSender(object sender)

@@ -96,7 +96,8 @@ namespace MusicWrap.Core.Services.Library
             int[] trackArtists = [];
             if (tagFile.Tag.Performers.Length > 0)
             {
-                var artistsNames = tagFile.Tag.Performers.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                var artistsNames = tagFile.Tag.Performers
+                    //.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
                     .Select(name => name.Trim())
                     .Where(name => !string.IsNullOrWhiteSpace(name))
                     .ToArray();
@@ -112,7 +113,8 @@ namespace MusicWrap.Core.Services.Library
             int[] albumArtists = [];
             if (tagFile.Tag.AlbumArtists.Length > 0)
             {
-                var albumArtistNames = tagFile.Tag.AlbumArtists.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                var albumArtistNames = tagFile.Tag.AlbumArtists
+                    //.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
                     .Select(name => name.Trim())
                     .Where(name => !string.IsNullOrWhiteSpace(name))
                     .ToArray();

@@ -13,6 +13,7 @@ namespace MusicWrap.Core.Queue
         PlaybackQueueItem? CurrentItem { get; }
         bool IsShuffleEnabled { get; }
         RepeatMode RepeatMode { get; }
+        int[] GetIndicesForTrackIds(IEnumerable<int> trackIds);
 
         void Jump(int index);
         void AddNext(IEnumerable<PlaybackQueueItem> item);
@@ -72,6 +73,16 @@ namespace MusicWrap.Core.Queue
         {
             _userSettings = userSettings;
             Items = new ReadOnlyObservableCollection<PlaybackQueueItem>(_internalItems);
+        }
+
+        public int[] GetIndicesForTrackIds(IEnumerable<int> trackIds)
+        {
+            if(trackIds is null || !trackIds.Any()) return Array.Empty<int>();
+            return trackIds
+                .Select(GetIndexForTrackId)
+                .Where(i => i >= 0)
+                .Distinct()
+                .ToArray();
         }
         public void Jump(int index)
         {
@@ -216,10 +227,18 @@ namespace MusicWrap.Core.Queue
                     var rel = ordered.AsEnumerable().Reverse().ToList().IndexOf(_shuffleCursor);
                     _shuffleCursor = adjustedTarget + rel;
                 }
-                else
+                else if (_shuffleCursor >= 0)
                 {
                     var removedBeforeCursor = ordered.Count(i => i < _shuffleCursor);
-                    _shuffleCursor -= removedBeforeCursor;
+                    int postRemovalCursor = _shuffleCursor - removedBeforeCursor;
+                    if (postRemovalCursor >= adjustedTarget)
+                    {
+                        _shuffleCursor = postRemovalCursor + movedValues.Count;
+                    }
+                    else
+                    {
+                        _shuffleCursor = postRemovalCursor;
+                    }
                     _shuffleCursor = Math.Clamp(_shuffleCursor, 0, Math.Max(0, _shuffleOrder.Count - 1));
                 }
                 OnQueueChanged();
@@ -247,13 +266,19 @@ namespace MusicWrap.Core.Queue
                 {
                     var rel = internalFrom.IndexOf(_currentIndex);
                     _currentIndex = adjustedTarget + rel;
-                    OnCurrentChanged();
                 }
-                else
+                else if (_currentIndex >= 0)
                 {
                     var removedBeforeCurrent = internalFrom.Count(i => i < _currentIndex);
-                    _currentIndex -= removedBeforeCurrent;
-                    if (_currentIndex < 0) _currentIndex = -1;
+                    int postRemovalCur = _currentIndex - removedBeforeCurrent;
+                    if (postRemovalCur >= adjustedTarget)
+                    {
+                        _currentIndex = postRemovalCur + itemsToMove.Count;
+                    }
+                    else
+                    {
+                        _currentIndex = postRemovalCur;
+                    }
                 }
                 ResetShuffle();
                 OnQueueChanged();

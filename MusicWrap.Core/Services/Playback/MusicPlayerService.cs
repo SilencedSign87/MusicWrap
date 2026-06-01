@@ -17,6 +17,7 @@ namespace MusicWrap.Core.Services.Playback
         int CurrentIndex { get; }
         int[] GetPlaybackOrder();
         int[] GetPlaybackOrderTracks();
+        int[] GetPlaybackIndices(IEnumerable<int> trackIds);
         int CurrentplaybackIndex { get; }
         bool IsPlaying { get; }
         bool IsPaused { get; }
@@ -47,7 +48,6 @@ namespace MusicWrap.Core.Services.Playback
         event EventHandler<float[]>? WaveformDataChanged;
         event EventHandler<float>? VolumeChanged;
         void LoadIndex(int index, bool autoPlay);
-        //void LoadPlaybackIndex(int index, bool autoPlay);
         void Play();
         void Pause();
         void Stop(bool hardStop = false);
@@ -57,12 +57,14 @@ namespace MusicWrap.Core.Services.Playback
         void FlushPlaybackState();
         void SetVolume(float volume);
         void PlayIndex(int index);
+        void PlayIndex(IEnumerable<int> indices);
         void ToggleShuffle();
         void SetShuffle(bool enabled);
         void SetSilentIndex(int index);
         void AddToQueue(int TrackId);
         void AddToQueue(IEnumerable<int> TrackIds);
         void AddToNextInQueue(IEnumerable<int> TrackIds);
+        void AddIndicesToNext(IEnumerable<int> indices);
         void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false);
         void RemoveFromQueue(int index);
         void RemoveFromQueue(IEnumerable<int> indices);
@@ -72,7 +74,6 @@ namespace MusicWrap.Core.Services.Playback
         int[] GetQueue();
         void PlayTrack(int TrackId);
         void SetPlaybackOrder(int[] playbackOrderIndices);
-
         void ChangeOutputDevice(int deviceIndex);
         void ChangeSampleRate(int sampleRate);
         void ChangeOutputMode(OutputMode mode);
@@ -541,6 +542,50 @@ namespace MusicWrap.Core.Services.Playback
             }
         }
 
+        public void PlayIndex(IEnumerable<int> indices)
+        {
+            if (indices is null || indices.Count() == 0) return;
+
+            int queueLength = GetPlaybackOrder().Length;
+            if (queueLength == 0) return;
+
+            var sortedIndices = indices
+                .Where(i => i >= 0 && i < queueLength)
+                .Distinct()
+                .OrderBy(i => i)
+                .ToList();
+
+            if (sortedIndices.Count == 0) return;
+            int playIndex = sortedIndices[0];
+            var nextIndices = sortedIndices.Skip(1).ToList();
+            // move next indices to be right after the playIndex
+            if (nextIndices.Count > 0)
+            {
+                ReorderQueue(nextIndices, playIndex + 1);
+            }
+            // play the first index
+            PlayIndex(playIndex);
+        }
+
+        public void AddIndicesToNext(IEnumerable<int> indices)
+        {
+            if (indices is null || indices.Count() == 0) return;
+
+            int queueLength = GetPlaybackOrder().Length;
+            if (queueLength == 0) return;
+            int currentIndex = CurrentIndex;
+            var toMove = indices
+                .Where(i => i >= 0 && i < queueLength)
+                .Distinct()
+                .OrderBy(i => i)
+                .Where(i => i != currentIndex)
+                .ToList();
+            if (toMove.Count == 0) return;
+            int targetIndex = currentIndex >= 0 ? currentIndex + 1 : 0;
+            targetIndex = Math.Min(targetIndex, queueLength);
+            ReorderQueue(toMove, targetIndex);
+        }
+
         public void ToggleShuffle()
         {
             SetShuffle(!_queue.IsShuffleEnabled);
@@ -622,27 +667,6 @@ namespace MusicWrap.Core.Services.Playback
             //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
-
-        public void RemoveFromQueue(int index)
-        {
-            if (index < 0 || index >= _queue.Items.Count)
-                return;
-
-            bool removingCurrent = index == _queue.CurrentIndex;
-
-            _queue.RemoveAt(index);
-
-            if (removingCurrent)
-            {
-                Stop();
-            }
-
-            //UpdateSelectedTrackState();
-
-            //NotifyQueueChanged();
-            EnqueueSave(SaveKind.Playback);
-        }
-
         public void ClearQueue()
         {
             Stop(true);
@@ -652,19 +676,61 @@ namespace MusicWrap.Core.Services.Playback
             EnqueueSave(SaveKind.Playback);
         }
 
+        public void RemoveFromQueue(int index)
+        {
+            if (index < 0 || index >= _queue.Items.Count)
+                return;
+
+            bool wasPlaying = IsPlaying;
+            bool wasPaused = IsPaused;
+            bool removingCurrent = index == _queue.CurrentIndex;
+
+            _queue.RemoveAt(index);
+            HandleCurrentAfterRemoval(removingCurrent, wasPlaying, wasPaused);
+            EnqueueSave(SaveKind.Playback);
+        }
+
         public void RemoveFromQueue(IEnumerable<int> indices)
         {
-            //foreach(var index in indices.OrderByDescending(i => i))
-            //{
-            //    if (index < 0 || index >= _queue.Items.Count)
-            //        continue;
-            //    bool removingCurrent = index == _queue.CurrentIndex;
-            //    _queue.RemoveAt(index);
-            //    if (removingCurrent)
-            //    {
-            //        Stop();
-            //    }
-            //}
+            if (indices == null) return;
+            var validIndices = indices
+                .Where(i => i >= 0 && i < _queue.Items.Count)
+                .Distinct()
+                .ToList();
+            if (validIndices.Count == 0) return;
+            int currentIndex = _queue.CurrentIndex;
+            bool removingCurrent = currentIndex >= 0 && validIndices.Contains(currentIndex);
+            bool wasPlaying = IsPlaying;
+            bool wasPaused = IsPaused;
+            _queue.Remove(validIndices);
+            HandleCurrentAfterRemoval(removingCurrent, wasPlaying, wasPaused);
+            EnqueueSave(SaveKind.Playback);
+        }
+
+        private void HandleCurrentAfterRemoval(bool removingCurrent, bool wasPlaying, bool wasPaused)
+        {
+            if (!removingCurrent) return;
+            if (_queue.Items.Count == 0)
+            {
+                Stop(true);
+                return;
+            }
+            if (wasPlaying || wasPaused)
+            {
+                _isTransitioningTrack = true;
+                try
+                {
+                    StartPlaybackOfCurrent(autoplay: wasPlaying);
+                }
+                finally
+                {
+                    _isTransitioningTrack = false;
+                }
+            }
+            else
+            {
+                UpdateSelectedTrackState();
+            }
         }
 
         public void ReorderQueue(IEnumerable<int> fromIndices, int toIndex)
@@ -704,9 +770,13 @@ namespace MusicWrap.Core.Services.Playback
                 return baseQueue;
 
             return order
-                .Where(i=>i>=0 && i<baseQueue.Length)
-                .Select(i=>baseQueue[i])
+                .Where(i => i >= 0 && i < baseQueue.Length)
+                .Select(i => baseQueue[i])
                 .ToArray();
+        }
+        public int[] GetPlaybackIndices(IEnumerable<int> trackIds)
+        {
+            return _queue.GetIndicesForTrackIds(trackIds);
         }
 
         public void SetPlaybackOrder(int[] playbackOrderIndices)

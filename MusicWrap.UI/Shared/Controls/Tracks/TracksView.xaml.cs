@@ -25,6 +25,7 @@ namespace MusicWrap.UI.Controls.Models
         private CollectionViewSource? _collectionViewSource;
         private bool _playerEventsAttached;
         private int _lastAutoScrolledIndex = 2;
+        private readonly List<int> _orderedSelectedIds = [];
 
         public TracksView()
         {
@@ -333,12 +334,31 @@ namespace MusicWrap.UI.Controls.Models
                 return;
             }
 
-            SelectedTrackIds.Clear();
-
-            foreach (var row in TracksList.SelectedItems.OfType<TrackRowItem>())
+            // process removed items
+            foreach (var item in e.RemovedItems.OfType<TrackRowItem>())
             {
-                SelectedTrackIds.Add(row.Id);
+                _orderedSelectedIds.Remove(item.Id);
             }
+            // process added items
+            foreach (var item in e.AddedItems.OfType<TrackRowItem>())
+            {
+                if (!_orderedSelectedIds.Contains(item.Id))
+                {
+                    _orderedSelectedIds.Add(item.Id);
+                }
+            }
+            // push dp
+            if (!ListsEqual(SelectedTrackIds, _orderedSelectedIds))
+            {
+                SelectedTrackIds = _orderedSelectedIds;
+            }
+
+            //SelectedTrackIds.Clear();
+
+            //foreach (var row in TracksList.SelectedItems.OfType<TrackRowItem>())
+            //{
+            //    SelectedTrackIds.Add(row.Id);
+            //}
         }
         private void TracksList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -418,18 +438,15 @@ namespace MusicWrap.UI.Controls.Models
                 .Select(track => track.Id)
                 .ToList();
 
-            if (SelectedTrackIds is null)
+            if (!ListsEqual(SelectedTrackIds, _orderedSelectedIds))
             {
-                return selectedTrackIds;
+                SelectedTrackIds?.Clear();
+                foreach (var id in _orderedSelectedIds)
+                {
+                    SelectedTrackIds?.Add(id);
+                }
             }
-
-            SelectedTrackIds.Clear();
-            foreach (var trackId in selectedTrackIds)
-            {
-                SelectedTrackIds.Add(trackId);
-            }
-
-            return selectedTrackIds;
+            return new List<int>(_orderedSelectedIds);
         }
 
         private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
@@ -612,6 +629,15 @@ namespace MusicWrap.UI.Controls.Models
 
                 _lastAutoScrolledIndex = index;
             }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+        }
+        private static bool ListsEqual(IList<int>? a, List<int> b)
+        {
+            if (a is null || a.Count != b.Count) return false;
+            for (int i = 0; i < b.Count; i++)
+            {
+                if (a[i] != b[i]) return false;
+            }
+            return true;
         }
     }
 }

@@ -6,11 +6,13 @@ using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Library;
+using System.Diagnostics;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {
     public partial class QueueViewModel : ObservableObject
     {
+        [ObservableProperty] private List<int> selectedTrackIds = [];
 
         [ObservableProperty]
         private ObservableCollection<TrackRowItem> queueTrackRows = [];
@@ -94,17 +96,26 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        public void RemoveSelectedTracksFromQueue(List<int> trackIDs)
+        private void PlayTracks()
         {
-            var removeSet = new HashSet<int>(trackIDs);
-            var currentQueue = _player.GetQueue();
-            var filtered = currentQueue.Where(id => !removeSet.Contains(id)).ToList();
-            if (removeSet.Contains(_player.CurrentTrackId))
-            {
-                _player.SetSilentIndex(-1); // prevent auto-advance to next track
-                _player.Stop();
-            }
-            _player.SetQueue(filtered, true);
+            var indices = _player.GetPlaybackIndices(SelectedTrackIds);
+            _player.PlayIndex(indices);
+        }
+        [RelayCommand]
+        private void MoveToNext()
+        {
+            var indices = _player.GetPlaybackIndices(SelectedTrackIds);
+            _player.AddIndicesToNext(indices);
+        }
+        [RelayCommand]
+        private void RemoveFromQueue()
+        {
+            if (SelectedTrackIds is null || SelectedTrackIds.Count == 0) return;
+
+            var indices = _player.GetPlaybackIndices(SelectedTrackIds);
+            if (indices.Length == 0) return;
+
+            _player.RemoveFromQueue(indices);
         }
 
         [RelayCommand]
@@ -119,10 +130,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             _player.PlayTrack(trackID);
         }
 
-        public void PlayTrack(int trackID)
-        {
-            PlayTracks(new List<int> { trackID });
-        }
         public void PlayTracks(List<int> trackIds)
         {
             if (trackIds is null || trackIds.Count == 0) return;

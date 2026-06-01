@@ -57,17 +57,15 @@
 
     <!-- Accent button -->
     <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-        <Setter Property="Background" Value="{StaticResource AccentBrush100}" />
-        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush100}" />
-        <Setter Property="Foreground" Value="{StaticResource TextOnAccentPrimaryBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource ControlElevationBorderBrush}"/>
+        <Setter Property="Background" Value="{StaticResource AccentBrush90}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush90}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="true">
-                <Setter Property="Background" Value="{StaticResource AccentBrush110}"/>
-                <Setter Property="Foreground" Value="{StaticResource TextOnAccentSecondaryBrush}"/>
+                <Setter Property="Background" Value="{StaticResource AccentBrush100}"/>
             </Trigger>
             <Trigger Property="IsPressed" Value="true">
-                <Setter Property="Background" Value="{StaticResource AccentBrush120}"/>
+                <Setter Property="Background" Value="{StaticResource AccentBrush110}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
