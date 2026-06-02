@@ -1,14 +1,8 @@
-using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 using MusicWrap.Data.Library.Models;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.ViewModels;
-using Un4seen.Bass;
 
 namespace MusicWrap.UI.Services
 {
@@ -71,15 +65,4 @@ namespace MusicWrap.UI.Services
             _currentWindow = null;
         }
     }
-
-    public enum MetadataEntityType
-    {
-        Artist,
-        Album,
-        Track
-    }
 }
-
-
-
-

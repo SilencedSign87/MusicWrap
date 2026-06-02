@@ -36,6 +36,8 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty] private string diskNumberPlaceholder = string.Empty;
         [ObservableProperty] private string totalDiskPlaceholder = string.Empty;
         [ObservableProperty] private string genrePlaceholder = string.Empty;
+        [ObservableProperty] private string albumArtworkUrl = string.Empty;
+        [ObservableProperty] private string trackArtworkUrl = string.Empty;
 
 
         public bool HasChanges =>
@@ -188,6 +190,18 @@ namespace MusicWrap.UI.ViewModels
                         originalYear = string.Empty;
                         Year = string.Empty;
                         YearPlaceholder = variousMetadata;
+                    }
+
+                    // albumCovers
+                    var trackCover = _libraryCache.GetCoverAsset(track.CoverId);
+                    if(trackCover is not null)
+                    {
+                        TrackArtworkUrl = trackCover.FileName;
+                    }
+                    var albumCover = _libraryCache.GetCoverAsset(album.CoverId);
+                    if(albumCover is not null)
+                    {
+                        AlbumArtworkUrl = albumCover.FileName;
                     }
                 }
             }
