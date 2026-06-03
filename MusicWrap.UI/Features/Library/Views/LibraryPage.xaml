@@ -10,7 +10,6 @@
          xmlns:vm="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
          xmlns:pages="clr-namespace:MusicWrap.UI.Features.Playback.Views"
          xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
-         xmlns:vwp="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
          xmlns:views="clr-namespace:MusicWrap.UI.Features.Library.Views"
          mc:Ignorable="d" 
