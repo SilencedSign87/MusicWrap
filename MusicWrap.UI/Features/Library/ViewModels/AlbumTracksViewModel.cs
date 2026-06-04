@@ -7,7 +7,7 @@ using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
-    public partial class AlbumTracksViewModel : ObservableObject
+    public partial class AlbumTracksViewModel : ObservableObject, IDisposable
     {
         [ObservableProperty] private int albumId;
 
@@ -40,6 +40,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly TrackSortMode _sortMode;
         private HashSet<int> _albumTrackIds = [];
 
+        private readonly int[]? _filteredTrackIds;
+        private int[] _orderedTrackIds = [];
+        private bool _disposed = false;
+
         public AlbumTracksViewModel(
             ILibraryService libraryCache,
             SearchService searchService,
@@ -48,13 +52,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             string dominantColor = "#1a1a1a",
             string foregroundColor = "#ffffff",
             string? searchQuery = null,
-            TrackSortMode sortMode = TrackSortMode.Year)
+            TrackSortMode sortMode = TrackSortMode.Year,
+            int[]? filteredTrackIds = null
+            )
         {
             _libraryCache = libraryCache;
             _searchService = searchService;
             _tracksContextMenuService = tracksContextMenuService;
             _searchQuery = searchQuery?.Trim() ?? string.Empty;
             _sortMode = sortMode;
+            _filteredTrackIds = filteredTrackIds;
             this.albumId = albumId;
             this.dominantColor = dominantColor;
             this.foregroundColor = foregroundColor;
@@ -64,16 +71,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private void LoadAlbumAndTracks()
         {
-            //var album = _libraryCache.Albums.FirstOrDefault(a => a.Id == AlbumId);
             var album = _libraryCache.GetAlbumById(AlbumId);
             AlbumTitle = album?.Title ?? "Unknown Album";
             AlbumYear = album?.Year ?? 0;
             AlbumArtists = _libraryCache.GetArtistNamesForAlbum(AlbumId);
 
-            var allTrackIds = _libraryCache.GetTracksForAlbum(AlbumId, true);
-            //var displayTrackIds = string.IsNullOrWhiteSpace(_searchQuery)
-            //    ? allTrackIds
-            //    : _libraryCache.GetTracksForAlbum(AlbumId, _searchQuery);
+            var allTrackIds = _filteredTrackIds ?? _libraryCache.GetTracksForAlbum(AlbumId, true);
+            _orderedTrackIds = allTrackIds;
 
             var trackRows = SortTracks(_libraryCache.TrackIdsToTrackRowItems(allTrackIds)).ToList();
 
@@ -127,6 +131,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             AlbumPlayTooltip = IsAlbumPlaying ? "Pause Album" : "Play Album";
             AlbumPlayGlyph = IsAlbumPlaying ? "\uE769" : "\uE768";
         }
+        public int[] GetPlayableTrackIds() => _orderedTrackIds;
 
         [RelayCommand]
         private void PlayNowSelectedTracks()
@@ -146,6 +151,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _tracksContextMenuService.AddToQueue(SelectedTrackIds);
         }
 
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            _disposed = true;
+            Tracks.Clear();
+            AllTrackIds.Clear();
+            SelectedTrackIds.Clear();
+            _albumTrackIds.Clear();
+            _orderedTrackIds = [];
+        }
     }
 }
 

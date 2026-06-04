@@ -15,12 +15,12 @@ namespace MusicWrap.UI.Features.Library.Views
         private readonly ILibraryService _libraryCacheService;
         private bool _disposed = false;
 
-        public LibraryPage()
+        public LibraryPage(LibraryViewModel viewmodel, ILibraryService libraryService)
         {
             InitializeComponent();
 
-            vm = App.Services.GetRequiredService<LibraryViewModel>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
+            vm = viewmodel;
+            _libraryCacheService = libraryService;
             DataContext = vm;
 
             // Subscribe to property changes

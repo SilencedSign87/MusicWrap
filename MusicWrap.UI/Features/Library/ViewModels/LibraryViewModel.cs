@@ -18,7 +18,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 {
     public partial class LibraryViewModel : ObservableObject, IDisposable
     {
-        [ObservableProperty] private string listBy = "Artist"; // Album, Artist, Genre, Decade
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsAlbumView))]
+        [NotifyPropertyChangedFor(nameof(IsTrackArtistView))]
+        [NotifyPropertyChangedFor(nameof(IsAlbumArtistView))]
+        [NotifyPropertyChangedFor(nameof(IsGenreView))]
+        [NotifyPropertyChangedFor(nameof(IsDecadeView))]
+        private string listBy = "Artist"; // Album, Artist, Genre, Decade
 
         [ObservableProperty] private bool ascending = true;
 
@@ -95,17 +101,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
 
         public bool IsAlbumView => ListBy == "Album";
-        public bool IsArtistView => ListBy == "Artist";
+        public bool IsTrackArtistView => ListBy == "Track_Artist";
+        public bool IsAlbumArtistView => ListBy == "Album_Artist";
         public bool IsGenreView => ListBy == "Genre";
         public bool IsDecadeView => ListBy == "Decade";
 
         partial void OnListByChanged(string value)
         {
-            OnPropertyChanged(nameof(IsAlbumView));
-            OnPropertyChanged(nameof(IsArtistView));
-            OnPropertyChanged(nameof(IsGenreView));
-            OnPropertyChanged(nameof(IsDecadeView));
-
             if (_isInitializing) return;
 
             _ = LoadEntriesAsync();

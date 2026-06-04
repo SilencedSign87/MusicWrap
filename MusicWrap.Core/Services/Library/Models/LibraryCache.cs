@@ -8,9 +8,10 @@ namespace MusicWrap.Core.Services.Library.Models
     [MessagePackObject]
     public sealed class LibraryCache
     {
-        [Key(0)] public LibraryEntry[]? _ByArtists { get; set; } = null;
-        [Key(1)] public LibraryEntry[]? _ByAlbums { get; set; } = null;
-        [Key(2)] public LibraryEntry[]? _ByGenres { get; set; } = null;
-        [Key(3)] public LibraryEntry[]? _ByDecades { get; set; } = null;
+        [Key(0)] public LibraryEntry[]? ByTrackArtists { get; set; } = null;
+        [Key(1)] public LibraryEntry[]? ByAlbumArtists { get; set; } = null;
+        [Key(2)] public LibraryEntry[]? ByAlbums { get; set; } = null;
+        [Key(3)] public LibraryEntry[]? ByGenres { get; set; } = null;
+        [Key(4)] public LibraryEntry[]? ByDecades { get; set; } = null;
     }
 }

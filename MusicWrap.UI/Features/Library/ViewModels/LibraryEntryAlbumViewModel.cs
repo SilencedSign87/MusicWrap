@@ -9,7 +9,7 @@ using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
-    public partial class LibraryEntryAlbumViewModel : ObservableObject
+    public partial class LibraryEntryAlbumViewModel : ObservableObject, IDisposable
     {
         private readonly ILibraryService _libraryCache;
         private readonly IImageService _imageService;
@@ -18,8 +18,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
         [ObservableProperty] private int layoutColumns = 1;
         [ObservableProperty] private int? expandedAlbumId = 0;
-        [ObservableProperty] private TrackSortMode? sortMode;
         [ObservableProperty] private LibraryEntry? selectedEntry;
+        [ObservableProperty] private TrackSortMode? sortMode;
         [ObservableProperty] private bool sortAscending;
 
         private List<AlbumData> _visibleAlbums = [];
@@ -27,6 +27,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private CancellationTokenSource? _imageCTS;
         private const int IMAGE_BATCH = 5;
+        private bool _disposed = false;
 
         public LibraryEntryAlbumViewModel(
             ILibraryService cacheService,
@@ -43,8 +44,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public ILibraryService LibraryCache { get { return _libraryCache; } }
         public void SetLayoutColumns(int columns)
         {
-            columns = Math.Max( 1, columns );
-            if ( columns != LayoutColumns)
+            columns = Math.Max(1, columns);
+            if (columns != LayoutColumns)
             {
                 LayoutColumns = columns;
             }
@@ -181,7 +182,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 {
                     var expandedAlbum = expandedRow.Albums.First(a => a.Id == expandedAlbumIdSnapshot.Value);
                     expandedRow.ExpandedAlbumId = expandedAlbum.Id;
-                    expandedRow.ExpandedImagePath= expandedAlbum.BlurredImagePath;
+                    expandedRow.ExpandedImagePath = expandedAlbum.BlurredImagePath;
                     expandedRow.ExpandedDominantColor = expandedAlbum.DominantColor;
                     expandedRow.ExpandedForegroundColor = expandedAlbum.ForegroundColor;
                     ExpandedAlbumId = expandedAlbum.Id;
@@ -284,6 +285,21 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
                 await Task.WhenAll(tasks).ConfigureAwait(false);
             }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _imageCTS?.Cancel();
+            _imageCTS?.Dispose();
+            _imageCTS = null;
+            foreach (var album in _visibleAlbums)
+            {
+                album.CoverImage = null;
+            }
+            _visibleAlbums.Clear();
+            GridRows.Clear();
         }
         #endregion
 

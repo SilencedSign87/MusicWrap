@@ -53,7 +53,8 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            var trackIds = _libraryCacheService.GetTrackQueueForAlbum(vm.AlbumId).ToList();
+            //var trackIds = _libraryCacheService.GetTrackQueueForAlbum(vm.AlbumId).ToList();
+            var trackIds = vm.GetPlayableTrackIds().ToList();
             if (trackIds.Count == 0)
             {
                 return;
@@ -186,7 +187,8 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 return;
             }
-            var trackIds = _libraryCacheService.GetTracksForAlbum(vm.AlbumId).ToList();
+            //var trackIds = _libraryCacheService.GetTracksForAlbum(vm.AlbumId).ToList();
+            var trackIds = vm.GetPlayableTrackIds().ToList();
 
             if (trackIds.Count == 0)
             {

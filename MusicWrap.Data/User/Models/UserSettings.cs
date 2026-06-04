@@ -32,7 +32,7 @@ namespace MusicWrap.Data.User.Models
         }
         [Key(4)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreQueueOnly;
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
-        [Key(6)] public string LibraryListBy { get; set; } = "Artist";
+        [Key(6)] public string LibraryListBy { get; set; } = "Album_Artist";
         [Key(7)] public bool LibraryAscending { get; set; } = true;
         [Key(8)] public bool KeepAppInTray
         {

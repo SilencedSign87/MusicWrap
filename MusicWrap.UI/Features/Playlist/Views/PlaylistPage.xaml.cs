@@ -17,11 +17,11 @@ namespace MusicWrap.UI.Features.Playlist.Views
 
         private bool _isDisposed = false;
 
-        public PlaylistPage()
+        public PlaylistPage(PlaylistViewModel playlistViewModel, TracksContextMenuService tracksContextMenuService)
         {
             InitializeComponent();
-            _tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
-            _vm = App.Services.GetRequiredService<PlaylistViewModel>();
+            _tracksContextMenuService = tracksContextMenuService;
+            _vm = playlistViewModel;
             DataContext = _vm;
         }
 

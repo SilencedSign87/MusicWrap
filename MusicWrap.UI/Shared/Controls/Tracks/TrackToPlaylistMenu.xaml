@@ -8,7 +8,7 @@
              xmlns:service="clr-namespace:MusicWrap.Data.Playlist;assembly=MusicWrap.Data"
              x:Name="Root"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800"
+             d:DesignHeight="200" d:DesignWidth="200"
              Header="Add to playlist"
              Icon="{ex:Icon Glyph=E142}"
           >

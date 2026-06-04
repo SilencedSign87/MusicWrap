@@ -3,6 +3,7 @@ using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -28,44 +29,36 @@ namespace MusicWrap.UI.Features.Library.Views
                 _resizeThrottleTimer.Stop();
                 UpdateColumnsForViewportWidth();
             };
+
+            DataContextChanged += LibraryEntryAlbumsView_DataContextChanged;
         }
 
-        #region Dependency Properties
-        private static readonly DependencyProperty ViewModelProperty =
-            DependencyProperty.Register(
-                nameof(ViewModel),
-                typeof(LibraryEntryAlbumViewModel),
-                typeof(LibraryEntryAlbumsView),
-                new PropertyMetadata(null));
-        public LibraryEntryAlbumViewModel ViewModel
+        private void LibraryEntryAlbumsView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            get => (LibraryEntryAlbumViewModel)GetValue(ViewModelProperty);
-            set => SetValue(ViewModelProperty, value);
-        }
-        #endregion
-
-        private void LibraryEntryAlbumsView_Loaded(object sender, RoutedEventArgs e)
-        {
-
             UpdateColumnsForViewportWidth(true);
         }
 
         private void AlbumButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewModel is null)
+            if (DataContext is not LibraryEntryAlbumViewModel viewModel)
             {
                 return;
             }
 
             if (sender is Button button && button.DataContext is LibraryViewModel.AlbumData albumData)
             {
-                ViewModel.ExpandAlbum(albumData.Id);
+                viewModel.ExpandAlbum(albumData.Id);
             }
         }
 
         private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
         {
-                ViewModel?.CollapseAlbum();
+            if (DataContext is not LibraryEntryAlbumViewModel viewModel)
+            {
+                return;
+
+            }
+            viewModel.CollapseAlbum();
         }
 
         private void TracksContentPlaceholder_Loaded(object sender, RoutedEventArgs e)
@@ -80,14 +73,22 @@ namespace MusicWrap.UI.Features.Library.Views
                         return;
                     }
 
-                    if (ViewModel is null)
+                    if (DataContext is not LibraryEntryAlbumViewModel viewModel)
                     {
                         contentControl.Content = null;
                         return;
                     }
-                    var libraryCacheService = ViewModel.LibraryCache;
+                    var libraryCacheService = viewModel.LibraryCache;
                     var tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
                     var searchService = App.Services.GetRequiredService<SearchService>();
+
+                    int[]? filteredTrackIds = null;
+                    var entry = viewModel.SelectedEntry;
+                    if (entry is not null)
+                    {
+                        filteredTrackIds = libraryCacheService.GetTrackIdsForEntryAlbum(
+                            entry, row.ExpandedAlbumId.Value, useSearchQuery: true);
+                    }
 
                     var tracksViewModel = new AlbumTracksViewModel(
                         libraryCacheService,
@@ -97,7 +98,8 @@ namespace MusicWrap.UI.Features.Library.Views
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,
                         "",
-                        ViewModel.SortMode ?? TrackSortMode.Year
+                        viewModel.SortMode ?? TrackSortMode.Year,
+                        filteredTrackIds
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
                     contentControl.Content = tracksPage;
@@ -128,10 +130,10 @@ namespace MusicWrap.UI.Features.Library.Views
             }
         }
 
-        private void AlbumsViewport_Loaded(object sender, RoutedEventArgs e)
-        {
-            UpdateColumnsForViewportWidth(true);
-        }
+        //private void AlbumsViewport_Loaded(object sender, RoutedEventArgs e)
+        //{
+        //    UpdateColumnsForViewportWidth(true);
+        //}
 
         private void AlbumsViewport_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -156,7 +158,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void UpdateColumnsForViewportWidth(bool force = false)
         {
-            if (ViewModel is null)
+            if (DataContext is not LibraryEntryAlbumViewModel viewModel)
             {
                 return;
             }
@@ -174,7 +176,7 @@ namespace MusicWrap.UI.Features.Library.Views
             }
 
             _lastColumns = columns;
-            ViewModel.SetLayoutColumns(columns);
+            viewModel.SetLayoutColumns(columns);
         }
     }
 }

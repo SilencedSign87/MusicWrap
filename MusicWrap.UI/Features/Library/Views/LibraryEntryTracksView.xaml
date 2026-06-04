@@ -6,11 +6,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:uimodels="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:helpers="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
              mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:LibraryEntryTracksViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
+                     <!--Opened="TracksContextMenu_Opened"-->
         <ContextMenu x:Key="TracksContextMenu"
-                     Opened="TracksContextMenu_Opened"
                      DataContext="{Binding Source={x:Reference RootLibraryEntryTracksView}, Path=DataContext}">
             <MenuItem Header="Play" Icon="{helpers:Icon Glyph=E768}" Command="{Binding PlayNowSelectedTracksCommand}"/>
             <Separator/>

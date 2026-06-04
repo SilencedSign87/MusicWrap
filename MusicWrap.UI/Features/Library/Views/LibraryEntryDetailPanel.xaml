@@ -7,6 +7,7 @@
              xmlns:viewmodel="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              mc:Ignorable="d" 
+              x:Name="RootDetailPanel"
              d:DataContext="{d:DesignInstance Type=viewmodel:LibraryEntryDetailPanelViewModel}"
              d:DesignHeight="800" d:DesignWidth="500">
     <Grid>
@@ -157,13 +158,7 @@
                 </Border>
             </Grid>
         </Border>
-        <Grid Grid.Row="1">
-            <local:LibraryEntryAlbumsView
-                ViewModel="{Binding AlbumEntriesViewModel}"
-                Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Albums}"/>
-            <local:LibraryEntryTracksView 
-                Visibility="{Binding SelectedTab.Key, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}"/>
-
+        <Grid x:Name="ContentGrid" Grid.Row="1">
         </Grid>
     </Grid>
 </UserControl>

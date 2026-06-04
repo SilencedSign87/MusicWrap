@@ -24,40 +24,13 @@ namespace MusicWrap.UI.Features.Playback.Views
     public partial class PlayerPage : UserControl
     {
         private readonly PlayerViewModel _viewModel;
-        public PlayerPage()
+        public PlayerPage(PlayerViewModel viewModel)
         {
             InitializeComponent();
-            _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
+            _viewModel = viewModel;
             DataContext = _viewModel;
 
         }
-
-        //private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
-        //{
-
-        //    if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
-        //    {
-        //        _viewModel.StartSeekingCommand.Execute(null);
-        //    }
-        //}
-
-        //private void WaveformPlayerControl_SeekEnded(object sender, double e)
-        //{
-
-        //    if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
-        //    {
-        //        _viewModel.EndSeekingCommand.Execute(e);
-        //    }
-        //}
-
-        //private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
-        //{
-
-        //    if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
-        //    {
-        //        _viewModel.CancelSeekingCommand.Execute(null);
-        //    }
-        //}
     }
 }
 

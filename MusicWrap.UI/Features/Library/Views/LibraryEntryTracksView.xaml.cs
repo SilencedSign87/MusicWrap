@@ -15,7 +15,6 @@ namespace MusicWrap.UI.Features.Library.Views
     {
         private readonly IEditMetadataService _editMetadataService;
         private readonly ILibraryService _libraryCacheService;
-        private readonly SearchService _searchService;
         private bool _isCommandPaletteSubscribed;
 
         public LibraryEntryTracksView()
@@ -23,7 +22,6 @@ namespace MusicWrap.UI.Features.Library.Views
             InitializeComponent();
             _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
             _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
-            _searchService = App.Services.GetRequiredService<SearchService>();
 
             Loaded += LibraryEntryTracksView_Loaded;
             Unloaded += LibraryEntryTracksView_Unloaded;
@@ -35,8 +33,6 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 return;
             }
-
-            _searchService.SearchSubmitted += CommandPaletteViewModel_QuerySubmitted;
             _isCommandPaletteSubscribed = true;
         }
 
@@ -46,47 +42,30 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 return;
             }
-
-            _searchService.SearchSubmitted -= CommandPaletteViewModel_QuerySubmitted;
             _isCommandPaletteSubscribed = false;
         }
 
-        private void CommandPaletteViewModel_QuerySubmitted(object? sender, string query)
-        {
-            if (!IsVisible)
-            {
-                return;
-            }
+        //private void TracksContextMenu_Opened(object sender, RoutedEventArgs e)
+        //{
+        //    if (sender is not ContextMenu contextMenu)
+        //    {
+        //        return;
+        //    }
 
-            if (DataContext is not LibraryEntryDetailPanelViewModel vm)
-            {
-                return;
-            }
+        //    if (DataContext is not LibraryEntryDetailPanelViewModel vm)
+        //    {
+        //        return;
+        //    }
 
-            vm.TrackSearchQuery = query?.Trim() ?? string.Empty;
-        }
-
-        private void TracksContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ContextMenu contextMenu)
-            {
-                return;
-            }
-
-            if (DataContext is not LibraryEntryDetailPanelViewModel vm)
-            {
-                return;
-            }
-
-            if (contextMenu.Items.OfType<TrackToPlaylistMenu>().FirstOrDefault() is TrackToPlaylistMenu playlistMenu)
-            {
-                playlistMenu.TrackIds = vm.SelectedTrackIds.ToList();
-            }
-        }
+        //    if (contextMenu.Items.OfType<TrackToPlaylistMenu>().FirstOrDefault() is TrackToPlaylistMenu playlistMenu)
+        //    {
+        //        playlistMenu.TrackIds = vm.SelectedTrackIds.ToList();
+        //    }
+        //}
 
         private void EditMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (DataContext is not LibraryEntryDetailPanelViewModel vm || vm.SelectedTrackIds.Count == 0)
+            if (DataContext is not LibraryEntryTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
             {
                 return;
             }
@@ -96,7 +75,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void ShowInFileExplorerMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (DataContext is not LibraryEntryDetailPanelViewModel vm || vm.SelectedTrackIds.Count == 0)
+            if (DataContext is not LibraryEntryTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
             {
                 return;
             }

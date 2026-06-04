@@ -9,7 +9,7 @@
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance Type=vm:LibraryViewModel+AlbumData}"
+             d:DataContext="{d:DesignInstance Type=vm:LibraryEntryAlbumViewModel}"
              d:DesignHeight="200" d:DesignWidth="200"
              Cursor="Hand">
     <UserControl.Resources>

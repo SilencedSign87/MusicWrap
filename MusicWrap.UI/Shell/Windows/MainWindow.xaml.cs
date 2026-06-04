@@ -32,6 +32,7 @@ namespace MusicWrap.UI.Shell.Windows
     public partial class MainWindow : Window
     {
         private readonly IMusicPlayerService _player;
+        private readonly IServiceProvider _serviceProvider;
         private readonly BitmapImage _playIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
         private readonly BitmapImage _pauseIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png");
 
@@ -46,10 +47,14 @@ namespace MusicWrap.UI.Shell.Windows
             return bitmap;
         }
 
-        public MainWindow(IMusicPlayerService playerService, Tracker tracker)
+        public MainWindow(IMusicPlayerService playerService, Tracker tracker, IServiceProvider serviceProvider, PlayerPage playerPage)
         {
             InitializeComponent();
+            _serviceProvider = serviceProvider;
             _player = playerService;
+
+            PlayerContainer.Children.Add(playerPage);
+
             StateChanged += MainWindow_StateChanged;
             Closing += MainWindow_Closing;
             Closed += MainWindow_Closed;
@@ -106,6 +111,8 @@ namespace MusicWrap.UI.Shell.Windows
             {
                 return;
             }
+
+            ReleaseResources();
 
             if (App.ShouldKeepAppInTray())
             {
@@ -183,12 +190,12 @@ namespace MusicWrap.UI.Shell.Windows
         {
             object page = index switch
             {
-                0 => new LibraryPage(),
-                1 => new PlaylistPage(),
-                2 => new FavoritesPage(),
-                3 => new ServicesPage(),
-                4 => new NowPlayingPage(),
-                _ => new LibraryPage()
+                0 => _serviceProvider.GetRequiredService<LibraryPage>(),
+                1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
+                2 => _serviceProvider.GetRequiredService<FavoritesPage>(),
+                3 => _serviceProvider.GetRequiredService<ServicesPage>(),
+                4 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
+                _ => _serviceProvider.GetRequiredService<LibraryPage>()
             };
 
             if (MainFrame.Content is IDisposable disposable)
@@ -232,6 +239,18 @@ namespace MusicWrap.UI.Shell.Windows
         private void TrackExpander_Collapsed(object sender, RoutedEventArgs e)
         {
             TrackInformationHost.Content = null;
+        }
+        private void ReleaseResources()
+        {
+            App.Services.GetService<IImageService>()?.ClearCache();
+
+            if (MainFrame.Content is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
     }
 }

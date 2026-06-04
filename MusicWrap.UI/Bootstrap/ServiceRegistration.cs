@@ -21,11 +21,15 @@ using MusicWrap.Data.Playlist;
 using MusicWrap.Data.User;
 using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Features.Activity.Viewmodel;
+using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.ViewModels;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.ViewModels;
+using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Providers.ViewModels;
+using MusicWrap.UI.Features.Providers.Views;
 using MusicWrap.UI.Features.Settings.ViewModels;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Controls.ViewModel;
@@ -123,6 +127,7 @@ public static class ServiceRegistration
         services.AddTransient<DJControlViewModel>();
         services.AddTransient<LibraryEntryDetailPanelViewModel>();
         services.AddTransient<LibraryEntryAlbumViewModel>();
+        services.AddTransient<LibraryEntryTracksViewModel>();
         services.AddTransient<ActivityCenterViewModel>();
 
         // UI
@@ -132,6 +137,13 @@ public static class ServiceRegistration
         services.AddTransient<IndexingWindow>();
         services.AddTransient<MetadataEditorWindow>();
         services.AddTransient<TrackInformationPage>();
+
+        services.AddTransient<PlayerPage>();
+        services.AddTransient<LibraryPage>();
+        services.AddTransient<PlaylistPage>();
+        services.AddTransient<FavoritesPage>();
+        services.AddTransient<ServicesPage>();
+        services.AddTransient<NowPlayingPage>();
     }
 
     private static void ConfigureJot(Tracker tracker)

@@ -112,10 +112,12 @@
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition MaxWidth="300" />
                 </Grid.ColumnDefinitions>
+
                 <ContentControl
                     Grid.Column="0"
                     x:Name="MainFrame"
                     />
+                
                 <GridSplitter
                     Grid.Column="1"
                     />
@@ -165,17 +167,14 @@
                             </StackPanel>
                         </Expander.Header>
                         <Expander.Content>
-                            <!--<ScrollViewer VerticalScrollBarVisibility="Auto">-->
                             <ContentControl x:Name="TrackInformationHost" />
-                            <!--</ScrollViewer>-->
                         </Expander.Content>
                     </Expander>
                 </Grid>
             </Grid>
             <!--Player-->
-            <Grid
-                Grid.Row="2">
-                <pages:PlayerPage />
+            <Grid Grid.Row="2" x:Name="PlayerContainer">
+                <!--<pages:PlayerPage />-->
             </Grid>
         </Grid>
     </Border>
