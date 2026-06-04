@@ -68,6 +68,7 @@ namespace MusicWrap.UI.Services
         public void ShowFlyout()
         {
             if (_flyout == null || !_flyout.IsLoaded)
+                _flyout = null; // relese reference
                 _flyout = new TrayFlyoutWindow();
 
             _flyout.ShowFlyout();

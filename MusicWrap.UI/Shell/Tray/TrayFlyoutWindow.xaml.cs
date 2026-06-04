@@ -112,10 +112,10 @@ namespace MusicWrap.UI.Shell.Tray
             {
                 _isAnimatingClose = false;
 
-                Close();
                 RootPanel.Opacity = 1;
                 RootTranslate.Y = 0;
                 Top = _homeTop;
+                Close();
             };
 
             RootPanel.BeginAnimation(UIElement.OpacityProperty, fade);

@@ -10,7 +10,7 @@ using System.Windows.Threading;
 
 namespace MusicWrap.UI.Controls
 {
-    public partial class VolumeControl : UserControl
+    public partial class VolumeControl : UserControl, IDisposable
     {
         private readonly VolumeControlViewModel _viewModel;
         private bool isDragging;
@@ -45,9 +45,14 @@ namespace MusicWrap.UI.Controls
 
         private void VolumeControl_Unloaded(object sender, RoutedEventArgs e)
         {
+           Dispose();
+        }
+        public void Dispose()
+        {
             if (isSubscribed)
             {
                 _viewModel.PropertyChanged -= PlayerViewModel_PropertyChanged;
+                (_viewModel as IDisposable)?.Dispose();
                 Loaded -= VolumeControl_Loaded;
                 Unloaded -= VolumeControl_Unloaded;
                 isSubscribed = false;

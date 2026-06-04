@@ -85,6 +85,11 @@ namespace MusicWrap.UI.Controls.Models
                 return;
             }
 
+            if (_collectionViewSource != null)
+            {
+                _collectionViewSource.View.Filter = null;
+            }
+
             var viewSource = new CollectionViewSource
             {
                 Source = _itemsSource

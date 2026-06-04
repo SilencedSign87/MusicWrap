@@ -349,6 +349,11 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 new SortDescription(nameof(LibraryEntry.Title), ascendingSnapshot ? ListSortDirection.Ascending : ListSortDirection.Descending)
                 );
 
+            if (EntriesViewSource?.View is not null)
+            {
+                EntriesViewSource.View.Filter = null;
+            }
+
             EntriesViewSource = viewSource;
 
             if (selectedId.HasValue && !string.IsNullOrWhiteSpace(selectedType))
@@ -387,6 +392,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _isDisposing = true;
 
             _searchService.SearchSubmitted -= _searchService_SearchSubmitted;
+
+            EntriesViewSource = new();
+            Entries = [];
+            SelectedEntry = null;
         }
 
         public class AlbumGridRowModel : INotifyPropertyChanged
