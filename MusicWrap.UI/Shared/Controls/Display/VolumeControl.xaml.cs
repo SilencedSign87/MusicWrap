@@ -49,6 +49,8 @@ namespace MusicWrap.UI.Controls
         }
         public void Dispose()
         {
+            if (isDisposed) return;
+            isDisposed = true;
             if (isSubscribed)
             {
                 _viewModel.PropertyChanged -= PlayerViewModel_PropertyChanged;

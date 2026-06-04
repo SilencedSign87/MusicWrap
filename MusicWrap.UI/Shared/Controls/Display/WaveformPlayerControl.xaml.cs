@@ -43,8 +43,6 @@ namespace MusicWrap.UI.Controls
 
         private UIElement? _dragCaptureElement;
 
-        private bool _disposed = false;
-
         public WaveformPlayerControl()
         {
             InitializeComponent();
@@ -134,6 +132,8 @@ namespace MusicWrap.UI.Controls
             _musicService.PositionChanged -= OnServicePositionChanged;
             _musicService.TrackChanged -= OnServiceTrackChanged;
             _musicService.PlaybackStateChanged -= OnServicePlaybackStateChanged;
+
+            _waveformData = Array.Empty<float>();
 
             if (!UsePlaceholderWaveform)
                 _musicService.WaveformDataChanged -= OnServiceWaveformDataChanged;
