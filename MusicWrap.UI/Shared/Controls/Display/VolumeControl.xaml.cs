@@ -343,5 +343,19 @@ namespace MusicWrap.UI.Controls
         }
 
         #endregion
+
+        private void VolumeHost_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Up || e.Key == Key.Right)
+            {
+                _viewModel.Volume = Math.Min(1.0f, _viewModel.Volume + 0.05f);
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Down || e.Key == Key.Left)
+            {
+                _viewModel.Volume = Math.Max(0.0f, _viewModel.Volume - 0.05f);
+                e.Handled = true;
+            }
+        }
     }
 }

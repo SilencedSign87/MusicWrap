@@ -238,7 +238,7 @@ namespace MusicWrap.UI.Controls
             using (StreamGeometryContext ctx = geometry.Open())
             {
                 ctx.BeginFigure(new Point(0, midY), true, true);
-                
+
 
                 for (int i = 0; i < _waveformData.Length; i++)
                 {
@@ -246,7 +246,7 @@ namespace MusicWrap.UI.Controls
                     double amplitude = Math.Max(_waveformData[i] * maxAmplitude, 0.5);
                     ctx.LineTo(new Point(x, midY - amplitude), true, false);
                 }
-                
+
                 for (int i = _waveformData.Length - 1; i >= 0; i--)
                 {
                     double x = (i / (double)(_waveformData.Length - 1)) * width;
@@ -361,10 +361,37 @@ namespace MusicWrap.UI.Controls
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key != Key.Escape || !_isDragging) return;
+            switch (e.Key)
+            {
+                case Key.Escape when _isDragging:
+                    CancelSeek();
+                    e.Handled = true;
+                    break;
+                case Key.Up:
+                case Key.Right:
+                    {
+                        double newPosition = Math.Min(_position + 5, _duration);
+                        _musicService.Seek(newPosition);
+                        SyncBaseline();
+                        UpdateProgressVisual(newPosition);
+                        UpdateFormattedPosition(newPosition);
+                        e.Handled = true;
+                        break;
+                    }
 
-            CancelSeek();
-            e.Handled = true;
+                case Key.Down:
+                case Key.Left:
+                    {
+                        double newPosition = Math.Max(_position - 5, 0);
+                        _musicService.Seek(newPosition);
+                        SyncBaseline();
+                        UpdateProgressVisual(newPosition);
+                        UpdateFormattedPosition(newPosition);
+                        e.Handled = true;
+                        break;
+                    }
+            }
+
 
         }
 

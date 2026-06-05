@@ -42,8 +42,14 @@
                 Grid.Row="0" Grid.Column="1"
                 Background="Transparent"/>
 
-        <Border x:Name="VolumeHost"
-                Grid.Row="0" Grid.Column="2">
+        <Border x:Name="VolumeHost" 
+                Grid.Row="0" 
+                Grid.Column="2" 
+                Cursor="Hand" 
+                VerticalAlignment="Center"
+                Focusable="True"
+                PreviewKeyDown="VolumeHost_PreviewKeyDown"
+                >
             <Grid x:Name="VolumeContainer" Background="Transparent">
 
                 <!-- Track Background (unfilled portion) -->

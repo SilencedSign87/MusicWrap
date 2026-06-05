@@ -12,7 +12,10 @@
              Focusable="True"
              >
     <Border>
-        <Grid x:Name="WaveformContainer">
+        <Grid 
+            x:Name="WaveformContainer"
+            Cursor="Hand"
+              >
             <!-- Back waveform -->
             <Path x:Name="PathBackground" 
                   Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}" 
