@@ -1,10 +1,13 @@
 ﻿using MessagePack.Formatters;
+using Microsoft.Extensions.Logging;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Channels;
 
 namespace MusicWrap.Core.Services.Library
 {
@@ -13,7 +16,7 @@ namespace MusicWrap.Core.Services.Library
         Task ScanAllDirectories(IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
         Task ScanSpecificDirectories(string[] paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
         Task ScanDirectory(string path, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
-        Task ScanFiles(string[] paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
+        Task ScanFiles(IEnumerable<string> paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
         void AddDirectory(string path, bool recursive);
         void RemoveDirectory(string path, bool keepTracks);
         IReadOnlyList<ScanDirectory> GetDirectories();
@@ -23,6 +26,7 @@ namespace MusicWrap.Core.Services.Library
         private readonly MusicLibrary _library;
         private readonly ILibraryRepository _store;
         private readonly ILibraryIndexer _indexer;
+        private readonly ILogger _logger;
 
         private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -38,54 +42,41 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        public LibraryScanner(MusicLibrary library, ILibraryRepository store, ILibraryIndexer indexer)
+        public LibraryScanner(MusicLibrary library, ILibraryRepository store, ILibraryIndexer indexer, ILogger<LibraryScanner> logger)
         {
             _library = library;
             _store = store;
             _indexer = indexer;
+            _logger = logger;
         }
         public async Task ScanAllDirectories(IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)
         {
-            var allFiles = new List<string>();
-            foreach (var dir in Directories)
-            {
-                cancellationToken?.ThrowIfCancellationRequested();
+            var cts = cancellationToken ?? CancellationToken.None;
 
-                allFiles.AddRange(
-                    GetFilesFromDirectory(dir.Path, dir.Recursive)
-                );
+            var allPaths = Directories
+                .Where(d => !string.IsNullOrWhiteSpace(d.Path))
+                .SelectMany(d => GetFilesFromDirectory(d.Path, d.Recursive));
 
-                dir.LastScan = DateTime.UtcNow;
-            }
+            await ScanFiles(allPaths, progress, cancellationToken).ConfigureAwait(false);
 
-            await ScanFiles([.. allFiles], progress, cancellationToken);
-
-            _store.Save(_library);
+            await Task.Run(() => _store.Save(_library), cts).ConfigureAwait(false);
         }
 
         public async Task ScanSpecificDirectories(string[] paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)
         {
-            var allFiles = new List<string>();
+            var cts = cancellationToken ?? CancellationToken.None;
 
-            foreach (var path in paths)
-            {
-                cancellationToken?.ThrowIfCancellationRequested();
+            var selected = new HashSet<string>(
+                paths.Where(p => !string.IsNullOrWhiteSpace(p)),
+                StringComparer.OrdinalIgnoreCase);
 
-                var dir = Directories.FirstOrDefault(d =>
-                    string.Equals(d.Path, path, StringComparison.OrdinalIgnoreCase));
+            var allPaths = Directories
+                .Where(d => selected.Contains(d.Path))
+                .SelectMany(d => GetFilesFromDirectory(d.Path, d.Recursive));
 
-                if (dir is null) continue;
+            await ScanFiles(allPaths, progress, cancellationToken).ConfigureAwait(false);
 
-                allFiles.AddRange(
-                    GetFilesFromDirectory(dir.Path, dir.Recursive)
-                );
-
-                dir.LastScan = DateTime.UtcNow;
-            }
-
-            await ScanFiles([.. allFiles], progress, cancellationToken);
-
-            _store.Save(_library);
+            await Task.Run(() => _store.Save(_library), cts).ConfigureAwait(false);
         }
 
         public void AddDirectory(string path, bool recursive)
@@ -138,110 +129,143 @@ namespace MusicWrap.Core.Services.Library
             await ScanFiles(files, progress, cancellationToken);
         }
 
-        public async Task ScanFiles(string[] paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)
+        public async Task ScanFiles(IEnumerable<string> paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)
         {
-            if (paths is null || paths.Length == 0) return;
+            if (paths is null) return;
 
             var cts = cancellationToken ?? CancellationToken.None;
 
-            await Task.Run(() => // delegate to background thread for IO-bound work
+            const int consumers = 4;
+            var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(consumers)
             {
-                // Fingerprinting
-                var trackByFingerprint = new Dictionary<(long size, long ticks), Track>(_library.Tracks.Count);
-                for (int i = 0; i < _library.Tracks.Count; i++)
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = false,
+                SingleWriter = true
+            });
+
+            var totalFiles = paths.Count();
+            var processedFiles = 0;
+            var skippedFiles = 0;
+            var errorSummary = new ConcurrentDictionary<string, int>();
+            var lastProgressAt = Environment.TickCount64;
+            const int progressIntervalMs = 250;
+            const int progressEveryNFiles = 100;
+
+            progress?.Report(new ScanProgress
+            {
+                TotalFiles = 0,
+                FilesProcessed = 0,
+                CurrentFile = string.Empty
+            });
+
+            async Task ProduceAsync()
+            {
+                try
                 {
-                    var t = _library.Tracks[i];
-                    trackByFingerprint[(t.FileSize, t.LastWriteTime)] = t;
+                    foreach (var path in paths)
+                    {
+                        cts.ThrowIfCancellationRequested();
+                        //Interlocked.Increment(ref totalFiles);
+                        await channel.Writer.WriteAsync(path, cts).ConfigureAwait(false);
+                    }
                 }
-
-                var totalFiles = paths.Length;
-                var processedFiles = 0;
-
-                progress?.Report(new ScanProgress
+                finally
                 {
-                    TotalFiles = totalFiles,
-                    FilesProcessed = processedFiles,
-                    CurrentFile = string.Empty
-                });
+                    channel.Writer.Complete();
+                }
+            }
 
-
-                var lastProgressAt = Environment.TickCount64;
-                const int progressIntervalMs = 250;
-                const int progressEveryNFiles = 100;
-
-                for (int i = 0; i < paths.Length; i++)
+            async Task ConsumeAsync(int id)
+            {
+                await foreach (var filepath in channel.Reader.ReadAllAsync(cts).ConfigureAwait(false))
                 {
-                    cancellationToken?.ThrowIfCancellationRequested();
-                    string filePath = paths[i];
-
                     try
                     {
-                        var fileInfo = new FileInfo(filePath);
-                        long size = fileInfo.Length;
-                        long ticks = fileInfo.LastWriteTimeUtc.Ticks;
-                        var key = (size, ticks);
+                        await _indexer.IndexFileAsync(filepath, cts).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw; // propagate cancellation
+                    }
+                    catch(Exception ex)
+                    {
+                        Interlocked.Increment(ref skippedFiles);
+                        var key = $"{ex.GetType().Name}: {ex.Message.Split('\n')[0]}";
+                        errorSummary.AddOrUpdate(key, 1, (_, current) => current + 1);
 
-                        if (trackByFingerprint.TryGetValue(key, out var existingTrack)) // file exists in the library
-                        {
-                            if (!string.Equals(existingTrack.Path, filePath, StringComparison.OrdinalIgnoreCase))
-                                existingTrack.Path = filePath; // Update path if it has changed
-                        }
-                        else
-                        {
-                            _indexer.IndexFileAsync(filePath);
+                        _logger.LogWarning(ex, "Failed to index file '{FilePath}'", filepath);
+                    }
 
-                            if (_library.Tracks.Count > 0)
-                            {
-                                var last = _library.Tracks[^1];
-                                trackByFingerprint[(last.FileSize, last.LastWriteTime)] = last;
-                            }
-                        }
+                    var current = Interlocked.Increment(ref processedFiles);
 
-                        processedFiles++;
-
-                        bool byCount = (processedFiles % progressEveryNFiles) == 0;
+                    if (id == 0)
+                    {
+                        bool byCount = (current % progressEveryNFiles) == 0;
                         bool byTime = (Environment.TickCount64 - lastProgressAt) >= progressIntervalMs;
                         if (byCount || byTime)
                         {
+                            lastProgressAt = Environment.TickCount64;
+                            var total = Volatile.Read(ref totalFiles);
                             progress?.Report(new ScanProgress
                             {
-                                TotalFiles = totalFiles,
-                                FilesProcessed = processedFiles,
-                                CurrentFile = filePath
+                                TotalFiles = total,
+                                FilesProcessed = (int)current,
+                                CurrentFile = filepath,
+                                State = ScanState.Scanning
                             });
-                            lastProgressAt = Environment.TickCount64;
                         }
                     }
-                    catch
-                    {
-
-                    }
                 }
+            }
 
-                progress?.Report(new ScanProgress
+            // orquestator
+
+            var producer = Task.Run(ProduceAsync, cts);
+            var consumerTasks = Enumerable.Range(0, consumers)
+                .Select(i => ConsumeAsync(i))
+                .ToArray();
+
+            await Task.WhenAll(consumerTasks.Prepend(producer)).ConfigureAwait(false);
+
+            var finalTotal = Volatile.Read(ref totalFiles);
+            var finalProcessed = Volatile.Read(ref processedFiles);
+            var finalSkipped = Volatile.Read(ref skippedFiles);
+
+            progress?.Report(new ScanProgress
+            {
+                TotalFiles = finalTotal,
+                FilesProcessed = finalProcessed,
+                CurrentFile = string.Empty,
+                State = ScanState.Saving
+            });
+
+            _logger.LogInformation(
+                message: "Scan complete. Processed: {Processed}/{Total}, Skipped: {Skipped}",
+                finalProcessed, finalTotal, finalSkipped
+                );
+
+            if (errorSummary.Count > 0)
+            {
+                _logger.LogInformation("Error summary:");
+                foreach (var kvp in errorSummary.OrderByDescending(kv => kv.Value))
                 {
-                    TotalFiles = totalFiles,
-                    FilesProcessed = processedFiles,
-                    CurrentFile = string.Empty
-                });
-            }, cts);
+                    _logger.LogInformation("  {Count,6}x  {Error}", kvp.Value, kvp.Key);
+                }
+            }
+
         }
 
         #region Internal
-        private string[] GetFilesFromDirectory(string path, bool recursive)
+        private IEnumerable<string> GetFilesFromDirectory(string path, bool recursive)
         {
-            var searchOption = recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-
-            try
+            var options = new EnumerationOptions
             {
-                return [.. Directory.GetFiles(path, "*.*", searchOption).Where(f => SupportedExtensions.Contains(Path.GetExtension(f)))];
+                RecurseSubdirectories = recursive,
+                IgnoreInaccessible = true,
+            };
 
-            }
-            catch
-            {
-                return [];
-            }
-
+            return Directory.EnumerateFiles(path, "*", options)
+                            .Where(f => SupportedExtensions.Contains(Path.GetExtension(f)));
         }
         #endregion
     }
