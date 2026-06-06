@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="MusicWrap.UI.Shell.Controls.SidebarControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Shell.Controls"
+             xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="32"/>
+            <RowDefinition Height="4"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Border Background="{StaticResource BackgroundCard1}" BorderThickness="1" BorderBrush="{StaticResource BackgroundCard1}" CornerRadius="4">
+                <nav:ShellTabControl
+                    SelectionChanged="ShellTabControl_SelectionChanged"
+                    VerticalAlignment="Bottom"
+                    CompactWidthThreshold="0">
+                    <nav:ShellTabItem Icon="&#xE90B;"  TabIndex="0" ToolTip="Queue"/>
+                    <nav:ShellTabItem Icon="&#xE93C;"  TabIndex="1" ToolTip="Information"/>
+                    <nav:ShellTabItem Icon="&#xEC4F;"  TabIndex="2" ToolTip="Lyrics"/>
+                </nav:ShellTabControl>
+            </Border>
+        </Grid>
+        <Grid Grid.Row="2" x:Name="ContentContainer">
+        </Grid>
+    </Grid>
+</UserControl>

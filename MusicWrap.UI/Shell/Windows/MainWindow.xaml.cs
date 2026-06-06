@@ -13,6 +13,7 @@ using MusicWrap.UI.Features.Providers.Views;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.Shell.ViewModel;
 using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
 using System.Windows;
@@ -32,29 +33,17 @@ namespace MusicWrap.UI.Shell.Windows
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly IMusicPlayerService _player;
+        private readonly MainWindowViewModel _viewModel;
         private readonly IServiceProvider _serviceProvider;
         private readonly IUIDispatcher _uiDispatcher;
-        private readonly BitmapImage _playIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
-        private readonly BitmapImage _pauseIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png");
-        private bool _isSidePanelVisible = true;
 
-        private static BitmapImage LoadBitmapFromResource(string uri)
-        {
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.UriSource = new Uri(uri);
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
-        }
-
-        public MainWindow(IMusicPlayerService playerService, Tracker tracker, IServiceProvider serviceProvider, PlayerPage playerPage, IUIDispatcher uiDispatcher)
+        public MainWindow(Tracker tracker, IServiceProvider serviceProvider, PlayerPage playerPage, IUIDispatcher uiDispatcher, MainWindowViewModel viewmodel)
         {
             InitializeComponent();
+            _viewModel = viewmodel;
+            DataContext = _viewModel;
+
             _serviceProvider = serviceProvider;
-            _player = playerService;
             _uiDispatcher = uiDispatcher;
             PlayerContainer.Children.Add(playerPage);
 
@@ -62,29 +51,10 @@ namespace MusicWrap.UI.Shell.Windows
             Closing += MainWindow_Closing;
             Closed += MainWindow_Closed;
 
-            _player.PlaybackStateChanged += _player_PlaybackStateChanged;
-
             UpdateBackdrop();
-            NavigateToTab(0);
-            PlayPauseButton.ImageSource = _playIcon;
+
 
             tracker.Track(this);
-        }
-
-
-        private void _player_PlaybackStateChanged(object? sender, PlaybackState e)
-        {
-            _uiDispatcher.Invoke(() =>
-            {
-                if (e == PlaybackState.Playing)
-                {
-                    PlayPauseButton.ImageSource = _pauseIcon;
-                }
-                else
-                {
-                    PlayPauseButton.ImageSource = _playIcon;
-                }
-            });
         }
 
         private void UpdateBackdrop()
@@ -118,7 +88,6 @@ namespace MusicWrap.UI.Shell.Windows
 
             if (App.ShouldKeepAppInTray())
             {
-                //App.Services.GetService<ITrayService>()?.HideFlyout();
                 return;
             }
 
@@ -130,138 +99,16 @@ namespace MusicWrap.UI.Shell.Windows
             StateChanged -= MainWindow_StateChanged;
             Closing -= MainWindow_Closing;
             Closed -= MainWindow_Closed;
-
-            _player.PlaybackStateChanged -= _player_PlaybackStateChanged;
-            MainFrame.Content = null;
-        }
-        private void CloseButtonClick(object sender, RoutedEventArgs e)
-        {
-            Close();
         }
 
-        private void RestoreButtonClick(object sender, RoutedEventArgs e)
-        {
-            if (WindowState == WindowState.Normal)
-            {
-                WindowState = WindowState.Maximized;
-            }
-            else
-            {
-                WindowState = WindowState.Normal;
-            }
-
-        }
-
-        private void MinimizeButtonClick(object sender, RoutedEventArgs e)
-        {
-            WindowState = WindowState.Minimized;
-        }
-
-        private void HandleOpenMiniPlayer(object sender, RoutedEventArgs e)
-        {
-            App.ShowCompactPlayer();
-        }
-
-        private void HandleOpenSettings(object sender, RoutedEventArgs e)
-        {
-            var existingWindow = Application.Current.Windows.OfType<SettingsWindow>().FirstOrDefault();
-            if (existingWindow is not null)
-            {
-                existingWindow.Activate();
-                existingWindow.Focus();
-            }
-            else
-            {
-                var settingsWindow = App.Services.GetRequiredService<SettingsWindow>();
-                if (settingsWindow is not null)
-                {
-                    WindowHelper.LauchFromParent(this, settingsWindow, false);
-                }
-            }
-        }
-
-        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is TabControl tabControl)
-            {
-                NavigateToTab(tabControl.SelectedIndex);
-            }
-        }
-
-        private void NavigateToTab(int index)
-        {
-            object page = index switch
-            {
-                0 => _serviceProvider.GetRequiredService<LibraryPage>(),
-                1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
-                2 => _serviceProvider.GetRequiredService<FavoritesPage>(),
-                3 => _serviceProvider.GetRequiredService<ServicesPage>(),
-                4 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
-                _ => _serviceProvider.GetRequiredService<LibraryPage>()
-            };
-
-            if (MainFrame.Content is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-
-            MainFrame.Content = page;
-        }
-
-        private void ThumbButtonInfo_Previous(object sender, EventArgs e)
-        {
-            _player.Previous();
-        }
-
-        private void ThumbButtonInfo_PlayPause(object sender, EventArgs e)
-        {
-            if (_player.IsPlaying)
-            {
-                _player.Pause();
-            }
-            else
-            {
-                _player.Play();
-            }
-        }
-
-        private void ThumbButtonInfo_Next(object sender, EventArgs e)
-        {
-            _player.Next();
-        }
-
-        private void TrackExpander_Expanded(object sender, RoutedEventArgs e)
-        {
-            if (TrackInformationHost.Content is null)
-            {
-                TrackInformationHost.Content = App.Services.GetRequiredService<TrackInformationPage>();
-            }
-        }
-
-        private void TrackExpander_Collapsed(object sender, RoutedEventArgs e)
-        {
-            TrackInformationHost.Content = null;
-        }
         private void ReleaseResources()
         {
             App.Services.GetService<IImageService>()?.ClearCache();
 
-            if (MainFrame.Content is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
+            _viewModel.Dispose();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
-        }
-
-        private void ToggleSidePanel(object sender, RoutedEventArgs e)
-        {
-            _isSidePanelVisible = !_isSidePanelVisible;
-
-            SidebarToggleButtonIcon.Text = _isSidePanelVisible ? "\xE89F" : "\xE8A0";
-            SidebarContainer.BorderThickness = _isSidePanelVisible ? new Thickness(4) : new Thickness(0);
-            SidebarColumn.Width = _isSidePanelVisible ? new GridLength(300) : new GridLength(0);
         }
     }
 }

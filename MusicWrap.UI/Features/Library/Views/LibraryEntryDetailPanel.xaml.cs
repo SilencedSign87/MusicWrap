@@ -101,6 +101,7 @@ namespace MusicWrap.UI.Features.Library.Views
             _isDisposed = true;
             _viewModel.PropertyChanged -= _viewModel_PropertyChanged;
             Unloaded -= LibraryEntryDetailPanel_Unloaded;
+            _viewModel.Dispose();
             foreach (var child in ContentGrid.Children)
             {
                 if (child is FrameworkElement fe && fe.DataContext is IDisposable disposable)

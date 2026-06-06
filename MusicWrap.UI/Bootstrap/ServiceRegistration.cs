@@ -35,6 +35,7 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Controls.ViewModel;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.Shell.ViewModel;
 using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.ViewModels;
 using Serilog;
@@ -89,6 +90,7 @@ public static class ServiceRegistration
         services.AddSingleton<ILibraryIntegrityService, LibraryIntegrityService>();
         services.AddSingleton<SearchService>();
         services.AddSingleton<ISearchQueryProvider, SearchService>(sp => sp.GetRequiredService<SearchService>());
+        services.AddSingleton<WindowManager>();
 
         // Providers
         services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();
@@ -108,6 +110,7 @@ public static class ServiceRegistration
         services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
 
         // View Models
+        services.AddTransient<MainWindowViewModel>();
         services.AddTransient<DirectoriesManagerViewModel>();
         services.AddTransient<SettingsGeneralViewModel>();
         services.AddTransient<LibraryViewModel>();

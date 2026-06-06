@@ -24,11 +24,19 @@
             </ContextMenu>
         </Grid.ContextMenu>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="300"/>
+            <RowDefinition Height="8"/>
             <RowDefinition />
         </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Image
+            Source="{Binding CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
+            RenderOptions.BitmapScalingMode="HighQuality"
+            Stretch="UniformToFill"
+            />
+        </Grid>
         <!-- Information -->
-        <StackPanel Orientation="Vertical" Grid.Row="0" Margin="0,0,0,16">
+        <StackPanel Orientation="Vertical" Grid.Row="2">
             <TextBlock Text="{Binding CurrentTrackTitle}" FontSize="14" Margin="0,0,0,8" TextTrimming="WordEllipsis" />
             <TextBlock Text="{Binding CurrentTrackAlbum}" FontSize="11" Opacity="0.75" TextTrimming="WordEllipsis"/>
             <TextBlock Text="{Binding CurrentTrackArtists}" FontSize="11" Opacity="0.75" TextTrimming="WordEllipsis"/>
@@ -47,16 +55,10 @@
                     <Run Text="{Binding FormattedDuration}" />
             </TextBlock>
 
+            <Separator Margin="0,4"/>
+            <TextBlock Text="About" FontSize="14"/>
+
         </StackPanel>
-        <!-- Artwork -->
-        <Grid Grid.Row="1">
-            <Image
-                    HorizontalAlignment="Stretch"
-                    Source="{Binding CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
-                    RenderOptions.BitmapScalingMode="HighQuality"
-                    Stretch="UniformToFill"
-                    />
-        </Grid>
     </Grid>
 </UserControl>
 

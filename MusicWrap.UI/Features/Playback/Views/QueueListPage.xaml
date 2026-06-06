@@ -17,7 +17,7 @@
             <MenuItem Header="Play now" Icon="{ex:Icon Glyph=E768}" Command="{Binding PlayTracksCommand}"/>
             <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}" Command="{Binding MoveToNextCommand}"/>
             <Separator/>
-            <controlsM:TrackToPlaylistMenu x:Name="QueueTrackToPlaylistMenu" TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
+            <controlsM:TrackToPlaylistMenu  TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
             <Separator/>
             <MenuItem Header="Remove from queue" Icon="{ex:Icon Glyph=E738}" Command="{Binding RemoveFromQueueCommand}"/>
         </ContextMenu>

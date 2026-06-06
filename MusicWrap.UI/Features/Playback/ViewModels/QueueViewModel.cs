@@ -201,19 +201,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             _player.PlayIndex(insertionIndex);
         }
 
-        public void SetSelectedTracksToPlayNext(List<int> trackIDs)
-        {
-            var currentTrackId = _player.CurrentTrackId;
-            var removeSet = new HashSet<int>(trackIDs);
-            var currentQueue = _player.GetQueue().Where(id => !removeSet.Contains(id)).ToList();
-
-            int currentIndex = currentQueue.IndexOf(currentTrackId);
-            if (currentIndex == -1) return;
-
-            currentQueue.InsertRange(currentIndex + 1, trackIDs);
-            _player.SetQueue(currentQueue, true);
-        }
-
         private BitmapImage? GetAlbumArt(int coverId, string? coverPath)
         {
             if (coverId == 0) return _imageService.GetDefaultImage(42);

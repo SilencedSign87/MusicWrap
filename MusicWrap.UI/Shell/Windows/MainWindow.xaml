@@ -9,6 +9,8 @@
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
         xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+        xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
+        xmlns:shellControls="clr-namespace:MusicWrap.UI.Shell.Controls"
         mc:Ignorable="d"
         x:Name="MainWindowRoot"
         Icon="/Resources/icon.ico"
@@ -21,6 +23,7 @@
         d:Background="#000000"
         ResizeMode="CanResize"
         ThemeMode="Dark"
+        d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
         >
     <WindowChrome.WindowChrome>
         <WindowChrome
@@ -36,21 +39,19 @@
         <TaskbarItemInfo>
             <TaskbarItemInfo.ThumbButtonInfos>
                 <ThumbButtonInfo
-                    x:Name="PreviousButton"
                     Description="Previous track"
                     ImageSource="/Resources/Icons/PreviousIcon.png"
-                    Click="ThumbButtonInfo_Previous"
+                    Command="{Binding PreviousCommand}"
                     />
                 <ThumbButtonInfo
-                    x:Name="PlayPauseButton"
+                    ImageSource="{Binding PlayPauseIcon}"
                     Description="Play"
-                    Click="ThumbButtonInfo_PlayPause"
+                    Command="{Binding PlayPauseCommand}"
                     />
                 <ThumbButtonInfo
-                    x:Name="NextButton"
                     Description="Next track"
                     ImageSource="/Resources/Icons/NextIcon.png"
-                    Click="ThumbButtonInfo_Next"
+                    Command="{Binding NextCommnad}"
                     />
             </TaskbarItemInfo.ThumbButtonInfos>
         </TaskbarItemInfo>
@@ -80,7 +81,11 @@
                         Margin="8,4,4,4"
                         RenderOptions.BitmapScalingMode="HighQuality"
                         />
-                    <nav:ShellTabControl x:Name="SystemTabs" SelectionChanged="TabControl_SelectionChanged" WindowChrome.IsHitTestVisibleInChrome="True" CompactWidthThreshold="1100">
+                    <nav:ShellTabControl 
+                        x:Name="SystemTabs" 
+                        SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+                        WindowChrome.IsHitTestVisibleInChrome="True"
+                        CompactWidthThreshold="1100">
                         <nav:ShellTabItem Icon="&#xe8f1;" Text="Library" TabIndex="0" ToolTip="Library"/>
                         <nav:ShellTabItem Icon="&#xe90b;" Text="Playlists" TabIndex="1" ToolTip="Playlists"/>
                         <nav:ShellTabItem Icon="&#xE704;" Text="Radio" TabIndex="2" ToolTip="Radio"/>
@@ -96,14 +101,13 @@
 
                     <Border Margin="0,4" Width="1" Background="#333"/>
 
-
-                    <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">
+                    <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding openSettingsCommand}" ToolTip="Settings">
                         <TextBlock Text="&#xe713;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
-                    <Button Style="{StaticResource TransparentTitleButton}" Click="ToggleSidePanel" ToolTip="SidePanel">
-                        <TextBlock x:Name="SidebarToggleButtonIcon" Text="&#xEA5B;" FontFamily="Segoe Fluent Icons" FontSize="16" />
+                    <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding ToggleSidebarCommand}" ToolTip="{Binding SidebarTooltip}">
+                        <TextBlock Text="{Binding SidebarToggleIcon}" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
-                    <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenMiniPlayer" ToolTip="MiniPlayer">
+                    <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding showMiniplayerCommand}" ToolTip="MiniPlayer">
                         <TextBlock Text="&#xee49;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
                     <Border Margin="0,4" Width="1" Background="#333"/>
@@ -114,71 +118,33 @@
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
-                    <ColumnDefinition x:Name="SidebarColumn" MaxWidth="300" />
+                    <ColumnDefinition Width="{Binding SidebarWidth}" />
                 </Grid.ColumnDefinitions>
 
                 <!-- MainContent -->
                 <ContentControl
                     Grid.Column="0"
-                    x:Name="MainFrame"
+                    Content="{Binding CurrentControl}"
                     />
 
                 <!-- Sidebar -->
                 <Border
                     Grid.Column="1"
-                    x:Name="SidebarContainer"
+                    BorderThickness="{Binding SidebarBorderThickness}"
                     >
 
                     <Grid
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch"
-                    >
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*" MinHeight="40"/>
-                            <RowDefinition Height="auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="40" />
-                                <RowDefinition />
-                            </Grid.RowDefinitions>
-
-                            <Border Grid.Row="0" Background="{StaticResource BackgroundLayerAlt}" CornerRadius="4" ContextMenuService.Placement="Right">
-                                <Border.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Clear queue" Icon="{ex:Icon Glyph=e74d}"/>
-                                        <MenuItem Header="Save as playlist" Icon="{ex:Icon Glyph=e74e}"/>
-                                    </ContextMenu>
-                                </Border.ContextMenu>
-                                <StackPanel Orientation="Horizontal" Margin="16,0">
-                                    <TextBlock Text="&#xe90b;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                    <TextBlock Text="Queue" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Border>
-
-                            <mw:QueueListPage Grid.Row="1"/>
-
-                        </Grid>
-
-                        <Expander Grid.Row="1" ExpandDirection="Up" x:Name="TrackExpander" Expanded="TrackExpander_Expanded" Collapsed="TrackExpander_Collapsed">
-                            <Expander.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                    <TextBlock Text="Track information" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Expander.Header>
-                            <Expander.Content>
-                                <ContentControl x:Name="TrackInformationHost" />
-                            </Expander.Content>
-                        </Expander>
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        Visibility="{Binding IsSidePanelVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <shellControls:SidebarControl Grid.Column="0" Grid.Row="0" />
                     </Grid>
                 </Border>
 
             </Grid>
-            <!--Player-->
+            
             <Grid Grid.Row="2" x:Name="PlayerContainer">
-                <!--<pages:PlayerPage />-->
+                <!--Player-->
             </Grid>
         </Grid>
     </Border>

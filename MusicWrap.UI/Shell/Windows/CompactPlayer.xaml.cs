@@ -31,7 +31,6 @@ namespace MusicWrap.UI.Shell.Windows
         private void CompactPlayer_Closed(object? sender, EventArgs e)
         {
             Closed -= CompactPlayer_Closed;
-            _viewModel?.Dispose();
         }
 
         private void InitializeWindowSize()
