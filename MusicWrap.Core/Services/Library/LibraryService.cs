@@ -177,7 +177,7 @@ namespace MusicWrap.Core.Services.Library
             LoadFromDisk();
             BuildCoverLookUp();
 
-            switch (_userSettings.LibraryListBy)
+            switch (_userSettings.LibrarySettings.EntryType)
             {
                 case LibraryEntryType.Album:
                     _albumCache ??= ConstructAlbumEntries();
@@ -595,8 +595,8 @@ namespace MusicWrap.Core.Services.Library
 
         private void SaveUserPreference(LibraryEntryType listBy, bool ascending)
         {
-            _userSettings.LibraryListBy = listBy;
-            _userSettings.LibraryAscending = ascending;
+            _userSettings.LibrarySettings.EntryType = listBy;
+            _userSettings.LibrarySettings.LibraryAscending = ascending;
             //_saveCoordinator.Enqueue(SaveKind.Settings);
             _userSettingsRepository.Save(_userSettings);
         }

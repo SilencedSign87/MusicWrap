@@ -473,20 +473,9 @@ namespace MusicWrap.Core.Services.Library
         {
             if (imageBytes is null || imageBytes.Length == 0) return 0;
 
-            const int segmentSize = 32;
-            var length = imageBytes.Length;
-
-            var headSize = Math.Min(segmentSize, length);
-            var tailSize = Math.Min(segmentSize, length - headSize);
-
-            var buffer = new byte[headSize + tailSize];
-            if (headSize > 0)
-                Array.Copy(imageBytes, 0, buffer, 0, headSize);
-            if (tailSize > 0)
-                Array.Copy(imageBytes, length - tailSize, buffer, headSize, tailSize);
-
-            var core = Convert.ToBase64String(buffer);
-            var fingerprint = $"{length}:{core}";
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(imageBytes);
+            var fingerprint = Convert.ToHexString(hashBytes);
 
             string baseFileName;
 
@@ -562,7 +551,6 @@ namespace MusicWrap.Core.Services.Library
             {
                 return _fingerprint.TryGetValue((fileSize, ticks), out var t) ? t : null;
 
-                //return _library.Tracks.FirstOrDefault(t => t.FileSize == fileSize && t.LastWriteTime == lastModifiedTicks);
             }
         }
 
@@ -931,7 +919,7 @@ namespace MusicWrap.Core.Services.Library
             public string MediumFileName { get; set; } = string.Empty;
             public string LargeFileName { get; set; } = string.Empty;
             public string BlurFileName { get; set; } = string.Empty;
-            public string DominantColorHex { get; set; } = "#808080";
+            public string DominantColorHex { get; set; } = "#404040";
             public string ForegroundColorHex { get; set; } = "#FFFFFF";
         }
         #endregion

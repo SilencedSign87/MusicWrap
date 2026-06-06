@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.Views;
@@ -26,6 +27,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         private readonly IServiceProvider _serviceProvider;
         private readonly WindowManager _windowManager;
         private readonly ILogger _logger;
+        private readonly UserSettings _userSettings;
 
         [ObservableProperty]
         private int selectedTabIndex;
@@ -35,7 +37,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         [NotifyPropertyChangedFor(nameof(SidebarWidth))]
         [NotifyPropertyChangedFor(nameof(SidebarBorderThickness))]
         [NotifyPropertyChangedFor(nameof(SidebarTooltip))]
-        private bool isSidePanelVisible = true;
+        private bool isSidePanelVisible;
 
         [ObservableProperty] public UserControl? currentControl;
 
@@ -55,16 +57,20 @@ namespace MusicWrap.UI.Shell.ViewModel
         private bool _disposed = false;
 
 
-        public MainWindowViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WindowManager manager)
+        public MainWindowViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WindowManager manager, UserSettings userSettings)
         {
             _playerService = playerService;
             _serviceProvider = serviceProvider;
             _windowManager = manager;
             _logger = logger;
+            _userSettings = userSettings;
 
             _playerService.PlaybackStateChanged += _playerService_PlaybackStateChanged;
 
-            _ = NavigateAsync(0);
+            IsSidePanelVisible = _userSettings.IsSidebarOpen;
+
+            SelectedTabIndex = _userSettings.MainWindowTab;
+            _ = NavigateAsync(_userSettings.MainWindowTab);
         }
 
         private void _playerService_PlaybackStateChanged(object? sender, Data.Library.Models.PlaybackState e)
@@ -109,6 +115,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         private void ToggleSidebar()
         {
             IsSidePanelVisible = !IsSidePanelVisible;
+            _userSettings.IsSidebarOpen = IsSidePanelVisible;
         }
         #endregion
         #region Partial Functions
@@ -141,6 +148,7 @@ namespace MusicWrap.UI.Shell.ViewModel
                     4 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
                     _ => _serviceProvider.GetRequiredService<LibraryPage>()
                 };
+                _userSettings.MainWindowTab = index;
 
                 if (token.IsCancellationRequested) return;
 

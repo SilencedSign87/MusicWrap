@@ -15,6 +15,7 @@ using MusicWrap.UI.Features.Activity.Services;
 using System.IO;
 using System.Diagnostics;
 using System.Drawing.Printing;
+using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -41,6 +42,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private bool _isDisposing;
         private int _loadEntriesRequestId;
         private readonly IProgress<ScanProgress> _scanProgress;
+        private bool _isFirstLoad = true;
 
         // Services
         private readonly ILibraryScanner _scanner;
@@ -50,6 +52,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILogger _logger;
         private readonly SearchService _searchService;
         private readonly ActivityService _activityService;
+        private readonly UserSettings _userSettings;
 
         public LibraryViewModel(
             ILibraryScanner scanner,
@@ -68,6 +71,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _player = player;
             _logger = logger;
             _searchService = searchService;
+            _userSettings = settings;
 
             _scanProgress = new Progress<ScanProgress>(progress =>
             {
@@ -87,8 +91,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             _isInitializing = true;
 
-            ListBy = settings.LibraryListBy;
-            Ascending = settings.LibraryAscending;
+            var saved = _userSettings.LibrarySettings;
+
+            ListBy = saved.EntryType;
+            Ascending = saved.LibraryAscending;
 
             _isInitializing = false;
 
@@ -108,6 +114,19 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public bool IsAlbumArtistView => ListBy == LibraryEntryType.AlbumArtist;
         public bool IsGenreView => ListBy == LibraryEntryType.Genre;
         public bool IsDecadeView => ListBy == LibraryEntryType.Decade;
+        partial void OnSelectedEntryChanged(LibraryEntry? value)
+        {
+            if (_isDisposing) return;
+            if (_isFirstLoad) return;
+            if (_isInitializing) return;
+
+            _userSettings.LibrarySettings = new LibrarySettings
+            {
+                EntryType = value?.Type ?? ListBy,
+                LibraryAscending = Ascending,
+                SelectedEntryId = value?.Id,
+            };
+        }
         partial void OnListByChanged(LibraryEntryType value)
         {
             if (_isInitializing) return;
@@ -272,7 +291,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             if (Enum.TryParse<LibraryEntryType>(mode, ignoreCase: true, out var result))
             {
-            ListBy = result;
+                ListBy = result;
             }
         }
         public bool CanSetViewMode(string mode)
@@ -308,6 +327,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private async Task LoadEntriesAsync()
         {
+
             var requestId = Interlocked.Increment(ref _loadEntriesRequestId);
             var listBySnapshot = ListBy;
             var ascendingSnapshot = Ascending;
@@ -323,6 +343,24 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
                 DateTime timeEnd = DateTime.Now;
                 _logger.LogInformation("Loaded {Count} entries in {Seconds:F2} seconds for ListBy={ListBy}, Ascending={Ascending}", loadedEntries.Count, (timeEnd - timeStart).TotalSeconds, listBySnapshot, ascendingSnapshot);
+
+                if (_isFirstLoad)
+                {
+                    _isFirstLoad = false;
+
+                    var saved = _userSettings.LibrarySettings;
+                    if (saved.SelectedEntryId is int savedId)
+                    {
+                        var match = Entries.FirstOrDefault(e =>
+                            e.Id == savedId && e.Type == saved.EntryType);
+
+                        if (match is not null && !ReferenceEquals(SelectedEntry, match))
+                        {
+                            SelectedEntry = match;
+                        }
+                    }
+
+                }
             }
             catch (Exception ex)
             {

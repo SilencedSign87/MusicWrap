@@ -30,10 +30,9 @@ namespace MusicWrap.Data.User.Models
                 }
             }
         }
-        [Key(4)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestoreQueueOnly;
+        [Key(4)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestorePosition;
         [Key(5)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
-        [Key(6)] public LibraryEntryType LibraryListBy { get; set; } = LibraryEntryType.AlbumArtist;
-        [Key(7)] public bool LibraryAscending { get; set; } = true;
+
         [Key(8)] public bool KeepAppInTray
         {
             get => _keepAppInTray;
@@ -83,6 +82,9 @@ namespace MusicWrap.Data.User.Models
                 }
             }
         }
+        [Key(14)] public LibrarySettings LibrarySettings { get; set; } = new LibrarySettings();
+        [Key(15)] public bool IsSidebarOpen { get; set; } = true;
+        [Key(16)] public int MainWindowTab{ get; set; } = 0;
 
         // FFMpeg settings
         [Key(9)] public FFMpegSettings FFMpegSettings { get; set; } = new FFMpegSettings();
