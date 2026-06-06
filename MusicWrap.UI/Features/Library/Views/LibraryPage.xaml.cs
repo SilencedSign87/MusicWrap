@@ -128,9 +128,9 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void EntriesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView lv && lv.SelectedItem is LibraryEntry entry)
+            if (sender is ListView lv && lv.SelectedItem is LibraryEntry entry && vm.SetSelectionCommand.CanExecute(entry))
             {
-                vm.SelectedEntry = entry;
+                vm.SetSelectionCommand.Execute(entry);
             }
         }
     }

@@ -12,9 +12,6 @@ namespace MusicWrap.UI.Features.Library.Views
 {
     public partial class LibraryEntryAlbumsView : UserControl
     {
-        private readonly DispatcherTimer? _resizeThrottleTimer;
-
-        private int _lastColumns = -1;
         private const int MinTileWidth = 160;
         private const int Gutter = 0;
         private const int MinColumns = 1;
@@ -22,20 +19,6 @@ namespace MusicWrap.UI.Features.Library.Views
         public LibraryEntryAlbumsView()
         {
             InitializeComponent();
-
-            _resizeThrottleTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
-            _resizeThrottleTimer.Tick += (_, _) =>
-            {
-                _resizeThrottleTimer.Stop();
-                UpdateColumnsForViewportWidth();
-            };
-
-            DataContextChanged += LibraryEntryAlbumsView_DataContextChanged;
-        }
-
-        private void LibraryEntryAlbumsView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            UpdateColumnsForViewportWidth(true);
         }
 
         private void AlbumButton_Click(object sender, RoutedEventArgs e)
@@ -138,40 +121,23 @@ namespace MusicWrap.UI.Features.Library.Views
             }
         }
 
-        private int GetCurrentViewportWidth()
-        {
-            var padding = AlbumsViewport.Padding;
-            var estimated = AlbumsViewport.ActualWidth - padding.Left - padding.Right;
-            return Math.Max(1, (int)estimated);
-        }
+        private int GetCurrentViewportWidth() => Math.Max(1, (int)AlbumsViewport.ActualWidth);
 
-        private int CalculateColumns(int width)
-        {
-            int tileFootprint = MinTileWidth + Gutter;
-            return Math.Max(MinColumns, Math.Max(1, width) / tileFootprint);
-        }
+        private int CalculateColumns(int width) => Math.Max(MinColumns, Math.Max(1, width)/(MinTileWidth + Gutter));
 
         private void UpdateColumnsForViewportWidth(bool force = false)
         {
             if (DataContext is not LibraryEntryAlbumViewModel viewModel)
-            {
                 return;
-            }
-
+            
             int width = GetCurrentViewportWidth();
+
             if (width <= 0)
-            {
                 return;
-            }
 
             int columns = CalculateColumns(width);
-            if (!force && columns == _lastColumns)
-            {
-                return;
-            }
-
-            _lastColumns = columns;
-            viewModel.SetLayoutColumns(columns);
+            
+            viewModel.LayoutColumns = columns;
         }
     }
 }

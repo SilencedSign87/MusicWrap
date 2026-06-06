@@ -37,6 +37,7 @@ namespace MusicWrap.UI.Shell.Windows
         private readonly IUIDispatcher _uiDispatcher;
         private readonly BitmapImage _playIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
         private readonly BitmapImage _pauseIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png");
+        private bool _isSidePanelVisible = true;
 
         private static BitmapImage LoadBitmapFromResource(string uri)
         {
@@ -252,6 +253,15 @@ namespace MusicWrap.UI.Shell.Windows
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+        }
+
+        private void ToggleSidePanel(object sender, RoutedEventArgs e)
+        {
+            _isSidePanelVisible = !_isSidePanelVisible;
+
+            SidebarToggleButtonIcon.Text = _isSidePanelVisible ? "\xE89F" : "\xE8A0";
+            SidebarContainer.BorderThickness = _isSidePanelVisible ? new Thickness(4) : new Thickness(0);
+            SidebarColumn.Width = _isSidePanelVisible ? new GridLength(300) : new GridLength(0);
         }
     }
 }

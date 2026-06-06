@@ -10,6 +10,7 @@ using MusicWrap.UI.Shared.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing.Printing;
 using System.Text;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
@@ -24,6 +25,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         //private int[] _sourceTrackIds = [];
         private int _refreshRequestId;
+        private bool _isHibernating = true;
         private bool _disposed = false;
 
         [ObservableProperty] private LibraryEntry? selectedEntry;
@@ -48,7 +50,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _searchService = searchService;
             _uiDispatcher = uiDispatcher;
 
-            _searchService.QueryChanged += _searchService_QueryChanged;
+            _searchService.SearchSubmitted += onSearchSubmmited;
         }
 
         #region Relay Commands
@@ -75,20 +77,34 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         #region Partial methods
         partial void OnSelectedEntryChanged(LibraryEntry? value)
         {
-            _ = RefreshAsync(true);
+            if (value is null)
+            {
+                _isHibernating = true;
+                Tracks.Clear();
+                AllTrackIds.Clear();
+                SelectedTrackIds.Clear();
+            }
+            else
+            {
+                _isHibernating = false;
+                _ = RefreshAsync(true);
+            }
         }
         partial void OnSortModeChanged(TrackSortMode value)
         {
+            if (_isHibernating) return;
             _ = RefreshAsync(false);
         }
         partial void OnSortAscendingChanged(bool value)
         {
+            if (_isHibernating) return;
             _ = RefreshAsync(false);
         }
 
         #endregion
-        private void _searchService_QueryChanged(object? sender, string e)
+        private void onSearchSubmmited(object? sender, string e)
         {
+            if (_isHibernating) return;
             _ = RefreshAsync(true);
         }
         private async Task RefreshAsync(bool debounce)
@@ -225,14 +241,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public void Dispose()
         {
             if (_disposed) return;
+            _searchService.SearchSubmitted -= onSearchSubmmited;
             _disposed = true;
-
-            _searchService.QueryChanged -= _searchService_QueryChanged;
-
-            Tracks.Clear();
-            AllTrackIds.Clear();
-            SelectedTrackIds.Clear();
-            SelectedEntry = null;
         }
     }
 }

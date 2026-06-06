@@ -13,6 +13,8 @@ using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Features.Activity.Services;
 using System.IO;
+using System.Diagnostics;
+using System.Drawing.Printing;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -24,6 +26,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [NotifyPropertyChangedFor(nameof(IsAlbumArtistView))]
         [NotifyPropertyChangedFor(nameof(IsGenreView))]
         [NotifyPropertyChangedFor(nameof(IsDecadeView))]
+        [NotifyCanExecuteChangedFor(nameof(SetViewModeCommand))]
         private LibraryEntryType listBy = LibraryEntryType.AlbumArtist;
 
         [ObservableProperty] private bool ascending = true;
@@ -264,18 +267,31 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             await LoadEntriesAsync();
         }
 
-        public void NotifySearchSubmitted()
-        {
-            _ = LoadEntriesAsync();
-        }
-
-        [RelayCommand]
+        [RelayCommand(CanExecute = nameof(CanSetViewMode))]
         private void SetViewMode(string mode)
         {
             if (Enum.TryParse<LibraryEntryType>(mode, ignoreCase: true, out var result))
             {
-                ListBy = result;
+            ListBy = result;
             }
+        }
+        public bool CanSetViewMode(string mode)
+        {
+            if (!Enum.TryParse<LibraryEntryType>(mode, ignoreCase: true, out var result))
+            {
+                return false;
+            }
+            return ListBy != result;
+        }
+        [RelayCommand(CanExecute = nameof(CanSetSelection))]
+        private void SetSelection(LibraryEntry entry)
+        {
+            SelectedEntry = entry;
+        }
+
+        private bool CanSetSelection(LibraryEntry entry)
+        {
+            return entry != null && !ReferenceEquals(SelectedEntry, entry);
         }
 
         [RelayCommand]
@@ -358,12 +374,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             LibraryEntry? newSelection = null;
             if (selectedId.HasValue && selectedType.HasValue)
             {
-                 newSelection = Entries.FirstOrDefault(e => e.Id == selectedId.Value && e.Type == selectedType);
+                newSelection = Entries.FirstOrDefault(e => e.Id == selectedId.Value && e.Type == selectedType);
             }
 
             newSelection ??= Entries.FirstOrDefault();
 
-            if(!ReferenceEquals(SelectedEntry, newSelection))
+            if (!ReferenceEquals(SelectedEntry, newSelection))
             {
                 SelectedEntry = newSelection;
             }

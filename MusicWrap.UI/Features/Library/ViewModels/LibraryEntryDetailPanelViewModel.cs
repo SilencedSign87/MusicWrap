@@ -10,7 +10,9 @@ using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Input;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -86,6 +88,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         public void LoadEntry(LibraryEntry? entry)
         {
+            var previousEntryType = CurrentEntry?.Type;
             CurrentEntry = entry;
             _imageService.ClearCache();
 
@@ -98,6 +101,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 HeaderAlbumsCountText = "0";
                 HeaderTracksCountText = "0";
                 HeaderTotalDurationText = "00:00:00";
+                AlbumEntriesViewModel?.SelectedEntry = null;
+                TracksViewModel?.SelectedEntry = null;
                 return;
             }
 
@@ -107,8 +112,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             HeaderTracksCountText = "...";
             HeaderTotalDurationText = "...";
 
-            Tabs = BuildTabs(entry.Type);
-            SelectedTab = Tabs.FirstOrDefault();
+            if (previousEntryType != entry.Type)
+                Tabs = BuildTabs(entry.Type);
+
+            var preferred = SelectedTab is { } current
+                ? Tabs.FirstOrDefault(t => t.Key == current.Key)
+                : null;
+
+            SelectedTab = preferred ?? Tabs.FirstOrDefault();
+
+            LoadSelectedTab();
+
             _ = LoadHeaderStatsDeferredAsync(entry);
         }
 
@@ -144,6 +158,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             ApplyHeaderStats(stats.albumCount, stats.tracksCount, stats.totalSeconds);
         }
 
+        #region Internal
         private void ApplyHeaderStats(int albumCount, int tracksCount, long totalSeconds)
         {
             HeaderAlbumsCountText = albumCount.ToString();
@@ -157,54 +172,48 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             return $"{(int)span.TotalHours:D2}:{span.Minutes:D2}:{span.Seconds:D2}";
         }
 
-        partial void OnSelectedTabChanged(LibraryDetailTabItem? value)
-        {
-            //if (value is not null)
-            //{
-                LoadSelectedTab();
-            //}
-        }
-
         private void LoadSelectedTab()
         {
             if (CurrentEntry is null || SelectedTab is null)
                 return;
 
-            switch (SelectedTab.Key)
+
+            var key = SelectedTab.Key;
+
+            switch (key)
             {
                 case LibraryDetailTabKey.Albums:
-                    (TracksViewModel as IDisposable)?.Dispose();
-                    TracksViewModel = null;
-                    if (AlbumEntriesViewModel is null)
+                    TracksViewModel?.SelectedEntry = null;
+
+                    EnsureAlbumViewModel();
+                    if (AlbumEntriesViewModel is not null)
                     {
-                        AlbumEntriesViewModel = _serviceProvider.GetRequiredService<LibraryEntryAlbumViewModel>();
+                        AlbumEntriesViewModel.SortMode = SelectedTrackSortMode;
+                        AlbumEntriesViewModel.SortAscending = SortAscending;
+                        AlbumEntriesViewModel.SelectedEntry = CurrentEntry;
+
                     }
-                    AlbumEntriesViewModel.SelectedEntry = CurrentEntry;
-                    AlbumEntriesViewModel.SortAscending = SortAscending;
-                    AlbumEntriesViewModel.SortMode = SelectedTrackSortMode;
                     break;
                 case LibraryDetailTabKey.Tracks:
-                    (AlbumEntriesViewModel as IDisposable)?.Dispose();
-                    AlbumEntriesViewModel = null;
-                    if (TracksViewModel is null)
-                    {
-                        TracksViewModel = _serviceProvider.GetRequiredService<LibraryEntryTracksViewModel>();
-                    }
+                    AlbumEntriesViewModel?.SelectedEntry = null;
 
-                    TracksViewModel.SelectedEntry = CurrentEntry;
-                    TracksViewModel.SortMode = SelectedTrackSortMode;
-                    TracksViewModel.SortAscending = SortAscending;
+                    EnsureTrackViewModel();
+                    if (TracksViewModel is not null)
+                    {
+                        TracksViewModel.SortMode = SelectedTrackSortMode;
+                        TracksViewModel.SortAscending = SortAscending;
+                        TracksViewModel.SelectedEntry = CurrentEntry;
+                    }
                     break;
                 default:
-                    (TracksViewModel as IDisposable)?.Dispose();
-                    (AlbumEntriesViewModel as IDisposable)?.Dispose();
-                    TracksViewModel = null;
-                    AlbumEntriesViewModel = null;
                     break;
             }
         }
+        private void EnsureAlbumViewModel() => AlbumEntriesViewModel ??= _serviceProvider.GetRequiredService<LibraryEntryAlbumViewModel>();
+        private void EnsureTrackViewModel() => TracksViewModel ??= _serviceProvider.GetRequiredService<LibraryEntryTracksViewModel>();
+        #endregion
         #region Relay Commands
-        
+
         [RelayCommand]
         private void SelectTab(LibraryDetailTabItem? tab)
         {
@@ -275,6 +284,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         #endregion
 
         #region Partial Properties
+        partial void OnSelectedTabChanged(LibraryDetailTabItem? value)
+        {
+            LoadSelectedTab();
+        }
         partial void OnSelectedTrackSortModeChanged(TrackSortMode value)
         {
             OnPropertyChanged(nameof(IsSortByTitle));
@@ -282,8 +295,15 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             OnPropertyChanged(nameof(IsSortByArtistName));
             OnPropertyChanged(nameof(IsSortByDuration));
 
-            AlbumEntriesViewModel?.SortMode = value;
-            TracksViewModel?.SortMode = value;
+            switch (SelectedTab?.Key)
+            {
+                case LibraryDetailTabKey.Albums:
+                    AlbumEntriesViewModel?.SortMode = value;
+                    break;
+                case LibraryDetailTabKey.Tracks:
+                    TracksViewModel?.SortMode = value;
+                    break;
+            }
         }
 
         partial void OnSortAscendingChanged(bool value)
@@ -297,8 +317,15 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             OnPropertyChanged(nameof(IsSortAscending));
             OnPropertyChanged(nameof(IsSortDescending));
 
-            AlbumEntriesViewModel?.SortAscending = value;
-            TracksViewModel?.SortAscending = value;
+            switch (SelectedTab?.Key)
+            {
+                case LibraryDetailTabKey.Albums:
+                    AlbumEntriesViewModel?.SortAscending = value;
+                    break;
+                case LibraryDetailTabKey.Tracks:
+                    TracksViewModel?.SortAscending = value;
+                    break;
+            }
         }
 
         partial void OnSelectedSortDirectionChanged(SortDirectionOption value)
@@ -351,7 +378,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             if (_isDisposed) return;
             _isDisposed = true;
-            
+
             (TracksViewModel as IDisposable)?.Dispose();
             TracksViewModel = null;
             (AlbumEntriesViewModel as IDisposable)?.Dispose();

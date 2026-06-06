@@ -6,43 +6,53 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Net.WebSockets;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
     public partial class LibraryEntryAlbumViewModel : ObservableObject, IDisposable
     {
-        private readonly ILibraryService _libraryCache;
+        private readonly ILibraryService _libraryService;
         private readonly IImageService _imageService;
         private readonly SearchService _searchService;
 
-        [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
-        [ObservableProperty] private int layoutColumns = 1;
-        [ObservableProperty] private int? expandedAlbumId = 0;
+        // Props
         [ObservableProperty] private LibraryEntry? selectedEntry;
         [ObservableProperty] private TrackSortMode? sortMode;
         [ObservableProperty] private bool sortAscending;
+        [ObservableProperty] private int layoutColumns = 1;
 
-        private List<AlbumData> _visibleAlbums = [];
+        // View State
+        [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
+        [ObservableProperty] private int? expandedAlbumId = 0;
+
+        // internal state
+        private bool _isHibernating = true;
+        private List<AlbumData> _rawAlbums = [];
+        private List<AlbumData> _sortedAlbums = [];
+        private CancellationTokenSource? _imageCts;
+        private bool _isDisposed;
 
 
         private CancellationTokenSource? _imageCTS;
         private const int IMAGE_BATCH = 5;
-        private bool _disposed = false;
 
         public LibraryEntryAlbumViewModel(
             ILibraryService cacheService,
-            MusicLibrary library,
             IImageService imageService,
             SearchService searchService
             )
         {
-            _libraryCache = cacheService;
+            _libraryService = cacheService;
             _imageService = imageService;
             _searchService = searchService;
+
+            _searchService.SearchSubmitted += OnSearchSubmitted;
         }
+
         #region Public
-        public ILibraryService LibraryCache { get { return _libraryCache; } }
+        public ILibraryService LibraryCache => _libraryService;
         public void SetLayoutColumns(int columns)
         {
             columns = Math.Max(1, columns);
@@ -91,112 +101,96 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         #region Partial functions
         partial void OnSelectedEntryChanged(LibraryEntry? value)
         {
-            _imageCTS?.Cancel();
-            _imageCTS = null;
-
             if (value is null)
             {
-                _visibleAlbums.Clear();
-                GridRows.Clear();
-                ExpandedAlbumId = null;
-                return;
+                Hibernate();
             }
-
-            LoadAlbumData();
+            else
+            {
+                _isHibernating = false;
+                ReloadFromEntry();
+            }
         }
-        partial void OnSortModeChanged(TrackSortMode? value)
-        {
-            LoadAlbumData();
-        }
-        partial void OnSortAscendingChanged(bool value)
-        {
-            LoadAlbumData();
-        }
-        partial void OnLayoutColumnsChanged(int value)
-        {
-            ReflowRows();
-        }
-        partial void OnGridRowsChanged(ObservableCollection<AlbumGridRowModel> value)
-        {
-            Debug.WriteLine($"GridRows changed: {value.Count} rows ");
-            Debug.WriteLine($"       {LayoutColumns} columns ");
-            Debug.WriteLine($"       {_visibleAlbums.Count} visible albums ");
-        }
+        partial void OnSortModeChanged(TrackSortMode? value) => Reshuffle();
+        partial void OnSortAscendingChanged(bool value) => Reshuffle();
+        partial void OnLayoutColumnsChanged(int value) => Reflow();
 
         #endregion
         #region Internal
-
-        private void LoadAlbumData()
+        private void OnSearchSubmitted(object? sender, string e)
         {
-            if (SelectedEntry is null)
+            if (_isHibernating) return;
+            ReloadFromEntry();
+        }
+        private void ReloadFromEntry()
+        {
+            if (_isHibernating || SelectedEntry is null) return;
+
+            CancelImageLoading();
+
+            var fresh = _libraryService
+               .GetAlbumsForEntry(SelectedEntry, useSearchQuery: true)
+               .Select(MapToAlbumData)
+               .ToList();
+
+            _rawAlbums = fresh;
+            Reshuffle();
+            StartImageLoading(_sortedAlbums);
+        }
+        private void Reshuffle()
+        {
+            if (_isHibernating) return;
+            _sortedAlbums = ApplySort(_rawAlbums);
+            Reflow();
+        }
+        private void Reflow()
+        {
+            if (_isHibernating) return;
+
+            var columns = Math.Max(1, LayoutColumns);
+            var rows = new ObservableCollection<AlbumGridRowModel>();
+            for (int i = 0; i < _sortedAlbums.Count; i += columns)
             {
-                _visibleAlbums.Clear();
-                GridRows.Clear();
+                rows.Add(new AlbumGridRowModel
+                {
+                    Albums = [.. _sortedAlbums.Skip(i).Take(columns)]
+                });
+            }
+            GridRows = rows;
+            RestoreExpandedIfPresent();
+        }
+        private void RestoreExpandedIfPresent()
+        {
+            if (ExpandedAlbumId is not { } id) return;
+
+            var album = GridRows.SelectMany(r => r.Albums).FirstOrDefault(a => a.Id == id);
+            if (album is null)
+            {
                 ExpandedAlbumId = null;
                 return;
             }
 
-            var albums = _libraryCache.GetAlbumsForEntry(SelectedEntry, true)
-                .Select(s => new AlbumData
-                {
-                    Id = s.Id,
-                    Title = s.Title,
-                    Year = s.Year,
-                    ArtistNames = s.ArtistNames,
-                    ImagePath = s.ImagePath,
-                    BlurredImagePath = s.BluredImagePath,
-                    CoverImage = null,
-                    DominantColor = s.DominantColorHex,
-                    ForegroundColor = s.ForegroundColorHex,
-                }).ToList();
-
-            albums = ApplySorting(albums);
-
-            _visibleAlbums = albums;
-            ReflowRows();
-            _imageCTS?.Cancel();
-            _imageCTS = new CancellationTokenSource();
-            var pending = _visibleAlbums.Where(a => a.ImagePath is not null && a.CoverImage is null).ToList();
-            if (pending.Count != 0)
-            {
-                _ = LoadCoverImagesAsync(pending, _imageCTS.Token);
-            }
+            var row = GridRows.First(r => r.Albums.Contains(album));
+            row.ExpandedAlbumId = album.Id;
+            row.ExpandedImagePath = album.BlurredImagePath;
+            row.ExpandedDominantColor = album.DominantColor;
+            row.ExpandedForegroundColor = album.ForegroundColor;
         }
-        private void ReflowRows()
+        private void CancelImageLoading()
         {
-            var columns = Math.Max(1, LayoutColumns);
-            int? expandedAlbumIdSnapshot = ExpandedAlbumId;
-
-            var rows = new ObservableCollection<AlbumGridRowModel>();
-            for (int i = 0; i < _visibleAlbums.Count; i += columns)
-            {
-                rows.Add(new AlbumGridRowModel
-                {
-                    Albums = [.. _visibleAlbums.Skip(i).Take(columns)],
-                });
-
-            }
-
-            GridRows = rows;
-            ExpandedAlbumId = null;
-            if (expandedAlbumIdSnapshot.HasValue)
-            {
-                var expandedRow = GridRows
-                    .FirstOrDefault(r =>
-                        r.Albums.Any(a => a.Id == expandedAlbumIdSnapshot.Value)
-                    );
-                if (expandedRow is not null)
-                {
-                    var expandedAlbum = expandedRow.Albums.First(a => a.Id == expandedAlbumIdSnapshot.Value);
-                    expandedRow.ExpandedAlbumId = expandedAlbum.Id;
-                    expandedRow.ExpandedImagePath = expandedAlbum.BlurredImagePath;
-                    expandedRow.ExpandedDominantColor = expandedAlbum.DominantColor;
-                    expandedRow.ExpandedForegroundColor = expandedAlbum.ForegroundColor;
-                    ExpandedAlbumId = expandedAlbum.Id;
-                }
-            }
+            _imageCTS?.Cancel();
+            _imageCTS?.Dispose();
+            _imageCTS = null;
         }
-        private List<AlbumData> ApplySorting(List<AlbumData> source)
+        private void StartImageLoading(List<AlbumData> albums)
+        {
+            var cts = new CancellationTokenSource();
+            _imageCts = cts;
+            var pending = albums.Where(a => a.ImagePath is not null && a.CoverImage is null).ToList();
+            if (pending.Count > 0)
+                _ = LoadCoverImagesAsync(pending, cts.Token);
+        }
+        private List<AlbumData> ApplySort(List<AlbumData> source)
         {
             IEnumerable<AlbumData> sorted;
 
@@ -241,12 +235,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 case TrackSortMode.Duration:
                     sorted = SortAscending
                         ? source
-                            .OrderBy(s => _libraryCache.GetAlbumDuration(s.Id))
+                            .OrderBy(s => _libraryService.GetAlbumDuration(s.Id))
                             .ThenBy(s => s.Title, StringComparer.OrdinalIgnoreCase)
                             .ThenBy(s => s.ArtistNames, StringComparer.OrdinalIgnoreCase)
                             .ThenBy(s => s.Year)
                         : source
-                            .OrderByDescending(s => _libraryCache.GetAlbumDuration(s.Id))
+                            .OrderByDescending(s => _libraryService.GetAlbumDuration(s.Id))
                             .ThenByDescending(s => s.Title, StringComparer.OrdinalIgnoreCase)
                             .ThenByDescending(s => s.ArtistNames, StringComparer.OrdinalIgnoreCase)
                             .ThenByDescending(s => s.Year);
@@ -255,6 +249,19 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             return [.. sorted];
         }
+        private AlbumData MapToAlbumData(AlbumSummary album) => new()
+        {
+
+            Id = album.Id,
+            Title = album.Title,
+            Year = album.Year,
+            ArtistNames = album.ArtistNames,
+            ImagePath = album.ImagePath,
+            BlurredImagePath = album.BluredImagePath,
+            CoverImage = null,
+            DominantColor = album.DominantColorHex,
+            ForegroundColor = album.ForegroundColorHex
+        };
 
         private async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)
         {
@@ -294,19 +301,21 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
         }
 
+        private void Hibernate()
+        {
+            _isHibernating = true;
+            CancelImageLoading();
+            _rawAlbums.Clear();
+            _sortedAlbums.Clear();
+            GridRows.Clear();
+            ExpandedAlbumId = null;
+        }
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
-            _imageCTS?.Cancel();
-            _imageCTS?.Dispose();
-            _imageCTS = null;
-            foreach (var album in _visibleAlbums)
-            {
-                album.CoverImage = null;
-            }
-            _visibleAlbums.Clear();
-            GridRows.Clear();
+            if (_isDisposed) return;
+            _isDisposed = true;
+            _searchService.SearchSubmitted -= OnSearchSubmitted;
+            CancelImageLoading();
         }
         #endregion
 

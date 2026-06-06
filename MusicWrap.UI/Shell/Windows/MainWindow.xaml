@@ -95,8 +95,13 @@
                     <controls:ActivityButton/>
 
                     <Border Margin="0,4" Width="1" Background="#333"/>
+
+
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenSettings" ToolTip="Settings">
                         <TextBlock Text="&#xe713;" FontFamily="Segoe Fluent Icons" FontSize="16" />
+                    </Button>
+                    <Button Style="{StaticResource TransparentTitleButton}" Click="ToggleSidePanel" ToolTip="SidePanel">
+                        <TextBlock x:Name="SidebarToggleButtonIcon" Text="&#xEA5B;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
                     <Button Style="{StaticResource TransparentTitleButton}" Click="HandleOpenMiniPlayer" ToolTip="MiniPlayer">
                         <TextBlock Text="&#xee49;" FontFamily="Segoe Fluent Icons" FontSize="16" />
@@ -109,68 +114,67 @@
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition/>
-                    <ColumnDefinition Width="auto" />
-                    <ColumnDefinition MaxWidth="300" />
+                    <ColumnDefinition x:Name="SidebarColumn" MaxWidth="300" />
                 </Grid.ColumnDefinitions>
 
+                <!-- MainContent -->
                 <ContentControl
                     Grid.Column="0"
                     x:Name="MainFrame"
                     />
-                
-                <GridSplitter
-                    Grid.Column="1"
-                    />
 
                 <!-- Sidebar -->
-                <Grid
-                         Grid.Column="2"
+                <Border
+                    Grid.Column="1"
+                    x:Name="SidebarContainer"
+                    >
+
+                    <Grid
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     >
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*" MinHeight="40"/>
-                        <!--<RowDefinition Height="auto"/>-->
-                        <RowDefinition Height="auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid Grid.Row="0">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="40" />
-                            <RowDefinition />
+                            <RowDefinition Height="*" MinHeight="40"/>
+                            <RowDefinition Height="auto"/>
                         </Grid.RowDefinitions>
 
-                        <Border Grid.Row="0" Background="{StaticResource BackgroundLayerAlt}" CornerRadius="4" ContextMenuService.Placement="Right">
-                            <Border.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Clear queue" Icon="{ex:Icon Glyph=e74d}"/>
-                                    <MenuItem Header="Save as playlist" Icon="{ex:Icon Glyph=e74e}"/>
-                                </ContextMenu>
-                            </Border.ContextMenu>
-                            <StackPanel Orientation="Horizontal" Margin="16,0">
-                                <TextBlock Text="&#xe90b;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                <TextBlock Text="Queue" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
+                        <Grid Grid.Row="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="40" />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
 
-                        <mw:QueueListPage Grid.Row="1"/>
+                            <Border Grid.Row="0" Background="{StaticResource BackgroundLayerAlt}" CornerRadius="4" ContextMenuService.Placement="Right">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Clear queue" Icon="{ex:Icon Glyph=e74d}"/>
+                                        <MenuItem Header="Save as playlist" Icon="{ex:Icon Glyph=e74e}"/>
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <StackPanel Orientation="Horizontal" Margin="16,0">
+                                    <TextBlock Text="&#xe90b;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Queue" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
 
+                            <mw:QueueListPage Grid.Row="1"/>
+
+                        </Grid>
+
+                        <Expander Grid.Row="1" ExpandDirection="Up" x:Name="TrackExpander" Expanded="TrackExpander_Expanded" Collapsed="TrackExpander_Collapsed">
+                            <Expander.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Track information" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Expander.Header>
+                            <Expander.Content>
+                                <ContentControl x:Name="TrackInformationHost" />
+                            </Expander.Content>
+                        </Expander>
                     </Grid>
+                </Border>
 
-                    <Expander Grid.Row="1" ExpandDirection="Up" x:Name="TrackExpander" Expanded="TrackExpander_Expanded" Collapsed="TrackExpander_Collapsed">
-                        <Expander.Header>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xe946;" FontFamily="Segoe Fluent Icons" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                <TextBlock Text="Track information" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Expander.Header>
-                        <Expander.Content>
-                            <ContentControl x:Name="TrackInformationHost" />
-                        </Expander.Content>
-                    </Expander>
-                </Grid>
             </Grid>
             <!--Player-->
             <Grid Grid.Row="2" x:Name="PlayerContainer">

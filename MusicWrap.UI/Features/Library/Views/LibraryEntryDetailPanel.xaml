@@ -28,10 +28,11 @@
                     <RowDefinition Height="42" />
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
+                <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Grid.Column="0"  Text="{Binding HeaderTitle}" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                     <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
@@ -44,7 +45,9 @@
                             <Run Text=" • "/>
                             <Run Text="{Binding HeaderTotalDurationText}"/>
                         </TextBlock>
-                        <Button Style="{StaticResource SubtleButton}" Margin="8,0,0,0" Padding="0"  Width="26" Height="26" ToolTip="Play all" Command="{Binding PlayAllTracksCommand}">
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal">
+                        <Button Style="{StaticResource SubtleButton}" Padding="0"  Width="26" Height="26" ToolTip="Play all" Command="{Binding PlayAllTracksCommand}">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
                         </Button>
                         <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle" Command="{Binding ShuffleAllTracksCommand}">

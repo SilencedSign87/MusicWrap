@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.UI.Features.Library.ViewModels;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -30,7 +31,8 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void _viewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(LibraryEntryDetailPanelViewModel.SelectedTab))
+            if (e.PropertyName == nameof(LibraryEntryDetailPanelViewModel.SelectedTab) 
+                || e.PropertyName == nameof(LibraryEntryDetailPanelViewModel.CurrentEntry))
             {
                 RebuildContent();
             }
