@@ -63,7 +63,8 @@
 
                         <ListBox Grid.Column="0"
                                  ItemsSource="{Binding Tabs}"
-                                 SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
+                                 SelectedItem="{Binding SelectedTab, Mode=OneWay}"
+                                 SelectionChanged="ListBox_SelectionChanged"
                                  HorizontalAlignment="Left"
                                  VerticalAlignment="Bottom"
                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"

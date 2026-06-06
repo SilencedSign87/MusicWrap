@@ -24,7 +24,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [NotifyPropertyChangedFor(nameof(IsAlbumArtistView))]
         [NotifyPropertyChangedFor(nameof(IsGenreView))]
         [NotifyPropertyChangedFor(nameof(IsDecadeView))]
-        private string listBy = "Artist"; // Album, Artist, Genre, Decade
+        private LibraryEntryType listBy = LibraryEntryType.AlbumArtist;
 
         [ObservableProperty] private bool ascending = true;
 
@@ -44,7 +44,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILibraryService _LibraryCache;
         private readonly IMusicPlayerService _player;
         private readonly IImageService _imageService;
-        private readonly ILogger<LibraryViewModel> _logger;
+        private readonly ILogger _logger;
         private readonly SearchService _searchService;
         private readonly ActivityService _activityService;
 
@@ -84,7 +84,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             _isInitializing = true;
 
-            ListBy = string.IsNullOrWhiteSpace(settings.LibraryListBy) ? "Artist" : settings.LibraryListBy;
+            ListBy = settings.LibraryListBy;
             Ascending = settings.LibraryAscending;
 
             _isInitializing = false;
@@ -100,13 +100,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _ = LoadEntriesAsync();
         }
 
-        public bool IsAlbumView => ListBy == "Album";
-        public bool IsTrackArtistView => ListBy == "Track_Artist";
-        public bool IsAlbumArtistView => ListBy == "Album_Artist";
-        public bool IsGenreView => ListBy == "Genre";
-        public bool IsDecadeView => ListBy == "Decade";
-
-        partial void OnListByChanged(string value)
+        public bool IsAlbumView => ListBy == LibraryEntryType.Album;
+        public bool IsTrackArtistView => ListBy == LibraryEntryType.TrackArtist;
+        public bool IsAlbumArtistView => ListBy == LibraryEntryType.AlbumArtist;
+        public bool IsGenreView => ListBy == LibraryEntryType.Genre;
+        public bool IsDecadeView => ListBy == LibraryEntryType.Decade;
+        partial void OnListByChanged(LibraryEntryType value)
         {
             if (_isInitializing) return;
 
@@ -273,9 +272,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private void SetViewMode(string mode)
         {
-            if (!string.IsNullOrEmpty(mode))
+            if (Enum.TryParse<LibraryEntryType>(mode, ignoreCase: true, out var result))
             {
-                ListBy = mode;
+                ListBy = result;
             }
         }
 
@@ -356,14 +355,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             EntriesViewSource = viewSource;
 
-            if (selectedId.HasValue && !string.IsNullOrWhiteSpace(selectedType))
+            LibraryEntry? newSelection = null;
+            if (selectedId.HasValue && selectedType.HasValue)
             {
-                SelectedEntry = Entries.FirstOrDefault(e => e.Id == selectedId.Value && e.Type == selectedType);
+                 newSelection = Entries.FirstOrDefault(e => e.Id == selectedId.Value && e.Type == selectedType);
             }
 
-            if (SelectedEntry == null && Entries.Count > 0)
+            newSelection ??= Entries.FirstOrDefault();
+
+            if(!ReferenceEquals(SelectedEntry, newSelection))
             {
-                SelectedEntry = Entries[0];
+                SelectedEntry = newSelection;
             }
         }
 

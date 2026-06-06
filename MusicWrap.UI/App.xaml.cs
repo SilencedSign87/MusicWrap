@@ -12,6 +12,7 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Windows;
 using Serilog;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace MusicWrap.UI

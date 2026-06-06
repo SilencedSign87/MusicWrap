@@ -5,6 +5,7 @@ using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
@@ -114,6 +115,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         partial void OnLayoutColumnsChanged(int value)
         {
             ReflowRows();
+        }
+        partial void OnGridRowsChanged(ObservableCollection<AlbumGridRowModel> value)
+        {
+            Debug.WriteLine($"GridRows changed: {value.Count} rows ");
+            Debug.WriteLine($"       {LayoutColumns} columns ");
+            Debug.WriteLine($"       {_visibleAlbums.Count} visible albums ");
         }
 
         #endregion

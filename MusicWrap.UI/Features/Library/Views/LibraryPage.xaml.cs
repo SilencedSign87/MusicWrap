@@ -39,6 +39,10 @@ namespace MusicWrap.UI.Features.Library.Views
         private void HandleSelectionChanged()
         {
             var selected = vm.SelectedEntry;
+            if (selected is not null && EntriesListView.SelectedItem != selected)
+            {
+                EntriesListView.SelectedItem = selected;
+            }
         }
 
         private void EntriesListView_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -120,6 +124,14 @@ namespace MusicWrap.UI.Features.Library.Views
             vm.Dispose();
 
             DataContext = null;
+        }
+
+        private void EntriesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView lv && lv.SelectedItem is LibraryEntry entry)
+            {
+                vm.SelectedEntry = entry;
+            }
         }
     }
 }

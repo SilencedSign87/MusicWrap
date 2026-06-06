@@ -48,7 +48,7 @@
                     
                     <MenuItem Header="Track Artist" 
                               Command="{Binding SetViewModeCommand}" 
-                              CommandParameter="Track_Artist"
+                              CommandParameter="TrackArtist"
                               IsCheckable="True" 
                               IsChecked="{Binding IsTrackArtistView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E77B}"
@@ -56,7 +56,7 @@
 
                     <MenuItem Header="Album Artist" 
                               Command="{Binding SetViewModeCommand}" 
-                              CommandParameter="Album_Artist"
+                              CommandParameter="AlbumArtist"
                               IsCheckable="True" 
                               IsChecked="{Binding IsAlbumArtistView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E77B}"
@@ -97,7 +97,7 @@
             <ListView
                     x:Name="EntriesListView"
                     ItemsSource="{Binding EntriesViewSource.View}"
-                    SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
+                    SelectionChanged="EntriesListView_SelectionChanged"
                     Grid.Row="1"
                     SelectionMode="Single"
                     HorizontalAlignment="Stretch"

@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Library.Models;
@@ -21,10 +22,11 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly SearchService _searchService;
         private readonly IUIDispatcher _uiDispatcher;
 
-        private int[] _sourceTrackIds = [];
+        //private int[] _sourceTrackIds = [];
         private int _refreshRequestId;
         private bool _disposed = false;
 
+        [ObservableProperty] private LibraryEntry? selectedEntry;
         [ObservableProperty] private TrackSortMode sortMode;
         [ObservableProperty] private bool sortAscending;
 
@@ -68,13 +70,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         #endregion
         #region Public methods
 
-        public void SetSourceTrackIds(int[] trackIds)
-        {
-            _sourceTrackIds = trackIds;
-            _ = RefreshAsync(true);
-        }
+
         #endregion
         #region Partial methods
+        partial void OnSelectedEntryChanged(LibraryEntry? value)
+        {
+            _ = RefreshAsync(true);
+        }
         partial void OnSortModeChanged(TrackSortMode value)
         {
             _ = RefreshAsync(false);
@@ -99,12 +101,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     return;
             }
 
-            var sourceIds = _sourceTrackIds;
+            var entry = SelectedEntry;
             var query = _searchService.ActiveQuery.Trim();
             var sortmode = SortMode;
             var ascending = SortAscending;
 
-            var result = await Task.Run(() => BuildTracksResult(sourceIds, query, sortmode, ascending));
+            var result = await Task.Run(() => BuildTracksResult(entry, query, sortmode, ascending));
 
             if (requestid != Volatile.Read(ref _refreshRequestId)) return;
 
@@ -130,10 +132,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
 
         private (List<TrackRowItem> Rows, List<int> TrackIds) BuildTracksResult(
-            int[] sourceIds, string query, TrackSortMode sortMode, bool ascending)
+            LibraryEntry? entry, string query, TrackSortMode sortMode, bool ascending)
         {
-            if (sourceIds.Length == 0)
+            if (entry is null)
                 return ([], []);
+
+            var sourceIds = _libraryCache.GetTrackIdsForEntry(entry);
+
+            if (sourceIds is null || sourceIds.Length == 0)
+                return ([], []);
+
             var rows = _libraryCache.TrackIdsToTrackRowItems(sourceIds);
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -224,7 +232,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             Tracks.Clear();
             AllTrackIds.Clear();
             SelectedTrackIds.Clear();
-            _sourceTrackIds = [];
+            SelectedEntry = null;
         }
     }
 }

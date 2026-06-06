@@ -90,9 +90,7 @@ public static class StartupOrquestrator
             userSettings.PropertyChanged += OnUserSettingsChanged;
 
             // Library cache initialization (preserve previous defaults)
-            var listBy = string.IsNullOrWhiteSpace(userSettings.LibraryListBy)
-                ? "Artist"
-                : userSettings.LibraryListBy;
+            var listBy = userSettings.LibraryListBy;
             var ascending = userSettings.LibraryAscending;
 
             var libraryCache = serviceProvider.GetRequiredService<ILibraryService>();

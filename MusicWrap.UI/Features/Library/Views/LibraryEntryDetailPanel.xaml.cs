@@ -57,6 +57,8 @@ namespace MusicWrap.UI.Features.Library.Views
         }
         private void RebuildContent()
         {
+            if (_viewModel.SelectedTab is null) return;
+
             foreach (var child in ContentGrid.Children)
             {
                 if (child is FrameworkElement fe && fe.DataContext is IDisposable disposable)
@@ -103,6 +105,14 @@ namespace MusicWrap.UI.Features.Library.Views
                     disposable.Dispose();
             }
             ContentGrid.Children.Clear();
+        }
+
+        private void ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListBox listBox && listBox.SelectedItem is LibraryDetailTabItem tab)
+            {
+                _viewModel.SelectTabCommand.Execute(tab);
+            }
         }
     }
 }

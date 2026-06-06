@@ -1,12 +1,6 @@
-using MusicWrap.UI.Shell.Windows;
-using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Tray;
-using System;
 using System.Drawing;
 using System.Windows;
-using Forms = System.Windows.Forms;
-using System.Windows.Forms;
-using Application = System.Windows.Application;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.ViewModels;
@@ -95,7 +89,7 @@ namespace MusicWrap.UI.Services
                 _flyout = null;
             }
 
-            if (_trayIcon != null)
+            if (_trayIcon is not null)
             {
                 if (_isSubscribed)
                 {

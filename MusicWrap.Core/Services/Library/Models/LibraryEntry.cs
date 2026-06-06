@@ -1,4 +1,5 @@
 using MessagePack;
+using MusicWrap.Data.User.Models;
 
 namespace MusicWrap.Core.Services.Library.Models
 {
@@ -6,7 +7,7 @@ namespace MusicWrap.Core.Services.Library.Models
     public sealed class LibraryEntry
     {
         [Key(0)] public int Id { get; set; }
-        [Key(1)] public required string Type { get; set; }
+        [Key(1)] public required LibraryEntryType Type { get; set; }
         [Key(2)] public string? ImagePath { get; set; }
         [Key(3)] public required string Title { get; set; }
         [Key(4)] public required string Description { get; set; }

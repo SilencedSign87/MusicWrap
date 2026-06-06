@@ -25,8 +25,7 @@ namespace MusicWrap.Core.Services.Library
         int[] GetAlbumIdsForDecade(int decadeStart);
         IReadOnlyList<Album> GetAlbumsByIds(IEnumerable<int> albumIds);
         ScanDirectory[] GetDirectories();
-        //Task InitializeAsync(string initialView, bool ascending);
-        Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(string viewType, bool ascending, bool useSearchQuery = false);
+        Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(LibraryEntryType viewType, bool ascending, bool useSearchQuery = false);
         IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry, bool useSearchQuery = false);
         List<TrackRowItem> TrackIdsToTrackRowItems(IEnumerable<int> trackIds);
         string GetArtistNamesForAlbum(int albumId);
@@ -180,55 +179,55 @@ namespace MusicWrap.Core.Services.Library
 
             switch (_userSettings.LibraryListBy)
             {
-                case "Album":
+                case LibraryEntryType.Album:
                     _albumCache ??= ConstructAlbumEntries();
                     break;
-                case "Track_Artist":
+                case LibraryEntryType.TrackArtist:
                     _trackArtistCache ??= ConstructTrackArtistEntries();
                     break;
-                case "Album_Artist":
+                case LibraryEntryType.AlbumArtist:
                 default:
                     _albumArtistCache ??= ConstructAlbumArtistEntries();
                     break;
-                case "Genre":
+                case LibraryEntryType.Genre:
                     _genreCache ??= ConstructGenreEntries();
                     break;
-                case "Decade":
+                case LibraryEntryType.Decade:
                     _decadeCache ??= ConstructDecadeEntries();
                     break;
             }
         }
 
-        public async Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(string viewType, bool ascending, bool useSearchQuery = false)
+        public async Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(LibraryEntryType viewType, bool ascending, bool useSearchQuery = false)
         {
             var entries = await Task.Run(() =>
             {
                 return viewType switch
                 {
-                    "Album" => _albumCache ??= ConstructAlbumEntries(),
-                    "Track_Artist" => _trackArtistCache ??= ConstructTrackArtistEntries(),
-                    "Album_Artist" => _albumArtistCache ??= ConstructAlbumArtistEntries(),
-                    "Genre" => _genreCache ??= ConstructGenreEntries(),
-                    "Decade" => _decadeCache ??= ConstructDecadeEntries(),
+                    LibraryEntryType.Album => _albumCache ??= ConstructAlbumEntries(),
+                    LibraryEntryType.TrackArtist => _trackArtistCache ??= ConstructTrackArtistEntries(),
+                    LibraryEntryType.AlbumArtist => _albumArtistCache ??= ConstructAlbumArtistEntries(),
+                    LibraryEntryType.Genre => _genreCache ??= ConstructGenreEntries(),
+                    LibraryEntryType.Decade => _decadeCache ??= ConstructDecadeEntries(),
                     _ => _albumCache = ConstructAlbumEntries(),
                 };
             });
 
             switch (viewType)
             {
-                case "Album":
+                case LibraryEntryType.Album:
                     _albumCache = entries;
                     break;
-                case "Track_Artist":
+                case LibraryEntryType.TrackArtist:
                     _trackArtistCache = entries;
                     break;
-                case "Album_Artist":
+                case LibraryEntryType.AlbumArtist:
                     _albumArtistCache = entries;
                     break;
-                case "Genre":
+                case LibraryEntryType.Genre:
                     _genreCache = entries;
                     break;
-                case "Decade":
+                case LibraryEntryType.Decade:
                     _decadeCache = entries;
                     break;
                 default:
@@ -278,8 +277,7 @@ namespace MusicWrap.Core.Services.Library
         {
             EnsureIndexes();
 
-            // Track_Artist: usar track IDs directamente, no pasar por álbumes
-            if (entry.Type == "Track_Artist")
+            if (entry.Type == LibraryEntryType.TrackArtist)
             {
                 if (!_trackIdsByArtistId.TryGetValue(entry.Id, out var byTrackArtist))
                     return [];
@@ -299,10 +297,10 @@ namespace MusicWrap.Core.Services.Library
             {
                 int[] albumIds = entry.Type switch
                 {
-                    "Album" => [entry.Id],
-                    "Album_Artist" => _albumIdsByArtistId.TryGetValue(entry.Id, out var byArtist) ? byArtist : [],
-                    "Genre" => _albumIdsByGenreId.TryGetValue(entry.Id, out var byGenre) ? byGenre : [],
-                    "Decade" => TryGetDecadeAlbumIds(entry.Title, out var byDecade) ? byDecade : [],
+                    LibraryEntryType.Album => [entry.Id],
+                    LibraryEntryType.AlbumArtist => _albumIdsByArtistId.TryGetValue(entry.Id, out var byArtist) ? byArtist : [],
+                    LibraryEntryType.Genre => _albumIdsByGenreId.TryGetValue(entry.Id, out var byGenre) ? byGenre : [],
+                    LibraryEntryType.Decade => TryGetDecadeAlbumIds(entry.Title, out var byDecade) ? byDecade : [],
                     _ => []
                 };
                 var tracks = _library.Tracks.Where(t => albumIds.Contains(t.AlbumId));
@@ -359,11 +357,11 @@ namespace MusicWrap.Core.Services.Library
 
             int[] albumIds = entry.Type switch
             {
-                "Album" => [entry.Id],
-                "Track_Artist" => _trackIdsByArtistId.TryGetValue(entry.Id, out var byTrackArtist) ? _library.Tracks.Where(t => byTrackArtist.Contains(t.Id)).Select(t => t.AlbumId).Distinct().ToArray() : [],
-                "Album_Artist" => _albumIdsByArtistId.TryGetValue(entry.Id, out var byArtist) ? byArtist : [],
-                "Genre" => _albumIdsByGenreId.TryGetValue(entry.Id, out var byGenre) ? byGenre : [],
-                "Decade" => TryGetDecadeAlbumIds(entry.Title, out var byDecade) ? byDecade : [],
+                LibraryEntryType.Album => [entry.Id],
+                LibraryEntryType.TrackArtist => _trackIdsByArtistId.TryGetValue(entry.Id, out var byTrackArtist) ? _library.Tracks.Where(t => byTrackArtist.Contains(t.Id)).Select(t => t.AlbumId).Distinct().ToArray() : [],
+                LibraryEntryType.AlbumArtist => _albumIdsByArtistId.TryGetValue(entry.Id, out var byArtist) ? byArtist : [],
+                LibraryEntryType.Genre => _albumIdsByGenreId.TryGetValue(entry.Id, out var byGenre) ? byGenre : [],
+                LibraryEntryType.Decade => TryGetDecadeAlbumIds(entry.Title, out var byDecade) ? byDecade : [],
                 _ => []
             };
 
@@ -376,7 +374,7 @@ namespace MusicWrap.Core.Services.Library
                     var q = _searchQueryProvider.ActiveQuery.Trim();
                     IEnumerable<Track> tracksForAlbum;
 
-                    if (entry.Type == "Track_Artist" && _trackIdsByArtistId.TryGetValue(entry.Id, out var byTrackArtist))
+                    if (entry.Type == LibraryEntryType.TrackArtist && _trackIdsByArtistId.TryGetValue(entry.Id, out var byTrackArtist))
                     {
                         tracksForAlbum = _library.Tracks
                             .Where(t => t.AlbumId == albumId && byTrackArtist.Contains(t.Id));
@@ -454,7 +452,7 @@ namespace MusicWrap.Core.Services.Library
         {
             EnsureIndexes();
 
-            if (entry.Type == "Track_Artist")
+            if (entry.Type == LibraryEntryType.TrackArtist)
             {
                 if (!_trackIdsByArtistId.TryGetValue(entry.Id, out var artistTrackIds))
                     return [];
@@ -595,7 +593,7 @@ namespace MusicWrap.Core.Services.Library
             return GetTrackIdsForEntry(entry, true).Length > 0;
         }
 
-        private void SaveUserPreference(string listBy, bool ascending)
+        private void SaveUserPreference(LibraryEntryType listBy, bool ascending)
         {
             _userSettings.LibraryListBy = listBy;
             _userSettings.LibraryAscending = ascending;
@@ -629,7 +627,7 @@ namespace MusicWrap.Core.Services.Library
                 entries[w++] = new LibraryEntry
                 {
                     Id = albums[i].Id,
-                    Type = "Album",
+                    Type = LibraryEntryType.Album,
                     ImagePath = imagePath,
                     Title = albums[i].Title,
                     Description = $"{trackCount} track{(trackCount > 1 ? "s" : "")}",
@@ -656,7 +654,7 @@ namespace MusicWrap.Core.Services.Library
                 entries[w++] = new LibraryEntry
                 {
                     Id = artists[i].Id,
-                    Type = "Track_Artist",
+                    Type = LibraryEntryType.TrackArtist,
                     ImagePath = imagePath,
                     Title = artists[i].Name,
                     Description = $"{trackIds.Length} track{(trackIds.Length > 1 ? "s" : "")}",
@@ -683,7 +681,7 @@ namespace MusicWrap.Core.Services.Library
                 entries[w++] = new LibraryEntry
                 {
                     Id = artists[i].Id,
-                    Type = "Album_Artist",
+                    Type = LibraryEntryType.AlbumArtist,
                     ImagePath = imagePath,
                     Title = artists[i].Name,
                     Description = $"{albumsId.Length} album{(albumsId.Length > 1 ? "s" : "")}",
@@ -710,7 +708,7 @@ namespace MusicWrap.Core.Services.Library
                 entries[w++] = new LibraryEntry
                 {
                     Id = genres[i].Id,
-                    Type = "Genre",
+                    Type = LibraryEntryType.Genre,
                     ImagePath = imagePath,
                     Title = genres[i].Name,
                     Description = $"{albums.Length} album{(albums.Length > 1 ? "s" : "")}",
@@ -740,7 +738,7 @@ namespace MusicWrap.Core.Services.Library
                 entries[w++] = new LibraryEntry
                 {
                     Id = decade,
-                    Type = "Decade",
+                    Type = LibraryEntryType.Decade,
                     ImagePath = imagePath,
                     Title = $"{decade}s",
                     Description = $"{albums.Length} album{(albums.Length > 1 ? "s" : "")}",

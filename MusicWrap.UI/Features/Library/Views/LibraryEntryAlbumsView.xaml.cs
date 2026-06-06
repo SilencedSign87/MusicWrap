@@ -130,11 +130,6 @@ namespace MusicWrap.UI.Features.Library.Views
             }
         }
 
-        //private void AlbumsViewport_Loaded(object sender, RoutedEventArgs e)
-        //{
-        //    UpdateColumnsForViewportWidth(true);
-        //}
-
         private void AlbumsViewport_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListBox listBox && listBox.SelectedItem is not null)

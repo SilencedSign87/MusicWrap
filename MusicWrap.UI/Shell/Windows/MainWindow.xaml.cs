@@ -2,6 +2,7 @@ using Hardcodet.Wpf.TaskbarNotification;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.Components;
@@ -33,6 +34,7 @@ namespace MusicWrap.UI.Shell.Windows
     {
         private readonly IMusicPlayerService _player;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IUIDispatcher _uiDispatcher;
         private readonly BitmapImage _playIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
         private readonly BitmapImage _pauseIcon = LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png");
 
@@ -47,12 +49,12 @@ namespace MusicWrap.UI.Shell.Windows
             return bitmap;
         }
 
-        public MainWindow(IMusicPlayerService playerService, Tracker tracker, IServiceProvider serviceProvider, PlayerPage playerPage)
+        public MainWindow(IMusicPlayerService playerService, Tracker tracker, IServiceProvider serviceProvider, PlayerPage playerPage, IUIDispatcher uiDispatcher)
         {
             InitializeComponent();
             _serviceProvider = serviceProvider;
             _player = playerService;
-
+            _uiDispatcher = uiDispatcher;
             PlayerContainer.Children.Add(playerPage);
 
             StateChanged += MainWindow_StateChanged;
@@ -71,8 +73,7 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void _player_PlaybackStateChanged(object? sender, PlaybackState e)
         {
-            // update play/pause button in taskbar, always on UI thread
-            Dispatcher.Invoke(() =>
+            _uiDispatcher.Invoke(() =>
             {
                 if (e == PlaybackState.Playing)
                 {
@@ -116,7 +117,7 @@ namespace MusicWrap.UI.Shell.Windows
 
             if (App.ShouldKeepAppInTray())
             {
-                App.Services.GetService<ITrayService>()?.HideFlyout();
+                //App.Services.GetService<ITrayService>()?.HideFlyout();
                 return;
             }
 

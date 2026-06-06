@@ -6,6 +6,7 @@ using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
@@ -65,8 +66,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private bool sortAscending = false;
         [ObservableProperty] private SortDirectionOption selectedSortDirection = SortDirectionOption.Ascending;
 
-        private int[] _entryTrackIds = [];
-        private int _preloadTrackIdsRequestId;
         private bool _isDisposed = false;
 
         [ObservableProperty] private LibraryEntryTracksViewModel? tracksViewModel;
@@ -87,10 +86,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         public void LoadEntry(LibraryEntry? entry)
         {
-            TracksViewModel = null;
-
             CurrentEntry = entry;
-            _entryTrackIds = [];
             _imageService.ClearCache();
 
             if (entry is null)
@@ -114,23 +110,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             Tabs = BuildTabs(entry.Type);
             SelectedTab = Tabs.FirstOrDefault();
             _ = LoadHeaderStatsDeferredAsync(entry);
-            _ = PreloadEntryDataAsync(entry, SelectedTab?.Key);
-        }
-
-        private async Task PreloadEntryDataAsync(LibraryEntry entry, LibraryDetailTabKey? prioritizedTab)
-        {
-            var requestId = Interlocked.Increment(ref _preloadTrackIdsRequestId);
-
-            if (prioritizedTab == LibraryDetailTabKey.Stats) return;
-
-            var trackIds = await Task.Run(() => _libraryCache.GetTrackIdsForEntry(entry, true));
-
-            if (requestId != Volatile.Read(ref _preloadTrackIdsRequestId))
-            {
-                return;
-            }
-
-            _entryTrackIds = trackIds;
         }
 
         private async Task LoadHeaderStatsDeferredAsync(LibraryEntry entry)
@@ -178,19 +157,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             return $"{(int)span.TotalHours:D2}:{span.Minutes:D2}:{span.Seconds:D2}";
         }
 
-        [RelayCommand]
-        private void SelectTab(LibraryDetailTabItem? tab)
-        {
-            if (tab is null) return;
-            SelectedTab = tab;
-        }
-
         partial void OnSelectedTabChanged(LibraryDetailTabItem? value)
         {
-            if (value is not null)
-            {
+            //if (value is not null)
+            //{
                 LoadSelectedTab();
-            }
+            //}
         }
 
         private void LoadSelectedTab()
@@ -219,7 +191,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                         TracksViewModel = _serviceProvider.GetRequiredService<LibraryEntryTracksViewModel>();
                     }
 
-                    TracksViewModel.SetSourceTrackIds(_entryTrackIds);
+                    TracksViewModel.SelectedEntry = CurrentEntry;
                     TracksViewModel.SortMode = SelectedTrackSortMode;
                     TracksViewModel.SortAscending = SortAscending;
                     break;
@@ -232,6 +204,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
         }
         #region Relay Commands
+        
+        [RelayCommand]
+        private void SelectTab(LibraryDetailTabItem? tab)
+        {
+            if (tab is null) return;
+            SelectedTab = tab;
+        }
 
         [RelayCommand]
         private void PlayAllTracks()
@@ -340,37 +319,32 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public bool IsSortAscending => SortAscending;
         public bool IsSortDescending => !SortAscending;
 
-        private static ObservableCollection<LibraryDetailTabItem> BuildTabs(string type)
+        private static ObservableCollection<LibraryDetailTabItem> BuildTabs(LibraryEntryType type)
         {
             static LibraryDetailTabItem T(LibraryDetailTabKey key, string title) => new() { Key = key, Title = title };
 
-            var entryType = type?.Trim() ?? string.Empty;
-
-            if (entryType.Equals("Album", StringComparison.OrdinalIgnoreCase))
+            switch (type)
             {
-                return [T(LibraryDetailTabKey.Tracks, "Tracks"), T(LibraryDetailTabKey.Stats, "Stats")];
+                case LibraryEntryType.Album:
+                    return [T(LibraryDetailTabKey.Tracks, "Tracks"), T(LibraryDetailTabKey.Stats, "Stats")];
+                case LibraryEntryType.TrackArtist:
+                case LibraryEntryType.AlbumArtist:
+                    return [
+                        T(LibraryDetailTabKey.Albums, "Albums"),
+                T(LibraryDetailTabKey.Tracks, "Tracks"),
+                T(LibraryDetailTabKey.About, "About"),
+                T(LibraryDetailTabKey.Stats, "Stats")
+                    ];
+                case LibraryEntryType.Genre:
+                case LibraryEntryType.Decade:
+                    return [
+                        T(LibraryDetailTabKey.Albums, "Albums"),
+                T(LibraryDetailTabKey.Tracks, "Tracks"),
+                T(LibraryDetailTabKey.Stats, "Stats")
+                    ];
+                default:
+                    return [T(LibraryDetailTabKey.Albums, "Albums"), T(LibraryDetailTabKey.Stats, "Stats")];
             }
-
-            if (entryType.Equals("Track_Artist", StringComparison.OrdinalIgnoreCase) || entryType.Equals("Album_Artist", StringComparison.OrdinalIgnoreCase))
-            {
-                return [
-                    T(LibraryDetailTabKey.Albums, "Albums"),
-                    T(LibraryDetailTabKey.Tracks, "Tracks"),
-                    T(LibraryDetailTabKey.About, "About"),
-                    T(LibraryDetailTabKey.Stats, "Stats")
-                ];
-            }
-
-            if (entryType.Equals("Genre", StringComparison.OrdinalIgnoreCase) || entryType.Equals("Decade", StringComparison.OrdinalIgnoreCase))
-            {
-                return [
-                    T(LibraryDetailTabKey.Albums, "Albums"),
-                    T(LibraryDetailTabKey.Tracks, "Tracks"),
-                    T(LibraryDetailTabKey.Stats, "Stats")
-                ];
-            }
-
-            return [T(LibraryDetailTabKey.Albums, "Albums"), T(LibraryDetailTabKey.Stats, "Stats")];
         }
 
         public void Dispose()
@@ -383,7 +357,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             (AlbumEntriesViewModel as IDisposable)?.Dispose();
             AlbumEntriesViewModel = null;
             CurrentEntry = null;
-            _entryTrackIds = [];
+            //_entryTrackIds = [];
         }
     }
 }
