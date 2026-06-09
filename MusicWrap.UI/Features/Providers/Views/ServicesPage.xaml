@@ -4,21 +4,88 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Providers.Views"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Providers.ViewModels"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ServicePageViewModel}"
              d:DesignHeight="800" d:DesignWidth="900">
+    <UserControl.Resources>
+        <Style TargetType="Button" x:Key="ServiceButtonStyle">
+            <Setter Property="Background" Value="{StaticResource BackgroundLayer}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource StrokeControl}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Height" Value="120"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BackgroundLayerAlt}"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BackgroundLayer}"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    
     <Grid x:Name="RootGrid">
-        <StackPanel x:Name="ServiceHomeView" Margin="16">
-            <UniformGrid x:Name="ServicesUniformGrid" Columns="3" Rows="1">
-                <Button VerticalAlignment="Center" HorizontalAlignment="Center" Width="120" Height="120" Click="HandleGoToYoutubeProvider">
+        <StackPanel Margin="8" Visibility="{Binding CurrentControl, Converter={StaticResource NullToCollapseConverter}, ConverterParameter=true}">
+            <WrapPanel x:Name="ServicesUniformGrid" >
+                <Button Style="{StaticResource ServiceButtonStyle}" 
+                        VerticalAlignment="Center" 
+                        HorizontalAlignment="Center" 
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="YoutubeProvider"
+                        >
                     <StackPanel>
-                        <Image Source="/Resources/Icons/Youtube_Music_icon.png" Width="42" Height="42" />
-                        <TextBlock Text="YouTube Music" HorizontalAlignment="Center" Margin="0,5,0,0" />
+                        <TextBlock Text="&#xF5B0;" FontFamily="Segoe Fluent Icons" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="42" Width="42" Height="42" />
+                        <TextBlock Text="YouTube" HorizontalAlignment="Center" Margin="0,8,0,0" />
                     </StackPanel>
                 </Button>
-            </UniformGrid>
+                <Button Style="{StaticResource ServiceButtonStyle}" 
+                        VerticalAlignment="Center" 
+                        HorizontalAlignment="Center"
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="InternetRadioProvider"
+                        >
+                    <StackPanel>
+                        <TextBlock Text="&#xE704;" FontFamily="Segoe Fluent Icons" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="42" Width="42" Height="42" />
+                        <TextBlock Text="Internet Radio" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ServiceButtonStyle}" 
+                        VerticalAlignment="Center" 
+                        HorizontalAlignment="Center" 
+                        Command="{Binding NavigateToCommand}"
+                        CommandParameter="RemoteFileProvider"
+                        >
+                    <StackPanel>
+                        <TextBlock Text="&#xE8AF;" FontFamily="Segoe Fluent Icons" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="42" Width="42" Height="42" />
+                        <TextBlock Text="Remote file" HorizontalAlignment="Center" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
         </StackPanel>
-        <ContentControl x:Name="ContentControlRenderer" Visibility="Hidden" />
+        
+        <ContentControl Content="{Binding CurrentControl}" Visibility="{Binding CurrentControl, Converter={StaticResource NullToCollapseConverter}}" />
+        
     </Grid>
 </UserControl>
 

@@ -57,11 +57,11 @@
 
                 </Grid>
 
-                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource BackgroundLayer}" Padding="100,0,0,0">
+                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource BackgroundLayer}" Padding="96,0,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <ListBox Grid.Column="0"
@@ -84,7 +84,7 @@
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="Padding" Value="8,6"/>
-                                    <Setter Property="Margin" Value="2,0"/>
+                                    <Setter Property="Margin" Value="0"/>
                                     <Setter Property="Foreground" Value="White"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="Cursor" Value="Hand"/>
@@ -119,7 +119,7 @@
                         </ListBox>
 
                         <Menu Grid.Column="1" VerticalAlignment="Center" 
-                              Background="Transparent" 
+                              Background="Transparent"
                               Margin="0" Padding="0">
                             <MenuItem 
                                 Icon="{ex:Icon Glyph=E8CB, FontSize=14}"

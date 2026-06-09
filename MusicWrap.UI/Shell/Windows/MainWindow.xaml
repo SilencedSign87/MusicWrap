@@ -18,7 +18,7 @@
         Height="800"
         Width="1200"
         MinHeight="670"
-        MinWidth="925"
+        MinWidth="900"
         WindowStartupLocation="CenterScreen"
         d:Background="#000000"
         ResizeMode="CanResize"
@@ -88,9 +88,8 @@
                         CompactWidthThreshold="1100">
                         <nav:ShellTabItem Icon="&#xe8f1;" Text="Library" TabIndex="0" ToolTip="Library"/>
                         <nav:ShellTabItem Icon="&#xe90b;" Text="Playlists" TabIndex="1" ToolTip="Playlists"/>
-                        <nav:ShellTabItem Icon="&#xE704;" Text="Radio" TabIndex="2" ToolTip="Radio"/>
-                        <nav:ShellTabItem Icon="&#xECAA;" Text="Services" TabIndex="3" ToolTip="Services"/>
-                        <nav:ShellTabItem Icon="&#xF61F;" Text="Now Playing" TabIndex="4" ToolTip="Now Playing"/>
+                        <nav:ShellTabItem Icon="&#xECAA;" Text="Services" TabIndex="2" ToolTip="Services"/>
+                        <nav:ShellTabItem Icon="&#xF61F;" Text="Now Playing" TabIndex="3" ToolTip="Now Playing"/>
                     </nav:ShellTabControl>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">

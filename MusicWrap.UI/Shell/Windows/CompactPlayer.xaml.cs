@@ -41,7 +41,7 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void HandleOpenMainPlayer(object sender, RoutedEventArgs e)
         {
-            App.ShowMain();
+            App.ShowMainPlayer();
         }
 
         private void HandleOpenQueue(object sender, RoutedEventArgs e)
@@ -106,30 +106,7 @@ namespace MusicWrap.UI.Shell.Windows
         {
             VolumePopup.IsOpen = true;
         }
-
-        //private void WaveformPlayerControl_SeekStarted(object sender, EventArgs e)
-        //{
-        //    if (_viewModel?.StartSeekingCommand.CanExecute(null) == true)
-        //    {
-        //        _viewModel.StartSeekingCommand.Execute(null);
-        //    }
-        //}
-
-        //private void WaveformPlayerControl_SeekEnded(object sender, double e)
-        //{
-        //    if (_viewModel?.EndSeekingCommand.CanExecute(e) == true)
-        //    {
-        //        _viewModel.EndSeekingCommand.Execute(e);
-        //    }
-        //}
-
-        //private void WaveformPlayerControl_SeekCanceled(object sender, EventArgs e)
-        //{
-        //    if (_viewModel?.CancelSeekingCommand.CanExecute(null) == true)
-        //    {
-        //        _viewModel.CancelSeekingCommand.Execute(null);
-        //    }
-        //}
+ 
     }
 }
 

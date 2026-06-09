@@ -21,7 +21,6 @@ using MusicWrap.Data.Playlist;
 using MusicWrap.Data.User;
 using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Features.Activity.Viewmodel;
-using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.ViewModels;
@@ -31,6 +30,7 @@ using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Providers.ViewModels;
 using MusicWrap.UI.Features.Providers.Views;
 using MusicWrap.UI.Features.Settings.ViewModels;
+using MusicWrap.UI.Features.Settings.Views;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Controls.ViewModel;
 using MusicWrap.UI.Shared.Services;
@@ -116,10 +116,12 @@ public static class ServiceRegistration
         services.AddTransient<LibraryViewModel>();
         services.AddTransient<AlbumTracksViewModel>();
         services.AddTransient<PlaylistViewModel>();
+        services.AddTransient<ServicePageViewModel>();
         services.AddTransient<PlaylistManagerViewModel>();
+        services.AddTransient<SettingsIndexViewModel>();
         services.AddTransient<SettingsYoutubeViewModel>();
         services.AddTransient<YoutubeProviderViewModel>();
-        services.AddTransient<IndexingViewModel>();
+        services.AddSingleton<IndexingViewModel>();
         services.AddSingleton<QueueViewModel>();
         services.AddTransient<DeviceViewModel>();
         services.AddSingleton<PlayerViewModel>();
@@ -136,7 +138,14 @@ public static class ServiceRegistration
         // UI
         services.AddTransient<MainWindow>();
         services.AddTransient<CompactPlayer>();
+
         services.AddTransient<SettingsWindow>();
+        services.AddTransient<SettingsGeneralPage>();
+        services.AddTransient<SettingsDirectoriesManagerPage>();
+        services.AddTransient<DevicePage>();
+        services.AddTransient<AboutPage>();
+        services.AddTransient<SettingsYoutubeProviderPage>();
+
         services.AddTransient<IndexingWindow>();
         services.AddTransient<MetadataEditorWindow>();
         services.AddTransient<TrackInformationPage>();
@@ -144,9 +153,10 @@ public static class ServiceRegistration
         services.AddTransient<PlayerPage>();
         services.AddTransient<LibraryPage>();
         services.AddTransient<PlaylistPage>();
-        services.AddTransient<FavoritesPage>();
         services.AddTransient<ServicesPage>();
         services.AddTransient<NowPlayingPage>();
+
+        services.AddTransient<YoutubeProviderPage>();
     }
 
     private static void ConfigureJot(Tracker tracker)

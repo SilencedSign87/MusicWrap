@@ -1,16 +1,8 @@
-using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.ViewModels;
 using MusicWrap.UI.Features.Providers.ViewModels;
-using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MusicWrap.UI.Shell.Windows;
-using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
-using System.Linq;
 using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Providers.Views
@@ -22,18 +14,19 @@ namespace MusicWrap.UI.Features.Providers.Views
     {
         private readonly YoutubeProviderViewModel _viewModel;
         private readonly SearchService _searchService;
-        private IndexingWindow? _indexingWindow;
+        private WindowManager _windowManager;
         private bool _isSubscribed;
         private bool _isClearingTrackSelections;
 
-        public event EventHandler? BackRequested;
+        public event EventHandler? HomeRequested;
 
-        public YoutubeProviderPage()
+        public YoutubeProviderPage(YoutubeProviderViewModel viewModel, SearchService searchService, WindowManager windowManager)
         {
             InitializeComponent();
 
-            _viewModel = App.Services.GetRequiredService<YoutubeProviderViewModel>();
-            _searchService = App.Services.GetRequiredService<SearchService>();
+            _viewModel = viewModel;
+            _searchService = searchService;
+            _windowManager = windowManager;
 
             DataContext = _viewModel;
 
@@ -88,7 +81,7 @@ namespace MusicWrap.UI.Features.Providers.Views
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            BackRequested?.Invoke(this, EventArgs.Empty);
+            HomeRequested?.Invoke(this, EventArgs.Empty);
         }
 
         private void TrackListBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -196,17 +189,7 @@ namespace MusicWrap.UI.Features.Providers.Views
 
         private void ShowIndexingWindow()
         {
-            if (_indexingWindow is not null)
-            {
-                _indexingWindow.Activate();
-                return;
-            }
-
-            _indexingWindow = App.Services.GetRequiredService<IndexingWindow>();
-            _indexingWindow.Owner = Window.GetWindow(this);
-            _indexingWindow.Closed += (_, _) => _indexingWindow = null;
-            _indexingWindow.Show();
-            _indexingWindow.Activate();
+            _windowManager.LaunchIndexingWindow();
         }
 
         private static IEnumerable<T> FindVisualDescendants<T>(DependencyObject root) where T : DependencyObject

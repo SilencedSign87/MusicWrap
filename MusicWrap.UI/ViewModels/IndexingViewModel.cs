@@ -455,7 +455,7 @@ public sealed partial class IndexingViewModel : ObservableObject
     {
         if (StagedTracks.Count == 0)
         {
-            SaveStatusMessage = "No hay tracks para guardar.";
+            SaveStatusMessage = "No track to save.";
             return;
         }
 

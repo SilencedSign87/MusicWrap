@@ -17,7 +17,7 @@ namespace MusicWrap.UI.Shared.Services
             _serviceProvider = serviceProvider;
         }
 
-        public void ShowSettings()
+        public void LaunchSettingsWindow()
         {
             var currentWindow = App.CurrentWindow;
             if (currentWindow is null) return;
@@ -27,9 +27,24 @@ namespace MusicWrap.UI.Shared.Services
             WindowHelper.LauchFromParent(currentWindow, settingsWindow, false);
         }
 
-        public void ShowMiniPlayer()
+        public void LaunchIndexingWindow()
+        {
+            var currentWindow = App.CurrentWindow;
+            if (currentWindow is null) return;
+
+            var IndexingWindow = _serviceProvider.GetRequiredService<IndexingWindow>();
+
+            WindowHelper.LauchFromParent(currentWindow, IndexingWindow, false);
+
+        }
+
+        public void SwitchToMiniplayer()
         {
             App.ShowCompactPlayer();
+        }
+        public void SwitchToMainPlayer()
+        {
+            App.ShowMainPlayer();
         }
     }
 }

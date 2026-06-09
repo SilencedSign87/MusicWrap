@@ -19,6 +19,7 @@ namespace MusicWrap.Core.Services.Library
         Task ScanFiles(IEnumerable<string> paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
         void AddDirectory(string path, bool recursive);
         void RemoveDirectory(string path, bool keepTracks);
+        IReadOnlyList<RawMetadata> GetRawMetadata(string path);
         IReadOnlyList<ScanDirectory> GetDirectories();
     }
     public class LibraryScanner : ILibraryScanner
@@ -255,6 +256,16 @@ namespace MusicWrap.Core.Services.Library
 
         }
 
+        public IReadOnlyList<RawMetadata> GetRawMetadata(string path)
+        {
+            if (!File.Exists(path))
+                return [];
+
+            using var tagfile = TagLib.File.Create(path);
+            return [];
+
+        }
+
         #region Internal
         private IEnumerable<string> GetFilesFromDirectory(string path, bool recursive)
         {
@@ -283,5 +294,12 @@ namespace MusicWrap.Core.Services.Library
         Fingerprinting,
         Scanning,
         Saving
+    }
+
+    public record RawMetadata
+    {
+        public required string Group { get; set; }
+        public required string Key { get; set; }
+        public required string Value { get; set; }
     }
 }

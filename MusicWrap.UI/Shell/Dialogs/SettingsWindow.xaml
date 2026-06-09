@@ -14,10 +14,8 @@
         Background="#222222"
         ThemeMode="Dark"
         Icon="/Resources/icon.ico"
+        d:DataContext="{d:DesignInstance Type=vm:SettingsIndexViewModel}"
         >
-    <Window.DataContext>
-        <vm:SettingsIndexViewModel/>
-    </Window.DataContext>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="170" />
@@ -28,8 +26,7 @@
             Background="#1e1e1e" 
             Padding="2"
             Grid.Column="0"
-            SelectedValuePath="Tag"
-            SelectedValue="{Binding SelectedTab, Mode=TwoWay}"
+            SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
                       >
             <ListView.ItemContainerStyle>
                 <Style TargetType="ListViewItem">
@@ -49,16 +46,16 @@
                     <TextBlock Text="Player" FontSize="14" Margin="8,0,0,0" />
                 </StackPanel>
             </ListViewItem>
-            <ListViewItem Foreground="White" BorderThickness="0" Height="32" Padding="8,0" Tag="youtube">
-                <StackPanel Orientation="Horizontal">
-                    <Image Source="/Resources/Icons/Youtube_Music_icon.png" Width="18" Height="18" />
-                    <TextBlock Text="YouTube" FontSize="14" Margin="8,0,0,0" />
-                </StackPanel>
-            </ListViewItem>
             <ListViewItem Foreground="White" BorderThickness="0" Height="32" Padding="8,0" Tag="library">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xf12b;" FontSize="18" />
                     <TextBlock Text="Library" FontSize="14" Margin="8,0,0,0" />
+                </StackPanel>
+            </ListViewItem>
+            <ListViewItem Foreground="White" BorderThickness="0" Height="32" Padding="8,0" Tag="youtube">
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="/Resources/Icons/Youtube_Music_icon.png" Width="18" Height="18" />
+                    <TextBlock Text="YouTube" FontSize="14" Margin="8,0,0,0" />
                 </StackPanel>
             </ListViewItem>
             <ListViewItem Foreground="White" BorderThickness="0" Height="32" Padding="8,0" Tag="about">
@@ -69,11 +66,7 @@
             </ListViewItem>
         </ListView>
         <Grid Grid.Column="1">
-            <!--<Frame
-                x:Name="SettingsFrame"
-                NavigationUIVisibility="Hidden"
-                />-->
-            <ContentControl x:Name="SettingsContentControl" />
+            <ContentControl x:Name="SettingsContentControl" Content="{Binding CurrentControl}" />
         </Grid>
 
     </Grid>

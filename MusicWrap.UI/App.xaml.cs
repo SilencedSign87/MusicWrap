@@ -94,7 +94,7 @@ namespace MusicWrap.UI
             }
         }
 
-        public static void ShowMain()
+        public static void ShowMainPlayer()
         {
             if (CurrentWindow is MainWindow existingMain && TryShowWindow(existingMain))
             {
@@ -136,7 +136,7 @@ namespace MusicWrap.UI
         {
             if (!TryShowWindow(CurrentWindow))
             {
-                ShowMain();
+                ShowMainPlayer();
             }
         }
 

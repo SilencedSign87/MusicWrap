@@ -112,7 +112,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             var requestid = Interlocked.Increment(ref _refreshRequestId);
             if (debounce)
             {
-                await Task.Delay(200);
                 if (requestid != _refreshRequestId)
                     return;
             }

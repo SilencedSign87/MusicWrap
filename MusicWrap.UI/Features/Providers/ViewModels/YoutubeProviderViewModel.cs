@@ -203,8 +203,6 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
 
         foreach (var track in tracks)
         {
-            // Note: YoutubeDetailTrackNode contains all data from YoutubeDetailTrack
-            // We pass it directly to BuildStagedTrack to avoid creating intermediate model
             var stagedTrack = BuildStagedTrack(track, group, indexingViewModel.StagedTracks.Count + 1);
             if (indexingViewModel.TryAddStagedTrack(stagedTrack))
             {

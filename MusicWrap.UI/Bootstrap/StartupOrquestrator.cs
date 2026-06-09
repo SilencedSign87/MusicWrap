@@ -133,7 +133,7 @@ public static class StartupOrquestrator
                     }
                     else
                     {
-                        App.ShowMain();
+                        App.ShowMainPlayer();
                     }
                 }
                 catch (Exception ex)

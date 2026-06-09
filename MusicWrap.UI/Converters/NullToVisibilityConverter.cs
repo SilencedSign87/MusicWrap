@@ -11,7 +11,11 @@ namespace MusicWrap.UI.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return value != null ? Visibility.Visible : Visibility.Collapsed;
+            bool invert = parameter != null && bool.TryParse(parameter.ToString(), out bool result) && result;
+
+            bool ShouldBeVisible = invert ? value == null : value != null;
+
+            return ShouldBeVisible ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

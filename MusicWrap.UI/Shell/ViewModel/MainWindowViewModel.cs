@@ -4,16 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Features.Favorites.Views;
 using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.Views;
 using MusicWrap.UI.Features.Providers.Views;
 using MusicWrap.UI.Shared.Services;
-using System;
-using System.Collections.Generic;
-using System.Drawing.Printing;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -44,6 +39,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         public BitmapImage PlayPauseIcon => _playerService.IsPlaying
             ? LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png")
             : LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
+
         public string SidebarToggleIcon
             => IsSidePanelVisible ? "\xE89F" : "\xE8A0";
         public GridLength SidebarWidth
@@ -55,7 +51,6 @@ namespace MusicWrap.UI.Shell.ViewModel
 
         private CancellationTokenSource? _loadingCts;
         private bool _disposed = false;
-
 
         public MainWindowViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WindowManager manager, UserSettings userSettings)
         {
@@ -103,13 +98,13 @@ namespace MusicWrap.UI.Shell.ViewModel
         [RelayCommand]
         private void openSettings()
         {
-            _windowManager.ShowSettings();
+            _windowManager.LaunchSettingsWindow();
 
         }
         [RelayCommand]
         private void showMiniplayer()
         {
-            _windowManager.ShowMiniPlayer();
+            _windowManager.SwitchToMiniplayer();
         }
         [RelayCommand]
         private void ToggleSidebar()
@@ -143,9 +138,8 @@ namespace MusicWrap.UI.Shell.ViewModel
                 {
                     0 => _serviceProvider.GetRequiredService<LibraryPage>(),
                     1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
-                    2 => _serviceProvider.GetRequiredService<FavoritesPage>(),
-                    3 => _serviceProvider.GetRequiredService<ServicesPage>(),
-                    4 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
+                    2 => _serviceProvider.GetRequiredService<ServicesPage>(),
+                    3 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
                     _ => _serviceProvider.GetRequiredService<LibraryPage>()
                 };
                 _userSettings.MainWindowTab = index;

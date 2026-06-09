@@ -1,30 +1,13 @@
-using Hardcodet.Wpf.TaskbarNotification;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Features.Favorites.Views;
-using MusicWrap.UI.Features.Library.Components;
-using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.Views;
-using MusicWrap.UI.Features.Playlist.Views;
-using MusicWrap.UI.Features.Providers.Views;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.ViewModel;
-using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Shell.Windows
 {
@@ -34,18 +17,19 @@ namespace MusicWrap.UI.Shell.Windows
     public partial class MainWindow : Window
     {
         private readonly MainWindowViewModel _viewModel;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IUIDispatcher _uiDispatcher;
 
-        public MainWindow(Tracker tracker, IServiceProvider serviceProvider, PlayerPage playerPage, IUIDispatcher uiDispatcher, MainWindowViewModel viewmodel)
+        public MainWindow(Tracker tracker, PlayerPage playerPage, MainWindowViewModel viewmodel)
         {
             InitializeComponent();
             _viewModel = viewmodel;
             DataContext = _viewModel;
 
-            _serviceProvider = serviceProvider;
-            _uiDispatcher = uiDispatcher;
             PlayerContainer.Children.Add(playerPage);
+
+            Loaded += (s, e) =>
+            {
+             BorderWindow.Padding = WindowState == WindowState.Maximized ? new Thickness(8) : new Thickness(0);
+            };
 
             StateChanged += MainWindow_StateChanged;
             Closing += MainWindow_Closing;
@@ -67,14 +51,7 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
-            if (WindowState == WindowState.Maximized)
-            {
-                BorderWindow.Padding = new Thickness(8);
-            }
-            else
-            {
-                BorderWindow.Padding = new Thickness(0);
-            }
+            BorderWindow.Padding = WindowState == WindowState.Maximized ? new Thickness(8) : new Thickness(0);
         }
 
         private void MainWindow_Closing(object? sender, CancelEventArgs e)
@@ -112,7 +89,4 @@ namespace MusicWrap.UI.Shell.Windows
         }
     }
 }
-
-
-
 
