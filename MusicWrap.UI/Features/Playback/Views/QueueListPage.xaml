@@ -22,21 +22,43 @@
             <MenuItem Header="Remove from queue" Icon="{ex:Icon Glyph=E738}" Command="{Binding RemoveFromQueueCommand}"/>
         </ContextMenu>
     </UserControl.Resources>
-
-    <controlsM:TracksView
-        x:Name="QueueTracksView"
-        ItemsSource="{Binding QueueTrackRows}"
-        SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
-        ContextMenu="{StaticResource QueueTracksContextMenu}"
-        VisualMode="WithCoverArt"
-        IndexMode="None"
-        SelectionMode="Extended"
-        IsMouseWheelScrollEnabled="True"
-        AutoScrollToCurrentTrack="True"
-        IsReorderEnabled="True"
-        ReorderRequestedCommand="{Binding ReorderTrackCommand}"
-        TrackActivatedCommand="{Binding ActivateTrackCommand}"
-        RemoveRequestedCommand="{Binding RemoveSelectedTracksFromQueueCommand}"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" Padding="0,4,0,8" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource DefaultButton}" Command="{Binding SaveAsPlaylistCommand}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="&#xE74E;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center" FontSize="14"/>
+                        <TextBlock Text="Save as playlist" VerticalAlignment="Center" Margin="4,0,0,0" FontSize="14"/>
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource DefaultButton}" Margin="8,0" Command="{Binding ClearQueueCommand}">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="&#xEA99;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center" FontSize="14"/>
+                        <TextBlock Text="Clear" VerticalAlignment="Center" Margin="4,0,0,0" FontSize="14"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+        <controlsM:TracksView
+            x:Name="QueueTracksView"
+            Grid.Row="1"
+            ItemsSource="{Binding QueueTrackRows}"
+            SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
+            ContextMenu="{StaticResource QueueTracksContextMenu}"
+            VisualMode="WithCoverArt"
+            IndexMode="None"
+            SelectionMode="Extended"
+            IsMouseWheelScrollEnabled="True"
+            AutoScrollToCurrentTrack="True"
+            IsReorderEnabled="True"
+            ReorderRequestedCommand="{Binding ReorderTrackCommand}"
+            TrackActivatedCommand="{Binding ActivateTrackCommand}"
+            RemoveRequestedCommand="{Binding RemoveSelectedTracksFromQueueCommand}"/>
+    </Grid>
 </UserControl>
 
 

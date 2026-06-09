@@ -30,14 +30,15 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly IPlaylistService _playlistService;
         private readonly SearchService _searchService;
-        private NewPlaylistWindow? _newPlaylistWindow;
+        private readonly WindowManager _windowManager;
 
-        public PlaylistViewModel(ILibraryService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService, SearchService searchService)
+        public PlaylistViewModel(ILibraryService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService, SearchService searchService, WindowManager windowManager)
         {
             _libraryCacheService = cache;
             _saveCoordinator = saveCoordinator;
             _musicPlayerService = musicPlayerService;
             _playlistService = playlistService;
+            _windowManager = windowManager;
             selectedTrackIds = [];
 
             _searchService = searchService;
@@ -71,17 +72,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         [RelayCommand]
         private void NewPlaylist()
         {
-            if (_newPlaylistWindow is null)
-            {
-                _newPlaylistWindow = new NewPlaylistWindow();
-                WindowHelper.LauchFromParent(App.Current.MainWindow!, _newPlaylistWindow, true);
-                _newPlaylistWindow = null;
-                ConstructEntries();
-            }
-            else
-            {
-                _newPlaylistWindow.Activate();
-            }
+            _windowManager.LaunchNewPlaylistWindow();
         }
 
         [RelayCommand]

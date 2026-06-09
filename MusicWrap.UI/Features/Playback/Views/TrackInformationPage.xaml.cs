@@ -21,10 +21,10 @@ namespace MusicWrap.UI.Features.Playback.Views
     public partial class TrackInformationPage : UserControl
     {
         private PlayerViewModel _vm;
-        public TrackInformationPage()
+        public TrackInformationPage(PlayerViewModel vm)
         {
             InitializeComponent();
-            _vm = App.Services.GetRequiredService<PlayerViewModel>();
+            _vm = vm;
             DataContext = _vm;
         }
 

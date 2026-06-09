@@ -12,13 +12,13 @@ namespace MusicWrap.UI.Features.Playback.Views
     /// </summary>
     public partial class QueueListPage : UserControl
     {
-        private readonly TracksContextMenuService _tracksContextMenuService;
+        //private readonly TracksContextMenuService _tracksContextMenuService;
 
-        public QueueListPage()
+        public QueueListPage(QueueViewModel queueViewModel)
         {
             InitializeComponent();
-            _tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
-            DataContext = App.Services.GetRequiredService<QueueViewModel>();
+            //_tracksContextMenuService = tracksContextMenuService;
+            DataContext = queueViewModel;
         }
     }
 }

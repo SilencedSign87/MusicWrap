@@ -18,6 +18,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using MusicWrap.Core.Services.Playlists;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Controls.Models
 {
@@ -26,13 +27,14 @@ namespace MusicWrap.UI.Controls.Models
     /// </summary>
     public partial class TrackToPlaylistMenu : MenuItem
     {
-        private NewPlaylistWindow? _dialogPlaylist;
+        private readonly WindowManager _windowManager;
         private readonly IPlaylistService _playlistService;
         public ObservableCollection<PlaylistMenuItemModel> PlaylistItems { get; } = new();
         public TrackToPlaylistMenu()
         {
             InitializeComponent();
             _playlistService = App.Services.GetRequiredService<IPlaylistService>();
+            _windowManager = App.Services.GetRequiredService<WindowManager>();
             Loaded += UserControl_Loaded;
             Unloaded += TrackToPlaylistMenu_Unloaded;
         }
@@ -129,23 +131,7 @@ namespace MusicWrap.UI.Controls.Models
 
         private void NewPlaylist_click(object sender, RoutedEventArgs e)
         {
-            var mainwindow = App.CurrentWindow;
-            if (mainwindow is null) return;
-
-            if (_dialogPlaylist is null)
-            {
-                _dialogPlaylist = new NewPlaylistWindow(TrackIds);
-                bool? result = WindowHelper.LauchFromParent(mainwindow, _dialogPlaylist, true);
-                if (result.HasValue)
-                {
-                    _dialogPlaylist = null;
-                }
-            }
-            else
-            {
-                _dialogPlaylist.Activate();
-            }
-
+            _windowManager.LaunchNewPlaylistWindow(TrackIds);
         }
     }
 }

@@ -148,6 +148,8 @@ public static class ServiceRegistration
 
         services.AddTransient<IndexingWindow>();
         services.AddTransient<MetadataEditorWindow>();
+        services.AddTransient<NewPlaylistWindow>();
+        services.AddTransient<QueueListPage>();
         services.AddTransient<TrackInformationPage>();
 
         services.AddTransient<PlayerPage>();

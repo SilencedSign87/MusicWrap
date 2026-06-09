@@ -23,17 +23,35 @@ namespace MusicWrap.UI.Shell.Dialogs
     {
         private readonly IPlaylistService _playlistService;
         private readonly PlaylistData _playlist;
-        private readonly IEnumerable<int> _trackIds;
-        public NewPlaylistWindow(IEnumerable<int>? trackIds = null)
+        private IEnumerable<int> _trackIds;
+        public NewPlaylistWindow(IPlaylistService playlistService, PlaylistData playlistData)
         {
             InitializeComponent();
-            _trackIds = trackIds ?? Array.Empty<int>();
-            _playlistService = App.Services.GetRequiredService<IPlaylistService>();
-            _playlist = App.Services.GetRequiredService<PlaylistData>();
-
+            _playlistService = playlistService;
+            _playlist = playlistData;
+        }
+        public void Initialize(IEnumerable<int>? trackIds = null)
+        {
+            _trackIds = trackIds ?? [];
             if (trackIds is not null && trackIds.Count() > 0)
             {
                 Title = $"Create Playlist - {trackIds.Count()} tracks";
+            }else
+            {
+                Title = "Create Playlist";
+            }
+        }
+        public void AddTracks(IEnumerable<int> tracksId)
+        {
+            _trackIds = _trackIds.Concat(tracksId).Distinct();
+
+            if (_trackIds.Any())
+            {
+                Title = $"Create Playlist - {_trackIds.Count()} tracks";
+            }
+            else
+            {
+                Title = "Create Playlist";
             }
         }
         private void PlaylistNameInput_KeyDown(object sender, KeyEventArgs e)

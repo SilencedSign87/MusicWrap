@@ -1,4 +1,5 @@
-﻿using MusicWrap.UI.Features.Playback.Views;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Features.Playback.Views;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -52,10 +53,14 @@ namespace MusicWrap.UI.Shell.Controls
             switch (index)
             {
                 case 0:
-                    ContentContainer.Children.Add(new QueueListPage() { VerticalAlignment = VerticalAlignment.Stretch });
+                    var queuepage = App.Services.GetRequiredService<QueueListPage>();
+                    queuepage.VerticalAlignment = VerticalAlignment.Stretch;
+                    ContentContainer.Children.Add(queuepage);
                     break;
                 case 1:
-                    ContentContainer.Children.Add(new TrackInformationPage() { VerticalAlignment = VerticalAlignment.Stretch });
+                    var trackInfoPage = App.Services.GetRequiredService<TrackInformationPage>();
+                    trackInfoPage.VerticalAlignment = VerticalAlignment.Stretch;
+                    ContentContainer.Children.Add(trackInfoPage);
                     break;
                 case 2:
                     break;

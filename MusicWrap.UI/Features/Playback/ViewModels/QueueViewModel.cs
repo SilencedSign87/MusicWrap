@@ -7,6 +7,8 @@ using System.Windows.Media.Imaging;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Library;
 using System.Diagnostics;
+using MusicWrap.Core.Services.Playlists;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {
@@ -27,16 +29,18 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private readonly Dictionary<int, LinkedListNode<int>> _albumArtNodeByCoverId = [];
 
         // Services
-        private IMusicPlayerService _player = null!;
-        private ILibraryService _libraryCache = null!;
+        private readonly IMusicPlayerService _player;
+        private readonly ILibraryService _libraryCache;
         private readonly IImageService _imageService;
+        private readonly WindowManager _windowManager;
 
-        public QueueViewModel(IMusicPlayerService player, ILibraryService libraryCache, IImageService imageService)
+
+        public QueueViewModel(IMusicPlayerService player, ILibraryService libraryCache, IImageService imageService, WindowManager windowmanager)
         {
             _libraryCache = libraryCache;
             _player = player;
             _imageService = imageService;
-
+            _windowManager = windowmanager;
             QueueDataList = [];
 
             var currentQueue = _player.GetPlaybackOrder();
@@ -94,6 +98,18 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                 row.IsPlaying = (i == currentPlaybackIndex);
             }
         }
+        [RelayCommand]
+        private void ClearQueue()
+        {
+            _player.ClearQueue();
+        }
+        [RelayCommand]
+        private void SaveAsPlaylist()
+        {
+            var trackIds = _player.GetQueue();
+
+            _windowManager.LaunchNewPlaylistWindow(trackIds);
+        }
 
         [RelayCommand]
         private void PlayTracks()
@@ -121,7 +137,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         [RelayCommand]
         private void ReorderTrack(TrackReorderRequest request)
         {
-           _player.ReorderTrackById(request.SourceTrackId, request.TargetTrackId, request.PlaceAfterTarget);
+            _player.ReorderTrackById(request.SourceTrackId, request.TargetTrackId, request.PlaceAfterTarget);
         }
 
         [RelayCommand]

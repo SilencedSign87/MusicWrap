@@ -11,6 +11,7 @@ namespace MusicWrap.UI.Shared.Services
     public class WindowManager
     {
         private readonly IServiceProvider _serviceProvider;
+        private NewPlaylistWindow? newPlaylistWindow = null;
 
         public WindowManager(IServiceProvider serviceProvider)
         {
@@ -36,6 +37,34 @@ namespace MusicWrap.UI.Shared.Services
 
             WindowHelper.LauchFromParent(currentWindow, IndexingWindow, false);
 
+        }
+
+        public void LaunchNewPlaylistWindow(IEnumerable<int>? tracksId = null)
+        {
+            var currentWindow = App.CurrentWindow;
+            if (currentWindow is null) return;
+
+            if (newPlaylistWindow is null)
+            {
+                newPlaylistWindow = _serviceProvider.GetRequiredService<NewPlaylistWindow>();
+
+                newPlaylistWindow.Initialize(tracksId);
+
+                WindowHelper.LauchFromParent(currentWindow, newPlaylistWindow, false);
+
+                newPlaylistWindow.Closed += NewPlaylistWindow_Closed;
+            }else
+            {
+                newPlaylistWindow.AddTracks(tracksId ?? []);
+            }
+
+            newPlaylistWindow.Activate();
+        }
+
+        private void NewPlaylistWindow_Closed(object? sender, EventArgs e)
+        {
+            newPlaylistWindow?.Closed -= NewPlaylistWindow_Closed;
+            newPlaylistWindow = null;
         }
 
         public void SwitchToMiniplayer()
