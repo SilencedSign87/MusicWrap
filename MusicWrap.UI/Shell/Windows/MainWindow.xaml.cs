@@ -5,6 +5,7 @@ using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Shell.ViewModel;
 using System.ComponentModel;
 using System.Windows;
@@ -16,12 +17,14 @@ namespace MusicWrap.UI.Shell.Windows
     /// </summary>
     public partial class MainWindow : Window
     {
+        private readonly WindowManager _windowManager;
         private readonly MainWindowViewModel _viewModel;
 
-        public MainWindow(Tracker tracker, PlayerPage playerPage, MainWindowViewModel viewmodel)
+        public MainWindow(Tracker tracker, PlayerPage playerPage, MainWindowViewModel viewmodel, WindowManager windowManager)
         {
             InitializeComponent();
             _viewModel = viewmodel;
+            _windowManager = windowManager;
             DataContext = _viewModel;
 
             PlayerContainer.Children.Add(playerPage);
@@ -56,20 +59,17 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void MainWindow_Closing(object? sender, CancelEventArgs e)
         {
-            if (App.IsShuttingDown || App.IsWindowTransitioning)
+            if (_windowManager.IsShuttingDown || _windowManager.IsWindowTransitioning)
             {
                 return;
             }
 
-            ReleaseResources();
-
-            if (App.ShouldKeepAppInTray())
+            if (_windowManager.ShouldKeepAppInTray())
             {
                 return;
             }
 
-            App.Services.GetService<IMusicPlayerService>()?.FlushPlaybackState();
-            App.RequestShutdown();
+            _windowManager.RequestShutdown();
         }
         private void MainWindow_Closed(object? sender, EventArgs e)
         {

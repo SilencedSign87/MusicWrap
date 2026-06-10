@@ -1,7 +1,9 @@
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System;
 using System.ComponentModel;
@@ -12,20 +14,29 @@ namespace MusicWrap.UI.Shell.Windows
     public partial class CompactPlayer : Window
     {
         private PlayerViewModel? _viewModel;
+        private readonly QueueListPage _queuePage;
+        private readonly WindowManager _windowManager;
+
         private bool _isQueueOpen = false;
         private const int _playerWidth = 250;
         private const int _compactHeight = 320;
         private const int _expandedHeight = 700;
 
-        public CompactPlayer(Tracker tracker)
+        public CompactPlayer(Tracker tracker, PlayerViewModel playervm, QueueListPage queuepage, WindowManager wm)
         {
+            _viewModel = playervm;
+            _windowManager = wm;
+            _queuePage = queuepage;
+
             InitializeComponent();
-            InitializeWindowSize();
-            _viewModel = App.Services.GetRequiredService<PlayerViewModel>();
+            InitializeWindow();
+
             DataContext = _viewModel;
 
             Closed += CompactPlayer_Closed;
             Closing += CompactPlayer_Closing;
+
+            QueueTab.Content = queuepage;
         }
 
         private void CompactPlayer_Closed(object? sender, EventArgs e)
@@ -33,7 +44,7 @@ namespace MusicWrap.UI.Shell.Windows
             Closed -= CompactPlayer_Closed;
         }
 
-        private void InitializeWindowSize()
+        private void InitializeWindow()
         {
             Width = _playerWidth;
             Height = _compactHeight;
@@ -41,7 +52,7 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void HandleOpenMainPlayer(object sender, RoutedEventArgs e)
         {
-            App.ShowMainPlayer();
+            _windowManager.SwitchToMainPlayer();
         }
 
         private void HandleOpenQueue(object sender, RoutedEventArgs e)
@@ -87,19 +98,17 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void CompactPlayer_Closing(object? sender, CancelEventArgs e)
         {
-            if (App.IsShuttingDown || App.IsWindowTransitioning)
+            if (_windowManager.IsShuttingDown || _windowManager.IsWindowTransitioning)
             {
                 return;
             }
 
-            if (App.ShouldKeepAppInTray())
+            if (_windowManager.ShouldKeepAppInTray())
             {
-                App.Services.GetService<ITrayService>()?.HideFlyout();
                 return;
             }
 
-            App.Services.GetService<IMusicPlayerService>()?.FlushPlaybackState();
-            App.RequestShutdown();
+            _windowManager.RequestShutdown();
         }
 
         private void VolumeButton_Click(object sender, RoutedEventArgs e)

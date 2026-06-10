@@ -1,13 +1,14 @@
 using System.ComponentModel;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using Serilog;
 
@@ -68,7 +69,8 @@ public static class StartupOrquestrator
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            var current = App.CurrentWindow;
+                            var windowManager = serviceProvider.GetRequiredService<WindowManager>();
+                            var current = windowManager.CurrentWindow;
                             if (current is not null
                             && current.IsLoaded
                             && !current.Dispatcher.HasShutdownStarted
@@ -103,7 +105,6 @@ public static class StartupOrquestrator
 
             // Ensure save orchestration/coordinator are created (they may be used on exit)
             serviceProvider.GetService<ISaveCoordinator>();
-            serviceProvider.GetService<ISaveOrchestration>();
 
             // If keep in tray, ensure tray is initialized (safe to call again)
             if (userSettings.KeepAppInTray)
@@ -119,6 +120,7 @@ public static class StartupOrquestrator
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
+                var wm = serviceProvider.GetRequiredService<WindowManager>();
                 try
                 {
                     splash?.Close(TimeSpan.FromSeconds(0.5));
@@ -129,11 +131,11 @@ public static class StartupOrquestrator
                 {
                     if (windowToShow == 1)
                     {
-                        App.ShowCompactPlayer();
+                        wm.SwitchToCompactPlayer();  
                     }
                     else
                     {
-                        App.ShowMainPlayer();
+                        wm.SwitchToMainPlayer();
                     }
                 }
                 catch (Exception ex)

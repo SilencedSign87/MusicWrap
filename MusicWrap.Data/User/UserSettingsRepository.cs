@@ -1,5 +1,6 @@
 using MessagePack;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
 using System;
 using System.IO;
@@ -14,7 +15,7 @@ namespace MusicWrap.Data.User
         void Backup();
     }
 
-    public class UserSettingsRepository : IUserSettingsRepository
+    public class UserSettingsRepository : IUserSettingsRepository, IRepository<UserSettings>
     {
         private static readonly object _lock = new();
 

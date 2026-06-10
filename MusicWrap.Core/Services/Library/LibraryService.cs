@@ -2,6 +2,7 @@
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
@@ -43,7 +44,6 @@ namespace MusicWrap.Core.Services.Library
 
         private readonly ISearchQueryProvider _searchQueryProvider;
         private readonly MusicLibrary _library;
-        private readonly IUserSettingsRepository _userSettingsRepository;
         private readonly UserSettings _userSettings;
 
         private LibraryEntry[]? _trackArtistCache;
@@ -68,10 +68,9 @@ namespace MusicWrap.Core.Services.Library
 
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
-        public LibraryService(MusicLibrary library, IUserSettingsRepository userSettingsRepository, UserSettings userSettings, ISearchQueryProvider searchQueryProvider)
+        public LibraryService(MusicLibrary library, UserSettings userSettings, ISearchQueryProvider searchQueryProvider)
         {
             _library = library;
-            _userSettingsRepository = userSettingsRepository;
             _userSettings = userSettings;
             _searchQueryProvider = searchQueryProvider;
             BuildIndexes();
@@ -235,7 +234,6 @@ namespace MusicWrap.Core.Services.Library
                     break;
             }
 
-            SaveUserPreference(viewType, ascending);
             if (useSearchQuery)
             {
                 return FilterEntries(entries.ToList(), _searchQueryProvider.ActiveQuery);
@@ -591,14 +589,6 @@ namespace MusicWrap.Core.Services.Library
         {
 
             return GetTrackIdsForEntry(entry, true).Length > 0;
-        }
-
-        private void SaveUserPreference(LibraryEntryType listBy, bool ascending)
-        {
-            _userSettings.LibrarySettings.EntryType = listBy;
-            _userSettings.LibrarySettings.LibraryAscending = ascending;
-            //_saveCoordinator.Enqueue(SaveKind.Settings);
-            _userSettingsRepository.Save(_userSettings);
         }
 
         private void BuildCoverLookUp()

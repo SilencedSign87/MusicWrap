@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -21,10 +22,12 @@ namespace MusicWrap.UI.ViewModels
 
         private readonly IMusicPlayerService _playerService;
         private readonly ITrayService _trayService;
-        public TaskbarIconViewModel(IMusicPlayerService musicPlayerService, ITrayService trayService)
+        private readonly WindowManager _windowManager;
+        public TaskbarIconViewModel(IMusicPlayerService musicPlayerService, ITrayService trayService, WindowManager windowManager)
         {
             _playerService = musicPlayerService;
             _trayService = trayService;
+            _windowManager = windowManager;
 
             LoadInitialState();
 
@@ -33,7 +36,7 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void OpenMainWindow()
         {
-            App.ShowOrRestoreCurrentWindow();
+            _windowManager.ShowOrRestoreCurrentWindow();
         }
         [RelayCommand]
         private void ExitApp()

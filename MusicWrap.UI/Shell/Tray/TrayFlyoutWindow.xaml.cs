@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -22,7 +23,9 @@ namespace MusicWrap.UI.Shell.Tray
     /// </summary>
     public partial class TrayFlyoutWindow : Window
     {
-        private PlayerViewModel _viewmodel;
+        private readonly PlayerViewModel _viewmodel;
+        private readonly WindowManager _windowManager;
+
         private bool _isAnimatingClose;
         private double _homeTop;
         private const int FlyoutMargin = 8;
@@ -30,6 +33,7 @@ namespace MusicWrap.UI.Shell.Tray
         {
             InitializeComponent();
             _viewmodel = App.Services.GetRequiredService<PlayerViewModel>();
+            _windowManager = App.Services.GetRequiredService<WindowManager>();
             DataContext = _viewmodel;
         }
 
@@ -123,7 +127,7 @@ namespace MusicWrap.UI.Shell.Tray
         private void OpenMainWindow(object sender, RoutedEventArgs e)
         {
             Close();
-            App.ShowOrRestoreCurrentWindow();
+            _windowManager.ShowOrRestoreCurrentWindow();
         }
         private void ExitApp(object sender, RoutedEventArgs e)
         {

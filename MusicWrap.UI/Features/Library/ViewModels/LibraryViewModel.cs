@@ -1,21 +1,21 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using MusicWrap.Core.Saving;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using System.ComponentModel;
+using System.IO;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Library;
-using Microsoft.Extensions.Logging;
-using MusicWrap.Core.Services.Library.Models;
-using MusicWrap.UI.Shared.Services;
-using MusicWrap.UI.Features.Activity.Services;
-using System.IO;
-using System.Diagnostics;
-using System.Drawing.Printing;
-using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -53,6 +53,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly SearchService _searchService;
         private readonly ActivityService _activityService;
         private readonly UserSettings _userSettings;
+        private readonly ISaveCoordinator _saveCoordinator;
 
         public LibraryViewModel(
             ILibraryScanner scanner,
@@ -62,6 +63,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             IImageService imageService,
             SearchService searchService,
             ActivityService activityService,
+            ISaveCoordinator saveCoordinator,
             ILogger<LibraryViewModel> logger)
         {
             _scanner = scanner;
@@ -72,6 +74,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _logger = logger;
             _searchService = searchService;
             _userSettings = settings;
+            _saveCoordinator = saveCoordinator;
 
             _scanProgress = new Progress<ScanProgress>(progress =>
             {
@@ -130,6 +133,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         partial void OnListByChanged(LibraryEntryType value)
         {
             if (_isInitializing) return;
+
+            _userSettings.LibrarySettings.EntryType = value;
+            _userSettings.LibrarySettings.LibraryAscending = Ascending;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
 
             _ = LoadEntriesAsync();
         }

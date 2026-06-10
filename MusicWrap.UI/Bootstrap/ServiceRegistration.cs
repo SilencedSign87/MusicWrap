@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Metadata;
 using MusicWrap.Core.Queue;
+using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
@@ -80,9 +81,6 @@ public static class ServiceRegistration
         services.AddSingleton<TracksContextMenuService>();
         services.AddTransient<ILibraryScanner, LibraryScanner>();
         services.AddTransient<ILibraryIndexer, LibraryIndexer>();
-        services.AddSingleton<ILibraryCacheStore, LibraryCacheStoreAdapter>();
-        services.AddSingleton<ISaveOrchestration, SaveOrchestration>();
-        services.AddSingleton<ISaveStateProvider>(sp => (ISaveStateProvider)sp.GetRequiredService<ISaveOrchestration>());
         services.AddSingleton<ISaveCoordinator, SaveScheduler>();
         services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
         services.AddTransient<IEditMetadataService, EditMetadataService>();

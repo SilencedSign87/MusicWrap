@@ -1,12 +1,9 @@
-﻿using MessagePack.Formatters;
-using Microsoft.Extensions.Logging;
-using MusicWrap.Data.Library;
+﻿using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Saving;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Channels;
 
 namespace MusicWrap.Core.Services.Library
@@ -25,9 +22,9 @@ namespace MusicWrap.Core.Services.Library
     public class LibraryScanner : ILibraryScanner
     {
         private readonly MusicLibrary _library;
-        private readonly ILibraryRepository _store;
         private readonly ILibraryIndexer _indexer;
         private readonly ILogger _logger;
+        private readonly ISaveCoordinator _saveCoordinator;
 
         private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -43,12 +40,12 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        public LibraryScanner(MusicLibrary library, ILibraryRepository store, ILibraryIndexer indexer, ILogger<LibraryScanner> logger)
+        public LibraryScanner(MusicLibrary library, ILibraryIndexer indexer, ILogger<LibraryScanner> logger, ISaveCoordinator saveCoordinator)
         {
             _library = library;
-            _store = store;
             _indexer = indexer;
             _logger = logger;
+            _saveCoordinator = saveCoordinator;
         }
         public async Task ScanAllDirectories(IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)
         {
@@ -60,7 +57,7 @@ namespace MusicWrap.Core.Services.Library
 
             await ScanFiles(allPaths, progress, cancellationToken).ConfigureAwait(false);
 
-            await Task.Run(() => _store.Save(_library), cts).ConfigureAwait(false);
+            _saveCoordinator.Enqueue(SaveKind.Library);
         }
 
         public async Task ScanSpecificDirectories(string[] paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)
@@ -77,7 +74,7 @@ namespace MusicWrap.Core.Services.Library
 
             await ScanFiles(allPaths, progress, cancellationToken).ConfigureAwait(false);
 
-            await Task.Run(() => _store.Save(_library), cts).ConfigureAwait(false);
+            _saveCoordinator.Enqueue(SaveKind.Library);
         }
 
         public void AddDirectory(string path, bool recursive)
@@ -98,7 +95,7 @@ namespace MusicWrap.Core.Services.Library
             else
                 Directories.Add(new ScanDirectory { Path = path, Recursive = recursive });
 
-            _store.Save(_library);
+            _saveCoordinator.Enqueue(SaveKind.Library);
         }
 
         public IReadOnlyList<ScanDirectory> GetDirectories() => Directories.AsReadOnly();
@@ -117,7 +114,7 @@ namespace MusicWrap.Core.Services.Library
                     _library.Tracks.Remove(track);
             }
 
-            _store.Save(_library);
+            _saveCoordinator.Enqueue(SaveKind.Library);
         }
 
         public async Task ScanDirectory(string path, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)

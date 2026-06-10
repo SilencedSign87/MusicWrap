@@ -1,5 +1,6 @@
 using MessagePack;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Player.Models;
 using System;
 using System.IO;
@@ -14,7 +15,7 @@ namespace MusicWrap.Data.Player
         void Backup();
     }
 
-    public class PlaybackRepository : IPlaybackRepository
+    public class PlaybackRepository : IPlaybackRepository, IRepository<PlaybackQueueSnapshot>
     {
         private static readonly object _lock = new();
 

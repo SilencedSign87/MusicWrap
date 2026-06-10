@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Threading;
 using MusicWrap.Core.Queue;
 using MusicWrap.Core.Sources.Providers.Queue;
+using MusicWrap.Core.Saving;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MusicWrap.Core.Services.Playback
 {
@@ -520,7 +522,7 @@ namespace MusicWrap.Core.Services.Playback
 
         public void FlushPlaybackState()
         {
-            _playbackRepository.Save(BuildPlaybackSnapshot());
+            EnqueueSave(SaveKind.Playback);
         }
 
         public void SetVolume(float volume) => Volume = volume;
@@ -889,6 +891,7 @@ namespace MusicWrap.Core.Services.Playback
                 }
             }
             _dispatcher.Invoke(() => DeviceIndexChanged?.Invoke(this, CurrentDeviceIndex));
+            EnqueueSave(SaveKind.Settings);
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -927,6 +930,7 @@ namespace MusicWrap.Core.Services.Playback
                 PreferedSampleRate = CurrentSampleRate,
                 EffectiveSampleRate = _audioEngine.CurrentOutputSampleRate
             }));
+            EnqueueSave(SaveKind.Settings);
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -961,6 +965,7 @@ namespace MusicWrap.Core.Services.Playback
             }
 
             _dispatcher.Invoke(() => OutputModeChanged?.Invoke(this, CurrentOutputMode));
+            EnqueueSave(SaveKind.Settings);
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -1032,7 +1037,7 @@ namespace MusicWrap.Core.Services.Playback
 
             if (_saveCoordinator is null)
             {
-                _saveCoordinator = _serviceProvider.GetService(typeof(ISaveCoordinator)) as ISaveCoordinator;
+                _saveCoordinator = _serviceProvider.GetRequiredService<ISaveCoordinator>();
             }
             _saveCoordinator?.Enqueue(kind);
         }

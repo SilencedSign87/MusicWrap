@@ -3,6 +3,7 @@ using System.Windows;
 using MusicWrap.Data.Library.Models;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.ViewModels;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Services
 {
@@ -14,11 +15,14 @@ namespace MusicWrap.UI.Services
     public class EditMetadataService : IEditMetadataService
     {
         public event EventHandler<List<int>>? ItemsChanged;
+
         private readonly MusicLibrary _library;
         private MetadataEditorWindow? _currentWindow;
-        public EditMetadataService(MusicLibrary library)
+        private readonly WindowManager _windowManager;
+        public EditMetadataService(MusicLibrary library, WindowManager windowManager)
         {
             _library = library;
+            _windowManager = windowManager;
         }
         public void OpenMetadataWindow(List<int> trackIds)
         {
@@ -41,7 +45,7 @@ namespace MusicWrap.UI.Services
                 return;
             }
 
-            var mainWindow = App.CurrentWindow;
+            var mainWindow = _windowManager.CurrentWindow;
 
             _currentWindow = App.Services.GetRequiredService<MetadataEditorWindow>();
             _currentWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;

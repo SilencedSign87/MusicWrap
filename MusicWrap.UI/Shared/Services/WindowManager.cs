@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
+using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using MusicWrap.UI.Shell.Windows;
 using System.Windows;
 
 namespace MusicWrap.UI.Shared.Services
@@ -11,26 +12,39 @@ namespace MusicWrap.UI.Shared.Services
     public class WindowManager
     {
         private readonly IServiceProvider _serviceProvider;
-        private NewPlaylistWindow? newPlaylistWindow = null;
+        private readonly UserSettings _userSettings;
 
-        public WindowManager(IServiceProvider serviceProvider)
+        private int _windowTransitionDepth = 0;
+        public bool IsShuttingDown { get; set; }
+        public bool IsWindowTransitioning => _windowTransitionDepth > 0;
+
+        private readonly List<IDisposable> _trackedDisposables = [];
+
+        // windows
+        public Window? CurrentWindow { get; private set; }
+        private NewPlaylistWindow? newPlaylistWindow = null;
+        private MetadataEditorWindow? metadataEditorWindow = null;
+
+        public WindowManager(IServiceProvider serviceProvider, UserSettings userSettings)
         {
             _serviceProvider = serviceProvider;
+            _userSettings = userSettings;
         }
 
+        #region Dialog launchers
         public void LaunchSettingsWindow()
         {
-            var currentWindow = App.CurrentWindow;
+            var currentWindow = CurrentWindow;
             if (currentWindow is null) return;
 
             var settingsWindow = _serviceProvider.GetRequiredService<SettingsWindow>();
-            
+
             WindowHelper.LauchFromParent(currentWindow, settingsWindow, false);
         }
 
         public void LaunchIndexingWindow()
         {
-            var currentWindow = App.CurrentWindow;
+            var currentWindow = CurrentWindow;
             if (currentWindow is null) return;
 
             var IndexingWindow = _serviceProvider.GetRequiredService<IndexingWindow>();
@@ -41,7 +55,7 @@ namespace MusicWrap.UI.Shared.Services
 
         public void LaunchNewPlaylistWindow(IEnumerable<int>? tracksId = null)
         {
-            var currentWindow = App.CurrentWindow;
+            var currentWindow = CurrentWindow;
             if (currentWindow is null) return;
 
             if (newPlaylistWindow is null)
@@ -53,7 +67,8 @@ namespace MusicWrap.UI.Shared.Services
                 WindowHelper.LauchFromParent(currentWindow, newPlaylistWindow, false);
 
                 newPlaylistWindow.Closed += NewPlaylistWindow_Closed;
-            }else
+            }
+            else
             {
                 newPlaylistWindow.AddTracks(tracksId ?? []);
             }
@@ -67,13 +82,141 @@ namespace MusicWrap.UI.Shared.Services
             newPlaylistWindow = null;
         }
 
-        public void SwitchToMiniplayer()
+        public void LaunchMetadataEditorWindow()
         {
-            App.ShowCompactPlayer();
+
         }
-        public void SwitchToMainPlayer()
+        #endregion
+        #region Cleanup
+        public void TrackForCleanup(IDisposable disposable)
         {
-            App.ShowMainPlayer();
+            _trackedDisposables.Add(disposable);
         }
+        #endregion
+
+        #region Window Switching
+
+        public void SwitchToCompactPlayer() => ShowCompactPlayer();
+        public void SwitchToMainPlayer() => ShowMainPlayer();
+
+        #endregion
+        #region Window Management
+        public void ShowOrRestoreCurrentWindow()
+        {
+            if (!TryShowWindow(CurrentWindow))
+                ShowMainPlayer();
+        }
+        public void RequestShutdown()
+        {
+            IsShuttingDown = true;
+            Application.Current.Shutdown();
+        }
+        public bool ShouldKeepAppInTray() =>
+            _userSettings?.KeepAppInTray == true;
+        #endregion
+        #region Internal
+        private void ShowMainPlayer()
+        {
+            if (CurrentWindow is MainWindow existingMain && TryShowWindow(existingMain))
+                return;
+
+            if (IsWindowUsable(CurrentWindow))
+                CloseForWindowTransition(CurrentWindow!);
+
+            var main = _serviceProvider.GetRequiredService<MainWindow>();
+            TrackCurrentWindow(main);
+
+            if(main.DataContext is IDisposable disposable)
+            {
+                TrackForCleanup(disposable);
+            }
+
+            main.Show();
+            CurrentWindow = main;
+            _userSettings.LastWindowMode = LastWindowMode.MainPlayer;
+        }
+        private void ShowCompactPlayer()
+        {
+            if (CurrentWindow is CompactPlayer existingCompact && TryShowWindow(existingCompact))
+                return;
+
+            if (IsWindowUsable(CurrentWindow))
+                CloseForWindowTransition(CurrentWindow!);
+
+            var player = _serviceProvider.GetRequiredService<CompactPlayer>();
+            TrackCurrentWindow(player);
+
+            player.Show();
+            CurrentWindow = player;
+            _userSettings.LastWindowMode = LastWindowMode.CompactPlayer;
+        }
+        private static bool TryShowWindow(Window? window)
+        {
+            if (!IsWindowUsable(window))
+                return false;
+
+            if (window!.WindowState == WindowState.Minimized)
+                window.WindowState = WindowState.Normal;
+
+            if (!window.IsVisible)
+                window.Show();
+
+            window.Activate();
+            window.Focus();
+            return true;
+        }
+        private static bool IsWindowUsable(Window? window) =>
+            window is not null
+            && window.IsLoaded
+            && !window.Dispatcher.HasShutdownStarted
+            && !window.Dispatcher.HasShutdownFinished;
+
+        private void TrackCurrentWindow(Window window)
+        {
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(CurrentWindow, window))
+                    CurrentWindow = null;
+                // no windows and tray
+                if(!IsWindowTransitioning && CurrentWindow is null && ShouldKeepAppInTray())
+                {
+                    CleanupForTray();
+                    return;
+                }
+
+                // no windows and no tray
+                if (!IsWindowTransitioning && !ShouldKeepAppInTray())
+                    RequestShutdown();
+
+            };
+        }
+        private void CloseForWindowTransition(Window window)
+        {
+            _windowTransitionDepth++;
+            try
+            {
+                window.Close();
+            }
+            finally
+            {
+                _windowTransitionDepth--;
+            }
+        }
+
+        private void CleanupForTray()
+        {
+            var imageService = _serviceProvider.GetService<IImageService>();
+            imageService?.ClearCache();
+
+            foreach(var d in _trackedDisposables)
+            {
+                try { d.Dispose(); } catch { }
+            }
+            _trackedDisposables.Clear();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        #endregion
     }
 }

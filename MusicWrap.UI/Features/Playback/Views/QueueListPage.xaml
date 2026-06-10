@@ -8,11 +8,20 @@
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playback.ViewModels"
              mc:Ignorable="d"
+             x:Name="QueueRoot"
              Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Window}}"
              d:DataContext="{d:DesignInstance Type=vm:QueueViewModel}"
              d:DesignHeight="700" d:DesignWidth="500">
 
     <UserControl.Resources>
+        <Style TargetType="Button" BasedOn="{StaticResource DefaultButton}" x:Key="queueButtonStyle">
+            <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <ContextMenu x:Key="QueueTracksContextMenu">
             <MenuItem Header="Play now" Icon="{ex:Icon Glyph=E768}" Command="{Binding PlayTracksCommand}"/>
             <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}" Command="{Binding MoveToNextCommand}"/>
@@ -29,13 +38,13 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Padding="0,4,0,8" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource DefaultButton}" Command="{Binding SaveAsPlaylistCommand}">
+                <Button Style="{StaticResource queueButtonStyle}" Command="{Binding SaveAsPlaylistCommand}">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="&#xE74E;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center" FontSize="14"/>
                         <TextBlock Text="Save as playlist" VerticalAlignment="Center" Margin="4,0,0,0" FontSize="14"/>
                     </StackPanel>
                 </Button>
-                <Button Style="{StaticResource DefaultButton}" Margin="8,0" Command="{Binding ClearQueueCommand}">
+                <Button Style="{StaticResource queueButtonStyle}" Margin="8,0" Command="{Binding ClearQueueCommand}">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="&#xEA99;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center" FontSize="14"/>
                         <TextBlock Text="Clear" VerticalAlignment="Center" Margin="4,0,0,0" FontSize="14"/>

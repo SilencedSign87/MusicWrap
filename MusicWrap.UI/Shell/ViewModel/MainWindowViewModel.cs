@@ -104,7 +104,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         [RelayCommand]
         private void showMiniplayer()
         {
-            _windowManager.SwitchToMiniplayer();
+            _windowManager.SwitchToCompactPlayer();
         }
         [RelayCommand]
         private void ToggleSidebar()

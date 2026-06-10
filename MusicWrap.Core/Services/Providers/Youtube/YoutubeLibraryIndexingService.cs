@@ -10,6 +10,8 @@ using IODirectory = System.IO.Directory;
 using IOPath = System.IO.Path;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.Core.Saving;
 
 namespace MusicWrap.Core.Services.Providers.Youtube
 {
@@ -50,13 +52,15 @@ namespace MusicWrap.Core.Services.Providers.Youtube
         private readonly ILibraryRepository _libraryRepository;
         private readonly MusicLibrary _library;
         private readonly UserSettings _userSettings;
-        private readonly ILogger<YoutubeLibraryIndexingService> _logger;
+        private readonly ILogger _logger;
+        private readonly ISaveCoordinator _saveCoordinator;
 
         public YoutubeLibraryIndexingService(
             ILibraryIndexer libraryIndexer,
             ILibraryRepository libraryRepository,
             ILogger<YoutubeLibraryIndexingService> logger,
             MusicLibrary library,
+            ISaveCoordinator saveCoordinator,
             UserSettings userSettings)
         {
             _logger = logger;
@@ -64,6 +68,7 @@ namespace MusicWrap.Core.Services.Providers.Youtube
             _libraryRepository = libraryRepository;
             _library = library;
             _userSettings = userSettings;
+            _saveCoordinator = saveCoordinator;
         }
 
         public async Task<YoutubeIndexingTrackResult> IndexResolvedTrackAsync(YoutubeIndexingRequest request, string sourceAudioPath, CancellationToken cancellationToken = default)
@@ -157,7 +162,7 @@ namespace MusicWrap.Core.Services.Providers.Youtube
 
         public void Persist()
         {
-            _libraryRepository.Save(_library);
+            _saveCoordinator.Enqueue(SaveKind.Library);
         }
 
         private static void ApplyMetadataToAudio(string filePath, YoutubeIndexingRequest request, string resolvedArtistName, byte[]? coverBytes, string? coverMimeType)

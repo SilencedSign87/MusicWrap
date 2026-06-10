@@ -23,7 +23,7 @@ namespace MusicWrap.UI.Shell.Dialogs
     {
         private readonly IPlaylistService _playlistService;
         private readonly PlaylistData _playlist;
-        private IEnumerable<int> _trackIds;
+        private IEnumerable<int> _trackIds = [];
         public NewPlaylistWindow(IPlaylistService playlistService, PlaylistData playlistData)
         {
             InitializeComponent();

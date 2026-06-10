@@ -6,6 +6,8 @@ using MusicWrap.Core.Services.Providers.Youtube;
 using MusicWrap.UI.Models;
 using System.Windows;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.Core.Saving;
 
 namespace MusicWrap.UI.ViewModels;
 
@@ -14,19 +16,23 @@ namespace MusicWrap.UI.ViewModels;
 /// </summary>
 public sealed partial class IndexingViewModel : ObservableObject
 {
+    private readonly IYoutubeIndexingWorkflowService _youtubeIndexingWorkflowService;
+    private readonly ILibraryService _libraryCacheService;
+    private readonly ISaveCoordinator _saveCoordinator;
+
     public const string VariousValuesMarker = "< mixed >";
 
     private readonly Dictionary<string, StagedArtworkNode> _artworksByUrl = new(StringComparer.OrdinalIgnoreCase);
-    private readonly IYoutubeIndexingWorkflowService _youtubeIndexingWorkflowService;
-    private readonly ILibraryService _libraryCacheService;
     private bool _isUpdatingSelectionEditors;
 
     public IndexingViewModel(
         IYoutubeIndexingWorkflowService youtubeIndexingWorkflowService,
+        ISaveCoordinator saveCoordinator,
         ILibraryService libraryCacheService)
     {
         _youtubeIndexingWorkflowService = youtubeIndexingWorkflowService;
         _libraryCacheService = libraryCacheService;
+        _saveCoordinator = saveCoordinator;
     }
 
     [ObservableProperty]
@@ -513,7 +519,8 @@ public sealed partial class IndexingViewModel : ObservableObject
             failed = batchResult.Failed;
 
             _libraryCacheService.InvalidateCache();
-            _libraryCacheService.SaveToDisk();
+            _saveCoordinator.Enqueue(SaveKind.Cache);
+            //_libraryCacheService.SaveToDisk();
 
             if (saved > 0)
             {

@@ -1,5 +1,6 @@
 ﻿using MessagePack;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ namespace MusicWrap.Data.Library
         void Clear();
         void Backup();
     }
-    public class LibraryRepository : ILibraryRepository
+    public class LibraryRepository : ILibraryRepository, IRepository<MusicLibrary>
     {
         public static readonly string LibraryFile = Path.Combine(MusicWrapDirectories.LibraryDirectory, "library.dat");
         public static readonly string BackupFile = Path.Combine(MusicWrapDirectories.LibraryDirectory, "library.bak");
