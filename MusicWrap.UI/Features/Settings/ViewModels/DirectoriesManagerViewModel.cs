@@ -144,7 +144,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
                 {
                     await _scanner.ScanAllDirectories(progress, _currentScanScope.CancellationToken);
                 }
-                _libraryService.InvalidateCache();
+                _libraryService.ClearLibraryCache();
                 activity.Complete();
             }
             catch (OperationCanceledException)

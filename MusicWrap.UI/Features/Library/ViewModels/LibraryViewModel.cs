@@ -179,7 +179,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
                 await _scanner.ScanAllDirectories(progress, scope.CancellationToken);
 
-                _LibraryCache.InvalidateCache();
+                _LibraryCache.ClearLibraryCache();
                 _imageService.ClearCache();
                 await LoadEntriesAsync();
 
@@ -225,7 +225,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     activity.ReportProgress((double)p.FilesProcessed / total, detail);
                 });
                 await _scanner.ScanDirectory(selectedPath, progress, scope.CancellationToken);
-                _LibraryCache.InvalidateCache();
+                _LibraryCache.ClearLibraryCache();
                 await LoadEntriesAsync();
                 activity.Complete();
             }
@@ -270,7 +270,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     activity.ReportProgress((double)p.FilesProcessed / total, detail);
                 });
                 await _scanner.ScanFiles(selectedFiles, progress, scope.CancellationToken);
-                _LibraryCache.InvalidateCache();
+                _LibraryCache.ClearLibraryCache();
                 await LoadEntriesAsync();
                 activity.Complete();
             }
@@ -289,7 +289,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private async Task Refresh()
         {
-            _LibraryCache.InvalidateCache();
+            _LibraryCache.ClearLibraryCache();
             await LoadEntriesAsync();
         }
 

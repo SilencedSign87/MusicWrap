@@ -518,7 +518,7 @@ public sealed partial class IndexingViewModel : ObservableObject
             saved = batchResult.Saved;
             failed = batchResult.Failed;
 
-            _libraryCacheService.InvalidateCache();
+            _libraryCacheService.ClearLibraryCache();
             _saveCoordinator.Enqueue(SaveKind.Cache);
             //_libraryCacheService.SaveToDisk();
 

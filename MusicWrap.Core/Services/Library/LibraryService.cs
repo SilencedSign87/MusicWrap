@@ -34,11 +34,13 @@ namespace MusicWrap.Core.Services.Library
         string? FindCover(IEnumerable<int>? albumIds = null, IEnumerable<int>? trackIds = null);
         int[] GetTrackQueueForAlbum(int albumId);
         void SaveToDisk();
-        void InvalidateCache();
+        void ClearLibraryCache();
     }
     public class LibraryService : ILibraryService
     {
-        private static readonly string _libraryFileName = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.dat");
+        private static readonly string _libraryCachePath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.dat");
+        private static readonly string _libraryBakPath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.back");
+
         private static readonly Lock _diskLock = new();
         private static readonly Lock _indexLock = new();
 
@@ -81,10 +83,10 @@ namespace MusicWrap.Core.Services.Library
         {
             lock (_diskLock)
             {
-                if (!File.Exists(_libraryFileName)) return;
+                if (!File.Exists(_libraryCachePath)) return;
                 try
                 {
-                    var data = File.ReadAllBytes(_libraryFileName);
+                    var data = File.ReadAllBytes(_libraryCachePath);
                     var library = MessagePackSerializer.Deserialize<LibraryCache>(data);
                     _trackArtistCache = library.ByTrackArtists;
                     _albumArtistCache = library.ByAlbumArtists;
@@ -94,7 +96,6 @@ namespace MusicWrap.Core.Services.Library
                 }
                 catch
                 {
-                    // If deserialization fails, we can choose to ignore it and rebuild the cache.
                     _trackArtistCache = null;
                     _albumArtistCache = null;
                     _albumCache = null;
@@ -125,7 +126,6 @@ namespace MusicWrap.Core.Services.Library
             else
             {
                 _albumDurationById ??= [];
-                // calculate duration
                 var tracks = _library.Tracks.Where(t => t.AlbumId == albumId);
                 int durationSeconds = 0;
                 foreach (var track in tracks)
@@ -142,12 +142,6 @@ namespace MusicWrap.Core.Services.Library
 
             lock (_diskLock)
             {
-                var directory = Path.GetDirectoryName(_libraryFileName);
-                if (directory is null) return;
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
                 var data = MessagePackSerializer.Serialize(new LibraryCache
                 {
                     ByTrackArtists = _trackArtistCache,
@@ -157,17 +151,7 @@ namespace MusicWrap.Core.Services.Library
                     ByDecades = _decadeCache
                 });
 
-                var tmp = _libraryFileName + ".tmp";
-                File.WriteAllBytes(tmp, data);
-
-                if (File.Exists(_libraryFileName))
-                {
-                    File.Replace(tmp, _libraryFileName, null);
-                }
-                else
-                {
-                    File.Move(tmp, _libraryFileName);
-                }
+                AtomicFileStore.WriteAllBytes(_libraryCachePath, data, _libraryBakPath);
             }
         }
 
@@ -315,7 +299,7 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        public void InvalidateCache()
+        public void ClearLibraryCache()
         {
             _trackArtistCache = null;
             _albumArtistCache = null;

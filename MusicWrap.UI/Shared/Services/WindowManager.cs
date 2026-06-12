@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
@@ -207,6 +208,8 @@ namespace MusicWrap.UI.Shared.Services
         {
             var imageService = _serviceProvider.GetService<IImageService>();
             imageService?.ClearCache();
+            var libraryService = _serviceProvider.GetService<ILibraryService>();
+            libraryService?.ClearLibraryCache();
 
             foreach(var d in _trackedDisposables)
             {
