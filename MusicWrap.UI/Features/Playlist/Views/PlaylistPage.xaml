@@ -171,7 +171,7 @@
                                 Visibility="Collapsed"
                                 Orientation="Horizontal"
                                 >
-                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE90B;" VerticalAlignment="Center" Margin="8,0"/>
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" VerticalAlignment="Center" Margin="8,0"/>
                                 <TextBlock
                                     TextTrimming="CharacterEllipsis"
                                     VerticalAlignment="Center"
@@ -307,20 +307,25 @@
                 </Grid>
                 <Grid
                     Grid.Row="1" 
+                    Visibility="{Binding SelectedTab, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}"
                     >
-                    <StackPanel Visibility="{Binding SelectedTab, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}" Margin="8,0">
-                        <controlsM:TracksView
-                        ItemsSource="{Binding Tracks}"
-                        AllTrackIds="{Binding AllTrackIds}"
-                        SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
-                        ContextMenu="{StaticResource PlaylistTracksContextMenu}"
-                        VisualMode="ListImage"
-                        IndexMode="ListIndex"
-                        SelectionMode="Extended"
-                        IsReorderEnabled="True"
-                        ReorderRequestedCommand="{Binding ReorderTrackCommand}"
-                        RemoveRequestedCommand="{Binding RemoveSelectedTracksCommand}"/>
-                    </StackPanel>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <controlsM:TracksView
+                            Grid.Row="0"
+                            ItemsSource="{Binding Tracks}"
+                            AllTrackIds="{Binding AllTrackIds}"
+                            SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
+                            ContextMenu="{StaticResource PlaylistTracksContextMenu}"
+                            VisualMode="ListImage"
+                            IndexMode="ListIndex"
+                            SelectionMode="Extended"
+                            IsReorderEnabled="True"
+                            IsMouseWheelScrollEnabled="True"
+                            ReorderRequestedCommand="{Binding ReorderTrackCommand}"
+                            RemoveRequestedCommand="{Binding RemoveSelectedTracksCommand}"
+                            />
                 </Grid>
             </Grid>
         </Border>

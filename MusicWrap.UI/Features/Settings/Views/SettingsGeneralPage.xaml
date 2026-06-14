@@ -10,6 +10,7 @@
       d:Background="#1fffffff"
       d:DataContext="{d:DesignInstance Type=vm:SettingsGeneralViewModel}"
       d:DesignHeight="450" d:DesignWidth="800">
+    
     <StackPanel Margin="16">
         <controls:SectionTitleSeparator Title="App behavior" IconGlyph="&#xEB3B;" Margin="0,8"/>
 
@@ -24,12 +25,12 @@
                  Margin="8,0"
                  IsChecked="{Binding MinimizeToTray, Mode=TwoWay}"/>
         </StackPanel>
-        
+
         <controls:SectionTitleSeparator Title="App startup" IconGlyph="&#xE7E8;" Margin="0,8"/>
 
         <StackPanel Orientation="Vertical" Margin="0,0,0,16">
             <RadioButton GroupName="start"
-                 Content="Restore everything (queue, current track, position and playback)"
+                 Content="Restore queue, current track, position and playback"
                  Margin="8,0"
                  IsChecked="{Binding RestoreEverything, Mode=TwoWay}" />
             <RadioButton GroupName="start"
@@ -51,6 +52,58 @@
                  Margin="8,0"
                  IsChecked="{Binding StartClean, Mode=TwoWay}" />
         </StackPanel>
+        <controls:SectionTitleSeparator Title="Tray popup" IconGlyph="&#xE770;" Margin="0,8"/>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="250"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <!-- Mockup -->
+                <Border 
+                    Width="256" 
+                    Height="144" 
+                    CornerRadius="8" 
+                    BorderThickness="1" 
+                    BorderBrush="{StaticResource StrokeSurface}"
+                    >
+                    <Border.Background>
+                        <ImageBrush
+                            ImageSource="{Binding WallpaperPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
+                            Stretch="UniformToFill"
+                            />
+                    </Border.Background>
+
+                    <Border Width="72" Height="24"
+                        CornerRadius="2"
+                        Background="{StaticResource BackgroundFloating}"
+                        BorderBrush="{StaticResource StrokeSurface}"
+                        BorderThickness="1"
+                        Margin="4"
+                        HorizontalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToHAlign}}"
+                        VerticalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToVAlign}}">
+                        <Border.Effect>
+                            <DropShadowEffect
+                                Direction="270"
+                                BlurRadius="24"
+                                />
+                        </Border.Effect>
+                    </Border>
+                    
+                </Border>
+            </Grid>
+            <StackPanel Grid.Column="1">
+                <Label Content="Tray popup position:"/>
+                <ComboBox SelectedItem="{Binding TrayPopupPosition}" ItemsSource="{Binding TrayPopupPositions}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource EnumToDisplayNameConverter}}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+        </Grid>
         <controls:SectionTitleSeparator Title="User settings" IconGlyph="&#xE77B;" Margin="0,8"/>
         <Grid Margin="0,12">
             <Grid.ColumnDefinitions>

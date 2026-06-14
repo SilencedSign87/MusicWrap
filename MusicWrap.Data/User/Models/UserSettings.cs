@@ -92,6 +92,7 @@ namespace MusicWrap.Data.User.Models
         [Key(10)] public YoutubeSettings YoutubeSettings { get; set; } = new YoutubeSettings();
 
         // Misc settings
+        [Key(17)] public TrayPopupPosition TrayPopupPosition { get; set; } = TrayPopupPosition.BottomRight;
 
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
 
@@ -170,5 +171,14 @@ namespace MusicWrap.Data.User.Models
         AlbumArtist,
         Genre,
         Decade
+    }
+    public enum TrayPopupPosition
+    {
+        TopLeft,
+        TopCenter,
+        TopRight,
+        BottomLeft,
+        BottomCenter,
+        BottomRight
     }
 }

@@ -15,6 +15,7 @@ namespace MusicWrap.UI.Shared.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly UserSettings _userSettings;
 
+
         private int _windowTransitionDepth = 0;
         public bool IsShuttingDown { get; set; }
         public bool IsWindowTransitioning => _windowTransitionDepth > 0;
@@ -25,6 +26,7 @@ namespace MusicWrap.UI.Shared.Services
         public Window? CurrentWindow { get; private set; }
         private NewPlaylistWindow? newPlaylistWindow = null;
         private MetadataEditorWindow? metadataEditorWindow = null;
+        public event Action<Window?>? CurrentWindowChanged;
 
         public WindowManager(IServiceProvider serviceProvider, UserSettings userSettings)
         {
@@ -134,6 +136,7 @@ namespace MusicWrap.UI.Shared.Services
 
             main.Show();
             CurrentWindow = main;
+            CurrentWindowChanged?.Invoke(main);
             _userSettings.LastWindowMode = LastWindowMode.MainPlayer;
         }
         private void ShowCompactPlayer()
@@ -149,6 +152,7 @@ namespace MusicWrap.UI.Shared.Services
 
             player.Show();
             CurrentWindow = player;
+            CurrentWindowChanged?.Invoke(player);
             _userSettings.LastWindowMode = LastWindowMode.CompactPlayer;
         }
         private static bool TryShowWindow(Window? window)

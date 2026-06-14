@@ -9,6 +9,7 @@
         ResizeMode="NoResize"
         d:Background="#202020"
         d:Foreground="White"
+        FocusManager.FocusedElement="{Binding ElementName=PlaylistNameInput}"
 
         Title="New Playlist" Height="132" Width="300">
     <Grid>

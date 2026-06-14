@@ -1,4 +1,6 @@
-﻿using MessagePack;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using MessagePack;
+using MusicWrap.Core.Messages;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.Infrastructure;
@@ -36,7 +38,7 @@ namespace MusicWrap.Core.Services.Library
         void SaveToDisk();
         void ClearLibraryCache();
     }
-    public class LibraryService : ILibraryService
+    public class LibraryService : ILibraryService, IDisposable
     {
         private static readonly string _libraryCachePath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.dat");
         private static readonly string _libraryBakPath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.back");
@@ -47,6 +49,7 @@ namespace MusicWrap.Core.Services.Library
         private readonly ISearchQueryProvider _searchQueryProvider;
         private readonly MusicLibrary _library;
         private readonly UserSettings _userSettings;
+        private readonly IMessenger _messenger;
 
         private LibraryEntry[]? _trackArtistCache;
         private LibraryEntry[]? _albumArtistCache;
@@ -70,13 +73,33 @@ namespace MusicWrap.Core.Services.Library
 
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
-        public LibraryService(MusicLibrary library, UserSettings userSettings, ISearchQueryProvider searchQueryProvider)
+        public LibraryService(MusicLibrary library, UserSettings userSettings, ISearchQueryProvider searchQueryProvider, IMessenger messenger)
         {
             _library = library;
             _userSettings = userSettings;
             _searchQueryProvider = searchQueryProvider;
+            _messenger = messenger;
             BuildIndexes();
             Initialize();
+            _messenger.Register<LibraryChangedMessage>(this, OnLibraryChanged);
+        }
+
+        private void OnLibraryChanged(object recipient, LibraryChangedMessage msg)
+        {
+            switch (msg.ChangeType)
+            {
+                case LibraryChangeType.FullReload:
+                    ClearLibraryCache();
+                    BuildIndexes();
+                    BuildCoverLookUp();
+                    break;
+                case LibraryChangeType.EntryReload:
+                    InvalidateEntryCaches();
+                    break;
+            }
+
+            RebuildAllEntryCaches();
+            _messenger.Send(new EntriesReadyMessage());
         }
 
         private void LoadFromDisk()
@@ -811,6 +834,14 @@ namespace MusicWrap.Core.Services.Library
             });
         }
 
+        private void RebuildAllEntryCaches()
+        {
+            _albumCache = ConstructAlbumEntries();
+            _trackArtistCache = ConstructTrackArtistEntries();
+            _albumArtistCache = ConstructAlbumArtistEntries();
+            _genreCache = ConstructGenreEntries();
+            _decadeCache = ConstructDecadeEntries();
+        }
         private bool TryGetDecadeAlbumIds(string decadeTitle, out int[] albumIds)
         {
             albumIds = [];
@@ -821,6 +852,19 @@ namespace MusicWrap.Core.Services.Library
             }
 
             return _albumIdsByDecade.TryGetValue(decade, out albumIds!);
+        }
+        private void InvalidateEntryCaches()
+        {
+            _trackArtistCache = null;
+            _albumArtistCache = null;
+            _albumCache = null;
+            _genreCache = null;
+            _decadeCache = null;
+        }
+
+        public void Dispose()
+        {
+            _messenger.UnregisterAll(this);
         }
         #endregion
     }

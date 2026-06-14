@@ -50,14 +50,22 @@
                                Margin="0,2,0,4"/>
 
                     <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" 
-                                 Height="8" 
+                                 Height="6" 
                                  Minimum="0" Maximum="1"
                                  Value="{Binding Progress}"
                                  IsIndeterminate="{Binding IsIndeterminate}"
                                  Visibility="{Binding Status, Converter={x:Null}}"
                                  Foreground="{StaticResource AccentBrush100}"
                                  Background="{StaticResource BackgroundControlDefault}"
-                                 BorderThickness="0"/>
+                                 BorderThickness="0"
+                                 >
+                        <ProgressBar.ToolTip>
+                            <TextBlock>
+                                <Run Text="{Binding Progress, StringFormat={}{0:P0}}"/>
+                                <Run Text=" complete"/>
+                            </TextBlock>
+                        </ProgressBar.ToolTip>
+                    </ProgressBar>
                 </Grid>
             </Border>
         </DataTemplate>

@@ -17,10 +17,17 @@ namespace MusicWrap.UI.Services
     }
     class TrayService : ITrayService, IDisposable
     {
+        private readonly IServiceProvider _serviceProvider;
+
         private TaskbarIcon? _trayIcon;
-        private Icon? _icon;
         private TrayFlyoutWindow? _flyout;
+        private Icon? _icon;
         private bool _isSubscribed;
+
+        public TrayService(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
 
         public void Initialize()
         {
@@ -43,7 +50,7 @@ namespace MusicWrap.UI.Services
             }
 
             _trayIcon ??= (TaskbarIcon)App.Current.Resources["TrayIcon"];
-            _trayIcon.DataContext = App.Services.GetRequiredService<TaskbarIconViewModel>();
+            _trayIcon.DataContext = _serviceProvider.GetRequiredService<TaskbarIconViewModel>();
             _trayIcon.Visibility = Visibility.Visible;
 
             if (!_isSubscribed)
@@ -63,7 +70,7 @@ namespace MusicWrap.UI.Services
         {
             if (_flyout == null || !_flyout.IsLoaded)
                 _flyout = null; // relese reference
-                _flyout = new TrayFlyoutWindow();
+                _flyout = _serviceProvider.GetRequiredService<TrayFlyoutWindow>();
 
             _flyout.ShowFlyout();
         }

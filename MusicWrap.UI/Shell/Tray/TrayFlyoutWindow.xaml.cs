@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System;
@@ -25,15 +26,20 @@ namespace MusicWrap.UI.Shell.Tray
     {
         private readonly PlayerViewModel _viewmodel;
         private readonly WindowManager _windowManager;
+        private readonly UserSettings _userSettings;
 
         private bool _isAnimatingClose;
         private double _homeTop;
         private const int FlyoutMargin = 8;
-        public TrayFlyoutWindow()
+        private bool IsTopPosition => _userSettings.TrayPopupPosition is TrayPopupPosition.TopLeft or TrayPopupPosition.TopCenter or TrayPopupPosition.TopRight;
+        private double SlideOffset => IsTopPosition ? -15 : 15;
+
+        public TrayFlyoutWindow(PlayerViewModel vm, WindowManager windowManager, UserSettings userSettings)
         {
             InitializeComponent();
-            _viewmodel = App.Services.GetRequiredService<PlayerViewModel>();
-            _windowManager = App.Services.GetRequiredService<WindowManager>();
+            _viewmodel = vm;
+            _windowManager = windowManager;
+            _userSettings = userSettings;
             DataContext = _viewmodel;
         }
 
@@ -46,12 +52,11 @@ namespace MusicWrap.UI.Shell.Tray
 
             Top = _homeTop;
             RootPanel.Opacity = 0;
-            RootTranslate.Y = 15;
+            RootTranslate.Y = SlideOffset;
 
             if (!IsVisible)
-            {
                 Show();
-            }
+            
 
             Topmost = true;
             Topmost = false;
@@ -68,7 +73,7 @@ namespace MusicWrap.UI.Shell.Tray
                 Duration = duration
             };
 
-            slide.From = 15;
+            slide.From = SlideOffset;
             slide.To = 0;
             slide.Completed += (_, _) => RootTranslate.Y = 0;
 
@@ -102,8 +107,8 @@ namespace MusicWrap.UI.Shell.Tray
             };
 
             slide.From = 0;
-            slide.To = 15;
-            slide.Completed += (_, _) => RootTranslate.Y = 15;
+            slide.To = SlideOffset;
+            slide.Completed += (_, _) => RootTranslate.Y = SlideOffset;
 
             RootTranslate.BeginAnimation(TranslateTransform.YProperty, slide);
 
@@ -150,9 +155,23 @@ namespace MusicWrap.UI.Shell.Tray
             DwmSetWindowAttribute(hwnd, 3, ref disable, sizeof(int));
 
             var area = SystemParameters.WorkArea;
+            var pos = _userSettings.TrayPopupPosition;
 
-            Left = area.Right - Width - FlyoutMargin;
-            Top = area.Bottom - Height - FlyoutMargin;
+            // Horizontal
+            Left = pos switch
+            {
+                TrayPopupPosition.TopLeft or TrayPopupPosition.BottomLeft => area.Left + FlyoutMargin,
+                TrayPopupPosition.TopCenter or TrayPopupPosition.BottomCenter => area.Left + (area.Width - Width) / 2,
+                TrayPopupPosition.TopRight or TrayPopupPosition.BottomRight => area.Right - Width - FlyoutMargin,
+                _ => area.Right - Width - FlyoutMargin
+            };
+            // Vertical
+            Top = pos switch
+            {
+                TrayPopupPosition.TopLeft or TrayPopupPosition.TopCenter or TrayPopupPosition.TopRight => area.Top + FlyoutMargin,
+                TrayPopupPosition.BottomLeft or TrayPopupPosition.BottomCenter or TrayPopupPosition.BottomRight => area.Bottom - Height - FlyoutMargin,
+                _ => area.Bottom - Height - FlyoutMargin
+            };
 
             _homeTop = Top;
         }

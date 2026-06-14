@@ -499,12 +499,10 @@ public sealed partial class IndexingViewModel : ObservableObject
 
             var batchResult = await _youtubeIndexingWorkflowService.IndexTracksAsync(
                 requests,
-                // Legacy progress callback (for backward compatibility)
                 onProgress: (processed, total) =>
                 {
                     // Simple counting: 1 to total
                 },
-                // Detailed progress callback with track and phase information
                 onDetailedProgress: progress =>
                 {
                     IndexingProgressMaximum = progress.TotalTracks * 2;
@@ -518,9 +516,7 @@ public sealed partial class IndexingViewModel : ObservableObject
             saved = batchResult.Saved;
             failed = batchResult.Failed;
 
-            _libraryCacheService.ClearLibraryCache();
             _saveCoordinator.Enqueue(SaveKind.Cache);
-            //_libraryCacheService.SaveToDisk();
 
             if (saved > 0)
             {

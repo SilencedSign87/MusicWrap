@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Saving;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,7 +16,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
     {
         private readonly UserSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
-        
+
         [ObservableProperty] private bool _restoreEverything;
         [ObservableProperty] private bool _restoreCurrentTrackAndPosition;
         [ObservableProperty] private bool _restoreQueueAndIndexOnly;
@@ -27,13 +28,19 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 
         [ObservableProperty] private bool _useCustomFfmpegPath;
         [ObservableProperty] private string _customFfmpegPath = string.Empty;
+        [ObservableProperty] private TrayPopupPosition _trayPopupPosition;
+
+
+        public string WallpaperPath { get; } = string.Empty;
         private bool _updatingCloseBehavior;
+        public List<TrayPopupPosition> TrayPopupPositions { get; } = Enum.GetValues<TrayPopupPosition>().ToList();
 
         public SettingsGeneralViewModel(UserSettings settings, ISaveCoordinator saveCoordinator)
         {
             _settings = settings;
             _saveCoordinator = saveCoordinator;
             LoadFromSettings();
+            WallpaperPath = WallpaperHelper.GetWallpaperPath() ?? "";
         }
 
         #region Commands
@@ -66,7 +73,8 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 
 
         #region Internal
-        private void LoadFromSettings() {
+        private void LoadFromSettings()
+        {
             RestoreQueueAndIndexOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueAndIndexOnly;
             RestoreQueueOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueOnly;
             StartClean = _settings.StartupBehavior == StartupBehavior.StartClean;
@@ -76,6 +84,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             ExitAppOnClose = !_settings.KeepAppInTray;
             UseCustomFfmpegPath = _settings.FFMpegSettings.UseCustomFfmpegPath;
             CustomFfmpegPath = _settings.FFMpegSettings.CustomFfmpegPath ?? string.Empty;
+            TrayPopupPosition = _settings.TrayPopupPosition;
         }
         #endregion
 
@@ -150,6 +159,11 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             }
 
             _settings.KeepAppInTray = keepInTray;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+        partial void OnTrayPopupPositionChanged(TrayPopupPosition value)
+        {
+            _settings.TrayPopupPosition = value;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion

@@ -1,9 +1,7 @@
-﻿using MusicWrap.Core.Services.Contracts;
-using MusicWrap.Core.Sources.Contracts;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using MusicWrap.Core.Messages;
+using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Data.Playlist.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.Core.Services.Playlists
 {
@@ -24,23 +22,20 @@ namespace MusicWrap.Core.Services.Playlists
         void ReloadCache();
 
         List<PlaylistMenuItemModel> GetMenuItems(IEnumerable<int> trackIds);
-
-        event EventHandler? PlaylistsChanged;
-        event EventHandler<PlaylistItemsChangedEventArgs>? PlaylistItemsChanged;
     }
     public class PlaylistService : IPlaylistService
     {
         private readonly PlaylistData _playlists;
         private readonly ISearchQueryProvider searchQueryProvider;
-        public event EventHandler? PlaylistsChanged;
-        public event EventHandler<PlaylistItemsChangedEventArgs>? PlaylistItemsChanged;
+        private readonly IMessenger _messenger;
 
         private Dictionary<int, int[]>? TrackIdsByPlaylistId = null;
 
-        public PlaylistService(PlaylistData playlist, ISearchQueryProvider searchQueryProvider)
+        public PlaylistService(PlaylistData playlist, ISearchQueryProvider searchQueryProvider, IMessenger messenger)
         {
             _playlists = playlist;
             this.searchQueryProvider = searchQueryProvider;
+            this._messenger = messenger;
             EnsureCache();
         }
 
@@ -95,7 +90,7 @@ namespace MusicWrap.Core.Services.Playlists
                 return;
             playlist.Name = newName;
             playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
-            PlaylistsChanged?.Invoke(this, EventArgs.Empty);
+            _messenger.Send(new PlaylistListChangedMessage());
         }
         public void DeletePlaylist(int playlistId)
         {
@@ -106,7 +101,7 @@ namespace MusicWrap.Core.Services.Playlists
                 {
                     TrackIdsByPlaylistId.Remove(playlistId);
                 }
-                PlaylistsChanged?.Invoke(this, EventArgs.Empty);
+                _messenger.Send(new PlaylistListChangedMessage());
             }
         }
         public void RemoveTracksFromPlaylist(IEnumerable<int> trackIds, int playlistId)
@@ -131,7 +126,7 @@ namespace MusicWrap.Core.Services.Playlists
                 EnsureCache();
             }
 
-            PlaylistItemsChanged?.Invoke(this, new PlaylistItemsChangedEventArgs(playlistId, removeset, false));
+            _messenger.Send(new PlaylistContentChangedMessage(playlistId, removeset));
         }
         public void ReorderTrack(int playlistId, int sourceTrackId, int targetTrackId, bool placeAfterTarget)
         {
@@ -165,7 +160,7 @@ namespace MusicWrap.Core.Services.Playlists
             {
                 EnsureCache();
             }
-            PlaylistItemsChanged?.Invoke(this, new PlaylistItemsChangedEventArgs(playlistId, [sourceTrackId], true));
+            _messenger.Send(new PlaylistContentChangedMessage(playlistId, [sourceTrackId]));
         }
         public void SetTracksInPlaylist(IEnumerable<int> trackIds, int playlistId, bool shouldBeInPlaylist)
         {
@@ -218,7 +213,7 @@ namespace MusicWrap.Core.Services.Playlists
                 {
                     EnsureCache();
                 }
-                PlaylistItemsChanged?.Invoke(this, new PlaylistItemsChangedEventArgs(playlistId, selectedIds, true));
+                _messenger.Send(new PlaylistContentChangedMessage(playlistId, selectedIds));
             }
         }
 
@@ -251,13 +246,13 @@ namespace MusicWrap.Core.Services.Playlists
             {
                 EnsureCache();
             }
-            PlaylistsChanged?.Invoke(this, EventArgs.Empty);
+            _messenger.Send(new PlaylistListChangedMessage());
         }
         public void ReloadCache()
         {
             TrackIdsByPlaylistId = null;
             EnsureCache();
-            PlaylistsChanged?.Invoke(this, EventArgs.Empty);
+            _messenger.Send(new PlaylistListChangedMessage());
         }
         public List<PlaylistMenuItemModel> GetMenuItems(IEnumerable<int> trackIds)
         {

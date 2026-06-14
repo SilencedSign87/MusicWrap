@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Messaging;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,7 +16,6 @@ using MusicWrap.Core.Sources.Providers.Queue;
 using MusicWrap.Core.Sources.Providers.Runtime;
 using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Core.Threading;
-using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Playlist;
@@ -36,6 +36,7 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Controls.ViewModel;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.Shell.Tray;
 using MusicWrap.UI.Shell.ViewModel;
 using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.ViewModels;
@@ -55,6 +56,7 @@ public static class ServiceRegistration
                        loggingBuilder.AddSerilog(dispose: true);
                    });
 
+
         // window state
         var Tracker = new Tracker();
         ConfigureJot(Tracker);
@@ -62,6 +64,12 @@ public static class ServiceRegistration
         services.AddSingleton(Tracker);
 
         services.AddSingleton<ITrayService, TrayService>();
+
+        services.AddSingleton<GlobalHotkeyService>();
+        services.AddSingleton<SystemMediaTransportControlsController>();
+
+        // messenger
+        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
         //Data layer
         services.AddSingleton<ILibraryRepository, LibraryRepository>();
@@ -136,6 +144,7 @@ public static class ServiceRegistration
         // UI
         services.AddTransient<MainWindow>();
         services.AddTransient<CompactPlayer>();
+        services.AddTransient<TrayFlyoutWindow>();
 
         services.AddTransient<SettingsWindow>();
         services.AddTransient<SettingsGeneralPage>();

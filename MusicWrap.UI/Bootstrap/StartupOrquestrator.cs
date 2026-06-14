@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
@@ -55,10 +56,60 @@ public static class StartupOrquestrator
             var userSettings = serviceProvider.GetRequiredService<UserSettings>();
             var player = serviceProvider.GetRequiredService<IMusicPlayerService>();
             var trayService = serviceProvider.GetService<ITrayService>();
+            var hotkeyService = serviceProvider.GetRequiredService<GlobalHotkeyService>();
+            var uiDispatcher = serviceProvider.GetRequiredService<IUIDispatcher>();
 
             trayService?.Initialize();
 
             player.LoadInitialState();
+
+            // Keyboard Register
+            hotkeyService.MediaKeyPressed += key =>
+            {
+                uiDispatcher.Invoke(() =>
+                {
+                    switch (key)
+                    {
+                        case MediaKey.PlayPause:
+                            if (player.IsPlaying) player.Pause();
+                            else player.Play();
+                            break;
+                        case MediaKey.Next:
+                            player.Next();
+                            break;
+                        case MediaKey.Previous:
+                            player.Previous();
+                            break;
+                        case MediaKey.Stop:
+                            player.Stop();
+                            break;
+                    }
+                });
+            };
+
+            try
+            {
+                int vk = System.Windows.Input.KeyInterop.VirtualKeyFromKey(System.Windows.Input.Key.T);
+
+                int hotkeyId = hotkeyService.RegisterHotkey(
+                    GlobalHotkeyService.MOD_CONTROL | GlobalHotkeyService.MOD_SHIFT,
+                    vk,
+                    () =>
+                    {
+                        Log.Debug("Ctrl+Shift+T hotkey callback invoked");
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            Log.Debug("Dispatcher invoke: ToggleFlyout()");
+                            trayService?.ToggleFlyout();
+                        });
+                    }
+                );
+                Log.Information("Ctrl+Shift+T hotkey registered successfully (id={HotkeyId})", hotkeyId);
+            }
+            catch (InvalidOperationException ex)
+            {
+                Log.Warning(ex, "Could not register global hotkey");
+            }
 
             // subcribe to tray behavior changes
             void OnUserSettingsChanged(object? sender, PropertyChangedEventArgs e)
@@ -141,6 +192,17 @@ public static class StartupOrquestrator
                 catch (Exception ex)
                 {
                     Log.Error(ex, "Error showing main window");
+                }
+
+                try
+                {
+                    serviceProvider
+                        .GetRequiredService<SystemMediaTransportControlsController>()
+                        .EnsureInitialized();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to initialize SMTC after window creation");
                 }
             });
         }

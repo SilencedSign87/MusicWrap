@@ -241,7 +241,7 @@ namespace MusicWrap.UI.Services
             if (string.IsNullOrWhiteSpace(fileName))
                 return null;
 
-            if (Path.IsPathRooted(fileName) && variant == ImageVariant.Original)
+            if (Path.IsPathRooted(fileName))
                 return fileName;
 
             var cleanFileName = Path.GetFileName(fileName);

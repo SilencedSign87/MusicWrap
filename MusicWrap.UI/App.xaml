@@ -28,6 +28,7 @@
             <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
             <converters:TabStringToVisibilityConverter x:Key="TabStringToVisibilityConverter"/>
             <converters:ItemCountToVisibilityConverter x:Key="ItemCountToVisibilityConverter"/>
+            <converters:EnumToDisplayNameConverter x:Key="EnumToDisplayNameConverter"/>
 
             <tb:TaskbarIcon
                 x:Key="TrayIcon"

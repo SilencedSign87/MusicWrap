@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using MusicWrap.Core.Messages;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
@@ -13,6 +16,7 @@ using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.ComponentModel;
+using System.Drawing.Printing;
 using System.IO;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
@@ -48,26 +52,28 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryService _LibraryCache;
         private readonly IMusicPlayerService _player;
-        private readonly IImageService _imageService;
         private readonly ILogger _logger;
         private readonly SearchService _searchService;
         private readonly ActivityService _activityService;
         private readonly UserSettings _userSettings;
         private readonly ISaveCoordinator _saveCoordinator;
+        private readonly IMessenger _messenger;
+        private readonly IUIDispatcher _uiDispatcher;
 
         public LibraryViewModel(
             ILibraryScanner scanner,
             ILibraryService libraryCache,
             UserSettings settings,
             IMusicPlayerService player,
-            IImageService imageService,
+            IMessenger messenger,
             SearchService searchService,
             ActivityService activityService,
             ISaveCoordinator saveCoordinator,
+            IUIDispatcher uiDispatcher,
             ILogger<LibraryViewModel> logger)
         {
             _scanner = scanner;
-            _imageService = imageService;
+            _messenger = messenger;
             _LibraryCache = libraryCache;
             _activityService = activityService;
             _player = player;
@@ -75,6 +81,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _searchService = searchService;
             _userSettings = settings;
             _saveCoordinator = saveCoordinator;
+            _uiDispatcher = uiDispatcher;
 
             _scanProgress = new Progress<ScanProgress>(progress =>
             {
@@ -103,7 +110,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             _searchService.SearchSubmitted += _searchService_SearchSubmitted;
 
+
             _ = LoadEntriesAsync();
+
+            _messenger.Register<EntriesReadyMessage>(this, (r, m) =>
+            {
+                _uiDispatcher.Invoke(() => _ = LoadEntriesAsync());
+            });
 
         }
 
@@ -179,10 +192,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
                 await _scanner.ScanAllDirectories(progress, scope.CancellationToken);
 
-                _LibraryCache.ClearLibraryCache();
-                _imageService.ClearCache();
-                await LoadEntriesAsync();
-
                 activity.Complete();
             }
             catch (OperationCanceledException)
@@ -225,8 +234,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     activity.ReportProgress((double)p.FilesProcessed / total, detail);
                 });
                 await _scanner.ScanDirectory(selectedPath, progress, scope.CancellationToken);
-                _LibraryCache.ClearLibraryCache();
-                await LoadEntriesAsync();
+
                 activity.Complete();
             }
             catch (OperationCanceledException)
@@ -270,8 +278,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     activity.ReportProgress((double)p.FilesProcessed / total, detail);
                 });
                 await _scanner.ScanFiles(selectedFiles, progress, scope.CancellationToken);
-                _LibraryCache.ClearLibraryCache();
-                await LoadEntriesAsync();
+
                 activity.Complete();
             }
             catch (OperationCanceledException)
@@ -289,7 +296,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private async Task Refresh()
         {
-            _LibraryCache.ClearLibraryCache();
             await LoadEntriesAsync();
         }
 
@@ -455,6 +461,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _isDisposing = true;
 
             _searchService.SearchSubmitted -= _searchService_SearchSubmitted;
+            _messenger.UnregisterAll(this);
 
             EntriesViewSource = new();
             Entries = [];

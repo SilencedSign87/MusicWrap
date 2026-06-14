@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Messages;
 using MusicWrap.Core.Saving;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
@@ -21,6 +23,7 @@ namespace MusicWrap.Core.Services.Library
     }
     public class LibraryScanner : ILibraryScanner
     {
+        private readonly IMessenger _messenger;
         private readonly MusicLibrary _library;
         private readonly ILibraryIndexer _indexer;
         private readonly ILogger _logger;
@@ -40,12 +43,13 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        public LibraryScanner(MusicLibrary library, ILibraryIndexer indexer, ILogger<LibraryScanner> logger, ISaveCoordinator saveCoordinator)
+        public LibraryScanner(MusicLibrary library, ILibraryIndexer indexer, ILogger<LibraryScanner> logger, ISaveCoordinator saveCoordinator, IMessenger messenger)
         {
             _library = library;
             _indexer = indexer;
             _logger = logger;
             _saveCoordinator = saveCoordinator;
+            _messenger = messenger;
         }
         public async Task ScanAllDirectories(IProgress<ScanProgress>? progress, CancellationToken? cancellationToken)
         {
@@ -112,6 +116,11 @@ namespace MusicWrap.Core.Services.Library
                     t.Path.StartsWith(path, StringComparison.OrdinalIgnoreCase)).ToList();
                 foreach (var track in tracksToRemove)
                     _library.Tracks.Remove(track);
+
+                if (tracksToRemove.Count > 0)
+                {
+                    _messenger.Send(new LibraryChangedMessage(LibraryChangeType.FullReload));
+                }
             }
 
             _saveCoordinator.Enqueue(SaveKind.Library);
@@ -185,7 +194,7 @@ namespace MusicWrap.Core.Services.Library
                     {
                         throw; // propagate cancellation
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         Interlocked.Increment(ref skippedFiles);
                         var key = $"{ex.GetType().Name}: {ex.Message.Split('\n')[0]}";
@@ -242,13 +251,19 @@ namespace MusicWrap.Core.Services.Library
                 finalProcessed, finalTotal, finalSkipped
                 );
 
-            if (errorSummary.Count > 0)
+            if (!errorSummary.IsEmpty)
             {
                 _logger.LogInformation("Error summary:");
                 foreach (var kvp in errorSummary.OrderByDescending(kv => kv.Value))
                 {
                     _logger.LogInformation("  {Count,6}x  {Error}", kvp.Value, kvp.Key);
                 }
+            }
+
+            if (processedFiles > 0)
+            {
+                _messenger.Send(new LibraryChangedMessage(LibraryChangeType.FullReload));
+                _saveCoordinator.Enqueue(SaveKind.Library);
             }
 
         }
@@ -264,7 +279,7 @@ namespace MusicWrap.Core.Services.Library
         }
 
         #region Internal
-        private IEnumerable<string> GetFilesFromDirectory(string path, bool recursive)
+        private static IEnumerable<string> GetFilesFromDirectory(string path, bool recursive)
         {
             var options = new EnumerationOptions
             {

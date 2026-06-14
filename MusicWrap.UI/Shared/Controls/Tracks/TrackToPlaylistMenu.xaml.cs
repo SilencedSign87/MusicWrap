@@ -19,6 +19,9 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using MusicWrap.Core.Services.Playlists;
 using MusicWrap.UI.Shared.Services;
+using CommunityToolkit.Mvvm.Messaging;
+using MusicWrap.Core.Threading;
+using MusicWrap.Core.Messages;
 
 namespace MusicWrap.UI.Controls.Models
 {
@@ -29,12 +32,16 @@ namespace MusicWrap.UI.Controls.Models
     {
         private readonly WindowManager _windowManager;
         private readonly IPlaylistService _playlistService;
+        private readonly IMessenger _messenger;
+        private readonly IUIDispatcher _uiDispatcher;
         public ObservableCollection<PlaylistMenuItemModel> PlaylistItems { get; } = new();
         public TrackToPlaylistMenu()
         {
             InitializeComponent();
             _playlistService = App.Services.GetRequiredService<IPlaylistService>();
             _windowManager = App.Services.GetRequiredService<WindowManager>();
+            _messenger = App.Services.GetRequiredService<IMessenger>();
+            _uiDispatcher = App.Services.GetRequiredService<IUIDispatcher>();
             Loaded += UserControl_Loaded;
             Unloaded += TrackToPlaylistMenu_Unloaded;
         }
@@ -60,14 +67,26 @@ namespace MusicWrap.UI.Controls.Models
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            _playlistService.PlaylistsChanged += _playlistService_PlaylistsChanged;
-            _playlistService.PlaylistItemsChanged += _playlistService_PlaylistItemsChanged;
             ReloadPlaylists();
+
+            _messenger.Register<PlaylistListChangedMessage>(this, (r, m) =>
+            {
+                _uiDispatcher.Invoke(() => ReloadPlaylists());
+            });
+            _messenger.Register<PlaylistContentChangedMessage>(this, (r, m) =>
+            {
+                _uiDispatcher.Invoke(() =>
+                {
+                    var currentTrackIds = TrackIds?.ToArray() ?? [];
+                    if (m.AffectedTrackIds.Any(id=>currentTrackIds.Contains(id))) { 
+                        ReloadPlaylists();
+                    }
+                });
+            });
         }
         private void TrackToPlaylistMenu_Unloaded(object sender, RoutedEventArgs e)
         {
-            _playlistService.PlaylistsChanged -= _playlistService_PlaylistsChanged;
-            _playlistService.PlaylistItemsChanged -= _playlistService_PlaylistItemsChanged;
+            _messenger.UnregisterAll(this);
         }
 
         private void _playlistService_PlaylistsChanged(object? sender, EventArgs e)

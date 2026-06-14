@@ -11,6 +11,9 @@ using MusicWrap.Core.Services.Playlists;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.Core.Saving;
+using CommunityToolkit.Mvvm.Messaging;
+using MusicWrap.Core.Messages;
+using MusicWrap.Core.Threading;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
@@ -32,23 +35,39 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private readonly IPlaylistService _playlistService;
         private readonly SearchService _searchService;
         private readonly WindowManager _windowManager;
+        private readonly IMessenger _messenger;
+        private readonly IUIDispatcher _uiDispatcher;
 
-        public PlaylistViewModel(ILibraryService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService, SearchService searchService, WindowManager windowManager)
+        public PlaylistViewModel(ILibraryService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService, SearchService searchService, WindowManager windowManager, IMessenger messenger, IUIDispatcher uiDispatcher)
         {
             _libraryCacheService = cache;
             _saveCoordinator = saveCoordinator;
             _musicPlayerService = musicPlayerService;
             _playlistService = playlistService;
             _windowManager = windowManager;
+            _messenger = messenger;
+            _uiDispatcher = uiDispatcher;
             selectedTrackIds = [];
 
             _searchService = searchService;
             _searchService.SearchSubmitted += _searchService_SearchSubmitted;
 
-            _playlistService.PlaylistsChanged += _playlistService_PlaylistsChanged;
-            _playlistService.PlaylistItemsChanged += _playlistService_PlaylistItemsChanged;
-
             ConstructEntries();
+
+            _messenger.Register<PlaylistListChangedMessage>(this, (r, m) =>
+            {
+                _uiDispatcher.Invoke(() => ConstructEntries());
+            });
+            _messenger.Register<PlaylistContentChangedMessage>(this, (r, m) =>
+            {
+                _uiDispatcher.Invoke(() =>
+                {
+                    if (m.PlaylistId == SelectedEntry?.id)
+                    {
+                        LoadPlaylistTracks();
+                    }
+                });
+            });
         }
 
         private void _searchService_SearchSubmitted(object? sender, string e)
@@ -198,10 +217,10 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             if (isDisposing) return;
             isDisposing = true;
             _searchService.SearchSubmitted -= _searchService_SearchSubmitted;
-            _playlistService.PlaylistsChanged -= _playlistService_PlaylistsChanged;
-            _playlistService.PlaylistItemsChanged -= _playlistService_PlaylistItemsChanged;
+            _messenger.UnregisterAll(this);
         }
     }
+
     public record PlaylistEntry(
         int id,
         string Title,
@@ -209,6 +228,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         string Description
         );
 }
+
 
 
 

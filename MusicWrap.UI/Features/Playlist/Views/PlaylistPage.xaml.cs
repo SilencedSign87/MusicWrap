@@ -7,9 +7,6 @@ using System.Windows.Controls;
 
 namespace MusicWrap.UI.Features.Playlist.Views
 {
-    /// <summary>
-    /// Lógica de interacción para PlaylistPage.xaml
-    /// </summary>
     public partial class PlaylistPage : UserControl, IDisposable
     {
         private readonly TracksContextMenuService _tracksContextMenuService;
