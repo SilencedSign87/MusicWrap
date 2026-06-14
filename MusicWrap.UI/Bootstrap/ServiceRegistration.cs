@@ -66,7 +66,6 @@ public static class ServiceRegistration
         services.AddSingleton<ITrayService, TrayService>();
 
         services.AddSingleton<GlobalHotkeyService>();
-        services.AddSingleton<SystemMediaTransportControlsController>();
 
         // messenger
         services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);

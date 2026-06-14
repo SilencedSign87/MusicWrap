@@ -193,17 +193,6 @@ public static class StartupOrquestrator
                 {
                     Log.Error(ex, "Error showing main window");
                 }
-
-                try
-                {
-                    serviceProvider
-                        .GetRequiredService<SystemMediaTransportControlsController>()
-                        .EnsureInitialized();
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to initialize SMTC after window creation");
-                }
             });
         }
 
