@@ -4,7 +4,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
-             xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 

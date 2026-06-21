@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playback.ViewModels"
              mc:Ignorable="d"
@@ -38,18 +39,19 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Padding="0,4,0,8" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource queueButtonStyle}" Command="{Binding SaveAsPlaylistCommand}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&#xE74E;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center" FontSize="14"/>
-                        <TextBlock Text="Save as playlist" VerticalAlignment="Center" Margin="4,0,0,0" FontSize="14"/>
-                    </StackPanel>
-                </Button>
-                <Button Style="{StaticResource queueButtonStyle}" Margin="8,0" Command="{Binding ClearQueueCommand}">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="&#xEA99;" FontFamily="Segoe Fluent Icons" VerticalAlignment="Center" FontSize="14"/>
-                        <TextBlock Text="Clear" VerticalAlignment="Center" Margin="4,0,0,0" FontSize="14"/>
-                    </StackPanel>
-                </Button>
+                <controls:AppButton
+                    Style="{StaticResource queueButtonStyle}" 
+                    Command="{Binding SaveAsPlaylistCommand}"
+                    Icon="&#xE74E;"
+                    Text="Save as playlist"
+                    />
+                <controls:AppButton
+                    Margin="8,0" 
+                    Style="{StaticResource queueButtonStyle}" 
+                    Command="{Binding ClearQueueCommand}"
+                    Icon="&#xEA99;"
+                    Text="Clear"
+                    />
             </StackPanel>
         </Border>
         <controlsM:TracksView

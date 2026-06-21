@@ -53,6 +53,7 @@ namespace MusicWrap.UI.Shell.Controls
             switch (index)
             {
                 case 0:
+                default:
                     var queuepage = App.Services.GetRequiredService<QueueListPage>();
                     queuepage.VerticalAlignment = VerticalAlignment.Stretch;
                     ContentContainer.Children.Add(queuepage);
@@ -61,8 +62,6 @@ namespace MusicWrap.UI.Shell.Controls
                     var trackInfoPage = App.Services.GetRequiredService<TrackInformationPage>();
                     trackInfoPage.VerticalAlignment = VerticalAlignment.Stretch;
                     ContentContainer.Children.Add(trackInfoPage);
-                    break;
-                case 2:
                     break;
             }
         }

@@ -2,7 +2,7 @@ using System.Linq;
 
 namespace MusicWrap.Data.Helpers
 {
-    public static class TrackStringPool
+    public static class AppStringPool
     {
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> Pool = new(System.StringComparer.Ordinal);
 

@@ -18,10 +18,9 @@
                 <nav:ShellTabControl
                     SelectionChanged="ShellTabControl_SelectionChanged"
                     VerticalAlignment="Bottom"
-                    CompactWidthThreshold="1">
-                    <nav:ShellTabItem Icon="&#xE90B;" Text="" TabIndex="0" ToolTip="Queue"/>
-                    <nav:ShellTabItem Icon="&#xE93C;" Text="" TabIndex="1" ToolTip="Information"/>
-                    <nav:ShellTabItem Icon="&#xEC4F;" Text="" TabIndex="2" ToolTip="Lyrics"/>
+                    CompactWidthThreshold="0">
+                    <nav:ShellTabItem Icon="&#xE90B;" TabIndex="0" ToolTip="Queue"/>
+                    <nav:ShellTabItem Icon="&#xE93C;" TabIndex="1" ToolTip="Information"/>
                 </nav:ShellTabControl>
             </Border>
         </Grid>

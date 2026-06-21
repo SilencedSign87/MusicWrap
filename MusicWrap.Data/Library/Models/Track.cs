@@ -34,7 +34,7 @@ namespace MusicWrap.Data.Library.Models
         // External services
         [Key(15)] public string? SourceUri; // complete url
         [Key(16)] public string? ExternalId; // id in the external service
-        [Key(20)] public TrackOrigin Origin = TrackOrigin.Local; 
+        [Key(20)] public TrackOrigin Origin = TrackOrigin.Local;
 
         [Key(100)] public int CoverId;
 

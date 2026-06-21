@@ -139,6 +139,7 @@ public static class ServiceRegistration
         services.AddTransient<LibraryEntryAlbumViewModel>();
         services.AddTransient<LibraryEntryTracksViewModel>();
         services.AddTransient<ActivityCenterViewModel>();
+        services.AddTransient<TrackInformationViewModel>();
 
         // UI
         services.AddTransient<MainWindow>();

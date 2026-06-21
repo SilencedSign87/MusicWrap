@@ -3,10 +3,9 @@ using MessagePack;
 using MusicWrap.Core.Messages;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library.Models;
+using MusicWrap.Data.Helpers;
 using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
 using System.IO;
 
@@ -41,7 +40,14 @@ namespace MusicWrap.Core.Services.Library
     public class LibraryService : ILibraryService, IDisposable
     {
         private static readonly string _libraryCachePath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.dat");
-        private static readonly string _libraryBakPath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.back");
+        private static readonly string _libraryBakPath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.bak");
+
+        private static readonly string _unknownArtist = AppStringPool.Intern("Unknown Artist") ?? "Unknown Artist";
+        private static readonly string _unknownAlbum = AppStringPool.Intern("Unknown Album") ?? "Unknown Album";
+        private static readonly string _unknownGenre = AppStringPool.Intern("Unknown Genre") ?? "Unknown Genre";
+        private static readonly string _hashGroup = AppStringPool.Intern("#") ?? "#";
+        private static string PluralTrack(int count) => count == 1 ? "1 track" : $"{count} tracks";
+        private static string PluralAlbum(int count) => count == 1 ? "1 album" : $"{count} albums";
 
         private static readonly Lock _diskLock = new();
         private static readonly Lock _indexLock = new();
@@ -132,12 +138,12 @@ namespace MusicWrap.Core.Services.Library
         public string GetArtistNamesForAlbum(int albumId)
         {
             EnsureIndexes();
-            return _artistNamesByAlbumId.TryGetValue(albumId, out var name) ? name : "Unknown Artist";
+            return _artistNamesByAlbumId.TryGetValue(albumId, out var name) ? name : _unknownArtist;
         }
         public string GetArtistNamesForTrack(int trackId)
         {
             EnsureIndexes();
-            return _artistNamesByTrackId.TryGetValue(trackId, out var name) ? name : "Unknown Artist";
+            return _artistNamesByTrackId.TryGetValue(trackId, out var name) ? name : _unknownArtist;
         }
         public int GetAlbumDuration(int albumId)
         {
@@ -266,10 +272,10 @@ namespace MusicWrap.Core.Services.Library
                     Id = track.Id,
                     Title = track.Title,
                     ArtistNames = artistNames,
-                    AlbumName = album?.Title ?? "Unknow artists",
+                    AlbumName = album?.Title ?? _unknownAlbum,
                     DiskNumber = track.Disk,
                     CoverAssetPath = track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover) ? cover.FileName : null,
-                    DurationText = TimeSpan.FromSeconds(track.Duration).ToString(@"m\:ss"),
+                    DurationText = FormatHelpers.FormatDuration(track.Duration),
                     TrackNumber = track.TrackNumber,
                     ListIndex = index
                 });
@@ -354,7 +360,7 @@ namespace MusicWrap.Core.Services.Library
         }
         public List<Genre> GetGenreById(List<int> genreIds)
         {
-            return genreIds.Select(genreId => _library.Genres.FirstOrDefault(g => g.Id == genreId) ?? new Genre { Id = genreId, Name = "Unknown Genre" }).ToList();
+            return genreIds.Select(genreId => _library.Genres.FirstOrDefault(g => g.Id == genreId) ?? new Genre { Id = genreId, Name = _unknownGenre }).ToList();
         }
         public IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry, bool useSearchQuery = false)
         {
@@ -410,7 +416,7 @@ namespace MusicWrap.Core.Services.Library
                     DominantColorHex = cover.DominantColorHex ?? "#808080";
                     ForegroundColorHex = cover.ForegroundColorHex ?? "#FFFFFF";
                 }
-                var artistName = _artistNamesByAlbumId.TryGetValue(albumId, out var name) ? name : "Unknown Artist";
+                var artistName = _artistNamesByAlbumId.TryGetValue(albumId, out var name) ? name : _unknownArtist;
 
                 result.Add(new AlbumSummary
                 {
@@ -487,7 +493,7 @@ namespace MusicWrap.Core.Services.Library
         public string[] GetArtistNamesByIds(int[] artistIds)
         {
             EnsureIndexes();
-            return artistIds.Select(id => _artistNameById.TryGetValue(id, out var name) ? name : "Unknown Artist").ToArray();
+            return artistIds.Select(id => _artistNameById.TryGetValue(id, out var name) ? name : _unknownArtist).ToArray();
         }
 
         public int[] GetAlbumIdsForArtist(int artistId)
@@ -627,7 +633,7 @@ namespace MusicWrap.Core.Services.Library
                     Type = LibraryEntryType.Album,
                     ImagePath = imagePath,
                     Title = albums[i].Title,
-                    Description = $"{trackCount} track{(trackCount > 1 ? "s" : "")}",
+                    Description = AppStringPool.Intern(PluralTrack(trackCount)) ?? PluralTrack(trackCount),
                     GroupKey = GetInitialGroup(albums[i].Title)
                 };
             }
@@ -654,7 +660,7 @@ namespace MusicWrap.Core.Services.Library
                     Type = LibraryEntryType.TrackArtist,
                     ImagePath = imagePath,
                     Title = artists[i].Name,
-                    Description = $"{trackIds.Length} track{(trackIds.Length > 1 ? "s" : "")}",
+                    Description = AppStringPool.Intern(PluralTrack(trackIds.Length)) ?? PluralTrack(trackIds.Length),
                     GroupKey = GetInitialGroup(artists[i].Name)
                 };
             }
@@ -681,7 +687,7 @@ namespace MusicWrap.Core.Services.Library
                     Type = LibraryEntryType.AlbumArtist,
                     ImagePath = imagePath,
                     Title = artists[i].Name,
-                    Description = $"{albumsId.Length} album{(albumsId.Length > 1 ? "s" : "")}",
+                    Description = AppStringPool.Intern(PluralAlbum(albumsId.Length)) ?? PluralAlbum(albumsId.Length),
                     GroupKey = GetInitialGroup(artists[i].Name)
                 };
             }
@@ -708,7 +714,7 @@ namespace MusicWrap.Core.Services.Library
                     Type = LibraryEntryType.Genre,
                     ImagePath = imagePath,
                     Title = genres[i].Name,
-                    Description = $"{albums.Length} album{(albums.Length > 1 ? "s" : "")}",
+                    Description = AppStringPool.Intern(PluralAlbum(albums.Length)) ?? PluralAlbum(albums.Length),
                     GroupKey = GetInitialGroup(genres[i].Name)
                 };
             }
@@ -738,7 +744,7 @@ namespace MusicWrap.Core.Services.Library
                     Type = LibraryEntryType.Decade,
                     ImagePath = imagePath,
                     Title = $"{decade}s",
-                    Description = $"{albums.Length} album{(albums.Length > 1 ? "s" : "")}",
+                    Description = AppStringPool.Intern(PluralAlbum(albums.Length)) ?? PluralAlbum(albums.Length),
                     GroupKey = GetInitialGroup($"{decade}s")
                 };
             }
@@ -752,14 +758,14 @@ namespace MusicWrap.Core.Services.Library
         private static string GetInitialGroup(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-                return "#";
+                return _hashGroup;
 
             char firstChar = char.ToUpperInvariant(text[0]);
 
             if (char.IsLetter(firstChar))
                 return firstChar.ToString();
 
-            return "#"; // numbers
+            return _hashGroup;
         }
 
         private void EnsureIndexes()
@@ -793,7 +799,7 @@ namespace MusicWrap.Core.Services.Library
 
             _albumById = _library.Albums.ToDictionary(a => a.Id);
 
-            _artistNameById = _library.Artists.ToDictionary(ar => ar.Id, ar => ar.Name);
+            _artistNameById = _library.Artists.ToDictionary(ar => ar.Id, ar => AppStringPool.Intern(ar.Name) ?? ar.Name);
 
             _trackCountByAlbumId = _library.Tracks
                 .GroupBy(t => t.AlbumId)
@@ -824,14 +830,14 @@ namespace MusicWrap.Core.Services.Library
                 var names = album.ArtistIds
                     .Where(id => _artistNameById.ContainsKey(id))
                     .Select(id => _artistNameById[id]);
-                _artistNamesByAlbumId[album.Id] = string.Join(", ", names);
+                _artistNamesByAlbumId[album.Id] = AppStringPool.Intern(string.Join(", ", names)) ?? string.Join(", ", names);
             }
             _artistNamesByTrackId = _library.Tracks.ToDictionary(t => t.Id, t =>
-            {
-                if (t.ArtistIds.Length > 0)
-                    return string.Join(", ", t.ArtistIds.Where(id => _artistNameById.ContainsKey(id)).Select(id => _artistNameById[id]));
-                return _artistNamesByAlbumId.TryGetValue(t.AlbumId, out var albumArtistNames) ? albumArtistNames : "Unknown Artist";
-            });
+            AppStringPool.Intern(
+                    t.ArtistIds.Length > 0
+                    ? string.Join(", ", t.ArtistIds.Where(id => _artistNameById.ContainsKey(id)).Select(id => _artistNameById[id]))
+                    : (_artistNamesByAlbumId.TryGetValue(t.AlbumId, out var a) ? a : _unknownArtist)) ?? _unknownArtist
+                    );
         }
 
         private void RebuildAllEntryCaches()

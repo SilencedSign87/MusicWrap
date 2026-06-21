@@ -1,17 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
+using System.Diagnostics;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Features.Playback.Views
 {
@@ -20,17 +10,19 @@ namespace MusicWrap.UI.Features.Playback.Views
     /// </summary>
     public partial class TrackInformationPage : UserControl
     {
-        private PlayerViewModel _vm;
-        public TrackInformationPage(PlayerViewModel vm)
+        private TrackInformationViewModel _vm;
+        public TrackInformationPage(TrackInformationViewModel vm)
         {
             InitializeComponent();
             _vm = vm;
             DataContext = _vm;
         }
 
-        private void OpenArtwork(object sender, RoutedEventArgs e)
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
-            _vm.OpenArtworkOnDefaultApp();
+            if (e.Uri is not null)
+                Process.Start(new ProcessStartInfo(e.Uri.ToString()) { UseShellExecute = true });
+            e.Handled = true;
         }
     }
 }

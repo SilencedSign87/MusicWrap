@@ -1,6 +1,7 @@
 using Acornima;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -463,7 +464,7 @@ namespace MusicWrap.UI.Controls
         private static string FormatTime(double seconds)
         {
             var ts = TimeSpan.FromSeconds(Math.Max(0, seconds));
-            return ts.TotalHours >= 1 ? ts.ToString(@"h\:mm\:ss") : ts.ToString(@"m\:ss");
+            return FormatHelpers.FormatDuration(ts);
         }
         private void UpdateFormattedPosition(double position)
         {

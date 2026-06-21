@@ -4,61 +4,168 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
-             d:DesignHeight="450" d:DesignWidth="300">
+             Focusable="False"
+             d:DataContext="{d:DesignInstance Type=vm:TrackInformationViewModel}"
+             d:DesignHeight="600" d:DesignWidth="300">
     <Grid>
-        <Grid.ContextMenu>
-            <ContextMenu>
-                <MenuItem Header="Edit information">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE70F;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-                <MenuItem Header="Open artwork" Click="OpenArtwork">
-                    <MenuItem.Icon>
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe8a7;" FontSize="14"/>
-                    </MenuItem.Icon>
-                </MenuItem>
-            </ContextMenu>
-        </Grid.ContextMenu>
         <Grid.RowDefinitions>
-            <RowDefinition Height="300"/>
-            <RowDefinition Height="8"/>
-            <RowDefinition />
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
-            <Image
-            Source="{Binding CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
-            RenderOptions.BitmapScalingMode="HighQuality"
-            Stretch="UniformToFill"
-            />
-        </Grid>
-        <!-- Information -->
-        <StackPanel Orientation="Vertical" Grid.Row="2">
-            <TextBlock Text="{Binding CurrentTrackTitle}" FontSize="14" Margin="0,0,0,8" TextTrimming="WordEllipsis" />
-            <TextBlock Text="{Binding CurrentTrackAlbum}" FontSize="11" Opacity="0.75" TextTrimming="WordEllipsis"/>
-            <TextBlock Text="{Binding CurrentTrackArtists}" FontSize="11" Opacity="0.75" TextTrimming="WordEllipsis"/>
-            <TextBlock Text="{Binding CurrentTrackYear}" FontSize="11" Opacity="0.75" />
-            <TextBlock Text="{Binding CurrentTrackChannels}" FontSize="11" Opacity="0.75" />
+        <!-- Cover -->
+        <Border CornerRadius="6" ClipToBounds="True" Grid.Row="0"
+                    Background="{Binding DominantColorHex}">
+            <Image Source="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       Stretch="UniformToFill"/>
+        </Border>
 
-            <TextBlock FontSize="11" Opacity="0.75" TextTrimming="WordEllipsis">
-                    <Run Text="{Binding CurrentTrackFormat}" />
-                    <Run Text=" • "/>
-                    <Run Text="{Binding CurrentTrackBitDepth}" />
-                    <Run Text=" • "/>
-                    <Run Text="{Binding CurrentTrackSampleRate}" />
-                    <Run Text=" • "/>
-                    <Run Text="{Binding CurrentTrackBitrate}" />
-                    <Run Text=" • "/>
-                    <Run Text="{Binding FormattedDuration}" />
-            </TextBlock>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"  Grid.Row="1">
+            <StackPanel Margin="0,0,0,2">
 
-            <Separator Margin="0,4"/>
-            <TextBlock Text="About" FontSize="14"/>
+                <!-- Main Information -->
+                <StackPanel Margin="8,12,8,0" >
+                    <!-- Track Title -->
+                    <TextBlock
+                    Text="{Binding TrackTitle}"
+                    FontSize="16"
+                    FontWeight="SemiBold"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    />
+                    <Button
+                    Style="{StaticResource LinkButtonStyle}"
+                    Visibility="{Binding AlbumTitle, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"
+                    Content="{Binding AlbumTitle}"
+                    FontSize="12"
+                    HorizontalAlignment="Left"
+                    Margin="0,2"
+                    />
+                    <ItemsControl ItemsSource="{Binding Artists}" IsTabStop="False" >
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button
+                                Style="{StaticResource LinkButtonStyle}"
+                                Content="{Binding Name}"
+                                FontSize="12"
+                                Command="{Binding DataContext.NavigateToArtistCommand,RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding Id}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- Duration and track list -->
+                    <TextBlock FontSize="11" Opacity="0.6" Margin="0,2">
+                     <Run Text="{Binding Duration}"/>
+                    <Run Text=" • "/>
+                    <Run Text="{Binding TrackNumber}"/>
+                    <Run Text=" • "/>
+                    <Run Text="{Binding DiskNumber}"/>
+                    </TextBlock>
+                    <!-- Year and genres-->
+                    <Button
+                    Style="{StaticResource LinkButtonStyle}"
+                    Visibility="{Binding Year, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"
+                    Content="{Binding Year}"
+                    FontSize="11"
+                    HorizontalAlignment="Left"
+                    />
+                </StackPanel>
+                <StackPanel Margin="0">
+                    <ItemsControl ItemsSource="{Binding Genres}" IsTabStop="False" Margin="4">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button
+                                Style="{StaticResource LinkButtonStyle}"
+                                Content="{Binding Name}"
+                                FontSize="11"
+                                Margin="4,0"
+                                />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-        </StackPanel>
+                </StackPanel>
+
+                <Separator Margin="0,0,0,4"/>
+
+                <!--  Technical Information -->
+                <Grid Margin="8,0,8,4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Format" Grid.Row="0" Grid.Column="0" FontSize="12" Opacity="0.5"/>
+                    <TextBlock Text="{Binding Format}" Grid.Row="0" Grid.Column="1" FontSize="12"/>
+                    <TextBlock Text="Sample rate" Grid.Row="1" Grid.Column="0" FontSize="12" Opacity="0.5"/>
+                    <TextBlock Text="{Binding SampleRate}" Grid.Row="1" Grid.Column="1" FontSize="12"/>
+                    <TextBlock Text="Bit depth" Grid.Row="2" Grid.Column="0" FontSize="12" Opacity="0.5"/>
+                    <TextBlock Text="{Binding BitDepth}" Grid.Row="2" Grid.Column="1" FontSize="12"/>
+                    <TextBlock Text="Bitrate" Grid.Row="3" Grid.Column="0" FontSize="12" Opacity="0.5"/>
+                    <TextBlock Text="{Binding Bitrate}" Grid.Row="3" Grid.Column="1" FontSize="12"/>
+                    <TextBlock Text="Channels" Grid.Row="4" Grid.Column="0" FontSize="12" Opacity="0.5"/>
+                    <TextBlock Text="{Binding Channels}" Grid.Row="4" Grid.Column="1" FontSize="12"/>
+                    <TextBlock Text="File size" Grid.Row="5" Grid.Column="0" FontSize="12" Opacity="0.5"/>
+                    <TextBlock Text="{Binding FileSize}" Grid.Row="5" Grid.Column="1" FontSize="12"/>
+                </Grid>
+
+                <Border Margin="8,0">
+                    <Button Style="{StaticResource LinkButtonStyle}" FontSize="11" Content="{Binding FilePath}" ToolTip="{Binding FilePath}" />
+                </Border>
+
+                <!-- Source -->
+
+                <StackPanel Visibility="{Binding IsFromYouTube, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Margin="0,4">
+                    <Separator/>
+                    <TextBlock Text="Source" FontSize="12" Opacity="0.9" Margin="8,4,8,2"/>
+                    <TextBlock FontSize="11" Margin="8,0" Opacity="0.5">
+                        <Run Text="Type:" FontWeight="SemiBold"/>
+                        <Run Text="{Binding SourceType}" FontWeight="Normal"/>
+                    </TextBlock>
+                    <TextBlock FontSize="11" Margin="8,0" Opacity="0.5"
+                           Visibility="{Binding ExternalId, Converter={StaticResource StringNotEmptyToVisibilityConverter}}">
+                        <Run Text="External ID:" FontWeight="SemiBold"/>
+                        <Run Text="{Binding ExternalId}" FontWeight="Normal"/>
+                    </TextBlock>
+                    <Button Style="{StaticResource LinkButtonStyle}" FontSize="11" Content="{Binding SourceUri}" Margin="8,4,0,0" />
+                </StackPanel>
+
+                <Separator Margin="0,2"/>
+
+                <!-- Actions -->
+                <StackPanel Orientation="Horizontal" Margin="8,0">
+                    <controls:AppButton Icon="&#xE70F;" Text="Edit information"
+                                    Style="{StaticResource DefaultButton}"
+                                    Command="{Binding EditTrackInfoCommand}"/>
+                    <controls:AppButton Icon="&#xE8A7;" Text="Show artwork"
+                                    Margin="4,0"
+                                    Style="{StaticResource DefaultButton}"
+                                    Command="{Binding OpenArtworkDefaultAppCommand}"/>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>
 
