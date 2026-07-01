@@ -44,57 +44,5 @@ namespace MusicWrap.UI.Features.Library.Views
             }
             _isCommandPaletteSubscribed = false;
         }
-
-        //private void TracksContextMenu_Opened(object sender, RoutedEventArgs e)
-        //{
-        //    if (sender is not ContextMenu contextMenu)
-        //    {
-        //        return;
-        //    }
-
-        //    if (DataContext is not LibraryEntryDetailPanelViewModel vm)
-        //    {
-        //        return;
-        //    }
-
-        //    if (contextMenu.Items.OfType<TrackToPlaylistMenu>().FirstOrDefault() is TrackToPlaylistMenu playlistMenu)
-        //    {
-        //        playlistMenu.TrackIds = vm.SelectedTrackIds.ToList();
-        //    }
-        //}
-
-        private void EditMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (DataContext is not LibraryEntryTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            _editMetadataService.OpenMetadataWindow(vm.SelectedTrackIds);
-        }
-
-        private void ShowInFileExplorerMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (DataContext is not LibraryEntryTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            var track = _libraryCacheService.GetTrackById(vm.SelectedTrackIds[0]);
-            if (track is null || string.IsNullOrWhiteSpace(track.Path))
-            {
-                return;
-            }
-
-            if (!File.Exists(track.Path))
-            {
-                return;
-            }
-
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{track.Path}\"")
-            {
-                UseShellExecute = true
-            });
-        }
     }
 }

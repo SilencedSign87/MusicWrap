@@ -10,7 +10,9 @@ using MusicWrap.UI.Shared.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Drawing.Printing;
+using System.IO;
 using System.Text;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
@@ -18,10 +20,11 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     public partial class LibraryEntryTracksViewModel : ObservableObject, IDisposable
     {
         private readonly ILibraryService _libraryCache;
-        private readonly TracksContextMenuService _tracksContextMenuService;
+        private readonly TrackActionService _tracksContextMenuService;
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly SearchService _searchService;
         private readonly IUIDispatcher _uiDispatcher;
+        private readonly IEditMetadataService _editMetadataService;
 
         //private int[] _sourceTrackIds = [];
         private int _refreshRequestId;
@@ -38,15 +41,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         public LibraryEntryTracksViewModel(
             ILibraryService libraryCache,
-            TracksContextMenuService tracksContextMenuService,
+            TrackActionService tracksContextMenuService,
             IMusicPlayerService musicPlayerService,
             SearchService searchService,
+            IEditMetadataService editMetadataService,
             IUIDispatcher uiDispatcher
            )
         {
             _libraryCache = libraryCache;
             _tracksContextMenuService = tracksContextMenuService;
             _musicPlayerService = musicPlayerService;
+            _editMetadataService = editMetadataService;
             _searchService = searchService;
             _uiDispatcher = uiDispatcher;
 
@@ -68,6 +73,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private void AddSelectedTracksToQueue()
         {
             _tracksContextMenuService.AddToQueue(SelectedTrackIds);
+        }
+        [RelayCommand]
+        private void ShowSelectedTracksInFileExplorer()
+        {
+            _tracksContextMenuService.ShowInFileExplorer(SelectedTrackIds);
+        }
+        [RelayCommand]
+        private void EditSelectedTracksMetadata()
+        {
+            _tracksContextMenuService.EditMetadata(SelectedTrackIds);
         }
         #endregion
         #region Public methods

@@ -62,7 +62,7 @@ namespace MusicWrap.UI.Features.Library.Views
                         return;
                     }
                     var libraryCacheService = viewModel.LibraryCache;
-                    var tracksContextMenuService = App.Services.GetRequiredService<TracksContextMenuService>();
+                    var tracksContextMenuService = App.Services.GetRequiredService<TrackActionService>();
                     var searchService = App.Services.GetRequiredService<SearchService>();
 
                     int[]? filteredTrackIds = null;

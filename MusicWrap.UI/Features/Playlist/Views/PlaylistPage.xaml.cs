@@ -9,12 +9,12 @@ namespace MusicWrap.UI.Features.Playlist.Views
 {
     public partial class PlaylistPage : UserControl, IDisposable
     {
-        private readonly TracksContextMenuService _tracksContextMenuService;
+        private readonly TrackActionService _tracksContextMenuService;
         private PlaylistViewModel _vm;
 
         private bool _isDisposed = false;
 
-        public PlaylistPage(PlaylistViewModel playlistViewModel, TracksContextMenuService tracksContextMenuService)
+        public PlaylistPage(PlaylistViewModel playlistViewModel, TrackActionService tracksContextMenuService)
         {
             InitializeComponent();
             _tracksContextMenuService = tracksContextMenuService;

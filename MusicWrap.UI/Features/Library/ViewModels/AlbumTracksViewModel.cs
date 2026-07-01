@@ -35,7 +35,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private readonly ILibraryService _libraryCache;
         private readonly SearchService _searchService;
-        private readonly TracksContextMenuService _tracksContextMenuService;
+        private readonly TrackActionService _tracksContextMenuService;
         private readonly string _searchQuery;
         private readonly TrackSortMode _sortMode;
         private HashSet<int> _albumTrackIds = [];
@@ -47,7 +47,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public AlbumTracksViewModel(
             ILibraryService libraryCache,
             SearchService searchService,
-            TracksContextMenuService tracksContextMenuService,
+            TrackActionService tracksContextMenuService,
             int albumId,
             string dominantColor = "#1a1a1a",
             string foregroundColor = "#ffffff",

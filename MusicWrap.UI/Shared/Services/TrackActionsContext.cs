@@ -1,17 +1,24 @@
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace MusicWrap.UI.Services
 {
-    public sealed class TracksContextMenuService
+    public sealed class TrackActionService
     {
         private readonly IMusicPlayerService _musicPlayerService;
+        private readonly ILibraryService _libraryService;
+        private readonly IEditMetadataService _editMetadataService;
 
-        public TracksContextMenuService(IMusicPlayerService musicPlayerService)
+        public TrackActionService(IMusicPlayerService musicPlayerService, IEditMetadataService editMetadataService, ILibraryService libraryService)
         {
             _musicPlayerService = musicPlayerService;
+            _editMetadataService = editMetadataService;
+            _libraryService = libraryService;
         }
 
         public void PlayNow(IReadOnlyList<int> selectedTrackIds, IReadOnlyList<int>? contextTrackIds = null)
@@ -36,145 +43,57 @@ namespace MusicWrap.UI.Services
 
         public void AddToQueue(IReadOnlyList<int> selectedTrackIds)
         {
-            foreach (var trackId in selectedTrackIds)
-            {
-                _musicPlayerService.AddToQueue(trackId);
-            }
+           _musicPlayerService.AddToQueue(selectedTrackIds);
         }
 
-        // Queue-specific behavior: keep queue items, move selected ones together and play from that block.
         public void PlayNowInQueue(IReadOnlyList<int> selectedTrackIds)
         {
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
+            if (selectedTrackIds.Count == 0) return;
+            var indices = _musicPlayerService.GetPlaybackIndices(selectedTrackIds);
+            _musicPlayerService.PlayIndex(indices);
 
-            var playbackOrder = _musicPlayerService.GetPlaybackOrder();
-            if (playbackOrder.Length == 0) return;
-
-            var baseQueue = _musicPlayerService.GetQueue();
-            if (baseQueue.Length == 0) return;
-
-            var selectedCounts = new Dictionary<int, int>();
-            foreach (var id in selectedTrackIds)
-            {
-                if (selectedCounts.TryGetValue(id, out var count))
-                    selectedCounts[id] = count + 1;
-                else
-                    selectedCounts[id] = 1;
-            }
-
-            var selectedInQueueOrder = new List<int>(selectedTrackIds.Count);
-            int firstSelectedIndex = -1;
-
-            for (int i = 0; i < playbackOrder.Length; i++)
-            {
-                var id = baseQueue[playbackOrder[i]];
-                if (!selectedCounts.TryGetValue(id, out var count) || count == 0)
-                    continue;
-
-                if (firstSelectedIndex < 0)
-                    firstSelectedIndex = i;
-
-                selectedInQueueOrder.Add(id);
-                if (count == 1) selectedCounts.Remove(id);
-                else selectedCounts[id] = count - 1;
-            }
-
-            if (selectedInQueueOrder.Count == 0) return;
-
-            int anchorTrackId = firstSelectedIndex > 0
-                ? baseQueue[playbackOrder[firstSelectedIndex - 1]]
-                : int.MinValue;
-
-            var removeCounts = new Dictionary<int, int>();
-            foreach (var id in selectedInQueueOrder)
-            {
-                if (removeCounts.TryGetValue(id, out var count))
-                    removeCounts[id] = count + 1;
-                else
-                    removeCounts[id] = 1;
-            }
-
-            var filtered = new List<int>(baseQueue.Length - selectedInQueueOrder.Count);
-            foreach (var id in baseQueue)
-            {
-                if (removeCounts.TryGetValue(id, out var count) && count > 0)
-                {
-                    if (count == 1) removeCounts.Remove(id);
-                    else removeCounts[id] = count - 1;
-                    continue;
-                }
-
-                filtered.Add(id);
-            }
-
-            int insertionIndex = 0;
-            if (firstSelectedIndex > 0)
-            {
-                int anchorIndex = filtered.IndexOf(anchorTrackId);
-                insertionIndex = anchorIndex >= 0 ? anchorIndex + 1 : 0;
-            }
-
-            filtered.InsertRange(insertionIndex, selectedInQueueOrder);
-            _musicPlayerService.SetQueue(filtered, false);
-            _musicPlayerService.PlayIndex(insertionIndex);
         }
 
         // Queue-specific behavior: move selected items to play right after current track.
         public void PlayNextInQueue(IReadOnlyList<int> selectedTrackIds)
         {
+            if (selectedTrackIds.Count == 0) return;
+            var indices = _musicPlayerService.GetPlaybackIndices(selectedTrackIds);
+            _musicPlayerService.AddIndicesToNext(indices);
+        }
+        public void EditMetadata(IReadOnlyList<int> selectedTrackIds)
+        {
             if (selectedTrackIds.Count == 0)
             {
                 return;
             }
+            _editMetadataService.OpenMetadataWindow(selectedTrackIds.ToList());
+        }
+        public void ShowInFileExplorer(IReadOnlyList<int> selectedTrackIds)
+        {
+            if (selectedTrackIds.Count == 0) return;
 
-            var currentTrackId = _musicPlayerService.CurrentTrackId;
-            var removeSet = new HashSet<int>(selectedTrackIds);
-            var currentQueue = _musicPlayerService.GetQueue().Where(id => !removeSet.Contains(id)).ToList();
+            var folders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var tracks = _libraryService.GetTrackById(selectedTrackIds);
 
-            int currentIndex = currentQueue.IndexOf(currentTrackId);
-            if (currentIndex == -1)
+            foreach (var track in tracks)
             {
-                return;
-            }
-
-            currentQueue.InsertRange(currentIndex + 1, selectedTrackIds);
-            _musicPlayerService.SetQueue(currentQueue, true);
-
-            if (_musicPlayerService.IsShuffleEnabled)
-            {
-                var playbackOrder = _musicPlayerService.GetPlaybackOrder();
-                if (playbackOrder.Length == 0) return;
-
-                var baseQueue = _musicPlayerService.GetQueue();
-                var currentBaseIndex = Array.IndexOf(baseQueue, currentTrackId);
-                if (currentBaseIndex < 0) return;
-
-                var currentPlaybackIndex = Array.IndexOf(playbackOrder, currentBaseIndex);
-                if (currentPlaybackIndex < 0) return;
-
-                var insertionIndex = Math.Clamp(currentPlaybackIndex + 1, 0, playbackOrder.Length);
-                var newPlaybackOrder = playbackOrder.ToList();
-
-                var newlyAddedIndices = new List<int>();
-                foreach (var id in selectedTrackIds)
+                if (!string.IsNullOrEmpty(track.Path) && File.Exists(track.Path))
                 {
-                    var baseIndex = Array.IndexOf(baseQueue, id);
-                    if (baseIndex >= 0)
-                    {
-                        newlyAddedIndices.Add(baseIndex);
-                    }
-                }
-
-                if (newlyAddedIndices.Count > 0)
-                {
-                    newPlaybackOrder.RemoveAll(idx => newlyAddedIndices.Contains(idx));
-                    newPlaybackOrder.InsertRange(insertionIndex, newlyAddedIndices);
-                    _musicPlayerService.SetPlaybackOrder(newPlaybackOrder.ToArray());
+                    var dir = Path.GetDirectoryName(track.Path);
+                    if (dir != null && !folders.ContainsKey(dir))
+                        folders[dir] = track.Path;
                 }
             }
+
+            foreach (var filePath in folders.Values)
+            {
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{filePath}\"")
+                {
+                    UseShellExecute = true
+                });
+            }
+
         }
     }
 }

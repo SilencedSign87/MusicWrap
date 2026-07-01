@@ -25,6 +25,7 @@ namespace MusicWrap.UI.ViewModels
         private readonly IImageService _imageService;
         private readonly IUIDispatcher _uiDispatcher;
         private readonly IMessenger _messenger;
+        private readonly TrackActionService _trackActions;
 
         private string _artworkPath = string.Empty;
 
@@ -97,12 +98,14 @@ namespace MusicWrap.UI.ViewModels
             ILibraryService libraryService,
             IUIDispatcher uiDispatcher,
             IImageService imageService,
+            TrackActionService trackActions,
             IMessenger messenger)
         {
             _musicPlayerService = playerService;
             _libraryService = libraryService;
             _imageService = imageService;
             _uiDispatcher = uiDispatcher;
+            _trackActions = trackActions;
             _messenger = messenger;
 
             _musicPlayerService.TrackChanged += OnTrackChanged;
@@ -122,7 +125,7 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void EditTrackInfo()
         {
-            // TODO
+            _trackActions.EditMetadata([_currentTrackId]);
         }
         [RelayCommand]
         private void NavigateToAlbum()
@@ -138,6 +141,11 @@ namespace MusicWrap.UI.ViewModels
         private void NavigateToGenre(int genreId)
         {
 
+        }
+        [RelayCommand]
+        private void OpenInExplorer()
+        {
+            _trackActions.ShowInFileExplorer([_currentTrackId]);
         }
 
         #endregion

@@ -21,9 +21,9 @@
             <uimodels:TrackToPlaylistMenu x:Name="TracksTrackToPlaylistMenu"
                                           TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
             <Separator/>
-            <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" Click="EditMenuItem_Click"/>
+            <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" Command="{Binding EditSelectedTracksMetadataCommand}"/>
             <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" IsEnabled="False"/>
-            <MenuItem Header="Show in file explorer" Icon="{helpers:Icon Glyph=EC50}" Click="ShowInFileExplorerMenuItem_Click"/>
+            <MenuItem Header="Show in file explorer" Icon="{helpers:Icon Glyph=EC50}" Command="{Binding ShowSelectedTracksInFileExplorerCommand}"/>
         </ContextMenu>
     </UserControl.Resources>
     <Grid Margin="8,0">

@@ -15,16 +15,15 @@ namespace MusicWrap.UI.Features.Library.Components
     {
         private readonly IMusicPlayerService _playerService;
         private readonly ILibraryService _libraryService;
-        private readonly IEditMetadataService _editMetadataService;
+        private readonly TrackActionService _trackActions;
         private int[] TracksId = [];
         public AlbumPage()
         {
             InitializeComponent();
 
             _playerService = App.Services.GetRequiredService<IMusicPlayerService>();
-            _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
+            _trackActions = App.Services.GetRequiredService<TrackActionService>();
             _libraryService = App.Services.GetRequiredService<ILibraryService>();
-            //this.DataContextChanged += AlbumPage_DataContextChanged;
 
             Loaded += AlbumPage_Loaded;
         }
@@ -34,16 +33,13 @@ namespace MusicWrap.UI.Features.Library.Components
             if (DataContext is LibraryViewModel.AlbumData data)
             {
                 TracksId = GetAllAlbumTracksId(data.Id);
-                //Debug.WriteLine("AlbumPage loaded with AlbumData: " + data.Title + " with " + TracksId.Length + " tracks.");
             }
         }
 
         private void PlayAlbum(object sender, RoutedEventArgs e)
         {
-            //Debug.WriteLine("Trying to play album");
             if (DataContext is LibraryViewModel.AlbumData data)
             {
-                //Debug.WriteLine("Searching tracks...");
                 _playerService.ClearQueue();
                 _playerService.SetQueue(TracksId);
                 _playerService.Play();
@@ -97,7 +93,6 @@ namespace MusicWrap.UI.Features.Library.Components
         private int[] GetAllAlbumTracksId(int albumId)
         {
             return _libraryService.GetTrackQueueForAlbum(albumId).ToArray();
-            //return [.. _library.Tracks.Where(t => t.AlbumId == albumId).Select(t => t.Id)];
         }
 
         private void EditTracks_Click(object sender, RoutedEventArgs e)
@@ -105,7 +100,7 @@ namespace MusicWrap.UI.Features.Library.Components
             if (DataContext is LibraryViewModel.AlbumData data)
             {
                 var tracks = _libraryService.GetTracksForAlbum(data.Id).ToList();
-                _editMetadataService.OpenMetadataWindow(tracks);
+                _trackActions.EditMetadata(tracks);
             }
 
         }

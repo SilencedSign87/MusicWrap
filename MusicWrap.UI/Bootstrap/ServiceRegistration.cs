@@ -85,7 +85,7 @@ public static class ServiceRegistration
         // Services
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
         services.AddTransient<IImageService, ImageService>();
-        services.AddSingleton<TracksContextMenuService>();
+        services.AddSingleton<TrackActionService>();
         services.AddTransient<ILibraryScanner, LibraryScanner>();
         services.AddTransient<ILibraryIndexer, LibraryIndexer>();
         services.AddSingleton<ISaveCoordinator, SaveScheduler>();

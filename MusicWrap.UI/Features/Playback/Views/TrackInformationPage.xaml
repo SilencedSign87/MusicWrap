@@ -130,7 +130,7 @@
                 </Grid>
 
                 <Border Margin="8,0">
-                    <Button Style="{StaticResource LinkButtonStyle}" FontSize="11" Content="{Binding FilePath}" ToolTip="{Binding FilePath}" />
+                    <Button Style="{StaticResource LinkButtonStyle}" FontSize="11" Content="{Binding FilePath}" ToolTip="{Binding FilePath}" Command="{Binding OpenInExplorerCommand}" />
                 </Border>
 
                 <!-- Source -->

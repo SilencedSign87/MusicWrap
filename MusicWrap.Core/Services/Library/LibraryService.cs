@@ -14,6 +14,7 @@ namespace MusicWrap.Core.Services.Library
     public interface ILibraryService
     {
         Track? GetTrackById(int trackId);
+        IReadOnlyList<Track> GetTrackById(IEnumerable<int> trackIds);
         Album? GetAlbumById(int albumId);
         List<Genre> GetGenreById(List<int> genreIds);
         int[] GetTracksForAlbum(int albumId, bool useSearchQuery = false);
@@ -352,6 +353,11 @@ namespace MusicWrap.Core.Services.Library
         {
             EnsureIndexes();
             return _trackById.TryGetValue(trackId, out var track) ? track : null;
+        }
+        public IReadOnlyList<Track> GetTrackById(IEnumerable<int> trackIds)
+        {
+            EnsureIndexes();
+            return trackIds.Select(GetTrackById).Where(t => t is not null).Cast<Track>().ToList();
         }
         public Album? GetAlbumById(int albumId)
         {
