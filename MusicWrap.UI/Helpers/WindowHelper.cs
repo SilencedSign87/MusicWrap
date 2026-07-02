@@ -13,6 +13,12 @@ namespace MusicWrap.UI.Helpers
 
             child.Owner = parent;
             child.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            child.Closed += (s, e) =>
+            {
+                if (child is IDisposable disposable)
+                    disposable.Dispose();
+                parent.Activate();
+            };
             if (isDialog)
             {
                 return child.ShowDialog();

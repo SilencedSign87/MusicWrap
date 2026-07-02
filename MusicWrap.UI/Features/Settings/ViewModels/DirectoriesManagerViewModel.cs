@@ -2,10 +2,14 @@ using Acornima.Ast;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
+using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Activity.Models;
 using MusicWrap.UI.Features.Activity.Services;
+using MusicWrap.UI.Shared.Services;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -41,14 +45,20 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryService _libraryService;
         private readonly ActivityService _activityService;
+        private readonly ILibraryIntegrityService _libraryIntegrityService;
+        private readonly ISaveCoordinator _saveCoordinator;
+        private readonly WindowManager _windowManager;
 
         private ActivityScope? _currentScanScope;
 
-        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService, ActivityService activityService)
+        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService, ActivityService activityService, ILibraryIntegrityService libraryIntegrityService, ISaveCoordinator saveCoordinator, WindowManager windowManager)
         {
             _scanner = scanner;
             _libraryService = libraryService;
             _activityService = activityService;
+            _libraryIntegrityService = libraryIntegrityService;
+            _saveCoordinator = saveCoordinator;
+            _windowManager = windowManager;
 
             UpdateDirectories();
         }
@@ -192,6 +202,66 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             }
         }
 
+        [RelayCommand]
+        private async Task RunIntegrityCheckAsync()
+        {
+            using var scope = _activityService.Start(
+                "Library integrity check",
+                "Checking files...",
+                cancellable: true);
+
+            var activity = scope.Activity;
+
+            try
+            {
+                var progress = new Progress<LibraryVerificationProgress>(p =>
+                {
+                    var desc = p.Stage switch
+                    {
+                        VerificationStage.CheckingFiles
+                            => $"Checking: {Path.GetFileName(p.CurrentFile)}",
+                        VerificationStage.CheckingCovers
+                            => "Checking orphaned covers...",
+                        VerificationStage.CheckingDuplicates
+                            => "Checking duplicates...",
+                        VerificationStage.AutoFixing
+                            => "Auto-fixing moved tracks...",
+                        _ => "Working..."
+                    };
+                    activity.ReportProgress(
+                        p.TotalTracks > 0 ? (double)p.ProcessedFiles / p.TotalTracks : 0,
+                        desc);
+                });
+
+                var report = await _libraryIntegrityService.VerifyAsync(progress, scope.CancellationToken);
+
+                if (report.TotalIssues == 0)
+                {
+                    activity.Complete();
+                    return;
+                }
+
+                if (report.PendingUserReview == 0)
+                {
+                    activity.ReportProgress(1, $"{report.AutoFixedCount} items auto-fixed");
+                    _saveCoordinator.Enqueue(SaveKind.Library);
+                    activity.Complete();
+                    return;
+                }
+
+                activity.Complete();
+                _windowManager.LaunchIntegrityReportWindow(report);
+            }
+            catch (OperationCanceledException)
+            {
+                if (activity.Status == ActivityStatus.Running)
+                    activity.MarkCancelled();
+            }
+            catch (Exception ex)
+            {
+                activity.Fail(ex.Message);
+            }
+        }
 
         private void UpdateDirectories()
         {

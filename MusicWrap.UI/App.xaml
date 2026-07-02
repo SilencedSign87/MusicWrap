@@ -24,7 +24,7 @@
             <converters:DiskNumberToVisibilityConverter x:Key="DiskNumberToVisibilityConverter"/>
             <converters:NullToVisibilityConverter x:Key="NullToCollapseConverter" />
             <converters:SelectedAlbumBackgroundConverter x:Key="SelectedAlbumBackgroundConverter"/>
-            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+            <converters:BoolToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
             <converters:TabStringToVisibilityConverter x:Key="TabStringToVisibilityConverter"/>
             <converters:ItemCountToVisibilityConverter x:Key="ItemCountToVisibilityConverter"/>

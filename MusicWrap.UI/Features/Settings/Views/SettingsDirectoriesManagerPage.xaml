@@ -171,6 +171,24 @@
                 <Button Content="Delete playlists" Style="{StaticResource DefaultButton}"/>
             </StackPanel>
         </Grid>
+        <controls:SectionTitleSeparator Title="Library integrity" IconGlyph="&#xE7FB;" Margin="0,0,0,12"/>
+        <Grid Margin="0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="24"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Verify library files" FontSize="14" FontWeight="SemiBold"/>
+                <TextBlock Text="Check for missing, moved, or duplicate tracks and orphaned covers"
+                   FontSize="12" Opacity="0.8" TextWrapping="Wrap"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Margin="8,0" VerticalAlignment="Center">
+                <Button Content="Run Integrity Check"
+                Style="{StaticResource DefaultButton}"
+                Command="{Binding RunIntegrityCheckCommand}"/>
+            </StackPanel>
+        </Grid>
     </StackPanel>
 </UserControl>
 

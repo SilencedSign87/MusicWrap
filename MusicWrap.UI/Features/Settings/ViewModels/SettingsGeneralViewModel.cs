@@ -1,12 +1,18 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Saving;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Features.Activity.Models;
+using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Helpers;
+using MusicWrap.UI.Shared.Services;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Policy;
 using System.Text;
 
@@ -16,6 +22,9 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
     {
         private readonly UserSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
+        private readonly ILibraryIntegrityService _integrityService;
+        private readonly ActivityService _activityService;
+        private readonly WindowManager _windowManager;
 
         [ObservableProperty] private bool _restoreEverything;
         [ObservableProperty] private bool _restoreCurrentTrackAndPosition;
@@ -35,10 +44,18 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         private bool _updatingCloseBehavior;
         public List<TrayPopupPosition> TrayPopupPositions { get; } = Enum.GetValues<TrayPopupPosition>().ToList();
 
-        public SettingsGeneralViewModel(UserSettings settings, ISaveCoordinator saveCoordinator)
+        public SettingsGeneralViewModel(
+            UserSettings settings,
+            ISaveCoordinator saveCoordinator,
+            ILibraryIntegrityService integrityService,
+            ActivityService activityService,
+            WindowManager windowManager)
         {
             _settings = settings;
             _saveCoordinator = saveCoordinator;
+            _integrityService = integrityService;
+            _activityService = activityService;
+            _windowManager = windowManager;
             LoadFromSettings();
             WallpaperPath = WallpaperHelper.GetWallpaperPath() ?? "";
         }

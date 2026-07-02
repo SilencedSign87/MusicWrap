@@ -140,11 +140,13 @@ public static class ServiceRegistration
         services.AddTransient<LibraryEntryTracksViewModel>();
         services.AddTransient<ActivityCenterViewModel>();
         services.AddTransient<TrackInformationViewModel>();
+        services.AddTransient<Shell.ViewModel.IntegrityReportViewModel>();
 
         // UI
         services.AddTransient<MainWindow>();
         services.AddTransient<CompactPlayer>();
         services.AddTransient<TrayFlyoutWindow>();
+        services.AddTransient<IntegrityReportWindow>();
 
         services.AddTransient<SettingsWindow>();
         services.AddTransient<SettingsGeneralPage>();

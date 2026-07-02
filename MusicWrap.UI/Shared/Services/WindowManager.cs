@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
@@ -85,9 +86,28 @@ namespace MusicWrap.UI.Shared.Services
             newPlaylistWindow = null;
         }
 
-        public void LaunchMetadataEditorWindow()
-        {
+        private IntegrityReportWindow? _integrityReportWindow;
 
+        public void LaunchIntegrityReportWindow(LibraryIntegrityReport report)
+        {
+            // Close any existing instance
+            if (_integrityReportWindow is not null)
+            {
+                try { _integrityReportWindow.Close(); } catch { }
+                _integrityReportWindow = null;
+            }
+
+            var window = _serviceProvider.GetRequiredService<IntegrityReportWindow>();
+            window.LoadReport(report);
+
+            window.Closed += (_, _) => _integrityReportWindow = null;
+            _integrityReportWindow = window;
+
+            var currentWindow = CurrentWindow;
+            if (currentWindow is null)
+                window.Show();
+            else
+                WindowHelper.LauchFromParent(currentWindow, window, true);
         }
         #endregion
         #region Cleanup
@@ -129,7 +149,7 @@ namespace MusicWrap.UI.Shared.Services
             var main = _serviceProvider.GetRequiredService<MainWindow>();
             TrackCurrentWindow(main);
 
-            if(main.DataContext is IDisposable disposable)
+            if (main.DataContext is IDisposable disposable)
             {
                 TrackForCleanup(disposable);
             }
@@ -183,7 +203,7 @@ namespace MusicWrap.UI.Shared.Services
                 if (ReferenceEquals(CurrentWindow, window))
                     CurrentWindow = null;
                 // no windows and tray
-                if(!IsWindowTransitioning && CurrentWindow is null && ShouldKeepAppInTray())
+                if (!IsWindowTransitioning && CurrentWindow is null && ShouldKeepAppInTray())
                 {
                     CleanupForTray();
                     return;
@@ -215,7 +235,7 @@ namespace MusicWrap.UI.Shared.Services
             var libraryService = _serviceProvider.GetService<ILibraryService>();
             libraryService?.ClearLibraryCache();
 
-            foreach(var d in _trackedDisposables)
+            foreach (var d in _trackedDisposables)
             {
                 try { d.Dispose(); } catch { }
             }

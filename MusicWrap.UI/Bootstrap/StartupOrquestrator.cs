@@ -1,17 +1,20 @@
-using System.ComponentModel;
-using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using Serilog;
+using System.ComponentModel;
+using System.Windows;
 
 namespace MusicWrap.UI.Bootstrap;
 
@@ -127,7 +130,8 @@ public static class StartupOrquestrator
                             && !current.Dispatcher.HasShutdownStarted
                             && !current.Dispatcher.HasShutdownFinished
                             && !current.IsVisible
-                            ) {
+                            )
+                            {
                                 try
                                 {
                                     current.Show();
@@ -162,6 +166,9 @@ public static class StartupOrquestrator
             {
                 try { trayService?.SetEnabled(true); } catch { }
             }
+
+            _ = RunIntegrityCheckAsync(serviceProvider);
+
         }
         catch (Exception ex)
         {
@@ -182,7 +189,7 @@ public static class StartupOrquestrator
                 {
                     if (windowToShow == 1)
                     {
-                        wm.SwitchToCompactPlayer();  
+                        wm.SwitchToCompactPlayer();
                     }
                     else
                     {
@@ -194,6 +201,45 @@ public static class StartupOrquestrator
                     Log.Error(ex, "Error showing main window");
                 }
             });
+        }
+
+    }
+
+    private static async Task RunIntegrityCheckAsync(IServiceProvider serviceProvider)
+    {
+        try
+        {
+            var integrity = serviceProvider.GetRequiredService<ILibraryIntegrityService>();
+            var uiDispatcher = serviceProvider.GetRequiredService<IUIDispatcher>();
+
+            var report = await integrity.VerifyAsync();
+
+            if (report.TotalIssues == 0)
+            {
+                Log.Information("Library integrity check passed — all files OK");
+                return;
+            }
+
+            if (report.PendingUserReview == 0)
+            {
+                var saveCoordinator = serviceProvider.GetRequiredService<ISaveCoordinator>();
+                Log.Information("Library integrity: {Count} issues auto-fixed", report.AutoFixedCount);
+                return;
+            }
+
+            try
+            {
+                var windowManager = serviceProvider.GetRequiredService<WindowManager>();
+                windowManager.LaunchIntegrityReportWindow(report);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error launching integrity report window");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during library integrity check");
         }
 
     }

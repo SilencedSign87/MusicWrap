@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Messages;
 using MusicWrap.Core.Saving;
+using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using System.Collections.Concurrent;
@@ -28,11 +29,6 @@ namespace MusicWrap.Core.Services.Library
         private readonly ILibraryIndexer _indexer;
         private readonly ILogger _logger;
         private readonly ISaveCoordinator _saveCoordinator;
-
-        private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ".mp3", ".flac", ".wav", ".aac", ".ogg", ".opus", ".m4a"
-        };
 
         private List<ScanDirectory> Directories
         {
@@ -288,7 +284,7 @@ namespace MusicWrap.Core.Services.Library
             };
 
             return Directory.EnumerateFiles(path, "*", options)
-                            .Where(f => SupportedExtensions.Contains(Path.GetExtension(f)));
+                            .Where(f => MusicWrapConstants.SupportedExtensions.Contains(Path.GetExtension(f)));
         }
         #endregion
     }
