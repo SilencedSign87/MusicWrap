@@ -1,17 +1,13 @@
-using MusicWrap.UI.Shell.Dialogs;
-using System.Windows;
-using MusicWrap.Data.Library.Models;
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.ViewModels;
+using MusicWrap.Core.Services.Contracts;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Shared.Services;
+using MusicWrap.UI.Shell.Dialogs;
+using MusicWrap.UI.ViewModels;
+using System.Windows;
 
 namespace MusicWrap.UI.Services
 {
-    public interface IEditMetadataService
-    {
-        void OpenMetadataWindow(List<int> trackIds);
-        event EventHandler<List<int>>? ItemsChanged;
-    }
     public class EditMetadataService : IEditMetadataService
     {
         public event EventHandler<List<int>>? ItemsChanged;

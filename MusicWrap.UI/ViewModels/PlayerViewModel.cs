@@ -6,6 +6,7 @@ using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Data.Helpers;
+using MusicWrap.Core.Services.Contracts;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -51,9 +52,9 @@ namespace MusicWrap.UI.ViewModels
 
         private string ArtworkPath = "";
 
-        private readonly IImageService _imageService;
+        private readonly IwindowsImageService _imageService;
 
-        public PlayerViewModel(IMusicPlayerService service, ILibraryService libraryService, IImageService imageService)
+        public PlayerViewModel(IMusicPlayerService service, ILibraryService libraryService, IwindowsImageService imageService)
         {
             _playerService = service;
             _libraryService = libraryService;

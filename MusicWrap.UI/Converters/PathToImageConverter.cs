@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Contracts;
 using MusicWrap.UI.Services;
 using System.Globalization;
 using System.Windows.Data;
@@ -7,8 +8,8 @@ namespace MusicWrap.UI.Converters
 {
     public class PathToImageConverter : IValueConverter
     {
-        private static readonly Lazy<IImageService> _imageService = new(() => App.Services.GetRequiredService<IImageService>());
-        private static IImageService ImageService => _imageService.Value;
+        private static readonly Lazy<IwindowsImageService> _imageService = new(() => App.Services.GetRequiredService<IwindowsImageService>());
+        private static IwindowsImageService ImageService => _imageService.Value;
 
         public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

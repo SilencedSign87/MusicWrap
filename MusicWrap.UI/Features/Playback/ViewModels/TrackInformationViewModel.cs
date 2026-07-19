@@ -13,6 +13,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using MusicWrap.Core.Services.Contracts;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -22,7 +23,7 @@ namespace MusicWrap.UI.ViewModels
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly ILibraryService _libraryService;
-        private readonly IImageService _imageService;
+        private readonly IwindowsImageService _imageService;
         private readonly IUIDispatcher _uiDispatcher;
         private readonly IMessenger _messenger;
         private readonly TrackActionService _trackActions;
@@ -97,7 +98,7 @@ namespace MusicWrap.UI.ViewModels
              IMusicPlayerService playerService,
             ILibraryService libraryService,
             IUIDispatcher uiDispatcher,
-            IImageService imageService,
+            IwindowsImageService imageService,
             TrackActionService trackActions,
             IMessenger messenger)
         {

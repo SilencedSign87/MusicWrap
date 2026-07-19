@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
+using MusicWrap.Core.Services.Search;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
@@ -14,7 +16,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     public partial class LibraryEntryAlbumViewModel : ObservableObject, IDisposable
     {
         private readonly ILibraryService _libraryService;
-        private readonly IImageService _imageService;
+        private readonly IwindowsImageService _imageService;
         private readonly SearchService _searchService;
 
         // Props
@@ -40,7 +42,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         public LibraryEntryAlbumViewModel(
             ILibraryService cacheService,
-            IImageService imageService,
+            IwindowsImageService imageService,
             SearchService searchService
             )
         {

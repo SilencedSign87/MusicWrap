@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using MusicWrap.UI.Shared.Services;
+using MusicWrap.Core.Services.Search;
 
 namespace MusicWrap.UI.Features.Providers.Views
 {

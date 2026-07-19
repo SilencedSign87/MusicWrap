@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Security.Policy;
 using System.Text;
 
-namespace MusicWrap.UI.Shared.Services
+namespace MusicWrap.Core.Services.Search
 {
     public sealed class SearchService : ISearchQueryProvider
     {

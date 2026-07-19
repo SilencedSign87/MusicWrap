@@ -49,7 +49,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILibraryService _libraryCache;
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IImageService _imageService;
+        private readonly IwindowsImageService _imageService;
         private int _headerStatsRequestId;
 
 
@@ -77,7 +77,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             ILibraryService libraryCache,
             IMusicPlayerService musicPlayerService,
             IServiceProvider serviceProvider,
-            IImageService imageService
+            IwindowsImageService imageService
             )
         {
             _libraryCache = libraryCache;

@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="MusicWrap.Core/MusicWrap.Core.csproj" />
   <Project Path="MusicWrap.Data/MusicWrap.Data.csproj" />
+  <Project Path="MusicWrap.Mobile/MusicWrap.Mobile.csproj" Id="7c96e8c2-398a-4636-a935-088a73798a84" />
   <Project Path="MusicWrap.UI/MusicWrap.UI.csproj" />
 </Solution>

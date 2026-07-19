@@ -80,7 +80,7 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void ReleaseResources()
         {
-            App.Services.GetService<IImageService>()?.ClearCache();
+            App.Services.GetService<IwindowsImageService>()?.ClearCache();
 
             _viewModel.Dispose();
 

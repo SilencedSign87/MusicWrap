@@ -1,8 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Services.Search;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;

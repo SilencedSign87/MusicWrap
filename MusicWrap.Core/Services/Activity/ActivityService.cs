@@ -1,11 +1,10 @@
 ﻿using MusicWrap.Core.Threading;
-using MusicWrap.UI.Features.Activity.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 
-namespace MusicWrap.UI.Features.Activity.Services
+namespace MusicWrap.Core.Services.Activity
 {
     public class ActivityService
     {
@@ -81,7 +80,7 @@ namespace MusicWrap.UI.Features.Activity.Services
         public CancellationToken CancellationToken => _cts?.Token ?? CancellationToken.None;
         private readonly CancellationTokenSource? _cts;
         private readonly ActivityService _service;
-        
+
         private bool _disposed;
 
         internal ActivityScope(ActivityModel activity, CancellationTokenSource? cts, ActivityService service)
@@ -95,7 +94,7 @@ namespace MusicWrap.UI.Features.Activity.Services
         {
             if (_disposed) return;
             _disposed = true;
-            
+
             if (Activity.Status == ActivityStatus.Running)
                 Activity.Complete();
 

@@ -1,14 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
@@ -167,7 +164,7 @@ public static class StartupOrquestrator
                 try { trayService?.SetEnabled(true); } catch { }
             }
 
-            _ = RunIntegrityCheckAsync(serviceProvider);
+            RunIntegrityCheck(serviceProvider);
 
         }
         catch (Exception ex)
@@ -205,37 +202,13 @@ public static class StartupOrquestrator
 
     }
 
-    private static async Task RunIntegrityCheckAsync(IServiceProvider serviceProvider)
+    private static void RunIntegrityCheck(IServiceProvider serviceProvider)
     {
         try
         {
             var integrity = serviceProvider.GetRequiredService<ILibraryIntegrityService>();
-            var uiDispatcher = serviceProvider.GetRequiredService<IUIDispatcher>();
 
-            var report = await integrity.VerifyAsync();
-
-            if (report.TotalIssues == 0)
-            {
-                Log.Information("Library integrity check passed — all files OK");
-                return;
-            }
-
-            if (report.PendingUserReview == 0)
-            {
-                var saveCoordinator = serviceProvider.GetRequiredService<ISaveCoordinator>();
-                Log.Information("Library integrity: {Count} issues auto-fixed", report.AutoFixedCount);
-                return;
-            }
-
-            try
-            {
-                var windowManager = serviceProvider.GetRequiredService<WindowManager>();
-                windowManager.LaunchIntegrityReportWindow(report);
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "Error launching integrity report window");
-            }
+            integrity.Verify();
         }
         catch (Exception ex)
         {

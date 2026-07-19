@@ -1,57 +1,76 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0-windows</TargetFramework>
+		<TargetFrameworks>net10.0-windows;net10.0-android</TargetFrameworks>
 		<Nullable>enable</Nullable>
-		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Compile Remove="Models\**" />
-	  <EmbeddedResource Remove="Models\**" />
-	  <None Remove="Models\**" />
-	  <Page Remove="Models\**" />
+		<Compile Remove="Models\**" />
+		<EmbeddedResource Remove="Models\**" />
+		<None Remove="Models\**" />
+		<Page Remove="Models\**" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
 		<PackageReference Include="Un4seen.Bass" Version="2.4.18" />
-		<PackageReference Include="YoutubeExplode" Version="6.5.7" />
-		<PackageReference Include="YouTubeMusicAPI" Version="3.0.6" />
+		<PackageReference Include="YoutubeExplode" Version="6.6.0" />
+		<PackageReference Include="YouTubeMusicAPI" Version="3.0.10" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\MusicWrap.Data\MusicWrap.Data.csproj" />
 	</ItemGroup>
-	
-	<ItemGroup>
-		<None Update="Native\x64\bass.dll">
+
+	<!-- Windows Libraries-->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+		<None Update="Native\Windows\x64\bass.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>bass.dll</Link>
 		</None>
-		<None Update="Native\x64\bassmix.dll">
+		<None Update="Native\Windows\x64\bassmix.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>bassmix.dll</Link>
 		</None>
-		<None Update="Native\x64\bassflac.dll">
+		<None Update="Native\Windows\x64\bassflac.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>bassflac.dll</Link>
 		</None>
-		<None Update="Native\x64\basswasapi.dll">
+		<None Update="Native\Windows\x64\basswasapi.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>basswasapi.dll</Link>
 		</None>
-		<None Update="Native\x64\bassopus.dll">
+		<None Update="Native\Windows\x64\bassopus.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>bassopus.dll</Link>
 		</None>
 	</ItemGroup>
-	
+	<!-- Android libraries -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net10.0-android'">
+		<AndroidNativeLibrary Include="Native\Android\arm64-v8a\libbass.so" />
+		<AndroidNativeLibrary Include="Native\Android\arm64-v8a\libbassmix.so" />
+		<AndroidNativeLibrary Include="Native\Android\arm64-v8a\libbassflac.so" />
+		<AndroidNativeLibrary Include="Native\Android\arm64-v8a\libbassopus.so" />
+		<AndroidNativeLibrary Include="Native\Android\armeabi-v7a\libbass.so" />
+		<AndroidNativeLibrary Include="Native\Android\armeabi-v7a\libbassmix.so" />
+		<AndroidNativeLibrary Include="Native\Android\armeabi-v7a\libbassflac.so" />
+		<AndroidNativeLibrary Include="Native\Android\armeabi-v7a\libbassopus.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86\libbass.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86\libbassmix.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86\libbassflac.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86\libbassopus.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86_64\libbass.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86_64\libbassmix.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86_64\libbassflac.so" />
+		<AndroidNativeLibrary Include="Native\Android\x86_64\libbassopus.so" />
+	</ItemGroup>
+
 	<ItemGroup>
-	  <Folder Include="Sources\Providers\Local\" />
-	  <Folder Include="Sources\Providers\Runtime\" />
+		<Folder Include="Sources\Providers\Local\" />
+		<Folder Include="Sources\Providers\Runtime\" />
 	</ItemGroup>
 
 </Project>

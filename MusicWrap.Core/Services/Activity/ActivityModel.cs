@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MusicWrap.UI.Features.Activity.Models
+namespace MusicWrap.Core.Services.Activity
 {
     public enum ActivityStatus
     {

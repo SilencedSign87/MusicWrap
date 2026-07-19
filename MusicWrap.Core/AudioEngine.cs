@@ -1,19 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using MusicWrap.Data.User.Models;
-using SixLabors.ImageSharp.Metadata;
-using System;
-using System.Collections.Generic;
+﻿using MusicWrap.Data.User.Models;
 using System.Diagnostics;
-using System.Drawing.Interop;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
-using System.Security.Principal;
-using System.Text;
 using Un4seen.Bass;
-using Un4seen.Bass.AddOn.Flac;
 using Un4seen.Bass.AddOn.Mix;
+#if WINDOWS
 using Un4seen.BassWasapi;
+#endif
 
 
 namespace MusicWrap.Core
@@ -22,13 +13,17 @@ namespace MusicWrap.Core
     {
 
         private bool _isInitialized;
+
+#if WINDOWS
         private bool _isWasapiInitialized;
+        private WASAPIPROC? _wasapiProc;
+#endif
+
         private int _flacPluginHandle;
         private int _opusPluginHandle;
 
         private OutputMode _currentOutputMode = OutputMode.WasapiShared;
 
-        private WASAPIPROC? _wasapiProc;
 
         private int _outputMixerStream;
         private int _lastDeviceIndex = -1;
@@ -41,6 +36,17 @@ namespace MusicWrap.Core
         public OutputMode CurrentOutputMode => _currentOutputMode;
         public int CurrentOutputSampleRate => _currentOutputSampleRate;
         public int CurrentOutputChannels => _currentOutputChannels;
+
+        private static string GetNativeLibExtension()
+        {
+#if WINDOWS
+            return ".dll";
+#elif ANDROID
+            return ".so";
+#else
+            return ".dll";
+#endif
+        }
 
         public bool Initialize(int deviceIndex = -1, int sampleRate = 44100, OutputMode outputmode = OutputMode.WasapiShared)
         {
@@ -64,8 +70,8 @@ namespace MusicWrap.Core
             _isInitialized = Bass.BASS_Init(deviceIndex, sampleRate, BASSInit.BASS_DEVICE_DEFAULT, IntPtr.Zero);
             if (!_isInitialized) return false;
 
-            _flacPluginHandle = Bass.BASS_PluginLoad("bassflac.dll");
-            _opusPluginHandle = Bass.BASS_PluginLoad("bassopus.dll");
+            _flacPluginHandle = Bass.BASS_PluginLoad("bassflac" + GetNativeLibExtension());
+            _opusPluginHandle = Bass.BASS_PluginLoad("bassopus" + GetNativeLibExtension());
 
             if (_flacPluginHandle == 0)
             {
@@ -78,12 +84,14 @@ namespace MusicWrap.Core
                 Debug.WriteLine($"Failed to load Opus plugin: {err}");
             }
 
+#if WINDOWS
             // initialize wasapi
             if (!InitializeWasapiForCurrentMode(_lastSampleRate))
             {
                 Teardown();
                 return false;
             }
+#endif
 
             return _isInitialized;
         }
@@ -103,7 +111,7 @@ namespace MusicWrap.Core
                 _currentOutputChannels = requestedChannels;
                 return _currentOutputSampleRate;
             }
-
+#if WINDOWS
             bool requiresReopen = !_isWasapiInitialized
                 || _lastRequestedSampleRate != requestedRate
                 || _lastRequestedChannels != requestedChannels;
@@ -115,7 +123,7 @@ namespace MusicWrap.Core
                 _lastRequestedChannels = requestedChannels;
                 ReopenWasapi(requestedRate, requestedChannels);
             }
-
+#endif
             return _currentOutputSampleRate > 0 ? _currentOutputSampleRate : requestedRate;
         }
         public void AttachOutputToMixer(int mixerStream, int sampleRate, int channels = 2)
@@ -152,15 +160,13 @@ namespace MusicWrap.Core
             if (!_isInitialized) throw new InvalidOperationException("Audio engine not initialized.");
             if (string.IsNullOrWhiteSpace(url)) return 0;
 
-            //nint UserAgentPtr = Marshal.StringToHGlobalAnsi("MusicWrap/1.0");
-            //Bass.BASS_SetConfigPtr(BASSConfig.BASS_CONFIG_NET_AGENT, UserAgentPtr);
-
-            var flags = BASSFlag.BASS_STREAM_DECODE | 
-                        BASSFlag.BASS_SAMPLE_FLOAT | 
-                        BASSFlag.BASS_STREAM_PRESCAN | 
+            var flags = BASSFlag.BASS_STREAM_DECODE |
+                        BASSFlag.BASS_SAMPLE_FLOAT |
+                        BASSFlag.BASS_STREAM_PRESCAN |
                         BASSFlag.BASS_STREAM_BLOCK;
-            var task = Task.Run(()=> Bass.BASS_StreamCreateURL(url, 0, flags, null, IntPtr.Zero));
-            if (!task.Wait(TimeSpan.FromSeconds(10))){
+            var task = Task.Run(() => Bass.BASS_StreamCreateURL(url, 0, flags, null, IntPtr.Zero));
+            if (!task.Wait(TimeSpan.FromSeconds(10)))
+            {
                 Debug.WriteLine($"[AudioEngine] Timeout creating stream from URL: {url}");
                 return 0;
             }
@@ -185,6 +191,7 @@ namespace MusicWrap.Core
 
         public int GetDeviceLatencyMs()
         {
+#if WINDOWS
             if (IsWasapiMode() && _isWasapiInitialized)
             {
                 var info = BassWasapi.BASS_WASAPI_GetInfo();
@@ -194,6 +201,7 @@ namespace MusicWrap.Core
                     return Math.Max(1, (int)Math.Round(bufferSeconds * 1000.0));
                 }
             }
+#endif
             var bassInfo = Bass.BASS_GetInfo();
             return Math.Max(0, bassInfo.latency);
         }
@@ -287,26 +295,32 @@ namespace MusicWrap.Core
         #region PLAYBACK
         public bool Play(int stream, bool restart = false)
         {
+#if WINDOWS
             if (IsWasapiMode())
             {
                 return _isWasapiInitialized && BassWasapi.BASS_WASAPI_Start();
             }
+#endif
             return Bass.BASS_ChannelPlay(stream, restart);
         }
         public bool Pause(int stream)
         {
+#if WINDOWS
             if (IsWasapiMode())
             {
                 return _isWasapiInitialized && BassWasapi.BASS_WASAPI_Stop(false);
             }
+#endif
             return Bass.BASS_ChannelPause(stream);
         }
         public bool Stop(int stream)
         {
+#if WINDOWS
             if (IsWasapiMode())
             {
                 return _isWasapiInitialized && BassWasapi.BASS_WASAPI_Stop(true);
             }
+#endif
             return Bass.BASS_ChannelStop(stream);
         }
         public bool Free(int stream) => Bass.BASS_StreamFree(stream);
@@ -333,7 +347,7 @@ namespace MusicWrap.Core
         }
         public double GetPosition(int stream)
         {
-            long pos = Bass.BASS_ChannelGetPosition(stream,BASSMode.BASS_POS_DECODE);
+            long pos = Bass.BASS_ChannelGetPosition(stream, BASSMode.BASS_POS_DECODE);
             if (pos < 0) return 0.0;
             return Bass.BASS_ChannelBytes2Seconds(stream, pos);
         }
@@ -392,6 +406,7 @@ namespace MusicWrap.Core
         {
             return Bass.BASS_ErrorGetCode();
         }
+#if WINDOWS
         private bool InitializeWasapiForCurrentMode(int sampleRate)
         {
             if (!IsWasapiMode())
@@ -490,26 +505,34 @@ namespace MusicWrap.Core
 
             return Bass.BASS_ChannelGetData(_outputMixerStream, buffer, length | (int)BASSData.BASS_DATA_FLOAT);
         }
+#endif
         private bool IsWasapiMode()
         {
+#if WINDOWS
             return _currentOutputMode == OutputMode.WasapiShared
                 || _currentOutputMode == OutputMode.WasapiExclusive;
+#else
+            return false;
+#endif
         }
         private void Teardown()
         {
+#if WINDOWS
             if (_isWasapiInitialized)
             {
                 BassWasapi.BASS_WASAPI_Stop(true);
                 BassWasapi.BASS_WASAPI_Free();
                 _isWasapiInitialized = false;
             }
+#endif
 
             if (_flacPluginHandle != 0)
             {
                 Bass.BASS_PluginFree(_flacPluginHandle);
                 _flacPluginHandle = 0;
             }
-            if (_opusPluginHandle != 0) {
+            if (_opusPluginHandle != 0)
+            {
                 Bass.BASS_PluginFree(_opusPluginHandle);
                 _opusPluginHandle = 0;
             }
@@ -521,7 +544,9 @@ namespace MusicWrap.Core
             }
 
             _outputMixerStream = 0;
+#if WINDOWS
             _wasapiProc = null;
+#endif
             _lastRequestedSampleRate = 44100;
             _lastRequestedChannels = 2;
             _currentOutputSampleRate = 44100;

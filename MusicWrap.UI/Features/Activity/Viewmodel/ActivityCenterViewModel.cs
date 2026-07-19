@@ -1,11 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.UI.Features.Activity.Models;
-using MusicWrap.UI.Features.Activity.Services;
-using System;
-using System.Collections.Generic;
+using MusicWrap.Core.Services.Activity;
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace MusicWrap.UI.Features.Activity.Viewmodel
 {

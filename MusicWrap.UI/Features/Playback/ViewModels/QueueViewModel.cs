@@ -31,11 +31,11 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         // Services
         private readonly IMusicPlayerService _player;
         private readonly ILibraryService _libraryCache;
-        private readonly IImageService _imageService;
+        private readonly IwindowsImageService _imageService;
         private readonly WindowManager _windowManager;
 
 
-        public QueueViewModel(IMusicPlayerService player, ILibraryService libraryCache, IImageService imageService, WindowManager windowmanager)
+        public QueueViewModel(IMusicPlayerService player, ILibraryService libraryCache, IwindowsImageService imageService, WindowManager windowmanager)
         {
             _libraryCache = libraryCache;
             _player = player;

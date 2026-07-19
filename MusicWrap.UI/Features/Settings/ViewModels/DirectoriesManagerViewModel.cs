@@ -3,12 +3,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using MusicWrap.Core.Saving;
+using MusicWrap.Core.Services.Activity;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Features.Activity.Models;
-using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Shared.Services;
 using System.Diagnostics;
 using System.IO;
@@ -109,7 +108,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             : "Scanning all directories";
             var description = "Preparing to scan...";
 
-            _currentScanScope = _activityService.Start(title, description, cancellable:true);
+            _currentScanScope = _activityService.Start(title, description, cancellable: true);
 
             var activity = _currentScanScope.Activity;
 
@@ -183,7 +182,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         [RelayCommand]
         private void CancelScan()
         {
-            if(_currentScanScope is not null)
+            if (_currentScanScope is not null)
             {
                 _activityService.Cancel(_currentScanScope.Activity.Id);
             }
@@ -216,41 +215,16 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             {
                 var progress = new Progress<LibraryVerificationProgress>(p =>
                 {
-                    var desc = p.Stage switch
-                    {
-                        VerificationStage.CheckingFiles
-                            => $"Checking: {Path.GetFileName(p.CurrentFile)}",
-                        VerificationStage.CheckingCovers
-                            => "Checking orphaned covers...",
-                        VerificationStage.CheckingDuplicates
-                            => "Checking duplicates...",
-                        VerificationStage.AutoFixing
-                            => "Auto-fixing moved tracks...",
-                        _ => "Working..."
-                    };
                     activity.ReportProgress(
-                        p.TotalTracks > 0 ? (double)p.ProcessedFiles / p.TotalTracks : 0,
-                        desc);
+                        p.TotalFiles > 0 ? (double)p.ProcessedFiles / p.TotalFiles : 0,
+                        "Checking files... " + (string.IsNullOrEmpty(p.CurrentFile) ? "" : Path.GetFileName(p.CurrentFile))
+                        );
                 });
 
-                var report = await _libraryIntegrityService.VerifyAsync(progress, scope.CancellationToken);
-
-                if (report.TotalIssues == 0)
-                {
-                    activity.Complete();
-                    return;
-                }
-
-                if (report.PendingUserReview == 0)
-                {
-                    activity.ReportProgress(1, $"{report.AutoFixedCount} items auto-fixed");
-                    _saveCoordinator.Enqueue(SaveKind.Library);
-                    activity.Complete();
-                    return;
-                }
+                _libraryIntegrityService.Verify(progress, scope.CancellationToken);
 
                 activity.Complete();
-                _windowManager.LaunchIntegrityReportWindow(report);
+
             }
             catch (OperationCanceledException)
             {

@@ -1,3 +1,4 @@
+using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Data.Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -8,26 +9,18 @@ using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.Services
 {
-    public enum ImageVariant
+    public interface IwindowsImageService : IImageService
     {
-        Small,
-        Medium,
-        Large,
-        Original,
-        Blur
-    }
-    public interface IImageService
-    {
-        string? ResolvePath(string? fileName, ImageVariant variant);
-        string? ResolvePathForSize(string? fileName, int requestedSize, bool preferOriginal = false);
+        //string? ResolvePath(string? fileName, ImageVariant variant);
+        //string? ResolvePathForSize(string? fileName, int requestedSize, bool preferOriginal = false);
         BitmapImage? Load(string? fileName, ImageVariant variant, int decodeSize = 0);
         Task<BitmapImage?> LoadAsync(string? fileName, ImageVariant variant, int decodeSize = 0, CancellationToken ct = default);
         BitmapImage? LoadForSize(string? fileName, int requestedSize, bool preferOriginal = false);
         Task<BitmapImage?> LoadForSizeAsync(string? fileName, int requestedSize, bool preferOriginal = false, CancellationToken ct = default);
         BitmapImage? GetDefaultImage(int size = 64, ImageVariant variant = ImageVariant.Original);
-        void ClearCache(ImageVariant? variant = null);
+        //void ClearCache(ImageVariant? variant = null);
     }
-    public class ImageService : IImageService
+    public class ImageService : IwindowsImageService
     {
         private const int SmallThreshold = 64;
         private const int MediumThreshold = 180;

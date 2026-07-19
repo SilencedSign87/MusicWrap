@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.UI.Shared.Services;
+using MusicWrap.Core.Services.Search;
 
 namespace MusicWrap.UI.ViewModels
 {

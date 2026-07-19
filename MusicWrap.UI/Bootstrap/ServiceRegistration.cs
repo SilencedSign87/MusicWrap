@@ -1,26 +1,9 @@
-using CommunityToolkit.Mvvm.Messaging;
 using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MusicWrap.Core.Metadata;
-using MusicWrap.Core.Queue;
-using MusicWrap.Core.Saving;
+using MusicWrap.Core.DI;
 using MusicWrap.Core.Services.Contracts;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Playlists;
-using MusicWrap.Core.Services.Providers.Youtube;
-using MusicWrap.Core.Sources.Contracts;
-using MusicWrap.Core.Sources.Providers.Local;
-using MusicWrap.Core.Sources.Providers.Queue;
-using MusicWrap.Core.Sources.Providers.Runtime;
-using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Core.Threading;
-using MusicWrap.Data.Library;
-using MusicWrap.Data.Player;
-using MusicWrap.Data.Playlist;
-using MusicWrap.Data.User;
-using MusicWrap.UI.Features.Activity.Services;
 using MusicWrap.UI.Features.Activity.Viewmodel;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Library.Views;
@@ -49,6 +32,9 @@ public static class ServiceRegistration
 {
     public static void AddAppServices(this IServiceCollection services)
     {
+        // Core implementation
+        services.AddMusicWrapCore();
+
         // Logging
         services.AddLogging(loggingBuilder =>
                    {
@@ -56,63 +42,18 @@ public static class ServiceRegistration
                        loggingBuilder.AddSerilog(dispose: true);
                    });
 
-
-        // window state
         var Tracker = new Tracker();
         ConfigureJot(Tracker);
 
         services.AddSingleton(Tracker);
 
-        services.AddSingleton<ITrayService, TrayService>();
-
-        services.AddSingleton<GlobalHotkeyService>();
-
-        // messenger
-        services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
-
-        //Data layer
-        services.AddSingleton<ILibraryRepository, LibraryRepository>();
-        services.AddSingleton(sp => sp.GetRequiredService<ILibraryRepository>().Load());// Provide Music library
-        services.AddSingleton<IPlaybackRepository, PlaybackRepository>();
-        services.AddSingleton(sp => sp.GetRequiredService<IPlaybackRepository>().Load()); // Provide Queue settings
-        services.AddSingleton<IUserSettingsRepository, UserSettingsRepository>();
-        services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load()); // Provide user settings
-        services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
-        services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load()); // Provide playlist data
-        services.AddSingleton<ILibraryService, LibraryService>();
-        services.AddSingleton<ActivityService>();
-
-        // Services
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
-        services.AddTransient<IImageService, ImageService>();
-        services.AddSingleton<TrackActionService>();
-        services.AddTransient<ILibraryScanner, LibraryScanner>();
-        services.AddTransient<ILibraryIndexer, LibraryIndexer>();
-        services.AddSingleton<ISaveCoordinator, SaveScheduler>();
-        services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
-        services.AddTransient<IEditMetadataService, EditMetadataService>();
-        services.AddSingleton<IQueueManager, QueueManager>();
-        services.AddSingleton<ILibraryIntegrityService, LibraryIntegrityService>();
-        services.AddSingleton<SearchService>();
-        services.AddSingleton<ISearchQueryProvider, SearchService>(sp => sp.GetRequiredService<SearchService>());
+        services.AddTransient<IwindowsImageService, ImageService>();
+        services.AddSingleton<ITrayService, TrayService>();
+        services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<WindowManager>();
-
-        // Providers
-        services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();
-        services.AddSingleton<ITrackSourceProvider, LocalTrackSourceProvider>();
-
-        services.AddTransient<IYoutubeResolutionService, YoutubeResolutionService>();
-        services.AddTransient<IYoutubeStagingService, YoutubeStagingService>();
-        services.AddTransient<IYoutubeSearchService, YoutubeSearchService>();
-        services.AddTransient<IYoutubeLibraryIndexingService, YoutubeLibraryIndexingService>();
-        services.AddTransient<IYoutubeIndexingWorkflowService, YoutubeIndexingWorkflowService>();
-
-        services.AddSingleton<ITrackSourceProvider, YoutubeSourceProvider>();
-        services.AddSingleton<ITrackPlaybackResolver, TrackPlaybackResolver>();
-        services.AddSingleton<IPlaylistService, PlaylistService>();
-
-        //Player
-        services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
+        services.AddTransient<IEditMetadataService, EditMetadataService>();
+        services.AddSingleton<TrackActionService>();
 
         // View Models
         services.AddTransient<MainWindowViewModel>();
@@ -140,13 +81,11 @@ public static class ServiceRegistration
         services.AddTransient<LibraryEntryTracksViewModel>();
         services.AddTransient<ActivityCenterViewModel>();
         services.AddTransient<TrackInformationViewModel>();
-        services.AddTransient<Shell.ViewModel.IntegrityReportViewModel>();
 
         // UI
         services.AddTransient<MainWindow>();
         services.AddTransient<CompactPlayer>();
         services.AddTransient<TrayFlyoutWindow>();
-        services.AddTransient<IntegrityReportWindow>();
 
         services.AddTransient<SettingsWindow>();
         services.AddTransient<SettingsGeneralPage>();

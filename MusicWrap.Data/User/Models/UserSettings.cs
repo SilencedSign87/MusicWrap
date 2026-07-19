@@ -142,6 +142,7 @@ namespace MusicWrap.Data.User.Models
     {
         WasapiShared = 0,
         WasapiExclusive = 1,
+        Direct = 2 // for android
     }
     public enum StartupBehavior
     {

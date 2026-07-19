@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.UI.Services;
 using System.Collections.ObjectModel;
 using MusicWrap.Core.Services.Library;
-using MusicWrap.UI.Shared.Services;
+using MusicWrap.Core.Services.Search;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {

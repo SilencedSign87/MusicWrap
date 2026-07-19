@@ -2,8 +2,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Shell.Dialogs;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using MusicWrap.Core.Services.Playback;
@@ -14,6 +12,7 @@ using MusicWrap.Core.Saving;
 using CommunityToolkit.Mvvm.Messaging;
 using MusicWrap.Core.Messages;
 using MusicWrap.Core.Threading;
+using MusicWrap.Core.Services.Search;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Search;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;

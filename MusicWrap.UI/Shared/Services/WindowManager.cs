@@ -86,29 +86,6 @@ namespace MusicWrap.UI.Shared.Services
             newPlaylistWindow = null;
         }
 
-        private IntegrityReportWindow? _integrityReportWindow;
-
-        public void LaunchIntegrityReportWindow(LibraryIntegrityReport report)
-        {
-            // Close any existing instance
-            if (_integrityReportWindow is not null)
-            {
-                try { _integrityReportWindow.Close(); } catch { }
-                _integrityReportWindow = null;
-            }
-
-            var window = _serviceProvider.GetRequiredService<IntegrityReportWindow>();
-            window.LoadReport(report);
-
-            window.Closed += (_, _) => _integrityReportWindow = null;
-            _integrityReportWindow = window;
-
-            var currentWindow = CurrentWindow;
-            if (currentWindow is null)
-                window.Show();
-            else
-                WindowHelper.LauchFromParent(currentWindow, window, true);
-        }
         #endregion
         #region Cleanup
         public void TrackForCleanup(IDisposable disposable)
@@ -230,7 +207,7 @@ namespace MusicWrap.UI.Shared.Services
 
         private void CleanupForTray()
         {
-            var imageService = _serviceProvider.GetService<IImageService>();
+            var imageService = _serviceProvider.GetService<IwindowsImageService>();
             imageService?.ClearCache();
             var libraryService = _serviceProvider.GetService<ILibraryService>();
             libraryService?.ClearLibraryCache();
