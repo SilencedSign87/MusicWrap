@@ -11,7 +11,7 @@ namespace MusicWrap.Mobile
 
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            var shell = MauiProgram.Services.GetRequiredService<AppShell>();
+            var shell = MauiProgram.Services.GetRequiredService<MainHostTab>();
 
             return new Window(shell);
         }

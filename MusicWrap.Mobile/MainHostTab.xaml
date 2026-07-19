@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:MusicWrap.Mobile.Controls"
+             x:Name="MainHost"
+             x:Class="MusicWrap.Mobile.MainHostTab"
+             >
+
+    <Grid RowDefinitions="*,Auto,Auto">
+        <ContentView x:Name="ContentArea" Grid.Row="0" />
+
+        <Border Grid.Row="1" HeightRequest="72" Background="#1a1a1a">
+
+        </Border>
+
+        <Grid Grid.Row="2" HeightRequest="64" ColumnDefinitions="*,*,*,*,*">
+            <controls:AppTabButton 
+                Grid.Column="0"
+                x:Name="TabHome"
+                Glyph="&#xE80F;"
+                Text="Home"
+                IsSelected="True"
+                Command="{Binding Source={x:Reference MainHost}, Path=SelectTabCommand}"
+                CommandParameter="0"
+                />
+            <controls:AppTabButton 
+                Grid.Column="1"
+                x:Name="TabLibrary"
+                Glyph="&#xE8F1;"
+                Text="Library"
+                IsSelected="False"
+                Command="{Binding Source={x:Reference MainHost}, Path=SelectTabCommand}"
+                CommandParameter="1"
+                />
+            <controls:AppTabButton 
+                Grid.Column="2"
+                x:Name="TabPlaylists"
+                Glyph="&#xE90B;"
+                Text="Playlists"
+                IsSelected="False"
+                Command="{Binding Source={x:Reference MainHost}, Path=SelectTabCommand}"
+                CommandParameter="2"
+                />
+            <controls:AppTabButton 
+                Grid.Column="3"
+                x:Name="TabPlugins"
+                Glyph="&#xE74C;"
+                Text="Plugins"
+                IsSelected="False"
+                Command="{Binding Source={x:Reference MainHost}, Path=SelectTabCommand}"
+                CommandParameter="3"
+                />
+            <controls:AppTabButton 
+                Grid.Column="4"
+                x:Name="TabSettings"
+                Glyph="&#xE713;"
+                Text="Settings"
+                IsSelected="False"
+                Command="{Binding Source={x:Reference MainHost}, Path=SelectTabCommand}"
+                CommandParameter="4"
+                />
+        </Grid>
+
+    </Grid>
+
+</ContentPage>

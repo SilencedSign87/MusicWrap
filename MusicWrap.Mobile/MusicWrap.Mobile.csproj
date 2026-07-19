@@ -74,12 +74,35 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Features\" />
+		<ProjectReference Include="..\MusicWrap.Core\MusicWrap.Core.csproj" />
+		<ProjectReference Include="..\MusicWrap.Data\MusicWrap.Data.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\MusicWrap.Core\MusicWrap.Core.csproj" />
-		<ProjectReference Include="..\MusicWrap.Data\MusicWrap.Data.csproj" />
+	  <Compile Update="MainHostTab.xaml.cs">
+	    <DependentUpon>MainHostTab.xaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiXaml Update="Controls\AppTabButton.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Features\Home\views\HomePage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Features\Library\views\LibraryPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Features\Playlists\views\PlaylistsPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Features\Plugins\views\PluginsPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Features\Settings\views\SettingsPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	</ItemGroup>
 
 </Project>
