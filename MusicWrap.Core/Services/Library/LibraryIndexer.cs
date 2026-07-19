@@ -734,7 +734,7 @@ namespace MusicWrap.Core.Services.Library
             try
             {
                 using var image = Image.Load<Rgba32>(imageBytes);
-                image.Mutate(x => x.Resize(128, 128));
+                image.Mutate(x => x.Resize(64, 64));
 
                 var counts = new Dictionary<Rgba32, int>();
                 int validPixels = 0;
@@ -823,7 +823,15 @@ namespace MusicWrap.Core.Services.Library
         }
         private static bool IsValidColor(Rgba32 color)
         {
-            return color.A > 25;
+            if (color.A < 30)
+                return false;
+            var hsv = ColorSpaceConverter.ToHsv(color);
+
+            if (hsv.V > 0.96f && hsv.S < 0.4f) return true;
+
+            if (hsv.S < 0.08) return false;
+
+            return true;
         }
         private static string GetContrastColor(Rgba32 bg)
         {

@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Playback;
-using MusicWrap.Data.Library.Models;
+using ManagedBass;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System;

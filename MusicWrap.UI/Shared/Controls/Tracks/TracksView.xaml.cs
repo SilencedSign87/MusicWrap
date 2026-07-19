@@ -1,5 +1,5 @@
+using ManagedBass;
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Library.Models;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;

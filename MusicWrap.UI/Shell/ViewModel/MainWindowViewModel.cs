@@ -68,7 +68,7 @@ namespace MusicWrap.UI.Shell.ViewModel
             _ = NavigateAsync(_userSettings.MainWindowTab);
         }
 
-        private void _playerService_PlaybackStateChanged(object? sender, Data.Library.Models.PlaybackState e)
+        private void _playerService_PlaybackStateChanged(object? sender, ManagedBass.PlaybackState e)
         {
             OnPropertyChanged(nameof(PlayPauseIcon));
         }

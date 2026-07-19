@@ -1,13 +1,5 @@
-using System;
-
 namespace MusicWrap.Data.Library.Models
 {
-    public enum PlaybackState
-    {
-        Stopped = 0,
-        Playing = 1,
-        Paused = 2
-    }
     public enum RepeatMode
     {
         None = 0,

@@ -1,5 +1,7 @@
-using Un4seen.Bass;
+using ManagedBass;
+using ManagedBass.Mix;
 using MusicWrap.Data.Library.Models;
+
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Player;
@@ -100,9 +102,7 @@ namespace MusicWrap.Core.Services.Playback
         private const int MaxErrorCount = 5;
         private int _errorCount;
 
-        private int _mixerStream = 0;
-        private int _mixerSampleRate = 0;
-        private int _mixerChannels = 2;
+
 
         public int CurrentIndex => _queue.CurrentIndex;
 
@@ -112,10 +112,10 @@ namespace MusicWrap.Core.Services.Playback
 
         private int _preloadedStream = 0;
         private PlaybackQueueItem? _preloadedQueueItem;
-        private readonly SYNCPROC _preloadSync;
+        private readonly SyncProcedure _preloadSync;
 
         private PlaybackState _playbackState = PlaybackState.Stopped;
-        private readonly SYNCPROC _endCallback;
+        private readonly SyncProcedure _endCallback;
 
         private int _currentDeviceIndex = -1;
         public int CurrentDeviceIndex
@@ -337,7 +337,7 @@ namespace MusicWrap.Core.Services.Playback
                         break;
                     case StartupBehavior.RestorePlayback:
                         Seek(snapshot.PositionInSeconds);
-                        if (snapshot.PlaybackState == PlaybackState.Playing)
+                        if ((ManagedBass.PlaybackState)snapshot.PlaybackStateValue == ManagedBass.PlaybackState.Playing)
                         {
                             Play();
                         }
@@ -406,7 +406,7 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             }
 
-            _audioEngine.Play(_mixerStream, false);
+            _audioEngine.StartMixer();
             _trackedPositionUtc = DateTime.UtcNow;
             SetPlaybackState(PlaybackState.Playing);
 
@@ -418,7 +418,7 @@ namespace MusicWrap.Core.Services.Playback
             if (_currentStream == 0)
                 return;
 
-            _audioEngine.Pause(_mixerStream);
+            _audioEngine.PauseMixer();
             _trackedPositon = GetEffectivePosition();
             _dispatcher.Invoke(() => PositionChanged?.Invoke(this, _trackedPositon));
             SetPlaybackState(PlaybackState.Paused);
@@ -436,21 +436,14 @@ namespace MusicWrap.Core.Services.Playback
                 _trackedPositon = 0.0;
                 _trackedPositionUtc = DateTime.MinValue;
 
-                if (_currentStream != 0) _audioEngine.RemoveFromMixer(_currentStream);
+                if (_currentStream != 0) _audioEngine.DetachTrack(_currentStream);
                 FreeStream(_currentStream);
                 _currentStream = 0;
                 _currentTrackDuration = 0.0;
                 if (_preloadedStream != 0) FreeStream(_preloadedStream);
                 _preloadedStream = 0;
                 _preloadedQueueItem = null;
-                if (_mixerStream != 0)
-                {
-                    _audioEngine.Stop(_mixerStream);
-                    FreeStream(_mixerStream);
-                }
-                _mixerStream = 0;
-                _mixerSampleRate = 0;
-                _mixerChannels = 2;
+                _audioEngine.StopMixer();
             }
 
             EnqueueSave(SaveKind.Playback);
@@ -497,7 +490,7 @@ namespace MusicWrap.Core.Services.Playback
             var target = Math.Clamp(seconds, 0.0, Duration);
             var seekOk = _audioEngine.SetPosition(_currentStream, seconds);
 
-            if (!seekOk && _audioEngine.GetLastError() == Un4seen.Bass.BASSError.BASS_ERROR_POSITION)
+            if (!seekOk && _audioEngine.GetLastError() == ManagedBass.Errors.Position)
             {
                 if (RebuildCurrentStreamAt(target))
                 {
@@ -883,7 +876,6 @@ namespace MusicWrap.Core.Services.Playback
 
             if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
-                _mixerStream = 0;
                 StartPlaybackOfCurrent(shouldResume);
                 if (position > 0 && !shouldResume)
                 {
@@ -920,7 +912,6 @@ namespace MusicWrap.Core.Services.Playback
 
             if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
-                _mixerStream = 0;
                 StartPlaybackOfCurrent(shouldResume);
                 if (!shouldResume && position > 0) Seek(position);
             }
@@ -956,7 +947,6 @@ namespace MusicWrap.Core.Services.Playback
             }
             if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
-                _mixerStream = 0;
                 StartPlaybackOfCurrent(shouldResume);
                 if (position > 0 && !shouldResume)
                 {
@@ -973,7 +963,7 @@ namespace MusicWrap.Core.Services.Playback
         {
             return [.. _audioEngine
                 .GetOutputDevices()
-                .Select(d => (d.Index, d.Info.name))];
+                .Select(d => (d.Index, d.Info.Name))];
         }
 
         public PlaybackQueueSnapshot BuildPlaybackSnapshot()
@@ -984,7 +974,7 @@ namespace MusicWrap.Core.Services.Playback
                 CurrentIndex = CurrentIndex,
                 PlaybackOrderIndices = GetPlaybackOrder(),
                 PositionInSeconds = CurrentPosition,
-                PlaybackState = _playbackState
+                PlaybackStateValue = (int)_playbackState
             };
         }
 
@@ -1061,34 +1051,9 @@ namespace MusicWrap.Core.Services.Playback
             int requestedSampleRate = CurrentSampleRate > 0
                 ? CurrentSampleRate
                 : (track?.SamplingRate ?? 44100);
-            int requestedChannels = track?.Channels > 0 ? track.Channels : 2;
 
-            int effectiveSampleRate = _audioEngine.PrepareOutputForTrack(requestedSampleRate, requestedChannels);
-            int effectiveChannels = _audioEngine.CurrentOutputChannels > 0 ? _audioEngine.CurrentOutputChannels : requestedChannels;
-
-            bool shouldRecreateMixer = _mixerStream == 0
-                || _mixerSampleRate != effectiveSampleRate
-                || _mixerChannels != effectiveChannels;
-
-            // Initialize mixer on first playback
-            if (shouldRecreateMixer)
-            {
-                if (_mixerStream != 0)
-                {
-                    _audioEngine.Stop(_mixerStream);
-                    FreeStream(_mixerStream);
-                    _mixerStream = 0;
-                }
-
-                _mixerStream = _audioEngine.CreateMixer(effectiveSampleRate);
-                _audioEngine.AttachOutputToMixer(_mixerStream, effectiveSampleRate, effectiveChannels);
-                _mixerSampleRate = effectiveSampleRate;
-                _mixerChannels = effectiveChannels;
-
-                if (autoplay) _audioEngine.Play(_mixerStream, false);
-                else _audioEngine.Pause(_mixerStream);
-
-            }
+            // Preparar output para el sample rate deseado
+            _audioEngine.PrepareOutputForTrack(requestedSampleRate);
 
             int previousStream = _currentStream;
 
@@ -1135,17 +1100,27 @@ namespace MusicWrap.Core.Services.Playback
             // Remove previous stream if it exists
             if (previousStream != 0)
             {
-                _audioEngine.RemoveFromMixer(previousStream);
+                _audioEngine.DetachTrack(previousStream);
                 FreeStream(previousStream);
             }
 
+            // AudioEngine maneja mixer y SRC de máxima calidad
+            if (!_audioEngine.PrepareTrack(_currentStream, requestedSampleRate))
+            {
+                _logger.LogError("Failed to prepare track for playback");
+                _errorCount++;
+                if (_errorCount >= MaxErrorCount) Stop();
+                else Next();
+                return;
+            }
+
             _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
-            _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
             _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
             // Setup preload for next track
             double duration = _audioEngine.GetDuration(_currentStream);
             _currentTrackDuration = duration;
+            int effectiveSampleRate = _audioEngine.CurrentMixerSampleRate;
             const double preloadLeadSeconds = 0.75;
             if (duration > preloadLeadSeconds)
             {
@@ -1154,12 +1129,12 @@ namespace MusicWrap.Core.Services.Playback
 
             if (autoplay)
             {
-                _audioEngine.Play(_mixerStream, false);
+                _audioEngine.StartMixer();
                 SetPlaybackState(PlaybackState.Playing);
             }
             else
             {
-                _audioEngine.Pause(_mixerStream);
+                _audioEngine.PauseMixer();
                 SetPlaybackState(PlaybackState.Paused);
             }
 
@@ -1239,11 +1214,11 @@ namespace MusicWrap.Core.Services.Playback
                     _preloadedStream = 0;
                     _preloadedQueueItem = null;
 
-                    _audioEngine.RemoveFromMixer(previousStream);
+                    _audioEngine.DetachTrack(previousStream);
                     FreeStream(previousStream);
 
                     _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
-                    _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
+                    _audioEngine.AttachTrackToMixer(_currentStream);
                     _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
                     double duration = _audioEngine.GetDuration(_currentStream);
@@ -1494,7 +1469,7 @@ namespace MusicWrap.Core.Services.Playback
             bool wasPlaying = IsPlaying;
             if (_currentStream != 0)
             {
-                _audioEngine.RemoveFromMixer(_currentStream);
+                _audioEngine.DetachTrack(_currentStream);
                 FreeStream(_currentStream);
                 _currentStream = 0;
             }
@@ -1508,7 +1483,7 @@ namespace MusicWrap.Core.Services.Playback
 
             _currentStream = newStream;
             _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
-            _audioEngine.AddToMixer(_mixerStream, _currentStream, BASSFlag.BASS_MIXER_CHAN_NORAMPIN);
+            _audioEngine.AttachTrackToMixer(_currentStream);
             _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
             double duration = _audioEngine.GetDuration(_currentStream);
             _currentTrackDuration = duration;
@@ -1520,9 +1495,9 @@ namespace MusicWrap.Core.Services.Playback
             var target = Math.Clamp(targetSeconds, 0.0, Duration);
             bool seekOk = _audioEngine.SetPosition(_currentStream, target);
             if (wasPlaying)
-                _audioEngine.Play(_mixerStream, false);
+                _audioEngine.StartMixer();
             else
-                _audioEngine.Pause(_mixerStream);
+                _audioEngine.PauseMixer();
             if (!seekOk)
                 return false;
             _trackedPositon = target;
@@ -1567,7 +1542,6 @@ namespace MusicWrap.Core.Services.Playback
             _queue.CurrentChanged -= QueueOnCurrentChanged;
 
             Stop(true);
-            FreeStream(_mixerStream);
 
             lock (_waveformCacheLock)
             {

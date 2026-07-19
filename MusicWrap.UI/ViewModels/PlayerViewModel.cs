@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using System.Windows;
 using MusicWrap.UI.Services;
 using MusicWrap.Core.Services.Playback;
+using ManagedBass;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Data.Helpers;

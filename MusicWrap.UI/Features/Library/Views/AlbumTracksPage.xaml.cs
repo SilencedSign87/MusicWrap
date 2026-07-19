@@ -3,7 +3,7 @@ using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Features.Library.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
-using MusicWrap.Data.Library.Models;
+using ManagedBass;
 using System.IO;
 using System.Diagnostics;
 using MusicWrap.Core.Services.Playback;

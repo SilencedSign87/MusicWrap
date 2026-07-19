@@ -197,11 +197,11 @@ namespace MusicWrap.UI.Controls
                 UpdateFormattedDuration();
             });
         }
-        private void OnServicePlaybackStateChanged(object? sender, Data.Library.Models.PlaybackState state)
+        private void OnServicePlaybackStateChanged(object? sender, ManagedBass.PlaybackState state)
         {
             Dispatcher.Invoke(() =>
             {
-                _isPlaying = state == Data.Library.Models.PlaybackState.Playing;
+                _isPlaying = state == ManagedBass.PlaybackState.Playing;
 
                 if (_isPlaying)
                     SyncBaseline();
