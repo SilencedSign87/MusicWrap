@@ -33,7 +33,7 @@ namespace MusicWrap.Core.Saving
         private readonly IPlaybackRepository _playbackRepo;
         private readonly IUserSettingsRepository _settingsRepo;
         private readonly IPlaylistRepository _playlistRepo;
-        private readonly ILibraryService _libraryCache;
+        private readonly ILibraryService _libraryService;
 
         // Entities
         private readonly MusicLibrary _library;
@@ -65,7 +65,7 @@ namespace MusicWrap.Core.Saving
             _playbackRepo = playbackRepo;
             _settingsRepo = settingsRepo;
             _playlistRepo = playlistRepo;
-            _libraryCache = libraryCache;
+            _libraryService = libraryCache;
             _library = library;
             _userSettings = userSettings;
             _playlistData = playlistData;
@@ -161,7 +161,7 @@ namespace MusicWrap.Core.Saving
             try
             {
                 if ((kinds & SaveKind.Cache) != 0)
-                    try { _libraryCache.SaveToDisk(); } catch { }
+                    try { _libraryService.SaveToDisk(); } catch { }
                 if ((kinds & SaveKind.Library) != 0)
                     try { _libraryRepo.Save(_library); } catch { }
                 if ((kinds & SaveKind.Playback) != 0)

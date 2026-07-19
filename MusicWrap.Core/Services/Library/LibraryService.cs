@@ -1,11 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using MessagePack;
+using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Messages;
+using MusicWrap.Core.Queue;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.Helpers;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.Playlist.Models;
 using MusicWrap.Data.User.Models;
 using System.IO;
 
@@ -14,6 +17,7 @@ namespace MusicWrap.Core.Services.Library
     public interface ILibraryService
     {
         Track? GetTrackById(int trackId);
+        void ApplyVerification(TrackVerificationResult result);
         IReadOnlyList<Track> GetTrackById(IEnumerable<int> trackIds);
         Album? GetAlbumById(int albumId);
         List<Genre> GetGenreById(List<int> genreIds);
@@ -57,6 +61,7 @@ namespace MusicWrap.Core.Services.Library
         private readonly MusicLibrary _library;
         private readonly UserSettings _userSettings;
         private readonly IMessenger _messenger;
+        private readonly IServiceProvider _serviceProvider;
 
         private LibraryEntry[]? _trackArtistCache;
         private LibraryEntry[]? _albumArtistCache;
@@ -80,12 +85,13 @@ namespace MusicWrap.Core.Services.Library
 
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
-        public LibraryService(MusicLibrary library, UserSettings userSettings, ISearchQueryProvider searchQueryProvider, IMessenger messenger)
+        public LibraryService(MusicLibrary library, UserSettings userSettings, ISearchQueryProvider searchQueryProvider, IMessenger messenger, IServiceProvider serviceProvider)
         {
             _library = library;
             _userSettings = userSettings;
             _searchQueryProvider = searchQueryProvider;
             _messenger = messenger;
+            _serviceProvider = serviceProvider;
             BuildIndexes();
             Initialize();
             _messenger.Register<LibraryChangedMessage>(this, OnLibraryChanged);
@@ -135,6 +141,25 @@ namespace MusicWrap.Core.Services.Library
             }
         }
         #region Interface Methods
+
+        public void ApplyVerification(TrackVerificationResult result)
+        {
+            foreach (var (track, newpath) in result.RelocatedTracks)
+            {
+                track.Path = newpath;
+            }
+
+            _library.Tracks.RemoveAll(t => result.MissingTracks.Any(mt => mt.Id == t.Id));
+
+            CleanupOrphans();
+
+            CleanupExternalReferences();
+
+            BuildIndexes();
+            BuildCoverLookUp();
+
+            _messenger.Send(new LibraryChangedMessage(LibraryChangeType.FullReload));
+        }
 
         public string GetArtistNamesForAlbum(int albumId)
         {
@@ -844,6 +869,56 @@ namespace MusicWrap.Core.Services.Library
                     ? string.Join(", ", t.ArtistIds.Where(id => _artistNameById.ContainsKey(id)).Select(id => _artistNameById[id]))
                     : (_artistNamesByAlbumId.TryGetValue(t.AlbumId, out var a) ? a : _unknownArtist)) ?? _unknownArtist
                     );
+        }
+
+        private void CleanupOrphans()
+        {
+            // albums without tracks
+            var validAlbumIds = _library.Tracks.Select(t => t.AlbumId).ToHashSet();
+            _library.Albums.RemoveAll(a => !validAlbumIds.Contains(a.Id));
+
+            // artists without albums or tracks
+            var validArtistIds = new HashSet<int>();
+            foreach (var album in _library.Albums)
+                foreach (var id in album.ArtistIds)
+                    validArtistIds.Add(id);
+            foreach (var track in _library.Tracks)
+                foreach (var id in track.ArtistIds)
+                    validArtistIds.Add(id);
+            _library.Artists.RemoveAll(a => !validArtistIds.Contains(a.Id));
+
+            //genres without tracks
+            var validGenreIds = _library.Tracks.SelectMany(t => t.GenreIds).ToHashSet();
+            _library.Genres.RemoveAll(g => !validGenreIds.Contains(g.Id));
+
+            //cover assets without albums or tracks
+            var validCoverIds = new HashSet<int>();
+            foreach (var album in _library.Albums)
+                if (album.CoverId != 0) validCoverIds.Add(album.CoverId);
+            foreach (var track in _library.Tracks)
+                if (track.CoverId != 0) validCoverIds.Add(track.CoverId);
+            _library.CoverAssets.RemoveAll(c => !validCoverIds.Contains(c.Id));
+        }
+
+        private void CleanupExternalReferences()
+        {
+            var _playlistData = _serviceProvider.GetRequiredService<PlaylistData>();
+            var _queueManager = _serviceProvider.GetRequiredService<IQueueManager>();
+
+            _playlistData.Playlists.ForEach(p =>
+                p.Items.RemoveAll(i => !_trackById.ContainsKey(i.TrackId)));
+
+            var toRemove = new List<int>();
+            for (int i = 0; i < _queueManager.Items.Count; i++)
+            {
+                var item = _queueManager.Items[i];
+                if (item.SourceType == QueueItemSourceType.LocalFile && item.LibraryId is not null
+                    && !_trackById.ContainsKey(item.LibraryId.Value))
+                {
+                    toRemove.Add(i);
+                }
+            }
+            _queueManager.Remove(toRemove);
         }
 
         private void RebuildAllEntryCaches()
