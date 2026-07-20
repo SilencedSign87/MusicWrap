@@ -11,7 +11,7 @@ using System.Text;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {
-    public partial class NowPlayingViewModel : ObservableObject
+    public partial class NowPlayingViewModel : ObservableObject, IDisposable
     {
         [ObservableProperty]
         private string trackTitle = "No track playing";
@@ -27,6 +27,8 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private int _currentTrackId;
         private int _currentAlbumId;
         private int[] _currentArtistIds = [];
+
+        private bool _disposed;
 
         public ObservableCollection<LinkItem> TrackArtists { get; } = [];
         public ObservableCollection<LinkItem> TrackAlbumArtists { get; } = [];
@@ -116,6 +118,13 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             TrackImagePath = null;
             TrackArtists.Clear();
             TrackAlbumArtists.Clear();
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            _musicPlayerService.TrackChanged -= OnTrackChanged;
         }
     }
 }

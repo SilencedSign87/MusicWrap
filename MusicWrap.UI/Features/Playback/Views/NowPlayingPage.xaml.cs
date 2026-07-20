@@ -24,11 +24,6 @@ namespace MusicWrap.UI.Features.Playback.Views
             InitializeComponent();
             DataContext = viewmodel;
         }
-
-        private void OptionsButtons_Click(object sender, RoutedEventArgs e)
-        {
-            OptionsPopup.IsOpen = !OptionsPopup.IsOpen;
-        }
     }
 }
 
