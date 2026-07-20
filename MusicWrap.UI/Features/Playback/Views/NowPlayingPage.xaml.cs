@@ -1,3 +1,4 @@
+using MusicWrap.UI.Features.Playback.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -18,9 +19,15 @@ namespace MusicWrap.UI.Features.Playback.Views
     /// </summary>
     public partial class NowPlayingPage : UserControl
     {
-        public NowPlayingPage()
+        public NowPlayingPage(NowPlayingViewModel viewmodel)
         {
             InitializeComponent();
+            DataContext = viewmodel;
+        }
+
+        private void OptionsButtons_Click(object sender, RoutedEventArgs e)
+        {
+            OptionsPopup.IsOpen = !OptionsPopup.IsOpen;
         }
     }
 }

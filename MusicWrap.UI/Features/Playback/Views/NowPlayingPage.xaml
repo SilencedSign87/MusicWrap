@@ -4,21 +4,87 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playback.ViewModels"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition  MinWidth="0" MaxWidth="300" />
-            <ColumnDefinition Width="8" />
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        <GridSplitter
-            Grid.Column="1"
-            />
-        <Border Grid.Column="2" Background="{StaticResource BackgroundSmoke}">
+             d:DataContext="{d:DesignInstance Type=vm:NowPlayingViewModel}"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="RootNowPlaying"
+             Foreground="{Binding ForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
+             >
+    <UserControl.Background>
+        <ImageBrush 
+            ImageSource="{Binding TrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}" 
+            RenderOptions.BitmapScalingMode="HighQuality"
+            Stretch="UniformToFill"/>
+    </UserControl.Background>
+
+    <Grid ColumnDefinitions="450,*" RowDefinitions="*,Auto" HorizontalAlignment="Center" Width="Auto">
+        <!-- Main View -->
+        <Border Grid.Column="0" Grid.Row="0">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border CornerRadius="16" Width="400" Height="400" Margin="0,0,0,16" BorderThickness="1" BorderBrush="{Binding Foreground , ElementName=RootNowPlaying}" >
+                    <Border.Background>
+                        <ImageBrush
+                            ImageSource="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:400}"
+                            />
+                    </Border.Background>
+                    <Border.Effect>
+                        <DropShadowEffect
+                            BlurRadius="16"
+                            Direction="270"
+                            Opacity="0.5"
+                            />
+                    </Border.Effect>
+                </Border>
+                <Grid>
+
+                    <StackPanel Orientation="Vertical">
+                        <TextBlock Text="{Binding TrackTitle}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
+                        <Button Style="{StaticResource TransparentButton}" Foreground="{Binding Foreground, ElementName=RootNowPlaying}" HorizontalAlignment="Center" Padding="0">
+                            <TextBlock Text="{Binding TrackAlbum}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,8"/>
+                        </Button>
+                        <ItemsControl ItemsSource="{Binding TrackArtists}" HorizontalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button
+                                        Style="{StaticResource TransparentButton}"
+                                        Foreground="{Binding Foreground, ElementName=RootNowPlaying}"
+                                        Content="{Binding Name}"
+                                        FontSize="12"
+                                        Padding="0"
+                                        Margin="0,0,2,0"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+
+
+                        </ItemsControl>
+                    </StackPanel>
+                    <Menu HorizontalAlignment="Right" VerticalAlignment="Top">
+                        <MenuItem Icon="{ex:Icon Glyph=E712}" Foreground="{Binding Foreground, ElementName=RootNowPlaying}">
+                            <Separator/>
+                            <MenuItem Header="Lyrics" Foreground="White" IsCheckable="True"/>
+                            <MenuItem Header="Visualizer" Foreground="White" IsCheckable="True"/>
+                        </MenuItem>
+                        
+                    </Menu>
+                </Grid>
+            </StackPanel>
+        </Border>
+        <!-- Lyrics View -->
+        <Border Grid.Column="1" Grid.Row="0">
 
         </Border>
+        <!-- Visualizer -->
+        <Border Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2">
 
+        </Border>
     </Grid>
 </UserControl>
 

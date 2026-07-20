@@ -36,14 +36,6 @@
                     TextTrimming="CharacterEllipsis"
                     TextWrapping="NoWrap"
                     />
-                    <Button
-                    Style="{StaticResource LinkButtonStyle}"
-                    Visibility="{Binding AlbumTitle, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"
-                    Content="{Binding AlbumTitle}"
-                    FontSize="12"
-                    HorizontalAlignment="Left"
-                    Margin="0,2"
-                    />
                     <ItemsControl ItemsSource="{Binding Artists}" IsTabStop="False" >
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -56,13 +48,41 @@
                                 Style="{StaticResource LinkButtonStyle}"
                                 Content="{Binding Name}"
                                 FontSize="12"
+                                    Margin="1,0"
                                 Command="{Binding DataContext.NavigateToArtistCommand,RelativeSource={RelativeSource AncestorType=UserControl}}"
                                 CommandParameter="{Binding Id}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <Separator Margin="0,4,0,2"/>
+                    <Button
+                    Style="{StaticResource LinkButtonStyle}"
+                    Visibility="{Binding AlbumTitle, Converter={StaticResource StringNotEmptyToVisibilityConverter}}"
+                    Content="{Binding AlbumTitle}"
+                    FontSize="14"
+                    HorizontalAlignment="Left"
+                    Margin="0,2"
+                    />
+                    <ItemsControl ItemsSource="{Binding AlbumArtists}" IsTabStop="False" >
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button
+                                    Style="{StaticResource LinkButtonStyle}"
+                                    Content="{Binding Name}"
+                                    FontSize="12"
+                                    Margin="1,0"
+                                    Command="{Binding DataContext.NavigateToArtistCommand,RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding Id}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                     <!-- Duration and track list -->
-                    <TextBlock FontSize="11" Opacity="0.6" Margin="0,2">
+                    <TextBlock FontSize="11" Opacity="0.6" Margin="0,6,0,2">
                      <Run Text="{Binding Duration}"/>
                     <Run Text=" • "/>
                     <Run Text="{Binding TrackNumber}"/>

@@ -81,6 +81,7 @@ public static class ServiceRegistration
         services.AddTransient<LibraryEntryTracksViewModel>();
         services.AddTransient<ActivityCenterViewModel>();
         services.AddTransient<TrackInformationViewModel>();
+        services.AddTransient<NowPlayingViewModel>();
 
         // UI
         services.AddTransient<MainWindow>();

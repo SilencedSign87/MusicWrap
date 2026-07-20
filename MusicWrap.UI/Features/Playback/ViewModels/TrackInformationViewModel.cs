@@ -34,6 +34,7 @@ namespace MusicWrap.UI.ViewModels
         private int _currentTrackId;
         private int _currentAlbumId;
         private int[] _currentArtistIds = [];
+        private int[] _currentAlbumArtistIds = [];
         private int[] _currentGenreIds = [];
 
         // view properties
@@ -91,6 +92,7 @@ namespace MusicWrap.UI.ViewModels
 
         // clickable links
         public ObservableCollection<LinkItem> Artists { get; } = [];
+        public ObservableCollection<LinkItem> AlbumArtists { get; } = [];
         public ObservableCollection<LinkItem> Genres { get; } = [];
 
 
@@ -196,7 +198,15 @@ namespace MusicWrap.UI.ViewModels
                 album = _libraryService.GetAlbumById(track.AlbumId);
                 AlbumTitle = album?.Title ?? "Unknown Album";
                 Year = album?.Year > 0 ? album.Year.ToString() : "";
-            }else
+
+                var albumArtist = _libraryService.GetArtistNamesByIds(album?.ArtistIds ?? []);
+                AlbumArtists.Clear();
+                foreach (var artist in albumArtist)
+                {
+                    AlbumArtists.Add(new LinkItem(artist, 0, LinkType.Artist));
+                }
+            }
+            else
             {
                 _currentAlbumId = 0;
                 AlbumTitle = "";
@@ -278,6 +288,7 @@ namespace MusicWrap.UI.ViewModels
             _currentTrackId = 0;
             _currentAlbumId = 0;
             _currentArtistIds = [];
+            _currentAlbumArtistIds = [];
             _currentGenreIds = [];
             TrackTitle = string.Empty;
             TrackImagePath = null;
@@ -301,6 +312,7 @@ namespace MusicWrap.UI.ViewModels
             SourceUri = null;
             IsFromYouTube = false;
             Artists.Clear();
+            AlbumArtists.Clear();
             Genres.Clear();
             _artworkPath = string.Empty;
         }
