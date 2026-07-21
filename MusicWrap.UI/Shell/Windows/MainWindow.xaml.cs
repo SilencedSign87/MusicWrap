@@ -77,6 +77,15 @@ namespace MusicWrap.UI.Shell.Windows
             Closing -= MainWindow_Closing;
             Closed -= MainWindow_Closed;
         }
+        private void MainWindowRoot_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.F11)
+            {
+                _windowManager.SwitchToFullScreenPlayer();
+                e.Handled = true;
+            }
+
+        }
 
         private void ReleaseResources()
         {
@@ -87,6 +96,7 @@ namespace MusicWrap.UI.Shell.Windows
             GC.Collect();
             GC.WaitForPendingFinalizers();
         }
+
     }
 }
 

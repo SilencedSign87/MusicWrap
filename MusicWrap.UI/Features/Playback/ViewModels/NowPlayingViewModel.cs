@@ -123,6 +123,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         public void Dispose()
         {
             if (_disposed) return;
+            _disposed = true;
 
             _musicPlayerService.TrackChanged -= OnTrackChanged;
         }

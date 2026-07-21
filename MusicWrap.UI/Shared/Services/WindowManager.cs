@@ -97,6 +97,7 @@ namespace MusicWrap.UI.Shared.Services
         #region Window Switching
 
         public void SwitchToCompactPlayer() => ShowCompactPlayer();
+        public void SwitchToFullScreenPlayer() => ShowFullScreenPlayer();
         public void SwitchToMainPlayer() => ShowMainPlayer();
 
         #endregion
@@ -104,7 +105,20 @@ namespace MusicWrap.UI.Shared.Services
         public void ShowOrRestoreCurrentWindow()
         {
             if (!TryShowWindow(CurrentWindow))
-                ShowMainPlayer();
+            {
+                switch (_userSettings.LastWindowMode)
+                {
+                    case LastWindowMode.FullScreen:
+                        ShowFullScreenPlayer();
+                        break;
+                    case LastWindowMode.CompactPlayer:
+                        ShowCompactPlayer();
+                        break;
+                    default:
+                        ShowMainPlayer();
+                        break;
+                }
+            }
         }
         public void RequestShutdown()
         {
@@ -151,6 +165,23 @@ namespace MusicWrap.UI.Shared.Services
             CurrentWindow = player;
             CurrentWindowChanged?.Invoke(player);
             _userSettings.LastWindowMode = LastWindowMode.CompactPlayer;
+        }
+        private void ShowFullScreenPlayer()
+        {
+            if (CurrentWindow is FullScreenWindow existing && TryShowWindow(existing))
+                return;
+
+            if (IsWindowUsable(CurrentWindow))
+                CloseForWindowTransition(CurrentWindow!);
+
+            var fullscreen = _serviceProvider.GetRequiredService<FullScreenWindow>();
+
+            TrackCurrentWindow(fullscreen);
+
+            fullscreen.Show();
+            CurrentWindow = fullscreen;
+            CurrentWindowChanged?.Invoke(fullscreen);
+            _userSettings.LastWindowMode = LastWindowMode.FullScreen;
         }
         private static bool TryShowWindow(Window? window)
         {

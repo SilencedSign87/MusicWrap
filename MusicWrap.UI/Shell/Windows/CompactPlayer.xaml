@@ -94,16 +94,16 @@
                     Height="32"
                     Width="128">
                     <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" Click="HandleToggleAllwayOnTop">
-                        <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="13" />
+                        <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="14" />
                     </Button>
                     <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" Click="MinimizeClick" ToolTip="Minimize">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE921;" FontSize="10" />
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE921;" FontSize="12" />
                     </Button>
                     <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" ToolTip="Open main player" Click="HandleOpenMainPlayer">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE92D;" FontSize="10" />
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEE47;" FontSize="14" />
                     </Button>
                     <Button Style="{StaticResource TitlebarCloseButton}" Width="32" Height="32" Click="HandleCloseApp" ToolTip="Close">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BB;" FontSize="10" />
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BB;" FontSize="12" />
                     </Button>
                 </StackPanel>
             </Grid>

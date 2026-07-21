@@ -40,7 +40,7 @@ namespace MusicWrap.Core.Services.Library
         private const int SmallCoverSize = 64;
         private const int MediumCoverSize = 180;
         private const int LargeCoverSize = 360;
-        private const int BlurCoverSize = 512;
+        private const int BlurCoverSize = 1080;
 
         private readonly MusicLibrary _library;
         private readonly object _lock = new();

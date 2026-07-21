@@ -107,6 +107,11 @@ namespace MusicWrap.UI.Shell.ViewModel
             _windowManager.SwitchToCompactPlayer();
         }
         [RelayCommand]
+        private void showFullScreen()
+        {
+            _windowManager.SwitchToFullScreenPlayer();
+        }
+        [RelayCommand]
         private void ToggleSidebar()
         {
             IsSidePanelVisible = !IsSidePanelVisible;

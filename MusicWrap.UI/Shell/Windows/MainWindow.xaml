@@ -23,6 +23,7 @@
         d:Background="#000000"
         ResizeMode="CanResize"
         ThemeMode="Dark"
+        KeyDown="MainWindowRoot_KeyDown"
         d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
         >
     <WindowChrome.WindowChrome>
@@ -108,6 +109,9 @@
                     </Button>
                     <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding showMiniplayerCommand}" ToolTip="MiniPlayer">
                         <TextBlock Text="&#xee49;" FontFamily="Segoe Fluent Icons" FontSize="16" />
+                    </Button>
+                    <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding showFullScreenCommand}" ToolTip="Fullscreen">
+                        <TextBlock Text="&#xE740;" FontFamily="Segoe Fluent Icons" FontSize="16"/>
                     </Button>
                     <Border Margin="0,4" Width="1" Background="#333"/>
                 </StackPanel>

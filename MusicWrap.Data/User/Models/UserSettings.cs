@@ -125,6 +125,7 @@ namespace MusicWrap.Data.User.Models
     {
         MainPlayer = 0,
         CompactPlayer = 1,
+        FullScreen = 2
     }
 
     public enum SampleRatePreference

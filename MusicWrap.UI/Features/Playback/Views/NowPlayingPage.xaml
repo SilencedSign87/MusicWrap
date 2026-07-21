@@ -19,8 +19,8 @@
             RenderOptions.BitmapScalingMode="HighQuality"
             Stretch="UniformToFill"/>
     </UserControl.Background>
-
-    <Grid ColumnDefinitions="450,*" RowDefinitions="*,Auto" HorizontalAlignment="Center" Width="Auto">
+    
+    <Grid ColumnDefinitions="500,*" RowDefinitions="*,Auto" HorizontalAlignment="Center" Width="Auto">
         <!-- Main View -->
         <Border Grid.Column="0" Grid.Row="0">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -38,13 +38,20 @@
                             Color="{Binding Foreground, ElementName=RootNowPlaying}"
                             />
                     </Border.Effect>
+                    <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="Hand">
+                        <MenuItem Icon="{ex:Icon Glyph=E712}" Foreground="{Binding Foreground, ElementName=RootNowPlaying}">
+                            <Separator/>
+                            <MenuItem Header="Lyrics" Foreground="White" IsCheckable="True"/>
+                            <MenuItem Header="Visualizer" Foreground="White" IsCheckable="True"/>
+                        </MenuItem>
+                    </Menu>
                 </Border>
                 <Grid>
 
                     <StackPanel Orientation="Vertical">
-                        <TextBlock Text="{Binding TrackTitle}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding TrackTitle}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
                         <Button Style="{StaticResource TransparentButton}" Foreground="{Binding Foreground, ElementName=RootNowPlaying}" HorizontalAlignment="Center" Padding="0">
-                            <TextBlock Text="{Binding TrackAlbum}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,8"/>
+                            <TextBlock Text="{Binding TrackAlbum}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,8" TextWrapping="Wrap" TextAlignment="Center"/>
                         </Button>
                         <ItemsControl ItemsSource="{Binding TrackArtists}" HorizontalAlignment="Center">
                             <ItemsControl.ItemsPanel>
@@ -67,14 +74,6 @@
 
                         </ItemsControl>
                     </StackPanel>
-                    <Menu HorizontalAlignment="Right" VerticalAlignment="Top">
-                        <MenuItem Icon="{ex:Icon Glyph=E712}" Foreground="{Binding Foreground, ElementName=RootNowPlaying}">
-                            <Separator/>
-                            <MenuItem Header="Lyrics" Foreground="White" IsCheckable="True"/>
-                            <MenuItem Header="Visualizer" Foreground="White" IsCheckable="True"/>
-                        </MenuItem>
-                        
-                    </Menu>
                 </Grid>
             </StackPanel>
         </Border>

@@ -82,11 +82,13 @@ public static class ServiceRegistration
         services.AddTransient<ActivityCenterViewModel>();
         services.AddTransient<TrackInformationViewModel>();
         services.AddTransient<NowPlayingViewModel>();
+        services.AddTransient<FullscreenWindowViewModel>();
 
         // UI
         services.AddTransient<MainWindow>();
         services.AddTransient<CompactPlayer>();
         services.AddTransient<TrayFlyoutWindow>();
+        services.AddTransient<FullScreenWindow>();
 
         services.AddTransient<SettingsWindow>();
         services.AddTransient<SettingsGeneralPage>();
