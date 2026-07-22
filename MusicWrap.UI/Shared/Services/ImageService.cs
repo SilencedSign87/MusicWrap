@@ -11,14 +11,11 @@ namespace MusicWrap.UI.Services
 {
     public interface IwindowsImageService : IImageService
     {
-        //string? ResolvePath(string? fileName, ImageVariant variant);
-        //string? ResolvePathForSize(string? fileName, int requestedSize, bool preferOriginal = false);
         BitmapImage? Load(string? fileName, ImageVariant variant, int decodeSize = 0);
         Task<BitmapImage?> LoadAsync(string? fileName, ImageVariant variant, int decodeSize = 0, CancellationToken ct = default);
         BitmapImage? LoadForSize(string? fileName, int requestedSize, bool preferOriginal = false);
         Task<BitmapImage?> LoadForSizeAsync(string? fileName, int requestedSize, bool preferOriginal = false, CancellationToken ct = default);
         BitmapImage? GetDefaultImage(int size = 64, ImageVariant variant = ImageVariant.Original);
-        //void ClearCache(ImageVariant? variant = null);
     }
     public class ImageService : IwindowsImageService
     {
