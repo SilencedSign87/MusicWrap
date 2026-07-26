@@ -43,36 +43,36 @@
                 <TextBlock Text="{Binding AlbumTitle}" 
                            FontSize="16" 
                            FontWeight="Bold"
-                           Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                           Foreground="{Binding Foreground, ElementName=RootAlbumTracksPage}"
                            TextTrimming="CharacterEllipsis"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock FontSize="12" 
                            VerticalAlignment="Center"
-                       Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                           Foreground="{Binding HighlightColor, Converter={StaticResource HexToBrushConverter} }"
                        Opacity="0.7">
                     <Run Text="{Binding AlbumArtists}"/>
                     <Run Text=" • "/>
                     <Run Text="{Binding AlbumYear}"/>
                 </TextBlock>
                 <Button Width="26" Height="26" Padding="0" VerticalAlignment="Top"
-                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                        Foreground="{Binding Foreground, ElementName=RootAlbumTracksPage}"
                         Background="Transparent"
                         BorderThickness="0"
                         Margin="8,0,0,0"
                         ToolTip="{Binding AlbumPlayTooltip}" 
                         Click="PlayPauseAlbum_Click"
                         >
-                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="{Binding AlbumPlayGlyph}"/>
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding AlbumPlayGlyph}"/>
                 </Button>
                 <Button
                         Width="26" Height="26" Padding="0" VerticalAlignment="Top"
-                        Foreground="{Binding ForegroundColor, Converter={StaticResource HexToBrushConverter}}"
+                        Foreground="{Binding Foreground, ElementName=RootAlbumTracksPage}"
                         Background="Transparent"
                         BorderThickness="0"
                         Click="ShuffleButton_Click"
                     >
-                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xE8B1;"/>
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
                 </Button>
             </StackPanel>
         </StackPanel>

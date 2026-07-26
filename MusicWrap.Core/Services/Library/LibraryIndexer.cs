@@ -1,13 +1,5 @@
-﻿using MusicWrap.Data.Infrastructure;
+﻿using MusicWrap.Core.Services.Images;
 using MusicWrap.Data.Library.Models;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.ColorSpaces;
-using SixLabors.ImageSharp.ColorSpaces.Conversion;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using System.IO;
-using TagLib;
 
 namespace MusicWrap.Core.Services.Library
 {
@@ -46,10 +38,12 @@ namespace MusicWrap.Core.Services.Library
         private readonly object _lock = new();
 
         private readonly Dictionary<(long Size, long Ticks), Track> _fingerprint;
+        private readonly ImageProcessor _imageProcessor;
 
-        public LibraryIndexer(MusicLibrary library)
+        public LibraryIndexer(MusicLibrary library, ImageProcessor imageProcessor)
         {
             _library = library;
+            _imageProcessor = imageProcessor;
 
             _fingerprint = new Dictionary<(long Size, long Ticks), Track>(_library.Tracks.Count);
             lock (_lock)
@@ -486,33 +480,26 @@ namespace MusicWrap.Core.Services.Library
 
                 if (existing is not null) return existing.Id;
 
-                var ext = mimeType switch
-                {
-                    "image/jpeg" or "image/jpg" => ".jpg",
-                    "image/png" => ".png",
-                    "image/webp" => ".webp",
-                    _ => ".jpeg"
-                };
-
-                baseFileName = fingerprint.GetHashCode().ToString("X8") + ext;
+                baseFileName = fingerprint.GetHashCode().ToString("X8") + ".png"; // always save as PNG for consistency
             }
 
-            var variants = EnsureImageVariants(imageBytes, baseFileName);
+            var colors = _imageProcessor.ProcessPipeline(imageBytes, baseFileName);
 
             lock (_lock)
             {
-                var existing = _library.CoverAssets
-                    .FirstOrDefault(c => string.Equals(c.Fingerprint, fingerprint, StringComparison.Ordinal));
+                var existing = _library.CoverAssets.FirstOrDefault(c => string.Equals(c.Fingerprint, fingerprint, StringComparison.Ordinal));
 
                 if (existing is not null) return existing.Id;
 
                 var asset = new CoverAsset
                 {
                     Id = _library.GenerateCoverId(),
-                    FileName = variants.MainFileName,
+                    FileName = baseFileName,
                     Fingerprint = fingerprint,
-                    DominantColorHex = variants.DominantColorHex,
-                    ForegroundColorHex = variants.ForegroundColorHex,
+                    DominantColorHex = colors.DominantColorHex,
+                    DominantForegroundHex = colors.DominantForegroundHex,
+                    HighlightColorHex = colors.HighlightColorHex,
+                    HighlightForegroundHex = colors.HighlightForegroundHex
                 };
 
                 _library.CoverAssets.Add(asset);
@@ -552,305 +539,6 @@ namespace MusicWrap.Core.Services.Library
                 return _fingerprint.TryGetValue((fileSize, ticks), out var t) ? t : null;
 
             }
-        }
-
-        private ImageVariantsResult EnsureImageVariants(byte[] imageBytes, string baseFileName)
-        {
-            var result = new ImageVariantsResult
-            {
-                MainFileName = baseFileName,
-                SmallFileName = baseFileName,
-                MediumFileName = baseFileName,
-                LargeFileName = baseFileName,
-                BlurFileName = baseFileName
-            };
-
-            try
-            {
-                Directory.CreateDirectory(MusicWrapDirectories.CoverDirectory);
-                Directory.CreateDirectory(MusicWrapDirectories.SmallImageDirectory);
-                Directory.CreateDirectory(MusicWrapDirectories.MediumImageDirectory);
-                Directory.CreateDirectory(MusicWrapDirectories.LargeImageDirectory);
-                Directory.CreateDirectory(MusicWrapDirectories.BlurImageDirectory);
-
-                // save original image
-                var mainPath = Path.Combine(MusicWrapDirectories.CoverDirectory, baseFileName);
-                if (!Directory.Exists(mainPath))
-                {
-                    System.IO.File.WriteAllBytes(mainPath, imageBytes);
-                }
-
-                // decode image
-                using var sourceImage = Image.Load<Rgba32>(imageBytes);
-
-                (result.DominantColorHex, result.ForegroundColorHex) = ExtractColorsFromImage(imageBytes);
-
-                // save variants
-                var smallPath = Path.Combine(MusicWrapDirectories.SmallImageDirectory, baseFileName);
-                SaveImageVariant(sourceImage, smallPath, SmallCoverSize);
-
-                var mediumPath = Path.Combine(MusicWrapDirectories.MediumImageDirectory, baseFileName);
-                SaveImageVariant(sourceImage, mediumPath, MediumCoverSize);
-
-                var largePath = Path.Combine(MusicWrapDirectories.LargeImageDirectory, baseFileName);
-                SaveImageVariant(sourceImage, largePath, LargeCoverSize);
-
-                var blurPath = Path.Combine(MusicWrapDirectories.BlurImageDirectory, baseFileName);
-                SaveBlurVariant(sourceImage, blurPath, result.DominantColorHex);
-
-                return result;
-            }
-            catch { return result; }
-        }
-        private static void SaveImageVariant(Image<Rgba32> sourceImage, string outputPath, int maxSize)
-        {
-            try
-            {
-                if (System.IO.File.Exists(outputPath))
-                    return;
-
-                using var variant = sourceImage.Clone();
-                variant.Mutate(x => x.Resize(new ResizeOptions
-                {
-                    Size = new Size(maxSize, maxSize),
-                    Mode = ResizeMode.Max,
-                    Sampler = KnownResamplers.Lanczos3,
-                }));
-
-                var encoder = GetImageEncoder(outputPath);
-                variant.Save(outputPath, encoder);
-            }
-            catch { }
-        }
-        private static IImageEncoder GetImageEncoder(string filePath)
-        {
-            var ext = Path.GetExtension(filePath).ToLowerInvariant();
-            return ext switch
-            {
-                ".png" => new SixLabors.ImageSharp.Formats.Png.PngEncoder(),
-                ".webp" => new SixLabors.ImageSharp.Formats.Webp.WebpEncoder(),
-                _ => new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
-                {
-                    Quality = 90,
-                    ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.YCbCrRatio444
-                }
-            };
-        }
-
-        private static void SaveBlurVariant(Image<Rgba32> sourceImage, string outputPath, string dominantColorHex)
-        {
-            try
-            {
-                if (System.IO.File.Exists(outputPath))
-                    return;
-
-                var dominantColor = new Rgba32(
-                    Convert.ToByte(dominantColorHex.Substring(1, 2), 16),
-                    Convert.ToByte(dominantColorHex.Substring(3, 2), 16),
-                    Convert.ToByte(dominantColorHex.Substring(5, 2), 16),
-                    255);
-                using var blurImage = sourceImage.Clone();
-
-                blurImage.Mutate(x => x.Resize(new ResizeOptions
-                {
-                    Size = new Size(BlurCoverSize, BlurCoverSize),
-                    Mode = ResizeMode.Max,
-                    Sampler = KnownResamplers.Lanczos3,
-                })
-                .GaussianBlur(32f));
-
-                using var dominantLayer = new Image<Rgba32>(blurImage.Width, blurImage.Height, dominantColor);
-
-                const float domFactor = 0.8f;
-                const float imgFactor = 1f - domFactor;
-
-                blurImage.ProcessPixelRows(dominantLayer, (imgAccesor, domAccesor) =>
-                {
-                    for (int y = 0; y < blurImage.Height; y++)
-                    {
-                        var imgRow = imgAccesor.GetRowSpan(y);
-                        var domRow = domAccesor.GetRowSpan(y);
-                        for (int x = 0; x < imgRow.Length; x++)
-                        {
-                            var imgPixel = imgRow[x];
-                            var domPixel = domRow[x];
-
-                            // blend
-                            imgRow[x] = new Rgba32(
-                                (byte)((domPixel.R * domFactor) + (imgPixel.R * imgFactor)),
-                                (byte)((domPixel.G * domFactor) + (imgPixel.G * imgFactor)),
-                                (byte)((domPixel.B * domFactor) + (imgPixel.B * imgFactor)),
-                                255);
-                        }
-                    }
-                });
-
-                AddNoiseGrain(blurImage, 0.08f, 3);
-
-                blurImage.Mutate(x => x.Brightness(0.98f).Saturate(0.9f).GaussianBlur(1.2f));
-
-                blurImage.SaveAsJpeg(outputPath, new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder
-                {
-                    Quality = 99,
-                    ColorType = SixLabors.ImageSharp.Formats.Jpeg.JpegEncodingColor.YCbCrRatio444
-                });
-
-            }
-            catch { }
-        }
-
-        private static void AddNoiseGrain(Image<Rgba32> image, float intensity, int grainSize)
-        {
-            var random = new Random(42);
-            int width = image.Width;
-            int height = image.Height;
-
-            image.ProcessPixelRows(accessor =>
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    var row = accessor.GetRowSpan(y);
-                    for (int x = 0; x < width; x++)
-                    {
-                        if (random.NextSingle() > (1f - intensity))
-                        {
-                            var pixel = row[x];
-
-                            int noise = random.Next(-grainSize, grainSize + 1);
-
-                            byte r = (byte)Math.Clamp(pixel.R + noise, 0, 255);
-                            byte g = (byte)Math.Clamp(pixel.G + noise, 0, 255);
-                            byte b = (byte)Math.Clamp(pixel.B + noise, 0, 255);
-
-                            row[x] = new Rgba32(r, g, b, 255);
-                        }
-                    }
-                }
-            });
-        }
-
-        public static (string dominantColor, string foregroundColor) ExtractColorsFromImage(byte[] imageBytes)
-        {
-            try
-            {
-                using var image = Image.Load<Rgba32>(imageBytes);
-                image.Mutate(x => x.Resize(64, 64));
-
-                var counts = new Dictionary<Rgba32, int>();
-                int validPixels = 0;
-
-                image.ProcessPixelRows(accessor =>
-                {
-                    for (int y = 0; y < accessor.Height; y++)
-                    {
-                        var row = accessor.GetRowSpan(y);
-                        for (int x = 0; x < row.Length; x++)
-                        {
-                            var pixel = row[x];
-                            if (!IsValidColor(pixel))
-                                continue;
-
-                            var q = QuantizeColor(pixel);
-                            counts[q] = counts.TryGetValue(q, out var c) ? c + 1 : 1;
-                            validPixels++;
-                        }
-                    }
-                });
-
-                if (validPixels == 0 || counts.Count == 0)
-                    return ("#404040", "#FFFFFF");
-
-                int minCount = Math.Max(1, (int)(validPixels * 0.008)); // 0.8%
-                var filtered = counts.Where(kv => kv.Value >= minCount).ToList();
-                if (filtered.Count == 0)
-                    filtered = counts.ToList();
-
-                var dominant = filtered
-                    .OrderByDescending(kv => kv.Value)
-                    .ThenByDescending(kv =>
-                    {
-                        var hsv = ColorSpaceConverter.ToHsv(kv.Key);
-                        return hsv.S * 0.7f + hsv.V * 0.3f;
-                    })
-                    .First()
-                    .Key;
-
-                dominant = BoostSaturation(dominant, 0.14f);
-
-                string bg = ToHex(dominant);
-                string fg = GetContrastColor(dominant);
-                return (bg, fg);
-            }
-            catch
-            {
-                return ("#404040", "#FFFFFF");
-            }
-        }
-        private static Rgba32 QuantizeColor(Rgba32 pixel)
-        {
-            const int factor = 32;
-
-            return new Rgba32(
-                (byte)((pixel.R / factor) * factor),
-                (byte)((pixel.G / factor) * factor),
-                (byte)((pixel.B / factor) * factor),
-                255);
-        }
-
-        private static Rgba32 BoostSaturation(Rgba32 color, float minSaturation)
-        {
-            var hsv = ColorSpaceConverter.ToHsv(color);
-
-            if (hsv.S < 0.06f) return color;
-            if (hsv.V > 0.92f && hsv.S < 0.18f) return color;
-
-            float s = hsv.S;
-            if (s < minSaturation)
-            {
-                s = s + (minSaturation - s) * 0.35f;
-            }
-
-            float v = MathF.Min(1f, hsv.V * 1.01f);
-
-            var adjusted = new Hsv(hsv.H, s, v);
-            var rgb = ColorSpaceConverter.ToRgb(adjusted);
-
-            return new Rgba32(
-                (byte)(rgb.R * 255),
-                (byte)(rgb.G * 255),
-                (byte)(rgb.B * 255),
-                255);
-        }
-        private static bool IsValidColor(Rgba32 color)
-        {
-            if (color.A < 30)
-                return false;
-            var hsv = ColorSpaceConverter.ToHsv(color);
-
-            if (hsv.V > 0.96f && hsv.S < 0.4f) return true;
-
-            if (hsv.S < 0.08) return false;
-
-            return true;
-        }
-        private static string GetContrastColor(Rgba32 bg)
-        {
-            double r = bg.R / 255.0;
-            double g = bg.G / 255.0;
-            double b = bg.B / 255.0;
-
-            double luminance =
-                0.2126 * r +
-                0.7152 * g +
-                0.0722 * b;
-
-            return luminance > 0.5
-                ? "#000000"
-                : "#FFFFFF";
-        }
-        private static string ToHex(Rgba32 color)
-        {
-            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
         }
 
         private static bool TryGetExternalCover(string audioFilePath, out byte[] imageBytes, out string mimeType)
@@ -917,19 +605,6 @@ namespace MusicWrap.Core.Services.Library
             _ => "application/octet-stream"
         };
 
-        #endregion
-
-        #region Private Classes
-        private sealed class ImageVariantsResult
-        {
-            public string MainFileName { get; set; } = string.Empty;
-            public string SmallFileName { get; set; } = string.Empty;
-            public string MediumFileName { get; set; } = string.Empty;
-            public string LargeFileName { get; set; } = string.Empty;
-            public string BlurFileName { get; set; } = string.Empty;
-            public string DominantColorHex { get; set; } = "#404040";
-            public string ForegroundColorHex { get; set; } = "#FFFFFF";
-        }
         #endregion
     }
     public sealed class ExternalTrackIndexRequest

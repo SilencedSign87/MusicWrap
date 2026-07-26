@@ -395,57 +395,26 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     if (_expandedAlbumId != value)
                     {
                         _expandedAlbumId = value;
+
+
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedAlbumId)));
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedAlbum)));
-                    }
-                }
-            }
-
-            private string? _expandedImagePath;
-            public string? ExpandedImagePath
-            {
-                get => _expandedImagePath;
-                set
-                {
-                    if (_expandedImagePath != value)
-                    {
-                        _expandedImagePath = value;
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedImagePath)));
-                    }
-                }
-            }
-
-            private string _expandedDominantColor = "#808080";
-            public string ExpandedDominantColor
-            {
-                get => _expandedDominantColor;
-                set
-                {
-                    if (_expandedDominantColor != value)
-                    {
-                        _expandedDominantColor = value;
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedDominantColor)));
-                    }
-                }
-            }
-
-            private string _expandedForegroundColor = "#FFFFFF";
-            public string ExpandedForegroundColor
-            {
-                get => _expandedForegroundColor;
-                set
-                {
-                    if (_expandedForegroundColor != value)
-                    {
-                        _expandedForegroundColor = value;
                         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedForegroundColor)));
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedHighlightColor)));
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExpandedHighlightForeground)));
                     }
                 }
             }
 
             public AlbumData? ExpandedAlbum => Albums.FirstOrDefault(a => a.Id == ExpandedAlbumId);
+            public string? ExpandedImagePath => ExpandedAlbum?.ImagePath;
+            public string ExpandedDominantColor => ExpandedAlbum?.DominantColor ?? "#262933";
+            public string ExpandedForegroundColor => ExpandedAlbum?.ForegroundColor ?? "#FFFFFF";
+            public string ExpandedHighlightColor => ExpandedAlbum?.HighlightColor ?? "#262933";
+            public string ExpandedHighlightForeground => ExpandedAlbum?.HighlightForeground ?? "#FFFFFF";
 
-            //public int ColumnCount { get; set; } = 1;
 
             public event PropertyChangedEventHandler? PropertyChanged;
         }
@@ -457,9 +426,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             public int Year { get; set; }
             public string ArtistNames { get; set; } = string.Empty;
             public string? ImagePath { get; set; }
-            public string? BlurredImagePath { get; set; }
-            public string DominantColor { get; set; } = "#808080";
+            public string DominantColor { get; set; } = "#262933";
             public string ForegroundColor { get; set; } = "#FFFFFF";
+            public string HighlightColor { get; set; } = "#262933";
+            public string HighlightForeground { get; set; } = "#FFFFFF";
 
             private BitmapSource? _coverImage;
             public BitmapSource? CoverImage

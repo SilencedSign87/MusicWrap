@@ -110,6 +110,7 @@
                         </ItemsControl>
 
                         <Border Grid.Row="1"
+                                x:Name="ExpandedAlbumBorder"
                                 DataContext="{Binding}"
                                 Visibility="{Binding ExpandedAlbumId, Converter={StaticResource NullToCollapseConverter}}"
                                 Margin="0,8,0,0"

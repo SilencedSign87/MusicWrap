@@ -20,8 +20,10 @@
 		<PackageReference Include="ManagedBass.Mix" Version="4.0.2" />
 		<PackageReference Include="ManagedBass.Wasapi" Version="4.0.2" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
+		<PackageReference Include="SkiaSharp" Version="4.150.1" />
 		<PackageReference Include="YoutubeExplode" Version="6.6.0" />
 		<PackageReference Include="YouTubeMusicAPI" Version="3.0.10" />
+		<PackageReference Include="TagLibSharp" Version="2.3.0" />
 	</ItemGroup>
 
 	<ItemGroup>

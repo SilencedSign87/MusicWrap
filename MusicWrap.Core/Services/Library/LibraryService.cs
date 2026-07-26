@@ -437,15 +437,19 @@ namespace MusicWrap.Core.Services.Library
 
                 string? imagePath = null;
                 string? bluredImagePath = null;
-                string DominantColorHex = "#808080";
+                string DominantColorHex = "#262933";
                 string ForegroundColorHex = "#FFFFFF";
+                string HighlightColorHex = "#262933";
+                string HighlightForegroundHex = "#FFFFFF";
 
                 if (album.CoverId > 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
                 {
                     imagePath = cover.FileName;
                     bluredImagePath = cover.FileName;
-                    DominantColorHex = cover.DominantColorHex ?? "#808080";
-                    ForegroundColorHex = cover.ForegroundColorHex ?? "#FFFFFF";
+                    DominantColorHex = cover.DominantColorHex ?? "#262933";
+                    ForegroundColorHex = cover.DominantForegroundHex ?? "#FFFFFF";
+                    HighlightColorHex = cover.HighlightColorHex ?? "#262933";
+                    HighlightForegroundHex = cover.HighlightForegroundHex ?? "#FFFFFF";
                 }
                 var artistName = _artistNamesByAlbumId.TryGetValue(albumId, out var name) ? name : _unknownArtist;
 
@@ -456,9 +460,10 @@ namespace MusicWrap.Core.Services.Library
                     Year = album.Year,
                     ArtistNames = artistName,
                     ImagePath = imagePath ?? string.Empty,
-                    BluredImagePath = bluredImagePath ?? string.Empty,
                     DominantColorHex = DominantColorHex,
-                    ForegroundColorHex = ForegroundColorHex
+                    ForegroundColorHex = ForegroundColorHex,
+                    HighlightColorHex = HighlightColorHex,
+                    HighlightForegroundHex = HighlightForegroundHex
                 });
             }
 

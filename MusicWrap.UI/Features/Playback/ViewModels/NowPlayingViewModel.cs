@@ -99,7 +99,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                 {
                     TrackImagePath = coverAsset.FileName;
                     DominantColorHex = coverAsset.DominantColorHex;
-                    ForegroundColorHex = coverAsset.ForegroundColorHex;
+                    ForegroundColorHex = coverAsset.DominantForegroundHex;
                 }
             }
 

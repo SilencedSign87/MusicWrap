@@ -269,7 +269,7 @@ namespace MusicWrap.UI.ViewModels
                     TrackImagePath = coverAsset.FileName;
                     _artworkPath = _imageService.ResolvePath(coverAsset.FileName, ImageVariant.Original) ?? string.Empty;
                     DominantColorHex = coverAsset.DominantColorHex;
-                    ForegroundColorHex = coverAsset.ForegroundColorHex;
+                    ForegroundColorHex = coverAsset.DominantForegroundHex;
                 }
             }
 

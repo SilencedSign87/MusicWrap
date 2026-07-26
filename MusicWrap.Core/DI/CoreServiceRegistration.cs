@@ -5,6 +5,7 @@ using MusicWrap.Core.Queue;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Activity;
 using MusicWrap.Core.Services.Contracts;
+using MusicWrap.Core.Services.Images;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Playlists;
@@ -44,6 +45,7 @@ namespace MusicWrap.Core.DI
             services.AddSingleton<ILibraryService, LibraryService>();
 
             // Core Services
+            services.AddSingleton<ImageProcessor>();
             services.AddSingleton<ActivityService>();
             services.AddTransient<ILibraryScanner, LibraryScanner>();
             services.AddTransient<ILibraryIndexer, LibraryIndexer>();

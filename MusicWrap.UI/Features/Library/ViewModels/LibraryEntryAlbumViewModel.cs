@@ -80,27 +80,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
             if (row == null) return;
-
             if (row.ExpandedAlbumId == albumId)
             {
                 row.ExpandedAlbumId = null;
-                row.ExpandedImagePath = null;
                 ExpandedAlbumId = null;
                 return;
             }
-
             foreach (var r in GridRows)
             {
                 r.ExpandedAlbumId = null;
-                r.ExpandedImagePath = null;
             }
-
-            var album = row.Albums.First(a => a.Id == albumId);
             row.ExpandedAlbumId = albumId;
-            row.ExpandedImagePath = album.BlurredImagePath;
-            row.ExpandedDominantColor = album.DominantColor;
-            row.ExpandedForegroundColor = album.ForegroundColor;
-
             ExpandedAlbumId = albumId;
         }
         public void CollapseAlbum()
@@ -108,7 +98,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             foreach (var row in GridRows)
             {
                 row.ExpandedAlbumId = null;
-                row.ExpandedImagePath = null;
             }
             ExpandedAlbumId = null;
         }
@@ -188,9 +177,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             var row = GridRows.First(r => r.Albums.Contains(album));
             row.ExpandedAlbumId = album.Id;
-            row.ExpandedImagePath = album.BlurredImagePath;
-            row.ExpandedDominantColor = album.DominantColor;
-            row.ExpandedForegroundColor = album.ForegroundColor;
         }
         private void CancelImageLoading()
         {
@@ -275,10 +261,11 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             Year = album.Year,
             ArtistNames = album.ArtistNames,
             ImagePath = album.ImagePath,
-            BlurredImagePath = album.BluredImagePath,
             CoverImage = null,
             DominantColor = album.DominantColorHex,
-            ForegroundColor = album.ForegroundColorHex
+            ForegroundColor = album.ForegroundColorHex,
+            HighlightColor = album.HighlightColorHex,
+            HighlightForeground = album.HighlightForegroundHex
         };
 
         private async Task LoadCoverImagesAsync(List<AlbumData> albums, CancellationToken ct)

@@ -75,10 +75,7 @@ namespace MusicWrap.UI.Features.Library.Views
                         searchService,
                         tracksContextMenuService,
                         row.ExpandedAlbumId.Value,
-                        row.ExpandedDominantColor,
-                        row.ExpandedForegroundColor,
                         "",
-                        workspace.TrackSortMode,
                         filteredTrackIds
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
