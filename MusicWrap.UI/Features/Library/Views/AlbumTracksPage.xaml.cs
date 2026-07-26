@@ -131,20 +131,12 @@ namespace MusicWrap.UI.Features.Library.Views
         private void AlbumTracksContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is not ContextMenu contextMenu)
-            {
                 return;
-            }
-
             if (DataContext is not AlbumTracksViewModel vm)
-            {
                 return;
-            }
 
-            if (contextMenu.Items.OfType<TrackToPlaylistMenu>().FirstOrDefault() is TrackToPlaylistMenu playlistMenu)
-            {
-                // Force DP change with a fresh list instance so the menu reloads current selection.
-                playlistMenu.TrackIds = vm.SelectedTrackIds.ToList();
-            }
+            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
+            TrackToPlaylistMenu.Shared.TrackIds = vm.SelectedTrackIds.ToList();
         }
 
         private void EditMenuItem_Click(object sender, RoutedEventArgs e)

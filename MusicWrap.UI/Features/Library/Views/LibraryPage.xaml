@@ -39,57 +39,57 @@
                 </MenuItem>
                 <MenuItem Header="View" Icon="{ex:Icon Glyph=E7B3}">
                     <MenuItem Header="Albums" 
-                              Command="{Binding SetViewModeCommand}" 
+                              Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="Album"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsAlbumView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.IsAlbumView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E93C}"
                               />
                     
                     <MenuItem Header="Track Artist" 
-                              Command="{Binding SetViewModeCommand}" 
+                              Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="TrackArtist"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsTrackArtistView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.IsTrackArtistView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E77B}"
                               />
 
                     <MenuItem Header="Album Artist" 
-                              Command="{Binding SetViewModeCommand}" 
+                              Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="AlbumArtist"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsAlbumArtistView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.IsAlbumArtistView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E77B}"
                               />
 
                     <MenuItem Header="Genre" 
-                              Command="{Binding SetViewModeCommand}" 
+                              Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="Genre"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsGenreView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.IsGenreView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E8D6}"
                               />
 
                     <MenuItem Header="Decade" 
-                              Command="{Binding SetViewModeCommand}" 
+                              Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="Decade"
                               IsCheckable="True" 
-                              IsChecked="{Binding IsDecadeView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.IsDecadeView, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E787}"
                               />
 
                     <Separator/>
                     <MenuItem Header="Ascending" 
-                              Command="{Binding SetAscendingCommand}"
+                              Command="{Binding Workspace.SetEntryListAscendingCommand}"
                               IsCheckable="True" 
-                              IsChecked="{Binding Ascending, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.IsEntryListAscending, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E74A, FontSize=12}"
                               />
 
                     <MenuItem Header="Descending" 
-                              Command="{Binding SetDescendingCommand}"
+                              Command="{Binding Workspace.SetEntryListDescendingCommand}"
                               IsCheckable="True" 
-                              IsChecked="{Binding Ascending, Mode=OneWay, Converter={StaticResource InverseBoolConverter}}"
+                              IsChecked="{Binding Workspace.IsEntryListDescending, Mode=OneWay}"
                               Icon="{ex:Icon Glyph=E74B, FontSize=12}"
                               />
                 </MenuItem>
@@ -165,7 +165,7 @@
                                     <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}"/>
                                     <Separator/>
                                     <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E710}"/>
-                                    <controlsM:TrackToPlaylistMenu x:Name="LibraryTrackToPlaylistMenu"/>
+                                    <!-- track to playlist in code behind -->
                                 </ContextMenu>
                             </Grid.ContextMenu>
                             <Grid.ColumnDefinitions>
@@ -202,9 +202,7 @@
         </Grid>
         <!-- Selected content -->
         <Grid Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
-            <views:LibraryEntryDetailPanel
-                SelectedEntry="{Binding DataContext.SelectedEntry, Mode=OneWay, ElementName=RootLibraryPage}"
-                />
+            <views:LibraryEntryDetailPanel />
         </Grid>
     </Grid>
 </UserControl>

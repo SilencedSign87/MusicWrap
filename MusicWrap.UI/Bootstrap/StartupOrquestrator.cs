@@ -145,7 +145,7 @@ public static class StartupOrquestrator
 
             // Library cache initialization (preserve previous defaults)
             var listBy = userSettings.LibrarySettings.EntryType;
-            var ascending = userSettings.LibrarySettings.LibraryAscending;
+            var ascending = userSettings.LibrarySettings.EntryListAscending;
 
             var libraryCache = serviceProvider.GetRequiredService<ILibraryService>();
             //await libraryCache.InitializeAsync(listBy, ascending);

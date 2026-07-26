@@ -23,8 +23,8 @@
             <Separator/>
             <MenuItem Header="Play next" Icon="{helpers:Icon Glyph=E893}" Command="{Binding PlayNextSelectedTracksCommand}"/>
             <MenuItem Header="Add to queue" Icon="{helpers:Icon Glyph=E710}" Command="{Binding AddSelectedTracksToQueueCommand}"/>
-            <uimodels:TrackToPlaylistMenu x:Name="AlbumTracksTrackToPlaylistMenu"
-                                          TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>
+            <!--<uimodels:TrackToPlaylistMenu x:Name="AlbumTracksTrackToPlaylistMenu"
+                                          TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>-->
             <Separator/>
             <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" Click="EditMenuItem_Click"/>
             <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" IsEnabled="False"/>

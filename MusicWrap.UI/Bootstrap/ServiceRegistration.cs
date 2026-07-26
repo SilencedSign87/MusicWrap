@@ -5,6 +5,7 @@ using MusicWrap.Core.DI;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Activity.Viewmodel;
+using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Library.Views;
 using MusicWrap.UI.Features.Playback.ViewModels;
@@ -48,12 +49,15 @@ public static class ServiceRegistration
         services.AddSingleton(Tracker);
 
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
-        services.AddTransient<IwindowsImageService, ImageService>();
+        services.AddSingleton<IwindowsImageService, ImageService>();
         services.AddSingleton<ITrayService, TrayService>();
         services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<WindowManager>();
         services.AddTransient<IEditMetadataService, EditMetadataService>();
         services.AddSingleton<TrackActionService>();
+
+        // Workspaces
+        services.AddSingleton<LibraryWorkspace>();
 
         // View Models
         services.AddTransient<MainWindowViewModel>();

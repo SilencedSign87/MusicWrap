@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Services;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Services;
 using System.Windows;
 using System.Windows.Controls;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Library;
 
 namespace MusicWrap.UI.Features.Library.Components
 {
@@ -79,14 +80,10 @@ namespace MusicWrap.UI.Features.Library.Components
 
         private void AlbumContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            // Find and set track IDs on the TrackToPlaylistMenu in the context menu
             if (sender is ContextMenu contextMenu)
             {
-                var trackToPlaylistMenu = contextMenu.Items.OfType<MusicWrap.UI.Controls.Models.TrackToPlaylistMenu>().FirstOrDefault();
-                if (trackToPlaylistMenu != null)
-                {
-                    trackToPlaylistMenu.TrackIds = [.. TracksId];
-                }
+                TrackToPlaylistMenu.AttachTo(contextMenu, index: 3);
+                TrackToPlaylistMenu.Shared.TrackIds = [.. TracksId];
             }
         }
 

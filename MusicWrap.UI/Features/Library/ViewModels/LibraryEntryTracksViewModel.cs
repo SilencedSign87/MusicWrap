@@ -8,14 +8,8 @@ using MusicWrap.Core.Services.Search;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Shared.Services;
-using System;
-using System.Collections.Generic;
+using MusicWrap.UI.Features.Library.Services;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Drawing.Printing;
-using System.IO;
-using System.Text;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -23,41 +17,50 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     {
         private readonly ILibraryService _libraryCache;
         private readonly TrackActionService _tracksContextMenuService;
-        private readonly IMusicPlayerService _musicPlayerService;
         private readonly SearchService _searchService;
         private readonly IUIDispatcher _uiDispatcher;
-        private readonly IEditMetadataService _editMetadataService;
+        private readonly LibraryWorkspace _workspace;
 
-        //private int[] _sourceTrackIds = [];
         private int _refreshRequestId;
         private bool _isHibernating = true;
         private bool _disposed = false;
-
-        [ObservableProperty] private LibraryEntry? selectedEntry;
-        [ObservableProperty] private TrackSortMode sortMode;
-        [ObservableProperty] private bool sortAscending;
 
         [ObservableProperty] private ObservableCollection<TrackRowItem> tracks = [];
         [ObservableProperty] private List<int> allTrackIds = [];
         [ObservableProperty] private List<int> selectedTrackIds = [];
 
+        public LibraryWorkspace Workspace => _workspace;
         public LibraryEntryTracksViewModel(
             ILibraryService libraryCache,
             TrackActionService tracksContextMenuService,
-            IMusicPlayerService musicPlayerService,
             SearchService searchService,
-            IEditMetadataService editMetadataService,
-            IUIDispatcher uiDispatcher
+            IUIDispatcher uiDispatcher,
+            LibraryWorkspace workspace
            )
         {
             _libraryCache = libraryCache;
             _tracksContextMenuService = tracksContextMenuService;
-            _musicPlayerService = musicPlayerService;
-            _editMetadataService = editMetadataService;
             _searchService = searchService;
             _uiDispatcher = uiDispatcher;
+            _workspace = workspace;
 
             _searchService.SearchSubmitted += onSearchSubmmited;
+            _workspace.PropertyChanged += OnWorkspaceChanged;
+        }
+
+        private void OnWorkspaceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(LibraryWorkspace.SelectedEntry):
+                case nameof(LibraryWorkspace.SelectedTab):
+                    SyncWithWorkspace();
+                    break;
+                case nameof(LibraryWorkspace.TrackSortMode):
+                case nameof(LibraryWorkspace.SortAscending):
+                    if (!_isHibernating) _ = RefreshAsync(false);
+                    break;
+            }
         }
 
         #region Relay Commands
@@ -92,33 +95,26 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         #endregion
         #region Partial methods
-        partial void OnSelectedEntryChanged(LibraryEntry? value)
+
+        #endregion
+
+        private void SyncWithWorkspace()
         {
-            if (value is null)
+            bool isActive = _workspace.SelectedTab?.Key == LibraryDetailTabKey.Tracks
+             && _workspace.SelectedEntry is not null;
+            if (isActive)
+            {
+                _isHibernating = false;
+                _ = RefreshAsync(false);
+            }
+            else
             {
                 _isHibernating = true;
                 Tracks.Clear();
                 AllTrackIds.Clear();
                 SelectedTrackIds.Clear();
             }
-            else
-            {
-                _isHibernating = false;
-                _ = RefreshAsync(true);
-            }
         }
-        partial void OnSortModeChanged(TrackSortMode value)
-        {
-            if (_isHibernating) return;
-            _ = RefreshAsync(false);
-        }
-        partial void OnSortAscendingChanged(bool value)
-        {
-            if (_isHibernating) return;
-            _ = RefreshAsync(false);
-        }
-
-        #endregion
         private void onSearchSubmmited(object? sender, string e)
         {
             if (_isHibernating) return;
@@ -133,10 +129,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     return;
             }
 
-            var entry = SelectedEntry;
+            var entry = _workspace.SelectedEntry;
             var query = _searchService.ActiveQuery.Trim();
-            var sortmode = SortMode;
-            var ascending = SortAscending;
+            var sortmode = _workspace.TrackSortMode;
+            var ascending = _workspace.SortAscending;
 
             var result = await Task.Run(() => BuildTracksResult(entry, query, sortmode, ascending));
 
@@ -257,8 +253,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public void Dispose()
         {
             if (_disposed) return;
-            _searchService.SearchSubmitted -= onSearchSubmmited;
             _disposed = true;
+            _workspace.PropertyChanged -= OnWorkspaceChanged;
+            _searchService.SearchSubmitted -= onSearchSubmmited;
         }
     }
 }

@@ -22,7 +22,7 @@
                                         IsItemsHost="True"
                                         Orientation="Horizontal"
                                         Background="Transparent"
-                                        Margin="0,0,0,10"/>
+                                        />
 
                             <!-- Sliding indicator (bottom center of selected tab) -->
                             <Border x:Name="SelectionIndicator"
@@ -32,8 +32,7 @@
                                     Background="{DynamicResource AccentBrush100}"
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Bottom"
-                                    IsHitTestVisible="False"
-                                    Margin="0,0,0,8">
+                                    IsHitTestVisible="False">
                                 <Border.RenderTransform>
                                     <TranslateTransform/>
                                 </Border.RenderTransform>
@@ -41,10 +40,14 @@
                         </Grid>
 
                         <!-- Content area -->
-                        <ContentPresenter x:Name="PART_SelectedContentHost"
-                                          Grid.Row="1"
-                                          ContentSource="SelectedContent"
-                                          SnapsToDevicePixels="True"/>
+                        <ContentPresenter x:Name="ContentHost"
+                                Grid.Row="1"
+                                Content="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=SelectedContent}"
+                                ContentTemplate="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=SelectedContentTemplate}"
+                                ContentTemplateSelector="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=SelectedContentTemplateSelector}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

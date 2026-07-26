@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.UI.Controls.Models;
+using MusicWrap.UI.Features.Library.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -38,6 +40,17 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
             _isCommandPaletteSubscribed = false;
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+                return;
+            if (DataContext is not LibraryEntryTracksViewModel vm)
+                return;
+
+            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
+            TrackToPlaylistMenu.Shared.TrackIds = vm.SelectedTrackIds.ToList();
         }
     }
 }

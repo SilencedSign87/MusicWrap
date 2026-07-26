@@ -249,8 +249,8 @@ namespace MusicWrap.UI.Shared.Services
             }
             _trackedDisposables.Clear();
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
+            //GC.Collect();
+            //GC.WaitForPendingFinalizers();
         }
         #endregion
     }

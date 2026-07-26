@@ -14,6 +14,7 @@ using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Features.Library.Services;
 using System.ComponentModel;
 using System.IO;
 using System.Windows.Data;
@@ -23,28 +24,14 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 {
     public partial class LibraryViewModel : ObservableObject, IDisposable
     {
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsAlbumView))]
-        [NotifyPropertyChangedFor(nameof(IsTrackArtistView))]
-        [NotifyPropertyChangedFor(nameof(IsAlbumArtistView))]
-        [NotifyPropertyChangedFor(nameof(IsGenreView))]
-        [NotifyPropertyChangedFor(nameof(IsDecadeView))]
-        [NotifyCanExecuteChangedFor(nameof(SetViewModeCommand))]
-        private LibraryEntryType listBy = LibraryEntryType.AlbumArtist;
-
-        [ObservableProperty] private bool ascending = true;
 
         [ObservableProperty] private IReadOnlyList<LibraryEntry> entries = [];
 
         [ObservableProperty] private CollectionViewSource entriesViewSource = new();
 
-        [ObservableProperty] private LibraryEntry? selectedEntry;
-
-        private bool _isInitializing;
         private bool _isDisposing;
         private int _loadEntriesRequestId;
         private readonly IProgress<ScanProgress> _scanProgress;
-        private bool _isFirstLoad = true;
 
         // Services
         private readonly ILibraryScanner _scanner;
@@ -57,6 +44,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly IMessenger _messenger;
         private readonly IUIDispatcher _uiDispatcher;
+        private readonly LibraryWorkspace _workspace;
+
+        public LibraryWorkspace Workspace => _workspace;
 
         public LibraryViewModel(
             ILibraryScanner scanner,
@@ -68,6 +58,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             ActivityService activityService,
             ISaveCoordinator saveCoordinator,
             IUIDispatcher uiDispatcher,
+            LibraryWorkspace workspace,
             ILogger<LibraryViewModel> logger)
         {
             _scanner = scanner;
@@ -79,6 +70,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _searchService = searchService;
             _userSettings = settings;
             _saveCoordinator = saveCoordinator;
+            _workspace = workspace;
             _uiDispatcher = uiDispatcher;
 
             _scanProgress = new Progress<ScanProgress>(progress =>
@@ -97,17 +89,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 : $"{phase} ({progress.FilesProcessed}/{progress.TotalFiles})";
             });
 
-            _isInitializing = true;
-
-            var saved = _userSettings.LibrarySettings;
-
-            ListBy = saved.EntryType;
-            Ascending = saved.LibraryAscending;
-
-            _isInitializing = false;
+            //_workspace.PropertyChanged += OnWorkspacePropertyChanged;
 
             _searchService.SearchSubmitted += _searchService_SearchSubmitted;
-
 
             _ = LoadEntriesAsync();
 
@@ -117,44 +101,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             });
 
         }
-
+        private void OnWorkspacePropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(LibraryWorkspace.ListBy) ||
+                e.PropertyName == nameof(LibraryWorkspace.EntryListAscending))
+            {
+                _ = LoadEntriesAsync();
+            }
+        }
         private void _searchService_SearchSubmitted(object? sender, string e)
         {
-            _ = LoadEntriesAsync();
-        }
-
-        public bool IsAlbumView => ListBy == LibraryEntryType.Album;
-        public bool IsTrackArtistView => ListBy == LibraryEntryType.TrackArtist;
-        public bool IsAlbumArtistView => ListBy == LibraryEntryType.AlbumArtist;
-        public bool IsGenreView => ListBy == LibraryEntryType.Genre;
-        public bool IsDecadeView => ListBy == LibraryEntryType.Decade;
-        partial void OnSelectedEntryChanged(LibraryEntry? value)
-        {
-            if (_isDisposing) return;
-            if (_isFirstLoad) return;
-            if (_isInitializing) return;
-
-            _userSettings.LibrarySettings = new LibrarySettings
-            {
-                EntryType = value?.Type ?? ListBy,
-                LibraryAscending = Ascending,
-                SelectedEntryId = value?.Id,
-            };
-        }
-        partial void OnListByChanged(LibraryEntryType value)
-        {
-            if (_isInitializing) return;
-
-            _userSettings.LibrarySettings.EntryType = value;
-            _userSettings.LibrarySettings.LibraryAscending = Ascending;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-
-            _ = LoadEntriesAsync();
-        }
-
-        partial void OnAscendingChanged(bool value)
-        {
-            if (_isInitializing) return;
             _ = LoadEntriesAsync();
         }
 
@@ -297,81 +253,43 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             await LoadEntriesAsync();
         }
 
-        [RelayCommand(CanExecute = nameof(CanSetViewMode))]
-        private void SetViewMode(string mode)
-        {
-            if (Enum.TryParse<LibraryEntryType>(mode, ignoreCase: true, out var result))
-            {
-                ListBy = result;
-            }
-        }
-        public bool CanSetViewMode(string mode)
-        {
-            if (!Enum.TryParse<LibraryEntryType>(mode, ignoreCase: true, out var result))
-            {
-                return false;
-            }
-            return ListBy != result;
-        }
         [RelayCommand(CanExecute = nameof(CanSetSelection))]
         private void SetSelection(LibraryEntry entry)
         {
-            SelectedEntry = entry;
+            _workspace.SelectedEntry = entry;
         }
 
         private bool CanSetSelection(LibraryEntry entry)
         {
-            return entry != null && !ReferenceEquals(SelectedEntry, entry);
-        }
-
-        [RelayCommand]
-        private void SetAscending()
-        {
-            Ascending = true;
-        }
-
-        [RelayCommand]
-        private void SetDescending()
-        {
-            Ascending = false;
+            return entry != null && !ReferenceEquals(_workspace.SelectedEntry, entry);
         }
 
         private async Task LoadEntriesAsync()
         {
 
             var requestId = Interlocked.Increment(ref _loadEntriesRequestId);
-            var listBySnapshot = ListBy;
-            var ascendingSnapshot = Ascending;
+            var listBySnapshot = _workspace.ListBy;
+            var ascendingSnapshot = _workspace.EntryListAscending;
 
             try
             {
-                DateTime timeStart = DateTime.Now;
                 var loadedEntries = await _LibraryCache.GetEntriesAsync(listBySnapshot, ascendingSnapshot, true);
-
+                
                 if (requestId != Volatile.Read(ref _loadEntriesRequestId)) return;
 
+                
                 ApplyGrouping(loadedEntries, ascendingSnapshot);
+                
+                _logger.LogInformation(
+                    "Loaded {Count} entries for ListBy={ListBy}, Ascending={Ascending}",
+                    loadedEntries.Count, listBySnapshot, ascendingSnapshot);
 
-                DateTime timeEnd = DateTime.Now;
-                _logger.LogInformation("Loaded {Count} entries in {Seconds:F2} seconds for ListBy={ListBy}, Ascending={Ascending}", loadedEntries.Count, (timeEnd - timeStart).TotalSeconds, listBySnapshot, ascendingSnapshot);
-
-                if (_isFirstLoad)
+                if (!_workspace.IsInitialized)
                 {
-                    _isFirstLoad = false;
-
-                    var saved = _userSettings.LibrarySettings;
-                    if (saved.SelectedEntryId is int savedId)
-                    {
-                        var match = Entries.FirstOrDefault(e =>
-                            e.Id == savedId && e.Type == saved.EntryType);
-
-                        if (match is not null && !ReferenceEquals(SelectedEntry, match))
-                        {
-                            SelectedEntry = match;
-                        }
-                    }
-
+                    _workspace.Initialize(Entries);
+                    _workspace.PropertyChanged += OnWorkspacePropertyChanged;
                 }
+
             }
             catch (Exception ex)
             {
@@ -381,8 +299,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         private void ApplyGrouping(IReadOnlyList<LibraryEntry> entries, bool ascendingSnapshot)
         {
-            var selectedId = SelectedEntry?.Id;
-            var selectedType = SelectedEntry?.Type;
+            var currentId = _workspace.SelectedEntry?.Id;
+            var currentType = _workspace.SelectedEntry?.Type;
 
             var normalizedEntries = entries.Select(e =>
             new LibraryEntry
@@ -420,17 +338,16 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             EntriesViewSource = viewSource;
 
-            LibraryEntry? newSelection = null;
-            if (selectedId.HasValue && selectedType.HasValue)
+            if (_workspace.IsInitialized)
             {
-                newSelection = Entries.FirstOrDefault(e => e.Id == selectedId.Value && e.Type == selectedType);
-            }
+                LibraryEntry? newSelection = null;
+                if (currentId.HasValue && currentType.HasValue)
+                    newSelection = Entries.FirstOrDefault(e => e.Id == currentId.Value && e.Type == currentType);
 
-            newSelection ??= Entries.FirstOrDefault();
+                newSelection ??= Entries.FirstOrDefault();
 
-            if (!ReferenceEquals(SelectedEntry, newSelection))
-            {
-                SelectedEntry = newSelection;
+                if (!ReferenceEquals(_workspace.SelectedEntry, newSelection))
+                    _workspace.SelectedEntry = newSelection;
             }
         }
 
@@ -463,7 +380,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             EntriesViewSource = new();
             Entries = [];
-            SelectedEntry = null;
         }
 
         public class AlbumGridRowModel : INotifyPropertyChanged

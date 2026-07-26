@@ -9,7 +9,7 @@
              d:DesignHeight="800" d:DesignWidth="300">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="32"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="4"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -19,8 +19,8 @@
                     SelectionChanged="ShellTabControl_SelectionChanged"
                     VerticalAlignment="Bottom"
                     CompactWidthThreshold="0">
-                    <nav:ShellTabItem Icon="&#xE90B;" TabIndex="0" ToolTip="Queue"/>
-                    <nav:ShellTabItem Icon="&#xE93C;" TabIndex="1" ToolTip="Information"/>
+                    <nav:ShellTabItem Icon="&#xE90B;" IconSize="20" Spacing="0" TabIndex="0" ToolTip="Queue"/>
+                    <nav:ShellTabItem Icon="&#xE93C;" IconSize="20" Spacing="0" TabIndex="1" ToolTip="Information"/>
                 </nav:ShellTabControl>
             </Border>
         </Grid>

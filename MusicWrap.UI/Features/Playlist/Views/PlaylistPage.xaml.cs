@@ -113,6 +113,17 @@ namespace MusicWrap.UI.Features.Playlist.Views
 
             _vm.Dispose();
         }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+                return;
+            if (DataContext is not PlaylistViewModel vm)
+                return;
+
+            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
+            TrackToPlaylistMenu.Shared.TrackIds = vm.SelectedTrackIds?.ToList();
+        }
     }
 }
 

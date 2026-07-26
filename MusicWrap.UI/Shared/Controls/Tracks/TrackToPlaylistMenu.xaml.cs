@@ -1,22 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Data.Playlist;
-using MusicWrap.UI.Helpers;
-using MusicWrap.UI.Shell.Windows;
-using MusicWrap.UI.Shell.Dialogs;
-using MusicWrap.UI.Shell.Tray;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using MusicWrap.Core.Services.Playlists;
 using MusicWrap.UI.Shared.Services;
 using CommunityToolkit.Mvvm.Messaging;
@@ -30,20 +15,61 @@ namespace MusicWrap.UI.Controls.Models
     /// </summary>
     public partial class TrackToPlaylistMenu : MenuItem
     {
+        private static TrackToPlaylistMenu? _sharedInstance;
+        public static TrackToPlaylistMenu Shared => _sharedInstance ??= CreateShared();
+        private bool _isInitialized;
+
         private readonly WindowManager _windowManager;
         private readonly IPlaylistService _playlistService;
         private readonly IMessenger _messenger;
         private readonly IUIDispatcher _uiDispatcher;
         public ObservableCollection<PlaylistMenuItemModel> PlaylistItems { get; } = new();
-        public TrackToPlaylistMenu()
+
+        private TrackToPlaylistMenu()
         {
-            InitializeComponent();
             _playlistService = App.Services.GetRequiredService<IPlaylistService>();
             _windowManager = App.Services.GetRequiredService<WindowManager>();
             _messenger = App.Services.GetRequiredService<IMessenger>();
             _uiDispatcher = App.Services.GetRequiredService<IUIDispatcher>();
-            Loaded += UserControl_Loaded;
-            Unloaded += TrackToPlaylistMenu_Unloaded;
+        }
+
+        private void Initialize()
+        {
+            if (_isInitialized) return;
+
+            _isInitialized = true;
+
+            ReloadPlaylists();
+
+            _messenger.Register<PlaylistListChangedMessage>(this, (r, m) =>
+            {
+                _uiDispatcher.Invoke(() => ReloadPlaylists());
+            });
+            _messenger.Register<PlaylistContentChangedMessage>(this, (r, m) =>
+            {
+                _uiDispatcher.Invoke(() =>
+                {
+                    var currentTrackIds = TrackIds?.ToArray() ?? [];
+                    if (m.AffectedTrackIds.Any(id => currentTrackIds.Contains(id)))
+                        ReloadPlaylists();
+                });
+            });
+        }
+
+        public static void AttachTo(ContextMenu contextMenu, int index = -1)
+        {
+            var instance = Shared;
+
+            if (instance.Parent is ItemsControl oldParent && oldParent != contextMenu)
+                oldParent.Items.Remove(instance);
+
+            if (!contextMenu.Items.Contains(instance))
+            {
+                if (index >= 0)
+                    contextMenu.Items.Insert(index, instance);
+                else
+                    contextMenu.Items.Add(instance);
+            }
         }
 
         #region Dependency Properties
@@ -60,51 +86,18 @@ namespace MusicWrap.UI.Controls.Models
             set => SetValue(TrackIdsProperty, value);
         }
         #endregion
+
+        private static TrackToPlaylistMenu CreateShared()
+        {
+            var instance = new TrackToPlaylistMenu();
+            instance.InitializeComponent();
+            instance.Initialize();
+            return instance;
+        }
+
         private static void OnTrackIdsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             ((TrackToPlaylistMenu)d).ReloadPlaylists();
-        }
-
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            ReloadPlaylists();
-
-            _messenger.Register<PlaylistListChangedMessage>(this, (r, m) =>
-            {
-                _uiDispatcher.Invoke(() => ReloadPlaylists());
-            });
-            _messenger.Register<PlaylistContentChangedMessage>(this, (r, m) =>
-            {
-                _uiDispatcher.Invoke(() =>
-                {
-                    var currentTrackIds = TrackIds?.ToArray() ?? [];
-                    if (m.AffectedTrackIds.Any(id=>currentTrackIds.Contains(id))) { 
-                        ReloadPlaylists();
-                    }
-                });
-            });
-        }
-        private void TrackToPlaylistMenu_Unloaded(object sender, RoutedEventArgs e)
-        {
-            _messenger.UnregisterAll(this);
-        }
-
-        private void _playlistService_PlaylistsChanged(object? sender, EventArgs e)
-        {
-            ReloadPlaylists();
-        }
-
-        private void _playlistService_PlaylistItemsChanged(object? sender, PlaylistItemsChangedEventArgs e)
-        {
-            var currentTrackIds = TrackIds?.ToArray() ?? [];
-            if (e.TrackIds.Any(id => currentTrackIds.Contains(id))) {
-                ReloadPlaylists();
-            }
-        }
-
-        private void OnPlaylistsChanged()
-        {
-            ReloadPlaylists();
         }
 
         private void ReloadPlaylists()

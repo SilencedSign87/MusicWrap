@@ -6,26 +6,22 @@
         xmlns:local="clr-namespace:MusicWrap.UI.Shell.Dialogs"
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
         xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+        xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
         mc:Ignorable="d"
         ResizeMode="NoResize"
         Icon="/Resources/icon.ico"
         d:Background="#080808"
         d:Foreground="White"
         d:DataContext="{d:DesignInstance Type=vm:MetadataEditorViewModel}"
-        Title="Metadata Editor" Height="500" Width="500">
+        Title="Metadata Editor" Height="650" Width="500">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TabItem Style="{StaticResource SubtleTabItem}">
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE7C3;" VerticalAlignment="Center"/>
-                        <TextBlock Text="File" Margin="8,0" />
-                    </StackPanel>
-                </TabItem.Header>
+
+        <nav:ShellTabControl Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <nav:ShellTabItem Icon="&#xEDA2;" IconSize="20" Spacing="8" Text="General" Orientation="Vertical">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -44,14 +40,8 @@
                         </StackPanel>
                     </Border>
                 </Grid>
-            </TabItem>
-            <TabItem Style="{StaticResource SubtleTabItem}">
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BA;" VerticalAlignment="Center"/>
-                        <TextBlock Text="Artwork" Margin="8,0" />
-                    </StackPanel>
-                </TabItem.Header>
+            </nav:ShellTabItem>
+            <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" Orientation="Vertical">
                 <Border Padding="8" Background="{StaticResource BackgroundSmoke}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -62,11 +52,11 @@
                         <StackPanel Grid.Column="0">
                             <controls:SectionTitleSeparator Title="Track Cover:" IconGlyph="&#xE91B;"/>
                             <Image
-                                Margin="0,8"
-                                Width="200"
-                                Source="{Binding TrackArtworkUrl, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:200}"
-                                RenderOptions.BitmapScalingMode="LowQuality"
-                                />
+                        Margin="0,8"
+                        Width="200"
+                        Source="{Binding TrackArtworkUrl, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:200}"
+                        RenderOptions.BitmapScalingMode="LowQuality"
+                        />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,8">
                                 <Button Style="{StaticResource DefaultButton}" Content="Change"/>
                             </StackPanel>
@@ -75,27 +65,20 @@
 
                             <controls:SectionTitleSeparator Title="Album Cover:" IconGlyph="&#xE93C;"/>
                             <Image
-                                Margin="0,8"
-                                Width="200"
-                                Source="{Binding AlbumArtworkUrl, Converter={StaticResource PathToImageConverter},  ConverterParameter=medium:200}"
-                                RenderOptions.BitmapScalingMode="LowQuality"
-                                />
+                        Margin="0,8"
+                        Width="200"
+                        Source="{Binding AlbumArtworkUrl, Converter={StaticResource PathToImageConverter},  ConverterParameter=medium:200}"
+                        RenderOptions.BitmapScalingMode="LowQuality"
+                        />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,8">
                                 <Button Style="{StaticResource DefaultButton}" Content="Change"/>
                             </StackPanel>
                         </StackPanel>
                     </Grid>
                 </Border>
-            </TabItem>
-            <TabItem IsSelected="True" Style="{StaticResource SubtleTabItem}">
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" VerticalAlignment="Center"/>
-                        <TextBlock Text="Metadata" Margin="8,0" />
-                    </StackPanel>
-                </TabItem.Header>
+            </nav:ShellTabItem>
+            <nav:ShellTabItem IsSelected="True" IconSize="20" Spacing="8" Icon="&#xE90B;" Text="Metadata" Orientation="Vertical">
                 <Border Background="{StaticResource BackgroundSmoke}">
-
                     <Grid Margin="8" Grid.IsSharedSizeScope="True">
                         <StackPanel>
                             <Grid Margin="0,0,0,8">
@@ -106,9 +89,9 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Title:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:CompactInputField Grid.Column="2" 
-                                                            Text="{Binding Title, Mode=TwoWay}"
-                                                            PlaceholderText="{Binding TitlePlaceholder, Mode=OneWay}"
-                                                            />
+                                                    Text="{Binding Title, Mode=TwoWay}"
+                                                    PlaceholderText="{Binding TitlePlaceholder, Mode=OneWay}"
+                                                    />
                             </Grid>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -118,12 +101,12 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Artist:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:AutocompleteMetadataInput
-                                    Grid.Column="2"
-                                    Text="{Binding Artist, Mode=TwoWay}"
-                                    MetadataType="ArtistName"
-                                    PlaceholderText="{Binding ArtistPlaceholder, Mode=OneWay}"
-                                    IsMultipleValueEnabled="True"
-                                    />
+                            Grid.Column="2"
+                            Text="{Binding Artist, Mode=TwoWay}"
+                            MetadataType="ArtistName"
+                            PlaceholderText="{Binding ArtistPlaceholder, Mode=OneWay}"
+                            IsMultipleValueEnabled="True"
+                            />
                             </Grid>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -133,9 +116,9 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Album:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:CompactInputField Grid.Column="2" 
-                                                            Text="{Binding Album, Mode=TwoWay}"
-                                                            PlaceholderText="{Binding AlbumPlaceholder, Mode=OneWay}"
-                                                            />
+                                                    Text="{Binding Album, Mode=TwoWay}"
+                                                    PlaceholderText="{Binding AlbumPlaceholder, Mode=OneWay}"
+                                                    />
                             </Grid>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -145,12 +128,12 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Album artist:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:AutocompleteMetadataInput
-                                    Grid.Column="2"
-                                    Text="{Binding AlbumArtist, Mode=TwoWay}"
-                                    PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
-                                    MetadataType="ArtistName"
-                                     IsMultipleValueEnabled="True"
-                                    />
+                            Grid.Column="2"
+                            Text="{Binding AlbumArtist, Mode=TwoWay}"
+                            PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
+                            MetadataType="ArtistName"
+                             IsMultipleValueEnabled="True"
+                            />
                             </Grid>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -160,12 +143,12 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Genre:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:AutocompleteMetadataInput
-                                    Grid.Column="2"
-                                    Text="{Binding Genre, Mode=TwoWay}"
-                                    PlaceholderText="{Binding GenrePlaceholder, Mode=OneWay}"
-                                    MetadataType="GenreName"
-                                     IsMultipleValueEnabled="True"
-                                    />
+                            Grid.Column="2"
+                            Text="{Binding Genre, Mode=TwoWay}"
+                            PlaceholderText="{Binding GenrePlaceholder, Mode=OneWay}"
+                            MetadataType="GenreName"
+                             IsMultipleValueEnabled="True"
+                            />
                             </Grid>
                             <Separator Margin="0,0,0,4"/>
                             <Grid Margin="0,0,0,8">
@@ -185,11 +168,11 @@
                                     </Grid.ColumnDefinitions>
 
                                     <controls:CompactInputField Grid.Column="0" 
-                                                                Width="150" 
-                                                                VerticalAlignment="Top" 
-                                                                Text="{Binding Year, Mode=TwoWay}" 
-                                                                PlaceholderText="{Binding YearPlaceholder, Mode=OneWay}"
-                                                                />
+                                                        Width="150" 
+                                                        VerticalAlignment="Top" 
+                                                        Text="{Binding Year, Mode=TwoWay}" 
+                                                        PlaceholderText="{Binding YearPlaceholder, Mode=OneWay}"
+                                                        />
 
                                     <StackPanel Grid.Column="2">
                                         <Grid Margin="0,0,0,8">
@@ -200,9 +183,9 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Track:" VerticalAlignment="Center" FontSize="12"/>
                                             <controls:CompactInputField Grid.Column="2" 
-                                                                        Text="{Binding TrackNumber, Mode=TwoWay}" 
-                                                                        PlaceholderText="{Binding TrackNumberPlaceholder, Mode=OneWay}"
-                                                                        />
+                                                                Text="{Binding TrackNumber, Mode=TwoWay}" 
+                                                                PlaceholderText="{Binding TrackNumberPlaceholder, Mode=OneWay}"
+                                                                />
                                         </Grid>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -212,9 +195,9 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Disk:" VerticalAlignment="Center" FontSize="12"/>
                                             <controls:CompactInputField Grid.Column="2" 
-                                                                        Text="{Binding DiskNumber, Mode=TwoWay}" 
-                                                                        PlaceholderText="{Binding DiskNumberPlaceholder, Mode=OneWay}"
-                                                                        />
+                                                                Text="{Binding DiskNumber, Mode=TwoWay}" 
+                                                                PlaceholderText="{Binding DiskNumberPlaceholder, Mode=OneWay}"
+                                                                />
                                         </Grid>
                                     </StackPanel>
 
@@ -223,16 +206,12 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-            </TabItem>
-            <TabItem IsSelected="True" Style="{StaticResource SubtleTabItem}">
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8EC;" VerticalAlignment="Center"/>
-                        <TextBlock Text="Tags" Margin="8,0" />
-                    </StackPanel>
-                </TabItem.Header>
-            </TabItem>
-        </TabControl>
+            </nav:ShellTabItem>
+            <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" Orientation="Vertical">
+                <TextBlock Text="Tags tab content goes here" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </nav:ShellTabItem>
+        </nav:ShellTabControl>
+
         <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="8" Orientation="Horizontal">
             <Button Margin="8,0" Style="{StaticResource AccentButton}"
                     IsEnabled="{Binding HasChanges}"

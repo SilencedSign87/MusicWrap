@@ -20,6 +20,17 @@ namespace MusicWrap.UI.Features.Playback.Views
             //_tracksContextMenuService = tracksContextMenuService;
             DataContext = queueViewModel;
         }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+                return;
+            if (DataContext is not QueueViewModel vm)
+                return;
+
+            TrackToPlaylistMenu.AttachTo(contextMenu, index: 3);
+            TrackToPlaylistMenu.Shared.TrackIds = vm.SelectedTrackIds?.ToList();
+        }
     }
 }
 

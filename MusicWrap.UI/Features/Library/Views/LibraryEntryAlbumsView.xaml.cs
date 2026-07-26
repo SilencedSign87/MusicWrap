@@ -2,12 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Search;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Shared.Services;
+using MusicWrap.UI.Features.Library.Services;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -25,23 +23,19 @@ namespace MusicWrap.UI.Features.Library.Views
         private void AlbumButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is not LibraryEntryAlbumViewModel viewModel)
-            {
                 return;
-            }
+            
 
             if (sender is Button button && button.DataContext is LibraryViewModel.AlbumData albumData)
-            {
                 viewModel.ExpandAlbum(albumData.Id);
-            }
+            
         }
 
         private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is not LibraryEntryAlbumViewModel viewModel)
-            {
                 return;
 
-            }
             viewModel.CollapseAlbum();
         }
 
@@ -62,12 +56,14 @@ namespace MusicWrap.UI.Features.Library.Views
                         contentControl.Content = null;
                         return;
                     }
-                    var libraryCacheService = viewModel.LibraryCache;
+
+                    var workspace = viewModel.Workspace;
+                    var libraryCacheService = viewModel.LibraryService;
                     var tracksContextMenuService = App.Services.GetRequiredService<TrackActionService>();
                     var searchService = App.Services.GetRequiredService<SearchService>();
 
                     int[]? filteredTrackIds = null;
-                    var entry = viewModel.SelectedEntry;
+                    var entry = workspace.SelectedEntry;
                     if (entry is not null)
                     {
                         filteredTrackIds = libraryCacheService.GetTrackIdsForEntryAlbum(
@@ -82,7 +78,7 @@ namespace MusicWrap.UI.Features.Library.Views
                         row.ExpandedDominantColor,
                         row.ExpandedForegroundColor,
                         "",
-                        viewModel.SortMode ?? TrackSortMode.Year,
+                        workspace.TrackSortMode,
                         filteredTrackIds
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };

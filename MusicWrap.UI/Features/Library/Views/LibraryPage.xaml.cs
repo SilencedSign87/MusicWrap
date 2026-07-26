@@ -1,11 +1,13 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Library.Models;
+using MusicWrap.UI.Controls.Models;
+using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Services.Library.Models;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -24,21 +26,19 @@ namespace MusicWrap.UI.Features.Library.Views
             DataContext = vm;
 
             // Subscribe to property changes
-            vm.PropertyChanged += Vm_PropertyChanged;
+            vm.Workspace.PropertyChanged += OnWorkspaceChanged;
 
         }
 
-        private void Vm_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnWorkspaceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(vm.SelectedEntry))
-            {
+            if (e.PropertyName == nameof(LibraryWorkspace.SelectedEntry))
                 HandleSelectionChanged();
-            }
         }
 
         private void HandleSelectionChanged()
         {
-            var selected = vm.SelectedEntry;
+            var selected = vm.Workspace.SelectedEntry;
             if (selected is not null && EntriesListView.SelectedItem != selected)
             {
                 EntriesListView.SelectedItem = selected;
@@ -92,22 +92,23 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void LibraryContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is not ContextMenu contextMenu)
-                return;
+            if (sender is not ContextMenu contextMenu) return;
 
-            // Get the entry from the visual tree (the Grid containing this context menu)
             var grid = contextMenu.PlacementTarget as Grid;
-            if (grid?.DataContext is not LibraryEntry entry)
-                return;
+            
+            if (grid?.DataContext is not LibraryEntry entry) return;
 
-            // Get track IDs based on entry type
-            List<int> trackIds = _libraryCacheService.GetTrackIdsForEntry(entry).ToList();
+            var trackIds = _libraryCacheService.GetTrackIdsForEntry(entry).ToList();
 
-            // Find and set track IDs on the TrackToPlaylistMenu in the context menu
-            var trackToPlaylistMenu = contextMenu.Items.OfType<MusicWrap.UI.Controls.Models.TrackToPlaylistMenu>().FirstOrDefault();
-            if (trackToPlaylistMenu != null)
+            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
+            TrackToPlaylistMenu.Shared.TrackIds = trackIds;
+        }
+        private void EntriesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView lv && lv.SelectedItem is LibraryEntry entry
+                && vm.SetSelectionCommand.CanExecute(entry))
             {
-                trackToPlaylistMenu.TrackIds = trackIds;
+                vm.SetSelectionCommand.Execute(entry);
             }
         }
 
@@ -120,19 +121,13 @@ namespace MusicWrap.UI.Features.Library.Views
 
             _disposed = true;
 
-            vm.PropertyChanged -= Vm_PropertyChanged;
+            vm.Workspace.PropertyChanged -= OnWorkspaceChanged;
             vm.Dispose();
 
             DataContext = null;
         }
 
-        private void EntriesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ListView lv && lv.SelectedItem is LibraryEntry entry && vm.SetSelectionCommand.CanExecute(entry))
-            {
-                vm.SetSelectionCommand.Execute(entry);
-            }
-        }
+
     }
 }
 

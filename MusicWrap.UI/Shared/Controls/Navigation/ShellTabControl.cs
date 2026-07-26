@@ -78,6 +78,7 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                 _indicator.RenderTransform = _indicatorTransform;
                 _indicator.RenderTransformOrigin = new Point(0.5, 0.5);
             }
+
             Loaded += OnLoaded;
             SelectionChanged += OnSelectionChanged;
             SizeChanged += OnSizeChanged;
@@ -108,7 +109,7 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                         if (ItemContainerGenerator.ContainerFromItem(item) is ShellTabItem tabItem)
                             tabItem.SetCompactMode(false);
                     }
-                    UpdateIndicatorPosition(animate: false);
+                    ScheduleIndicatorUpdate();
                 }
                 return;
             }
@@ -122,7 +123,7 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                     if (ItemContainerGenerator.ContainerFromItem(item) is ShellTabItem tabItem)
                         tabItem.SetCompactMode(compact);
                 }
-                UpdateIndicatorPosition(animate: false);
+                ScheduleIndicatorUpdate();
             }
         }
         private void UpdateWindowSubscription()
@@ -188,6 +189,13 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
             var control = (ShellTabControl)d;
             control.UpdateWindowSubscription();
             control.UpdateCompactMode();
+        }
+
+        private void ScheduleIndicatorUpdate()
+        {
+            Dispatcher.BeginInvoke(
+                new Action(() => UpdateIndicatorPosition(animate: false)),
+                System.Windows.Threading.DispatcherPriority.Render);
         }
     }
 }

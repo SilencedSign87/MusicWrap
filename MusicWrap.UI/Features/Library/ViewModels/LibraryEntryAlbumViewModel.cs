@@ -3,12 +3,9 @@ using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Search;
-using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
-using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Net.WebSockets;
+using MusicWrap.UI.Features.Library.Services;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
@@ -18,11 +15,9 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILibraryService _libraryService;
         private readonly IwindowsImageService _imageService;
         private readonly SearchService _searchService;
+        private readonly LibraryWorkspace _workspace;
 
         // Props
-        [ObservableProperty] private LibraryEntry? selectedEntry;
-        [ObservableProperty] private TrackSortMode? sortMode;
-        [ObservableProperty] private bool sortAscending;
         [ObservableProperty] private int layoutColumns = 1;
 
         // View State
@@ -33,28 +28,46 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private bool _isHibernating = true;
         private List<AlbumData> _rawAlbums = [];
         private List<AlbumData> _sortedAlbums = [];
-        private CancellationTokenSource? _imageCts;
+        
+        private CancellationTokenSource? _imageCTS;
+
+        private const int IMAGE_BATCH = 5;
         private bool _isDisposed;
 
-
-        private CancellationTokenSource? _imageCTS;
-        private const int IMAGE_BATCH = 5;
-
+        public LibraryWorkspace Workspace => _workspace;
+        public ILibraryService LibraryService => _libraryService;
         public LibraryEntryAlbumViewModel(
             ILibraryService cacheService,
             IwindowsImageService imageService,
-            SearchService searchService
+            SearchService searchService,
+            LibraryWorkspace workspace
             )
         {
             _libraryService = cacheService;
             _imageService = imageService;
             _searchService = searchService;
+            _workspace = workspace;
 
             _searchService.SearchSubmitted += OnSearchSubmitted;
+            _workspace.PropertyChanged += OnWorkspaceChanged;
+        }
+
+        private void OnWorkspaceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(LibraryWorkspace.SelectedEntry):
+                case nameof(LibraryWorkspace.SelectedTab):
+                    SyncWithWorkspace();
+                    break;
+                case nameof(LibraryWorkspace.TrackSortMode):
+                case nameof(LibraryWorkspace.SortAscending):
+                    if (!_isHibernating) Reshuffle();
+                    break;
+            }
         }
 
         #region Public
-        public ILibraryService LibraryCache => _libraryService;
         public void SetLayoutColumns(int columns)
         {
             columns = Math.Max(1, columns);
@@ -101,24 +114,23 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
         #endregion
         #region Partial functions
-        partial void OnSelectedEntryChanged(LibraryEntry? value)
-        {
-            if (value is null)
-            {
-                Hibernate();
-            }
-            else
-            {
-                _isHibernating = false;
-                ReloadFromEntry();
-            }
-        }
-        partial void OnSortModeChanged(TrackSortMode? value) => Reshuffle();
-        partial void OnSortAscendingChanged(bool value) => Reshuffle();
         partial void OnLayoutColumnsChanged(int value) => Reflow();
 
         #endregion
+
         #region Internal
+        private void SyncWithWorkspace()
+        {
+            bool isActive = _workspace.SelectedTab?.Key == LibraryDetailTabKey.Albums && _workspace.SelectedEntry is not null;
+            if (isActive)
+            {
+                _isHibernating = false;
+                ReloadFromEntry();
+            }else
+            {
+                Hibernate();
+            }
+        }
         private void OnSearchSubmitted(object? sender, string e)
         {
             if (_isHibernating) return;
@@ -126,12 +138,14 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
         private void ReloadFromEntry()
         {
-            if (_isHibernating || SelectedEntry is null) return;
+            var entry = _workspace.SelectedEntry;
+
+            if (_isHibernating || entry is null) return;
 
             CancelImageLoading();
 
             var fresh = _libraryService
-               .GetAlbumsForEntry(SelectedEntry, useSearchQuery: true)
+               .GetAlbumsForEntry(entry, useSearchQuery: true)
                .Select(MapToAlbumData)
                .ToList();
 
@@ -187,19 +201,21 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private void StartImageLoading(List<AlbumData> albums)
         {
             var cts = new CancellationTokenSource();
-            _imageCts = cts;
+            _imageCTS = cts;
             var pending = albums.Where(a => a.ImagePath is not null && a.CoverImage is null).ToList();
             if (pending.Count > 0)
                 _ = LoadCoverImagesAsync(pending, cts.Token);
         }
         private List<AlbumData> ApplySort(List<AlbumData> source)
         {
+            var sortMode = _workspace.TrackSortMode;
+            var ascending = _workspace.SortAscending;
             IEnumerable<AlbumData> sorted;
 
-            switch (SortMode)
+            switch (sortMode)
             {
                 case TrackSortMode.Title:
-                    sorted = SortAscending
+                    sorted = ascending
                             ? source
                                 .OrderBy(s => s.Title, StringComparer.OrdinalIgnoreCase)
                                 .ThenBy(s => s.ArtistNames, StringComparer.OrdinalIgnoreCase)
@@ -210,7 +226,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                                 .ThenByDescending(s => s.Year);
                     break;
                 case TrackSortMode.ArtistName:
-                    sorted = SortAscending
+                    sorted = ascending
                         ? source
                             .OrderBy(s => s.ArtistNames, StringComparer.OrdinalIgnoreCase)
                             .ThenBy(s => s.Title, StringComparer.OrdinalIgnoreCase)
@@ -223,7 +239,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                     break;
                 case TrackSortMode.Year:
                 default:
-                    sorted = SortAscending
+                    sorted = ascending
                         ? source
                             .OrderBy(s => s.Year)
                             .ThenBy(s => s.Title, StringComparer.OrdinalIgnoreCase)
@@ -235,7 +251,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
                     break;
                 case TrackSortMode.Duration:
-                    sorted = SortAscending
+                    sorted = ascending
                         ? source
                             .OrderBy(s => _libraryService.GetAlbumDuration(s.Id))
                             .ThenBy(s => s.Title, StringComparer.OrdinalIgnoreCase)
@@ -272,6 +288,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 ct.ThrowIfCancellationRequested();
 
                 using var sem = new SemaphoreSlim(3);
+
                 var tasks = batch.Select(async album =>
                 {
                     await sem.WaitAsync(ct).ConfigureAwait(false);
@@ -316,6 +333,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             if (_isDisposed) return;
             _isDisposed = true;
+            _workspace.PropertyChanged -= OnWorkspaceChanged;
             _searchService.SearchSubmitted -= OnSearchSubmitted;
             CancelImageLoading();
         }
