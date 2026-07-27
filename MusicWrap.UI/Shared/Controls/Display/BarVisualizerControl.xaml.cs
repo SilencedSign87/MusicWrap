@@ -18,6 +18,10 @@ namespace MusicWrap.UI.Controls
         private readonly IMusicPlayerService _musicService;
         private readonly DispatcherTimer _timer;
 
+        private Brush? _fillBrush;
+        private Brush? _topBrush;
+        private string? _lastDominantColor;
+
         private float[] _currentHeights = Array.Empty<float>();
         private float[] _peakHold = Array.Empty<float>();
         private bool _isActive;
@@ -35,10 +39,9 @@ namespace MusicWrap.UI.Controls
         private const float CeilingDb = -12f;
         private const float EqGamma = 1.0f;
 
-        private const int MaxFftSize = 16384;
-        private const int MinFftSize = 256; // 44.1kHz
+        private const int FFTSize = 16384;
 
-        private readonly float[] _pcmBuffer = new float[MaxFftSize * 2]; // stereo
+        private readonly float[] _pcmBuffer = new float[FFTSize * 2]; // stereo
         private float[] _fftInput = Array.Empty<float>();
         private Complex[] _fftComplex = Array.Empty<Complex>();
         private float[] _magnitudes = Array.Empty<float>();
@@ -48,9 +51,14 @@ namespace MusicWrap.UI.Controls
         {
             InitializeComponent();
 
+            SpectrumTopPath.StrokeThickness = 2;
+            SpectrumTopPath.StrokeStartLineCap = PenLineCap.Round;
+            SpectrumTopPath.StrokeEndLineCap = PenLineCap.Round;
+            SpectrumTopPath.StrokeLineJoin = PenLineJoin.Round;
+
             _musicService = App.Services.GetRequiredService<IMusicPlayerService>();
 
-            _timer = new DispatcherTimer
+            _timer = new DispatcherTimer(DispatcherPriority.Render)
             {
                 Interval = TimeSpan.FromMilliseconds(30)
             };
@@ -110,23 +118,24 @@ namespace MusicWrap.UI.Controls
                 return;
             }
             int capturedFloats = _musicService.GetCapturedPCMData(_pcmBuffer);
-            //Debug.WriteLine($"[Visualizer] Captured Floats: {capturedFloats}");
-            if (capturedFloats <= 0)
+
+            if (capturedFloats <= 0 || capturedFloats < FFTSize * 2)
             {
                 DecayAll();
                 return;
             }
 
             int monoAvailable = capturedFloats / 2;
-            if (monoAvailable < MinFftSize)
+
+            int fftSize = Math.Min(FFTSize, PrevPow2(monoAvailable));
+
+            //Debug.WriteLine("[BarVisualizer] Captured PCM floats: {0} \n Mono available: {1} \n FFT size: {2} \n target: {3}", capturedFloats, monoAvailable, fftSize, FFTSize);
+
+            if (fftSize < FFTSize)
             {
                 DecayAll();
                 return;
             }
-
-            int targetFft = ChooseTargetFftSize(BarCount);
-            int fftSize = Math.Min(targetFft, prevPow2(monoAvailable));
-            fftSize = Math.Clamp(fftSize, MinFftSize, MaxFftSize);
 
             if (_fftInput.Length != fftSize)
             {
@@ -194,42 +203,76 @@ namespace MusicWrap.UI.Controls
         private static float[] MapFFTToBands(float[] spectrum, int bandCount, int sampleRate)
         {
             var result = new float[bandCount];
+
             if (spectrum.Length == 0 || bandCount <= 0)
                 return result;
+
             int usableBins = spectrum.Length;
+
             float nyquist = sampleRate * 0.5f;
             float binHz = nyquist / usableBins;
-            if (binHz <= 0f) return result;
-            float minHz = MathF.Max(MinEqHz, binHz);
-            float maxHz = MathF.Min(MaxEqHz, nyquist * 0.98f);
-            if (maxHz <= minHz) maxHz = nyquist * 0.98f;
-            // Mel scale mapping
-            float melMin = HzToMel(minHz);
-            float melMax = HzToMel(maxHz);
-            float melSpan = melMax - melMin;
+
+            if (binHz <= 0f)
+                return result;
+
+            double minHz = Math.Max(MinEqHz, binHz);
+            double maxHz = Math.Min(MaxEqHz, nyquist * 0.98);
+
+            if (maxHz <= minHz)
+                maxHz = nyquist * 0.98;
+
+            double ratio = Math.Pow(maxHz / minHz, 1.0 / bandCount);
+
+            double lowHz = minHz;
+
             for (int i = 0; i < bandCount; i++)
             {
-                float t0 = (float)i / bandCount;
-                float t1 = (float)(i + 1) / bandCount;
-                float lowHz = MelToHz(melMin + melSpan * t0);
-                float highHz = MelToHz(melMin + melSpan * t1);
-                int lowBin = Math.Clamp((int)(lowHz / binHz), 1, usableBins - 1);
-                int highBin = Math.Clamp((int)(highHz / binHz), lowBin + 1, usableBins);
-                double sumPower = 0.0;
-                int count = 0;
-                for (int b = lowBin; b < highBin; b++)
-                {
-                    double m = spectrum[b];
-                    sumPower += m * m;
-                    count++;
-                }
-                float rms = count > 0 ? (float)Math.Sqrt(sumPower / count) : 0f;
-                float db = 20f * MathF.Log10(rms + 1e-8f);
-                float norm = (db - NoiseFloorDb) / (CeilingDb - NoiseFloorDb);
+                double highHz = lowHz * ratio;
+
+                double center = Math.Sqrt(lowHz * highHz);
+                double left = Math.Sqrt(lowHz * center);
+                double right = Math.Sqrt(center * highHz);
+
+                float mLeft = SampleSpectrumInterpolated(spectrum, left, binHz);
+                float mCenter = SampleSpectrumInterpolated(spectrum, center, binHz);
+                float mRight = SampleSpectrumInterpolated(spectrum, right, binHz);
+
+                float magnitude =
+                    (mLeft + 2f * mCenter + mRight) * 0.25f;
+
+                float db = 20f * MathF.Log10(magnitude + 1e-8f);
+
+                float norm =
+                    (db - NoiseFloorDb) /
+                    (CeilingDb - NoiseFloorDb);
+
                 norm = Math.Clamp(norm, 0f, 1f);
+
                 result[i] = MathF.Pow(norm, EqGamma);
+
+                lowHz = highHz;
             }
+
             return result;
+        }
+        private static float SampleSpectrumInterpolated(
+            float[] spectrum,
+            double frequency,
+            float binHz)
+        {
+            double bin = frequency / binHz;
+
+            int i0 = (int)Math.Floor(bin);
+            int i1 = i0 + 1;
+
+            i0 = Math.Clamp(i0, 0, spectrum.Length - 1);
+            i1 = Math.Clamp(i1, 0, spectrum.Length - 1);
+
+            double frac = bin - i0;
+
+            return (float)(
+                spectrum[i0] * (1.0 - frac) +
+                spectrum[i1] * frac);
         }
         private void DrawBars()
         {
@@ -274,17 +317,29 @@ namespace MusicWrap.UI.Controls
             }
             topGeometry.Freeze();
 
+            EnsureBrushes();
             SpectrumFillPath.Data = fillGeometry;
-            SpectrumFillPath.Fill = CreateSpectrumFillBrush();
+            SpectrumFillPath.Fill = _fillBrush;
 
             SpectrumTopPath.Data = topGeometry;
-            SpectrumTopPath.Stroke = CreateSpectrumTopBrush();
-            SpectrumTopPath.StrokeThickness = 2.0;
-            SpectrumTopPath.StrokeStartLineCap = PenLineCap.Round;
-            SpectrumTopPath.StrokeEndLineCap = PenLineCap.Round;
-            SpectrumTopPath.StrokeLineJoin = PenLineJoin.Round;
+            SpectrumTopPath.Stroke = _topBrush;
 
             ProgressClip.Rect = new Rect(0, 0, width, height);
+        }
+        private void EnsureBrushes()
+        {
+            if (_lastDominantColor == DominantColorHex &&
+        _fillBrush != null &&
+        _topBrush != null)
+                return;
+
+            _lastDominantColor = DominantColorHex;
+
+            _fillBrush = CreateSpectrumFillBrush();
+            _topBrush = CreateSpectrumTopBrush();
+
+            SpectrumFillPath.Fill = _fillBrush;
+            SpectrumTopPath.Stroke = _topBrush;
         }
         private Brush CreateSpectrumFillBrush()
         {
@@ -309,14 +364,6 @@ namespace MusicWrap.UI.Controls
             var brush = new SolidColorBrush(Color.FromArgb(255, baseColor.R, baseColor.G, baseColor.B));
             brush.Freeze();
             return brush;
-        }
-        private static float HzToMel(float hz)
-        {
-            return 2595f * MathF.Log10(1f + hz / 700f);
-        }
-        private static float MelToHz(float mel)
-        {
-            return 700f * (MathF.Pow(10f, mel / 2595f) - 1f);
         }
         private Color GetBaseColor()
         {
@@ -387,25 +434,7 @@ namespace MusicWrap.UI.Controls
             return result;
         }
 
-        private static int ChooseTargetFftSize(int barCount)
-        {
-            int target = NextPow2(Math.Max(MinFftSize, barCount * 64));
-            return Math.Clamp(target, MinFftSize, MaxFftSize);
-        }
-
-        private static int NextPow2(int v)
-        {
-            v--;
-            v |= v >> 1;
-            v |= v >> 2;
-            v |= v >> 4;
-            v |= v >> 8;
-            v |= v >> 16;
-            v++;
-            return v;
-        }
-
-        private static int prevPow2(int v)
+        private static int PrevPow2(int v)
         {
             int p = 1;
             while ((p << 1) <= v) p <<= 1;

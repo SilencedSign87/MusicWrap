@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using ManagedBass;
 using ManagedBass.Mix;
+using System.Runtime.InteropServices;
+
 #if WINDOWS
 using ManagedBass.Wasapi;
 #endif
@@ -42,8 +44,11 @@ namespace MusicWrap.Core
         public int CurrentMixerSampleRate => _mixerSampleRate;
         public bool IsMixerActive => _mixerStream != 0;
 
+        private int _writePos;
+        private const int CaptureSamples = 16384 * 2; // stereo
         private DSPProcedure? _fftDspCallback;
         private float[] _fftCaptureBuffer = Array.Empty<float>();
+        private float[] _dspTempBuffer = Array.Empty<float>();
         private int _fftCaptureFloats;
         private readonly object _fftLock = new();
         private bool _fftCaptureActive;
@@ -503,7 +508,8 @@ namespace MusicWrap.Core
         {
             if (_mixerStream == 0 || _fftCaptureActive) return;
 
-            _fftCaptureBuffer = new float[4096];
+            _fftCaptureBuffer = new float[CaptureSamples];
+            _writePos = 0;
             _fftCaptureFloats = 0;
             _fftDspCallback = OnFFTDspCapture;
             _fftDspHandle = Bass.ChannelSetDSP(_mixerStream, _fftDspCallback, IntPtr.Zero, 0);
@@ -533,22 +539,68 @@ namespace MusicWrap.Core
             if (length <= 0) return;
             int floatsRead = length / sizeof(float);
             if (floatsRead <= 0) return;
+
+            if (_dspTempBuffer.Length < floatsRead)
+                _dspTempBuffer = new float[floatsRead];
+
+            Marshal.Copy(buffer, _dspTempBuffer, 0, floatsRead);
+
             lock (_fftLock)
             {
-                int toCopy = Math.Min(floatsRead, _fftCaptureBuffer.Length);
-                System.Runtime.InteropServices.Marshal.Copy(buffer, _fftCaptureBuffer, 0, toCopy);
-                _fftCaptureFloats = toCopy;
-                // Debug.WriteLine($"[AudioEngine] FFT Capture: {toCopy} floats captured. \n {floatsRead} floats read. \n {length} bytes length. \n Samplerate: {_currentOutputSampleRate} \n Channels: {_currentOutputChannels}");
+                for (int i = 0; i < floatsRead; i++)
+                {
+                    _fftCaptureBuffer[_writePos++] = _dspTempBuffer[i];
+
+                    if (_writePos >= _fftCaptureBuffer.Length)
+                        _writePos = 0;
+                }
+
+                _fftCaptureFloats =
+                    Math.Min(
+                        _fftCaptureFloats + floatsRead,
+                        _fftCaptureBuffer.Length);
+
+                //Debug.WriteLine($"[AudioEngine] FFT Capture: {_fftCaptureFloats} floats captured. \n {floatsRead} floats read. \n {length} bytes length. \n Samplerate: {_currentOutputSampleRate} \n Channels: {_currentOutputChannels}");
             }
         }
         public int GetCapturedPCMData(float[] destination)
         {
             lock (_fftLock)
             {
-                if (_fftCaptureFloats <= 0) return 0;
-                int len = Math.Min(destination.Length, _fftCaptureFloats);
-                Array.Copy(_fftCaptureBuffer, destination, len);
-                return len;
+                if (_fftCaptureFloats == 0) return 0;
+
+                int available = Math.Min(_fftCaptureFloats, _fftCaptureBuffer.Length);
+                int requested = Math.Min(destination.Length, available);
+
+                int start = _writePos - requested;
+
+                if (start < 0) { 
+                    start += _fftCaptureBuffer.Length;
+                }
+
+                if (start + requested <= _fftCaptureBuffer.Length)
+                {
+                    // no wrap
+                    Array.Copy(_fftCaptureBuffer, start, destination, 0, requested);
+                }else
+                {
+                    int first = _fftCaptureBuffer.Length - start;
+
+                    Array.Copy(
+                        _fftCaptureBuffer,
+                        start,
+                        destination,
+                        0,
+                        first);
+
+                    Array.Copy(
+                        _fftCaptureBuffer,
+                        0,
+                        destination,
+                        first,
+                        requested - first);
+                }
+                return requested;
             }
         }
 
