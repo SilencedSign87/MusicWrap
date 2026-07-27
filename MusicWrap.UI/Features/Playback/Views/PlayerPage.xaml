@@ -6,15 +6,16 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             x:Name="RootPlayerPage"
              mc:Ignorable="d" 
              d:DesignHeight="40" 
              d:DesignWidth="1200"
              d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
-             Foreground="#FFFFFF"
+             Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}"
              >
     <UserControl.Resources>
         <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -26,15 +27,8 @@
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <Border>
-        <Border.Background>
-            <ImageBrush 
-        ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}" 
-        RenderOptions.BitmapScalingMode="LowQuality"
-                Opacity="0.25"
-        Stretch="UniformToFill"/>
-        </Border.Background>
-
+    <Border Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}">
+        
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -58,7 +52,7 @@
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
                     </Button>
 
-                    <controls:VolumeControl DominantColorHex="#ffffff" Height="32" Width="120" Margin="8,0,0,0"/>
+                    <controls:VolumeControl DominantColorHex="{Binding DataContext.CurrentTrackHighlightColorHex, ElementName=RootPlayerPage}" Height="32" Width="120" Margin="8,0,0,0"/>
                 </StackPanel>
             </Grid>
 
@@ -70,7 +64,7 @@
                     Height="36"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
-                    DominantColorHex="#ffffff"
+                    DominantColorHex="{Binding CurrentTrackHighlightColorHex}"
                     />
             </Grid>
 

@@ -15,7 +15,7 @@
         x:Name="RootWindow"
         Width="350"
         WindowStyle="SingleBorderWindow"
-        Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
+        Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
         d:Background="#2c2c2c"
         d:Foreground="White"
         d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
@@ -30,11 +30,11 @@
         <Style x:Key="FlyoutTrayButton" TargetType="Button" BasedOn="{StaticResource TransparentButton}">
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
-            <Setter Property="Foreground" Value="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
+            <Setter Property="Foreground" Value="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Foreground" Value="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=background}"/>
-                    <Setter Property="Background" Value="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
+                    <Setter Property="Background" Value="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -139,7 +139,7 @@
                                         Opacity="0.5"/>
                             </Border.Effect>
                             <StackPanel>
-                                <controls:VolumeControl DominantColorHex="{Binding DataContext.CurrentTrackForegroundColorHex, ElementName=RootWindow,  Converter={StaticResource HexToBrushConverter}}"  
+                                <controls:VolumeControl DominantColorHex="{Binding DataContext.CurrentTrackHighlightColorHex, ElementName=RootWindow,  Converter={StaticResource HexToBrushConverter}}"  
                                                         Orientation="Horizontal"
                                                         Width="120"
                                                         ShowMuteButton="True"
@@ -157,7 +157,7 @@
                     Grid.Row="1"
                     Grid.ColumnSpan="3"
                     UsePlaceholderWaveform="True"
-                    DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
+                    DominantColorHex="{Binding CurrentTrackHighlightColorHex}"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Stretch"
                     Height="8"

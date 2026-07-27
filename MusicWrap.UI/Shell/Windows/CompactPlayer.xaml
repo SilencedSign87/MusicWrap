@@ -17,7 +17,7 @@
         d:Height="700"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanMinimize"
-        Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
+        Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
         d:Background="#2c2c2c"
         d:Foreground="White"
         >
@@ -31,11 +31,11 @@
         <Style x:Key="CompactPlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}" >
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
-            <Setter Property="Foreground" Value="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
+            <Setter Property="Foreground" Value="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Foreground" Value="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=background}"/>
-                    <Setter Property="Background" Value="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
+                    <Setter Property="Background" Value="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -132,7 +132,7 @@
                         <Grid Grid.Column="1" Margin="8,4">
                             <controls:WaveformPlayerControl
                                 x:Name="WaveFormPlayer"
-                                DominantColorHex="{Binding CurrentTrackForegroundColorHex}"
+                                DominantColorHex="{Binding CurrentTrackHighlightColorHex}"
                             />
                         </Grid>
                         <TextBlock Grid.Column="2" 
@@ -192,7 +192,7 @@
                                 </Border.Effect>
                                 <StackPanel>
                                     <controls:VolumeControl
-                                        DominantColorHex="{Binding DataContext.CurrentTrackForegroundColorHex, ElementName=MusicWrapCompactWindow, Converter={StaticResource HexToBrushConverter}}"
+                                        DominantColorHex="{Binding DataContext.CurrentTrackHighlightColorHex, ElementName=MusicWrapCompactWindow, Converter={StaticResource HexToBrushConverter}}"
                                         Width="150"
                                         Height="32"/>
                                 </StackPanel>
@@ -206,7 +206,7 @@
                     Visibility="Collapsed"
                     d:Visibility="Visible">
                     <TabControl Style="{StaticResource SubtleTabControl}" >
-                        <TabItem x:Name="QueueTab" Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}">
+                        <TabItem x:Name="QueueTab" Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}">
                             <TabItem.Header>
                                 <StackPanel>
                                     <TextBlock Text="Queue" />
@@ -214,7 +214,7 @@
                             </TabItem.Header>
                             <!--<mw:QueueListPage />-->
                         </TabItem>
-                        <TabItem Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackForegroundColorHex, Converter={StaticResource HexToBrushConverter}}">
+                        <TabItem Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}">
                             <TabItem.Header>
                                 <StackPanel>
                                     <TextBlock Text="Library" />

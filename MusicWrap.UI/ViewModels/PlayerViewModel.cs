@@ -46,7 +46,8 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string? currentTrackDominantColorHex;
         [ObservableProperty]
-        private string? currentTrackForegroundColorHex;
+        private string? currentTrackHighlightColorHex;
+
         
         //[ObservableProperty] 
         public string PlayPauseIcon => IsPlaying ? "\ue769" : "\ue768" ; 
@@ -186,7 +187,7 @@ namespace MusicWrap.UI.ViewModels
             {
                 CurrentTrackTitle = AppStringPool.Intern("Unknown track") ?? "Unknown track";
                 CurrentTrackDominantColorHex = "#808080";
-                CurrentTrackForegroundColorHex = "#FFFFFF";
+                CurrentTrackHighlightColorHex = "#FFFFFF";
                 return;
             }
 
@@ -196,7 +197,7 @@ namespace MusicWrap.UI.ViewModels
             {
                 CurrentTrackTitle = AppStringPool.Intern("Unknown track") ?? "Unknown track";
                 CurrentTrackDominantColorHex = "#808080";
-                CurrentTrackForegroundColorHex = "#FFFFFF";
+                CurrentTrackHighlightColorHex = "#FFFFFF";
                 return;
             }
 
@@ -229,20 +230,20 @@ namespace MusicWrap.UI.ViewModels
                     CurrentTrackImagePath = coverAsset.FileName;
                     ArtworkPath = _imageService.ResolvePath(coverAsset.FileName, ImageVariant.Original) ?? string.Empty;
                     CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
-                    CurrentTrackForegroundColorHex = coverAsset.DominantForegroundHex;
+                    CurrentTrackHighlightColorHex = coverAsset.HighlightColorHex;
                 }
                 else
                 {
                     CurrentTrackImagePath = string.Empty;
                     ArtworkPath = string.Empty;
                     CurrentTrackDominantColorHex = "#808080";
-                    CurrentTrackForegroundColorHex = "#FFFFFF";
+                    CurrentTrackHighlightColorHex = "#FFFFFF";
                 }
             }
             else
             {
                 CurrentTrackDominantColorHex = "#808080";
-                CurrentTrackForegroundColorHex = "#FFFFFF";
+                CurrentTrackHighlightColorHex = "#FFFFFF";
             }
         }
 
@@ -257,7 +258,7 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackArtists = string.Empty;
             CurrentTrackImagePath = string.Empty;
             CurrentTrackDominantColorHex = "#808080";
-            CurrentTrackForegroundColorHex = "#FFFFFF";
+            CurrentTrackHighlightColorHex = "#FFFFFF";
             ArtworkPath = string.Empty;
         }
 
