@@ -25,7 +25,7 @@ namespace MusicWrap.UI.Controls
         private const int AssumedSampleRate = 44100;
         private const float Amplification = 1.0f;
         private const float RiseSpeed = 0.6f;
-        private const float FallSpeed = 0.3f;
+        private const float FallSpeed = 0.35f;
         private const float PeakDecay = 0.03f;
         private const float HeightDecay = 0.1f;
 
