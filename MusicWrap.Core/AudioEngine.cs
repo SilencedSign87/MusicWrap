@@ -42,6 +42,13 @@ namespace MusicWrap.Core
         public int CurrentMixerSampleRate => _mixerSampleRate;
         public bool IsMixerActive => _mixerStream != 0;
 
+        private DSPProcedure? _fftDspCallback;
+        private float[] _fftCaptureBuffer = Array.Empty<float>();
+        private int _fftCaptureFloats;
+        private readonly object _fftLock = new();
+        private bool _fftCaptureActive;
+        private int _fftDspHandle;
+
         private static string GetNativeLibExtension()
         {
 #if WINDOWS
@@ -113,19 +120,22 @@ namespace MusicWrap.Core
 
         public bool EnsureMixer(int sampleRate, int channels = 2)
         {
-            if (_mixerStream != 0 && _mixerSampleRate == sampleRate && _mixerChannels == channels)
-                return true;
+            int requestedRate = sampleRate > 0 ? sampleRate : 44100;
+            int requestedChannels = channels > 0 ? channels : 2;
 
-            int effectiveRate = PrepareOutputForTrack(sampleRate, channels);
-            int effectiveChannels = _currentOutputChannels > 0 ? _currentOutputChannels : channels;
+            int effectiveRate = PrepareOutputForTrack(requestedRate, requestedChannels);
+            int mixRate = effectiveRate > 0 ? effectiveRate : requestedRate;
+            const int mixChannels = 2;
+
+            if (_mixerStream != 0 && _mixerSampleRate == mixRate && _mixerChannels == mixChannels)
+                return true;
 
             DestroyMixer();
 
             var flags = BassFlags.Float | BassFlags.MixerNonStop;
+
             if (IsWasapiMode())
                 flags |= BassFlags.Decode;
-
-            int mixRate = effectiveRate > 0 ? effectiveRate : sampleRate;
 
             _mixerStream = BassMix.CreateMixerStream(mixRate, 2, flags);
             if (_mixerStream == 0)
@@ -137,7 +147,9 @@ namespace MusicWrap.Core
             }
 
             _mixerSampleRate = mixRate;
-            _mixerChannels = 2;
+            _mixerChannels = mixChannels;
+
+            StartFFTCapture();
 
             return true;
         }
@@ -168,11 +180,13 @@ namespace MusicWrap.Core
 
         public bool StartMixer()
         {
+            if (_mixerStream == 0) return false;
+            StartFFTCapture();
 #if WINDOWS
             if (IsWasapiMode())
                 return _isWasapiInitialized && BassWasapi.Start();
 #endif
-            return _mixerStream != 0 && Bass.ChannelPlay(_mixerStream, false);
+            return Bass.ChannelPlay(_mixerStream, false);
         }
 
         public bool PauseMixer()
@@ -245,6 +259,7 @@ namespace MusicWrap.Core
 
         private void DestroyMixer()
         {
+            StopFFTCapture();
             if (_mixerStream != 0)
             {
                 Bass.StreamFree(_mixerStream);
@@ -484,6 +499,59 @@ namespace MusicWrap.Core
 
         public Errors GetLastError() => Bass.LastError;
 
+        public void StartFFTCapture()
+        {
+            if (_mixerStream == 0 || _fftCaptureActive) return;
+
+            _fftCaptureBuffer = new float[4096];
+            _fftCaptureFloats = 0;
+            _fftDspCallback = OnFFTDspCapture;
+            _fftDspHandle = Bass.ChannelSetDSP(_mixerStream, _fftDspCallback, IntPtr.Zero, 0);
+            if (_fftDspHandle == 0)
+            {
+                Debug.WriteLine($"[AudioEngine] Failed to set FFT DSP: {Bass.LastError}");
+                _fftDspCallback = null;
+                _fftCaptureBuffer = Array.Empty<float>();
+                return;
+            }
+            _fftCaptureActive = true;
+        }
+        public void StopFFTCapture()
+        {
+            if (!_fftCaptureActive) return;
+            if (_fftDspHandle != 0)
+            {
+                Bass.ChannelRemoveDSP(_mixerStream, _fftDspHandle);
+                _fftDspHandle = 0;
+            }
+            _fftCaptureActive = false;
+            _fftDspCallback = null;
+            _fftCaptureFloats = 0;
+        }
+        private void OnFFTDspCapture(int handle, int channel, IntPtr buffer, int length, IntPtr user)
+        {
+            if (length <= 0) return;
+            int floatsRead = length / sizeof(float);
+            if (floatsRead <= 0) return;
+            lock (_fftLock)
+            {
+                int toCopy = Math.Min(floatsRead, _fftCaptureBuffer.Length);
+                System.Runtime.InteropServices.Marshal.Copy(buffer, _fftCaptureBuffer, 0, toCopy);
+                _fftCaptureFloats = toCopy;
+                // Debug.WriteLine($"[AudioEngine] FFT Capture: {toCopy} floats captured. \n {floatsRead} floats read. \n {length} bytes length. \n Samplerate: {_currentOutputSampleRate} \n Channels: {_currentOutputChannels}");
+            }
+        }
+        public int GetCapturedPCMData(float[] destination)
+        {
+            lock (_fftLock)
+            {
+                if (_fftCaptureFloats <= 0) return 0;
+                int len = Math.Min(destination.Length, _fftCaptureFloats);
+                Array.Copy(_fftCaptureBuffer, destination, len);
+                return len;
+            }
+        }
+
         #endregion
 
         #region WASAPI
@@ -585,6 +653,7 @@ namespace MusicWrap.Core
 
         private void Teardown()
         {
+            StopFFTCapture();
 #if WINDOWS
             if (_isWasapiInitialized)
             {

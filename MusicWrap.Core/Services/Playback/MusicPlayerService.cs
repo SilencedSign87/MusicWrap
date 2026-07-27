@@ -1,7 +1,5 @@
 using ManagedBass;
-using ManagedBass.Mix;
 using MusicWrap.Data.Library.Models;
-
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Player;
@@ -35,7 +33,6 @@ namespace MusicWrap.Core.Services.Playback
         int CurrentSampleRate { get; }
         OutputMode CurrentOutputMode { get; }
         float[] CurrentWaveformData { get; }
-
         RepeatMode RepeatMode { get; set; }
         ContinueMode ContinueMode { get; set; }
         bool IsShuffleEnabled { get; }
@@ -81,6 +78,7 @@ namespace MusicWrap.Core.Services.Playback
         void ChangeOutputDevice(int deviceIndex);
         void ChangeSampleRate(int sampleRate);
         void ChangeOutputMode(OutputMode mode);
+        int GetCapturedPCMData(float[] destination);
         (int Index, string Name)[] GetAvailableDevices();
         PlaybackQueueSnapshot BuildPlaybackSnapshot();
         void LoadInitialState();
@@ -101,8 +99,6 @@ namespace MusicWrap.Core.Services.Playback
 
         private const int MaxErrorCount = 5;
         private int _errorCount;
-
-
 
         public int CurrentIndex => _queue.CurrentIndex;
 
@@ -232,6 +228,8 @@ namespace MusicWrap.Core.Services.Playback
                 return idx >= 0 ? idx : 0;
             }
         }
+
+        public int GetCapturedPCMData(float[] destination) => _audioEngine.GetCapturedPCMData(destination);
 
         public MusicPlayerService(
             MusicLibrary library,
@@ -1104,7 +1102,6 @@ namespace MusicWrap.Core.Services.Playback
                 FreeStream(previousStream);
             }
 
-            // AudioEngine maneja mixer y SRC de máxima calidad
             if (!_audioEngine.PrepareTrack(_currentStream, requestedSampleRate))
             {
                 _logger.LogError("Failed to prepare track for playback");
@@ -1549,7 +1546,6 @@ namespace MusicWrap.Core.Services.Playback
                 _waveformCacheNodes.Clear();
                 _waveformCacheLru.Clear();
             }
-
             _audioEngine.Dispose();
         }
     }
