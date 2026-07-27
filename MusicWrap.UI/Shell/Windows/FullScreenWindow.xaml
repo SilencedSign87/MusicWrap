@@ -24,20 +24,20 @@
             Stretch="UniformToFill"/>
     </Window.Background>
     <Window.Resources>
-        <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
+        <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Foreground" 
-                Value="{Binding NowPlayingViewModel.ForegroundColorHex, Converter={StaticResource HexToBrushConverter}}"/>
+                Value="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Foreground" 
-                        Value="{Binding NowPlayingViewModel.DominantColorHex, Converter={StaticResource HexToBrushConverter}}"/>
+                        Value="{Binding NowPlayingViewModel.HighlightForegroundHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
                     <Setter Property="Background" 
-                        Value="{Binding NowPlayingViewModel.ForegroundColorHex, Converter={StaticResource HexToBrushConverter}}"/>
+                        Value="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -77,7 +77,7 @@
                         BlurRadius="16"
                         Direction="270"
                         Opacity="0.5"
-                        Color="{Binding Foreground, ElementName=RootNowPlaying}"
+                        Color="{Binding Foreground, ElementName=RootFullScreenWindow}"
                         />
                         </Border.Effect>
                     </Border>
@@ -128,17 +128,17 @@
                         </Button>
 
                         <controls:VolumeControl 
-                        Grid.Column="0" 
-                        Grid.ColumnSpan="5"
-                        Grid.Row="1"
-                        DominantColorHex="{Binding Foreground, ElementName=RootFullScreenWindow}"
-                        Height="32"
-                        ShowMuteButton="False"
-                        />
+                            Grid.Column="0" 
+                            Grid.ColumnSpan="5"
+                            Grid.Row="1"
+                            DominantColorHex="{Binding DataContext.NowPlayingViewModel.HighlightColorHex, ElementName=RootFullScreenWindow}"
+                            Height="32"
+                            ShowMuteButton="False"
+                            />
 
                     </Grid>
                     <controls:WaveformPlayerControl
-                        DominantColorHex="{Binding NowPlayingViewModel.ForegroundColorHex}"
+                        DominantColorHex="{Binding NowPlayingViewModel.HighlightColorHex}"
                         Height="48"
                     />
                 </StackPanel>

@@ -14,15 +14,23 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
     public partial class NowPlayingViewModel : ObservableObject, IDisposable
     {
         [ObservableProperty]
-        private string trackTitle = "No track playing";
+        public partial string TrackTitle { get; set; } = "No track playing";
         [ObservableProperty]
-        private string trackAlbum = "";
+        public partial string TrackAlbum { get; set; } = "";
         [ObservableProperty]
-        private string? dominantColorHex = "#808080";
+        public partial string? DominantColorHex { get; set; } = "#808080";
+
         [ObservableProperty]
-        private string? foregroundColorHex = "#FFFFFF";
+        public partial string? ForegroundColorHex { get; set; } = "#FFFFFF";
+
         [ObservableProperty]
-        private string? trackImagePath;
+        public partial string? HighlightColorHex { get; set; } = "#808080";
+
+        [ObservableProperty]
+        public partial string? HighlightForegroundHex { get; set; } = "#FFFFFF";
+
+        [ObservableProperty]
+        public partial string? TrackImagePath { get; set; }
 
         private int _currentTrackId;
         private int _currentAlbumId;
@@ -100,6 +108,8 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                     TrackImagePath = coverAsset.FileName;
                     DominantColorHex = coverAsset.DominantColorHex;
                     ForegroundColorHex = coverAsset.DominantForegroundHex;
+                    HighlightColorHex = coverAsset.HighlightColorHex;
+                    HighlightForegroundHex = coverAsset.HighlightForegroundHex;
                 }
             }
 

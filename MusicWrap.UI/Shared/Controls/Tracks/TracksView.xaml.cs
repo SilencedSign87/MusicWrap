@@ -322,6 +322,29 @@ namespace MusicWrap.UI.Controls.Models
             set => SetValue(AutoScrollToCurrentTrackProperty, value);
         }
 
+        public static readonly DependencyProperty SelectedBackgroundProperty =
+            DependencyProperty.Register(
+                nameof(SelectedBackground),
+                typeof(Brush),
+                typeof(TracksView),
+                new PropertyMetadata(null));
+        public Brush? SelectedBackground
+        {
+            get => (Brush?)GetValue(SelectedBackgroundProperty);
+            set => SetValue(SelectedBackgroundProperty, value);
+        }
+        public static readonly DependencyProperty SelectedForegroundProperty =
+            DependencyProperty.Register(
+                nameof(SelectedForeground),
+                typeof(Brush),
+                typeof(TracksView),
+                new PropertyMetadata(null));
+        public Brush? SelectedForeground
+        {
+            get => (Brush?)GetValue(SelectedForegroundProperty);
+            set => SetValue(SelectedForegroundProperty, value);
+        }
+
         #endregion
 
         private static void GroupByDisk_PropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

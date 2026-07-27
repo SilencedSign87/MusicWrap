@@ -85,6 +85,10 @@
                                  UseColumnFlowPanel="True"
                                  ContextMenu="{StaticResource AlbumTracksContextMenu}"
                                  VisualMode="CompactNoCover"
+                                 Foreground="{Binding Foreground , ElementName=RootAlbumTracksPage}"
+                                 SelectedForeground="{Binding HighlightForeground, Converter={StaticResource HexToBrushConverter}}"
+                                 Background="Transparent"
+                                 SelectedBackground="{Binding HighlightColor, Converter={StaticResource HexToBrushConverter}}"
                                  IndexMode="TrackNumber"
                                  SelectionMode="Extended">
                 <uimodels:TracksView.ColumnFlowColumns>

@@ -88,23 +88,36 @@
             </Setter>
 
             <Style.Triggers>
+                <!-- Explicit override -->
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=Root, Path=SelectedBackground, Converter={StaticResource NullToBoolConverter}}"  Value="True"/>
+                        <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="Background" Value="{Binding ElementName=Root, Path=SelectedBackground}"/>
+                    <Setter Property="Foreground" Value="{Binding ElementName=Root, Path=SelectedForeground}"/>
+                </MultiDataTrigger>
+                <!-- Autodetected - light foreground -->
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=Root, Path=SelectedBackground, Converter={StaticResource NullToBoolConverter}}" Value="False"/>
                         <Condition Binding="{Binding ElementName=Root, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="True"/>
                         <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
                     </MultiDataTrigger.Conditions>
                     <Setter Property="Background" Value="#FFFFFFFF"/>
                     <Setter Property="Foreground" Value="#FF000000"/>
                 </MultiDataTrigger>
-
+                <!-- Autodetected - dark foreground -->
                 <MultiDataTrigger>
                     <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding ElementName=Root, Path=SelectedBackground, Converter={StaticResource NullToBoolConverter}}" Value="False"/>
                         <Condition Binding="{Binding ElementName=Root, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="False"/>
                         <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True"/>
                     </MultiDataTrigger.Conditions>
                     <Setter Property="Background" Value="#FF000000"/>
                     <Setter Property="Foreground" Value="#FFFFFFFF"/>
                 </MultiDataTrigger>
+
             </Style.Triggers>
         </Style>
 

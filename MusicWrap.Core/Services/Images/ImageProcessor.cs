@@ -37,7 +37,7 @@ namespace MusicWrap.Core.Services.Images
             using var small = ResizeToCover(medium, SmallCoverSize);
             SaveBitmap(small, GetPath(MusicWrapDirectories.SmallImageDirectory, fileName));
 
-            var colors = ExtractColorPalette(small);
+            var colors = ExtractColorPalette(medium);
 
             using var blur = CreateBlurredBackground(bitmap, colors.DominantColorHex);
             SaveBitmap(blur, GetPath(MusicWrapDirectories.BlurImageDirectory, fileName));
@@ -212,91 +212,58 @@ namespace MusicWrap.Core.Services.Images
         private static ColorExtractionResult ExtractColorPalette(SKBitmap sample)
         {
             var buffer = GetPixelData(sample);
-            int totalPixels = sample.Width * sample.Height;
 
-            var counts = new Dictionary<int, int>();
-            var colorValues = new Dictionary<int, (byte R, byte G, byte B)>();
-            int validPixels = 0;
-
-            for (int i = 0; i < totalPixels; i++)
+            var pixelFormat = sample.ColorType switch
             {
-                int offset = i * 4;
-                byte b = buffer[offset];
-                byte g = buffer[offset + 1];
-                byte r = buffer[offset + 2];
-                byte a = buffer[offset + 3];
+                SKColorType.Bgra8888 => MedianCutQuantizer.PixelFormat.BGRA,
+                SKColorType.Rgba8888 => MedianCutQuantizer.PixelFormat.RGBA,
+                _ => MedianCutQuantizer.PixelFormat.BGRA 
+            };
 
-                if (a < 128) continue; // Skip transparent pixels
+            var palette = MedianCutQuantizer.GetPalette(buffer, 
+                width: sample.Width, 
+                height: sample.Height, 
+                quality: 4, 
+                colorCount: 10,
+                pixelFormat: pixelFormat);
 
-                var hsv = RgbToHsv(r, g, b);
-
-                if (hsv.V > 0.96f && hsv.S < 0.4f) { /* whites/greys are valid */ }
-                else if (hsv.S < 0.08f) continue;
-
-                int quantized = Quantize(r, g, b);
-                counts.TryGetValue(quantized, out var c);
-                counts[quantized] = c + 1;
-                colorValues.TryAdd(quantized, (r, g, b));
-                validPixels++;
-            }
-
-            if (validPixels == 0 || counts.Count == 0)
+            if (palette == null || palette.Length == 0)
                 return ColorExtractionResult.Default;
 
-            int minCount = Math.Max(1, (int)(validPixels * MinColorFrequency));
-            var filtered = counts.Where(kv => kv.Value >= minCount).ToList();
-            if (filtered.Count == 0) filtered = counts.ToList();
+            var (domR, domG, domB) = palette[0];
 
-            var ranked = filtered
-                .OrderByDescending(kv => kv.Value)
-                .ThenByDescending(kv =>
-                {
-                    var (cr, cg, cb) = colorValues[kv.Key];
-                    var hsv = RgbToHsv(cr, cg, cb);
-                    return hsv.S * 0.7f + hsv.V * 0.3f;
-                })
-                .ToList();
-
-            // Dominant
-
-            var (domR, domG, domB) = BoostSaturation(colorValues[ranked[0].Key]);
             string dominantHex = RgbToHex(domR, domG, domB);
             string dominantFg = GetContrastColor(domR, domG, domB);
             var domHsv = RgbToHsv(domR, domG, domB);
 
-            // Highlight
+            
+            // highlight
             (byte R, byte G, byte B) bestHighlight = (domR, domG, domB);
             bool foundDistinctHue = false;
-
-            for (int idx = 1; idx < ranked.Count; idx++)
+            for (int idx = 1; idx < palette.Length; idx++)
             {
-                var (cr, cg, cb) = colorValues[ranked[idx].Key];
-                var hsv = RgbToHsv(cr, cg, cb);
-
+                var hsv = RgbToHsv(palette[idx].r, palette[idx].g, palette[idx].b);
                 float hueDiff = Math.Abs(hsv.H - domHsv.H);
                 hueDiff = Math.Min(hueDiff, 360f - hueDiff);
 
                 if (hueDiff > 25f && hsv.S > 0.15f)
                 {
-                    bestHighlight = (cr, cg, cb);
+                    bestHighlight = palette[idx];
                     foundDistinctHue = true;
                     break;
                 }
             }
 
-            if (!foundDistinctHue)
+            // fallback
+            if (!foundDistinctHue && palette.Length > 1)
             {
-                float newHue = (domHsv.H + 60f) % 360f;
-                bestHighlight = HsvToRgb(newHue, Math.Max(0.5f, domHsv.S), domHsv.V);
+                bestHighlight = palette[1];
             }
-
-            bestHighlight = BoostSaturation(bestHighlight, 0.4f);
 
             bestHighlight = EnsureUIContrast(bestHighlight, (domR, domG, domB), dominantFg);
 
             string highlightHex = RgbToHex(bestHighlight.R, bestHighlight.G, bestHighlight.B);
             string highlightFg = GetContrastColor(bestHighlight.R, bestHighlight.G, bestHighlight.B);
-
 
             return new ColorExtractionResult
             {

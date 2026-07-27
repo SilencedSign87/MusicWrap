@@ -96,6 +96,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             {
                 _scanner.RemoveDirectory(dir.Path, true);
             }
+            UpdateDirectories();
         }
 
         [RelayCommand]

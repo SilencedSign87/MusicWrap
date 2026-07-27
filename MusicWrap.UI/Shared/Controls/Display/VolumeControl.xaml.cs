@@ -72,7 +72,21 @@ namespace MusicWrap.UI.Controls
         }
 
         public static readonly DependencyProperty DominantColorHexProperty =
-            DependencyProperty.Register(nameof(DominantColorHex), typeof(string), typeof(VolumeControl), new PropertyMetadata("#FFFFFF"));
+            DependencyProperty.Register(
+                nameof(DominantColorHex), 
+                typeof(string), 
+                typeof(VolumeControl), 
+                new FrameworkPropertyMetadata("#FFFFFF",
+                    FrameworkPropertyMetadataOptions.AffectsRender,
+                    OnDominantColorHexChanged)
+                );
+        private static void OnDominantColorHexChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is VolumeControl control)
+            {
+                control.UpdateVolumeVisual(control._viewModel?.Volume ?? 0);
+            }
+        }
 
         public Orientation Orientation
         {
