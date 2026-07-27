@@ -25,7 +25,7 @@ namespace MusicWrap.UI.Controls
         private const int AssumedSampleRate = 44100;
         private const float Amplification = 1.0f;
         private const float RiseSpeed = 0.6f;
-        private const float FallSpeed = 0.4f;
+        private const float FallSpeed = 0.3f;
         private const float PeakDecay = 0.03f;
         private const float HeightDecay = 0.1f;
 
@@ -196,48 +196,39 @@ namespace MusicWrap.UI.Controls
             var result = new float[bandCount];
             if (spectrum.Length == 0 || bandCount <= 0)
                 return result;
-
             int usableBins = spectrum.Length;
             float nyquist = sampleRate * 0.5f;
             float binHz = nyquist / usableBins;
             if (binHz <= 0f) return result;
-
             float minHz = MathF.Max(MinEqHz, binHz);
             float maxHz = MathF.Min(MaxEqHz, nyquist * 0.98f);
             if (maxHz <= minHz) maxHz = nyquist * 0.98f;
-
-            float logSpan = MathF.Log(maxHz / minHz);
-
+            // Mel scale mapping
+            float melMin = HzToMel(minHz);
+            float melMax = HzToMel(maxHz);
+            float melSpan = melMax - melMin;
             for (int i = 0; i < bandCount; i++)
             {
                 float t0 = (float)i / bandCount;
                 float t1 = (float)(i + 1) / bandCount;
-
-                float lowHz = minHz * MathF.Exp(logSpan * t0);
-                float highHz = minHz * MathF.Exp(logSpan * t1);
-
+                float lowHz = MelToHz(melMin + melSpan * t0);
+                float highHz = MelToHz(melMin + melSpan * t1);
                 int lowBin = Math.Clamp((int)(lowHz / binHz), 1, usableBins - 1);
                 int highBin = Math.Clamp((int)(highHz / binHz), lowBin + 1, usableBins);
-
                 double sumPower = 0.0;
                 int count = 0;
-
                 for (int b = lowBin; b < highBin; b++)
                 {
                     double m = spectrum[b];
                     sumPower += m * m;
                     count++;
                 }
-
                 float rms = count > 0 ? (float)Math.Sqrt(sumPower / count) : 0f;
-
                 float db = 20f * MathF.Log10(rms + 1e-8f);
                 float norm = (db - NoiseFloorDb) / (CeilingDb - NoiseFloorDb);
                 norm = Math.Clamp(norm, 0f, 1f);
-
                 result[i] = MathF.Pow(norm, EqGamma);
             }
-
             return result;
         }
         private void DrawBars()
@@ -319,7 +310,14 @@ namespace MusicWrap.UI.Controls
             brush.Freeze();
             return brush;
         }
-
+        private static float HzToMel(float hz)
+        {
+            return 2595f * MathF.Log10(1f + hz / 700f);
+        }
+        private static float MelToHz(float mel)
+        {
+            return 700f * (MathF.Pow(10f, mel / 2595f) - 1f);
+        }
         private Color GetBaseColor()
         {
             if (!string.IsNullOrWhiteSpace(DominantColorHex))
