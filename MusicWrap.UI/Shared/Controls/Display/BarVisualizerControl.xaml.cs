@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
@@ -22,30 +23,35 @@ namespace MusicWrap.UI.Controls
         private Brush? _topBrush;
         private string? _lastDominantColor;
 
-        private float[] _currentHeights = Array.Empty<float>();
-        private float[] _peakHold = Array.Empty<float>();
+        private float[] _currentHeights = [];
+        private float[] _peakHold = [];
         private bool _isActive;
 
         private const int AssumedSampleRate = 44100;
         private const float Amplification = 1.0f;
-        private const float RiseSpeed = 0.6f;
-        private const float FallSpeed = 0.35f;
-        private const float PeakDecay = 0.03f;
-        private const float HeightDecay = 0.1f;
+        private const float RiseSpeed = 0.6f; // how quickly the bars rise to the target value (0-1)
+        private const float FallSpeed = 0.4f; // how quickly the bars fall to the target value (0-1)
+        private const float PeakDecay = 0.03f; // how quickly the peak hold value falls (0-1)
+        private const float HeightDecay = 0.1f; // how quickly the current height value falls (0-1)
 
-        private const float MinEqHz = 10f;
-        private const float MaxEqHz = 18000f;
-        private const float NoiseFloorDb = -72f;
-        private const float CeilingDb = -12f;
-        private const float EqGamma = 1.0f;
+        private const float MinEqHz = 20f; // lowest frequency
+        private const float MaxEqHz = 20000f; // highest frequency
+        private const float NoiseFloorDb = -90f; // lowest dB value to consider (anything below this is treated as silence)
+        private const float CeilingDb = -12f; // highest dB value to consider (anything above this is treated as max volume)
+        private const float EqGamma = 1.0f; // 1 = linear, <1 = more energy on the low end, >1 = more energy on the high end
+
+        private const float HighShelfGain = 0.1f;     // 0 = off, 0.3 = subtle, 0.8 = agressive
+        private const float HighShelfCurve = 0.4f;     // <1 = more energy only on the high end
+        private const float GammaDelta = 0.2f;        // how much to reduce gamma for high frequencies (0 = off, 0.5 = strong)
 
         private const int FFTSize = 16384;
 
         private readonly float[] _pcmBuffer = new float[FFTSize * 2]; // stereo
-        private float[] _fftInput = Array.Empty<float>();
-        private Complex[] _fftComplex = Array.Empty<Complex>();
-        private float[] _magnitudes = Array.Empty<float>();
-
+        private float[] _fftInput = [];
+        private Complex[] _fftComplex = [];
+        private float[] _magnitudes = [];
+        private Point[] _points = [];
+        private BandMapping[] _bandMap = [];
 
         public BarVisualizerControl()
         {
@@ -162,7 +168,7 @@ namespace MusicWrap.UI.Controls
                 _magnitudes[i] = (float)Math.Sqrt(power);
             }
 
-            float[] bands = MapFFTToBands(_magnitudes, BarCount, AssumedSampleRate);
+            float[] bands = MapFFTToBands(_magnitudes, BarCount);
             UpdateHeights(bands);
             DrawBars();
         }
@@ -173,6 +179,9 @@ namespace MusicWrap.UI.Controls
             int count = Math.Max(BarCount, 1);
             _currentHeights = new float[count];
             _peakHold = new float[count];
+            _points = new Point[count];
+            RebuildPointCache();
+            RebuildBandMapping();
         }
         private void DecayAll()
         {
@@ -200,80 +209,48 @@ namespace MusicWrap.UI.Controls
             }
         }
 
-        private static float[] MapFFTToBands(float[] spectrum, int bandCount, int sampleRate)
+        private float[] MapFFTToBands(float[] spectrum, int bandCount)
         {
             var result = new float[bandCount];
 
-            if (spectrum.Length == 0 || bandCount <= 0)
-                return result;
-
-            int usableBins = spectrum.Length;
-
-            float nyquist = sampleRate * 0.5f;
-            float binHz = nyquist / usableBins;
-
-            if (binHz <= 0f)
-                return result;
-
-            double minHz = Math.Max(MinEqHz, binHz);
-            double maxHz = Math.Min(MaxEqHz, nyquist * 0.98);
-
-            if (maxHz <= minHz)
-                maxHz = nyquist * 0.98;
-
-            double ratio = Math.Pow(maxHz / minHz, 1.0 / bandCount);
-
-            double lowHz = minHz;
-
             for (int i = 0; i < bandCount; i++)
             {
-                double highHz = lowHz * ratio;
+                var map = _bandMap[i];
 
-                double center = Math.Sqrt(lowHz * highHz);
-                double left = Math.Sqrt(lowHz * center);
-                double right = Math.Sqrt(center * highHz);
+                float mLeft = InterpolateSpectrum(spectrum, map.Left);
+                float mCenter = InterpolateSpectrum(spectrum, map.Center);
+                float mRight = InterpolateSpectrum(spectrum, map.Right);
 
-                float mLeft = SampleSpectrumInterpolated(spectrum, left, binHz);
-                float mCenter = SampleSpectrumInterpolated(spectrum, center, binHz);
-                float mRight = SampleSpectrumInterpolated(spectrum, right, binHz);
+                float magnitude = (mLeft + 2f * mCenter + mRight) * 0.25f;
 
-                float magnitude =
-                    (mLeft + 2f * mCenter + mRight) * 0.25f;
+                // high-shelf boost
+                float t = (float)i / (bandCount - 1);
+                float shelfGain = 1.0f + HighShelfGain * MathF.Pow(t, HighShelfCurve);
+                magnitude *= shelfGain;
 
+                // dB + normalization
                 float db = 20f * MathF.Log10(magnitude + 1e-8f);
-
-                float norm =
-                    (db - NoiseFloorDb) /
-                    (CeilingDb - NoiseFloorDb);
-
+                float norm = (db - NoiseFloorDb) / (CeilingDb - NoiseFloorDb);
                 norm = Math.Clamp(norm, 0f, 1f);
 
-                result[i] = MathF.Pow(norm, EqGamma);
+                // variable gamma
+                float bandGamma = Math.Max(EqGamma - GammaDelta * t, 0.4f);
+                result[i] = MathF.Pow(norm, bandGamma);
 
-                lowHz = highHz;
+                //float db = 20f * MathF.Log10(magnitude + 1e-8f);
+                //float norm = (db - NoiseFloorDb) / (CeilingDb - NoiseFloorDb);
+                //norm = Math.Clamp(norm, 0f, 1f);
+                //result[i] = MathF.Pow(norm, EqGamma);
             }
 
             return result;
         }
-        private static float SampleSpectrumInterpolated(
-            float[] spectrum,
-            double frequency,
-            float binHz)
+        private static float InterpolateSpectrum(float[] spectrum, InterpolatedSample sample)
         {
-            double bin = frequency / binHz;
-
-            int i0 = (int)Math.Floor(bin);
-            int i1 = i0 + 1;
-
-            i0 = Math.Clamp(i0, 0, spectrum.Length - 1);
-            i1 = Math.Clamp(i1, 0, spectrum.Length - 1);
-
-            double frac = bin - i0;
-
-            return (float)(
-                spectrum[i0] * (1.0 - frac) +
-                spectrum[i1] * frac);
+            return spectrum[sample.Bin0] * (1f - sample.Fraction) +
+                   spectrum[sample.Bin1] * sample.Fraction;
         }
+
         private void DrawBars()
         {
             double width = BarContainer.ActualWidth;
@@ -283,26 +260,23 @@ namespace MusicWrap.UI.Controls
 
             int bandCount = _currentHeights.Length;
             double baseY = height;
-            double stepX = bandCount > 1 ? width / (bandCount - 1) : width;
 
-            var topPoints = new Point[bandCount];
             for (int i = 0; i < bandCount; i++)
             {
-                double x = bandCount > 1 ? i * stepX : width * 0.5;
                 double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
                 double y = height - Math.Max(normalized * height, 1.0);
 
-                topPoints[i] = new Point(x, y);
+                _points[i].Y = y;
             }
 
             var fillGeometry = new StreamGeometry();
             using (var ctx = fillGeometry.Open())
             {
                 ctx.BeginFigure(new Point(0, baseY), true, true);
-                ctx.LineTo(topPoints[0], true, false);
+                ctx.LineTo(_points[0], true, false);
 
-                for (int i = 1; i < topPoints.Length; i++)
-                    ctx.LineTo(topPoints[i], true, false);
+                for (int i = 1; i < _points.Length; i++)
+                    ctx.LineTo(_points[i], true, false);
 
                 ctx.LineTo(new Point(width, baseY), true, false);
             }
@@ -311,9 +285,9 @@ namespace MusicWrap.UI.Controls
             var topGeometry = new StreamGeometry();
             using (var ctx = topGeometry.Open())
             {
-                ctx.BeginFigure(topPoints[0], false, false);
-                for (int i = 1; i < topPoints.Length; i++)
-                    ctx.LineTo(topPoints[i], true, false);
+                ctx.BeginFigure(_points[0], false, false);
+                for (int i = 1; i < _points.Length; i++)
+                    ctx.LineTo(_points[i], true, false);
             }
             topGeometry.Freeze();
 
@@ -324,7 +298,6 @@ namespace MusicWrap.UI.Controls
             SpectrumTopPath.Data = topGeometry;
             SpectrumTopPath.Stroke = _topBrush;
 
-            ProgressClip.Rect = new Rect(0, 0, width, height);
         }
         private void EnsureBrushes()
         {
@@ -440,13 +413,102 @@ namespace MusicWrap.UI.Controls
             while ((p << 1) <= v) p <<= 1;
             return p;
         }
+        private void RebuildPointCache()
+        {
+            int count = Math.Max(BarCount, 1);
+
+            _points = new Point[count];
+
+            double width = BarContainer.ActualWidth;
+
+            double step =
+                count > 1
+                    ? width / (count - 1)
+                    : width;
+
+            for (int i = 0; i < count; i++)
+                _points[i].X =
+                    count > 1
+                        ? i * step
+                        : width * 0.5;
+        }
+        private void RebuildBandMapping()
+        {
+            int bandCount = Math.Max(BarCount, 1);
+            _bandMap = new BandMapping[bandCount];
+
+            int usableBins = FFTSize / 2;
+            float nyquist = AssumedSampleRate * 0.5f;
+            float binHz = nyquist / usableBins;
+
+            if (binHz <= 0f)
+                return;
+
+            double minHz = Math.Max(MinEqHz, binHz);
+            double maxHz = Math.Min(MaxEqHz, nyquist * 0.98);
+            if (maxHz <= minHz)
+                maxHz = nyquist * 0.98;
+            double ratio = Math.Pow(maxHz / minHz, 1.0 / bandCount);
+            double lowHz = minHz;
+
+            for (int i = 0; i < bandCount; i++)
+            {
+                double highHz = lowHz * ratio;
+                double center = Math.Sqrt(lowHz * highHz);
+                double left = Math.Sqrt(lowHz * center);
+                double right = Math.Sqrt(center * highHz);
+                _bandMap[i] = new BandMapping(
+                    ComputeInterpolatedSample(left, binHz, usableBins),
+                    ComputeInterpolatedSample(center, binHz, usableBins),
+                    ComputeInterpolatedSample(right, binHz, usableBins)
+                );
+                lowHz = highHz;
+            }
+        }
+        private static InterpolatedSample ComputeInterpolatedSample(double frequency, float binHz, int maxBin)
+        {
+            double bin = frequency / binHz;
+            int i0 = (int)Math.Floor(bin);
+            int i1 = i0 + 1;
+            i0 = Math.Clamp(i0, 0, maxBin - 1);
+            i1 = Math.Clamp(i1, 0, maxBin - 1);
+            float fraction = (float)(bin - i0);
+            return new InterpolatedSample(i0, i1, fraction);
+        }
 
         #endregion
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
+            // recalculate clip
+            var width = e.NewSize.Width;
+            var height = e.NewSize.Height;
+            ProgressClip.Rect = new Rect(0, 0, width, height);
+            // recaculate point cache
+            RebuildPointCache();
             DrawBars();
         }
 
+        private readonly struct InterpolatedSample
+        {
+            public readonly int Bin0;
+            public readonly int Bin1;
+            public readonly float Fraction;
+
+            public InterpolatedSample(int bin0, int bin1, float fraction)
+            {
+                Bin0 = bin0;
+                Bin1 = bin1;
+                Fraction = fraction;
+            }
+        }
+
+        private readonly struct BandMapping(InterpolatedSample left, InterpolatedSample center, InterpolatedSample right)
+        {
+            public readonly InterpolatedSample Left = left;
+            public readonly InterpolatedSample Center = center;
+            public readonly InterpolatedSample Right = right;
+        }
     }
+
 }
