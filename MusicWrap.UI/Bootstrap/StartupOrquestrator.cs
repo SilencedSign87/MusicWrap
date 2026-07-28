@@ -58,6 +58,8 @@ public static class StartupOrquestrator
             var trayService = serviceProvider.GetService<ITrayService>();
             var hotkeyService = serviceProvider.GetRequiredService<GlobalHotkeyService>();
             var uiDispatcher = serviceProvider.GetRequiredService<IUIDispatcher>();
+            var themeService = serviceProvider.GetRequiredService<ThemeService>();
+            themeService.Initialize();
 
             trayService?.Initialize();
 

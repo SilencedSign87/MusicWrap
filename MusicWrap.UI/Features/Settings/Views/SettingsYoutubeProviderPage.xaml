@@ -7,6 +7,7 @@
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Settings.ViewModels"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
+             Foreground="{DynamicResource TextPrimaryBrush}"
              d:DataContext="{d:DesignInstance Type=vm:SettingsYoutubeViewModel}"
              d:Foreground="white"
              d:Background="#080808"
@@ -45,7 +46,7 @@
                 IsEnabled="{Binding UseCustomFfmpegPath}" />
         </Grid>
 
-        <Border Margin="8,0,0,16" Padding="8" CornerRadius="6" Background="#14000000">
+        <Border Margin="8,0,0,16" Padding="8" CornerRadius="6" Background="{DynamicResource BackgroundLayer}">
             <StackPanel>
                 <TextBlock Text="How to set up FFmpeg:" FontWeight="SemiBold" Margin="0,0,0,4" />
                 <TextBlock Text="1. Download FFmpeg from the official website." />

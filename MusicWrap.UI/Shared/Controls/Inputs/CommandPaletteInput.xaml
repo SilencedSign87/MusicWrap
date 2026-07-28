@@ -21,7 +21,7 @@
             <TextBlock Text="&#xE721;"
                        FontFamily="Segoe Fluent Icons"
                        FontSize="12"
-                       Foreground="#90FFFFFF"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center"/>
         </local:CompactInputField.BeforeContent>
     </local:CompactInputField>

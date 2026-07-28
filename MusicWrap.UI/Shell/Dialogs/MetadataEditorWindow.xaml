@@ -30,9 +30,9 @@
                     <Border 
                         Grid.Row="0"
                         Padding="8"
-                        Background="{StaticResource BackgroundLayer}"
+                        Background="{DynamicResource BackgroundLayer}"
                         BorderThickness="1"
-                        BorderBrush="{StaticResource StrokeLayerCard}"
+                        BorderBrush="{DynamicResource StrokeLayerCard}"
                         >
                         <StackPanel Orientation="Horizontal">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center" />
@@ -42,7 +42,7 @@
                 </Grid>
             </nav:ShellTabItem>
             <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" Orientation="Vertical">
-                <Border Padding="8" Background="{StaticResource BackgroundSmoke}">
+                <Border Padding="8" Background="{DynamicResource BackgroundLayer}">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition />
@@ -78,7 +78,7 @@
                 </Border>
             </nav:ShellTabItem>
             <nav:ShellTabItem IsSelected="True" IconSize="20" Spacing="8" Icon="&#xE90B;" Text="Metadata" Orientation="Vertical">
-                <Border Background="{StaticResource BackgroundSmoke}">
+                <Border Background="{DynamicResource BackgroundLayer}">
                     <Grid Margin="8" Grid.IsSharedSizeScope="True">
                         <StackPanel>
                             <Grid Margin="0,0,0,8">

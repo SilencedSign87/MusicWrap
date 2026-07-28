@@ -126,7 +126,7 @@
                     <Border>
                         <Border 
                                 Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}" 
-                                BorderBrush="{StaticResource StrokeFloating}" 
+                                BorderBrush="{DynamicResource StrokeFloating}" 
                                 CornerRadius="8" 
                                 Margin="8,16"
                                 Padding="8,4"
@@ -139,7 +139,7 @@
                                         Opacity="0.5"/>
                             </Border.Effect>
                             <StackPanel>
-                                <controls:VolumeControl DominantColorHex="{Binding DataContext.CurrentTrackHighlightColorHex, ElementName=RootWindow,  Converter={StaticResource HexToBrushConverter}}"  
+                                <controls:VolumeControl
                                                         Orientation="Horizontal"
                                                         Width="120"
                                                         ShowMuteButton="True"
@@ -157,7 +157,6 @@
                     Grid.Row="1"
                     Grid.ColumnSpan="3"
                     UsePlaceholderWaveform="True"
-                    DominantColorHex="{Binding CurrentTrackHighlightColorHex}"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Stretch"
                     Height="8"

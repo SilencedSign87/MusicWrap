@@ -15,15 +15,9 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
     {
         private readonly UserSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
-        private readonly ILibraryIntegrityService _integrityService;
-        private readonly ActivityService _activityService;
-        private readonly WindowManager _windowManager;
+        private readonly ThemeService _themeService;
 
-        [ObservableProperty] private bool _restoreEverything;
-        [ObservableProperty] private bool _restoreCurrentTrackAndPosition;
-        [ObservableProperty] private bool _restoreQueueAndIndexOnly;
-        [ObservableProperty] private bool _restoreQueueOnly;
-        [ObservableProperty] private bool _startClean;
+        [ObservableProperty] private StartupBehavior _startupBehavior;
 
         [ObservableProperty] private bool _minimizeToTray;
         [ObservableProperty] private bool _exitAppOnClose;
@@ -31,6 +25,8 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         [ObservableProperty] private bool _useCustomFfmpegPath;
         [ObservableProperty] private string _customFfmpegPath = string.Empty;
         [ObservableProperty] private TrayPopupPosition _trayPopupPosition;
+
+        [ObservableProperty] private ThemePreference _selectedTheme;
 
 
         public string WallpaperPath { get; } = string.Empty;
@@ -42,13 +38,11 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             ISaveCoordinator saveCoordinator,
             ILibraryIntegrityService integrityService,
             ActivityService activityService,
-            WindowManager windowManager)
+            ThemeService themeService)
         {
             _settings = settings;
             _saveCoordinator = saveCoordinator;
-            _integrityService = integrityService;
-            _activityService = activityService;
-            _windowManager = windowManager;
+            _themeService = themeService;
             LoadFromSettings();
             WallpaperPath = WallpaperHelper.GetWallpaperPath() ?? "";
         }
@@ -85,53 +79,17 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         #region Internal
         private void LoadFromSettings()
         {
-            RestoreQueueAndIndexOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueAndIndexOnly;
-            RestoreQueueOnly = _settings.StartupBehavior == StartupBehavior.RestoreQueueOnly;
-            StartClean = _settings.StartupBehavior == StartupBehavior.StartClean;
-            RestoreEverything = _settings.StartupBehavior == StartupBehavior.RestorePlayback;
-            RestoreCurrentTrackAndPosition = _settings.StartupBehavior == StartupBehavior.RestorePosition;
             MinimizeToTray = _settings.KeepAppInTray;
             ExitAppOnClose = !_settings.KeepAppInTray;
             UseCustomFfmpegPath = _settings.FFMpegSettings.UseCustomFfmpegPath;
             CustomFfmpegPath = _settings.FFMpegSettings.CustomFfmpegPath ?? string.Empty;
             TrayPopupPosition = _settings.TrayPopupPosition;
+            SelectedTheme = _settings.AppThemePreference;
+            StartupBehavior = _settings.StartupBehavior;
         }
         #endregion
 
         #region Partials
-        partial void OnRestoreEverythingChanged(bool value)
-        {
-            if (!value) return;
-            _settings.StartupBehavior = StartupBehavior.RestorePlayback;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-        partial void OnRestoreCurrentTrackAndPositionChanged(bool value)
-        {
-            if (!value) return;
-            _settings.StartupBehavior = StartupBehavior.RestorePosition;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-        partial void OnRestoreQueueAndIndexOnlyChanged(bool value)
-        {
-            if (!value) return;
-            _settings.StartupBehavior = StartupBehavior.RestoreQueueAndIndexOnly;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-
-        partial void OnRestoreQueueOnlyChanged(bool value)
-        {
-            if (!value) return;
-            _settings.StartupBehavior = StartupBehavior.RestoreQueueOnly;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-
-        partial void OnStartCleanChanged(bool value)
-        {
-            if (!value) return;
-            _settings.StartupBehavior = StartupBehavior.StartClean;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-
         partial void OnMinimizeToTrayChanged(bool value)
         {
             if (_updatingCloseBehavior || !value) return;
@@ -174,6 +132,15 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         partial void OnTrayPopupPositionChanged(TrayPopupPosition value)
         {
             _settings.TrayPopupPosition = value;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+        partial void OnSelectedThemeChanged(ThemePreference value)
+        {
+            _themeService.SwitchTheme(value);
+        }
+        partial void OnStartupBehaviorChanged(StartupBehavior value)
+        {
+            _settings.StartupBehavior = value;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion

@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:vm="clr-namespace:MusicWrap.UI.Shared.Controls.ViewModel"
              mc:Ignorable="d"
+             x:Name="RootVolumeControl"
              d:DataContext="{d:DesignInstance Type=vm:VolumeControlViewModel}"
              Loaded="UserControl_Loaded"
              SizeChanged="UserControl_SizeChanged"
@@ -29,8 +30,8 @@
                 HorizontalAlignment="Center"
                 Width="32" Height="32"
                 Padding="1"
-                Style="{StaticResource SubtleButton}"
-                Foreground="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                Style="{DynamicResource SubtleButton}"
+                Foreground="{Binding Foreground, ElementName=RootVolumeControl}"
                 Command="{Binding ToggleMuteCommand}">
             <TextBlock FontFamily="Segoe Fluent Icons"
                        Text="{Binding MuteButtonIcon}"
@@ -54,18 +55,18 @@
 
                 <!-- Track Background (unfilled portion) -->
                 <Rectangle x:Name="TrackBackground"
-                           Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                           Fill="{Binding Foreground, ElementName=RootVolumeControl}"
                            Opacity="0.18"
                            RadiusX="2" RadiusY="2"/>
 
                 <!-- Track Foreground (filled portion) -->
                 <Rectangle x:Name="TrackForeground"
-                           Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                           Fill="{Binding Foreground, ElementName=RootVolumeControl}"
                            RadiusX="2" RadiusY="2"/>
 
                 <!-- Thumb -->
                 <Rectangle x:Name="Thumb"
-                           Fill="{Binding DominantColorHex, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource HexToBrushConverter}}"
+                           Fill="{Binding Foreground, ElementName=RootVolumeControl}"
                            RadiusX="2" RadiusY="2"/>
 
                 <!-- Interactive Layer -->
@@ -84,13 +85,13 @@
                        AllowsTransparency="True"
                        IsHitTestVisible="False"
                        IsOpen="False">
-                    <Border Background="{StaticResource BackgroundFloating}"
+                    <Border Background="{DynamicResource BackgroundFloating}"
                             BorderThickness="1"
-                            BorderBrush="{StaticResource StrokeFloating}"
+                            BorderBrush="{DynamicResource StrokeFloating}"
                             CornerRadius="4"
                             Padding="8,4">
                         <TextBlock x:Name="VolumePopupText"
-                                   Foreground="White"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                    FontSize="11"
                                    Text="0"/>
                     </Border>

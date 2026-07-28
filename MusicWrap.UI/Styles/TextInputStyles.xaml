@@ -8,12 +8,12 @@
     <Style x:Key="BaseTextInput" TargetType="TextBox">
         <Setter Property="FontFamily" Value="Segoe UI"/>
         <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Background" Value="{StaticResource BackgroundControlDefault}"/>
-        <Setter Property="Foreground" Value="#f2f2f2"/>
+        <Setter Property="Background" Value="{DynamicResource BackgroundControlDefault}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="BorderBrush" Value="{StaticResource StrokeControl}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource StrokeControl}" />
         <Setter Property="Padding" Value="2" />
-        <Setter Property="CaretBrush" Value="White"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -35,14 +35,14 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
+                <Setter Property="Background" Value="{DynamicResource BackgroundControlHover}"/>
                 <Setter Property="Foreground" Value="#ffffff"/>
-                <Setter Property="BorderBrush" Value="{StaticResource StrokeDivider}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource StrokeDivider}"/>
             </Trigger>
             <Trigger Property="IsFocused" Value="True">
-                <Setter Property="Background" Value="{StaticResource BackgroundControlPressed}"/>
+                <Setter Property="Background" Value="{DynamicResource BackgroundControlPressed}"/>
                 <Setter Property="Foreground" Value="#ffffff"/>
-                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush100}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush100}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -53,12 +53,12 @@
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="#ffffff"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
             </Trigger>
             <Trigger Property="IsFocused" Value="True">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="#ffffff"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                 <Setter Property="BorderBrush" Value="Transparent"/>
             </Trigger>
         </Style.Triggers>

@@ -65,4 +65,9 @@
 	  </None>
 	</ItemGroup>
 
+	<!-- Supress WPF0001 for theme api-->
+	<PropertyGroup>
+		<NoWarn>$(NoWarn);WPF0001</NoWarn>
+	</PropertyGroup>
+
 </Project>

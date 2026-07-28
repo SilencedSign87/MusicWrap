@@ -14,7 +14,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Border Background="{StaticResource BackgroundCard1}" BorderThickness="1" BorderBrush="{StaticResource BackgroundCard1}" CornerRadius="4">
+            <Border Background="{DynamicResource BackgroundCard1}" BorderThickness="1" BorderBrush="{DynamicResource BackgroundCard1}" CornerRadius="4">
                 <nav:ShellTabControl
                     SelectionChanged="ShellTabControl_SelectionChanged"
                     VerticalAlignment="Bottom"

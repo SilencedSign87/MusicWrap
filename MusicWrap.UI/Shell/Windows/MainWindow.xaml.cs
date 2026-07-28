@@ -9,6 +9,7 @@ using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.Shell.ViewModel;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Shell;
 
 namespace MusicWrap.UI.Shell.Windows
 {

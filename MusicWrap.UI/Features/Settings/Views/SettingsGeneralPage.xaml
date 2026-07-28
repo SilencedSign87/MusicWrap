@@ -10,72 +10,77 @@
       d:Background="#1fffffff"
       d:DataContext="{d:DesignInstance Type=vm:SettingsGeneralViewModel}"
       d:DesignHeight="450" d:DesignWidth="800">
-    
-    <StackPanel Margin="16">
-        <controls:SectionTitleSeparator Title="App behavior" IconGlyph="&#xEB3B;" Margin="0,8"/>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
 
-        <Label Content="When closing the app:" Margin="0,0,0,8"/>
-        <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
-            <RadioButton GroupName="closeBehavior"
+
+        <StackPanel Margin="16">
+            <controls:SectionTitleSeparator Title="App theme" IconGlyph="&#xE790;" Margin="0,8"/>
+            <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
+                <RadioButton GroupName="theme" 
+                 Content="System" 
+                 Margin="8,0"
+                 IsChecked="{Binding SelectedTheme, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=System}"/>
+                <RadioButton GroupName="theme" 
+                 Content="Light" 
+                 Margin="8,0"
+                 IsChecked="{Binding SelectedTheme, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Light}"/>
+                <RadioButton GroupName="theme" 
+                 Content="Dark" 
+                 Margin="8,0"
+                 IsChecked="{Binding SelectedTheme, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Dark}"/>
+            </StackPanel>
+            <controls:SectionTitleSeparator Title="App behavior" IconGlyph="&#xEB3B;" Margin="0,8"/>
+
+            <Label Content="When closing the app:" Margin="0,0,0,8"/>
+            <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
+                <RadioButton GroupName="closeBehavior"
                          Content="Exit app"
                          Margin="8,0"
                          IsChecked="{Binding ExitAppOnClose, Mode=TwoWay}"/>
-            <RadioButton GroupName="closeBehavior"
+                <RadioButton GroupName="closeBehavior"
                  Content="Minimize to tray"
                  Margin="8,0"
                  IsChecked="{Binding MinimizeToTray, Mode=TwoWay}"/>
-        </StackPanel>
+            </StackPanel>
 
-        <controls:SectionTitleSeparator Title="App startup" IconGlyph="&#xE7E8;" Margin="0,8"/>
+            <controls:SectionTitleSeparator Title="App startup" IconGlyph="&#xE7E8;" Margin="0,8"/>
 
-        <StackPanel Orientation="Vertical" Margin="0,0,0,16">
-            <RadioButton GroupName="start"
-                 Content="Restore queue, current track, position and playback"
-                 Margin="8,0"
-                 IsChecked="{Binding RestoreEverything, Mode=TwoWay}" />
-            <RadioButton GroupName="start"
-                 Content="Restore queue, current track and position"
-                 Margin="8,0"
-                 IsChecked="{Binding RestoreCurrentTrackAndPosition, Mode=TwoWay}" />
-            <RadioButton GroupName="start"
-                 Content="Restore queue and current track"
-                 Margin="8,0"
-                 IsChecked="{Binding RestoreQueueAndIndexOnly, Mode=TwoWay}" />
+            <StackPanel Orientation="Vertical" Margin="0,0,0,16">
+                <RadioButton GroupName="startup" Content="Restore queue, current track, position and playback" Margin="8,0"
+                 IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestorePlayback}"/>
+                <RadioButton GroupName="startup" Content="Restore queue, current track and position" Margin="8,0"
+                 IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestorePosition}"/>
+                <RadioButton GroupName="startup" Content="Restore queue and current track" Margin="8,0"
+                 IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestoreQueueAndIndexOnly}"/>
+                <RadioButton GroupName="startup" Content="Restore queue" Margin="8,0"
+                 IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestoreQueueOnly}"/>
+                <RadioButton GroupName="startup" Content="Nothing" Margin="8,0"
+                 IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=StartClean}"/>
+            </StackPanel>
+            <controls:SectionTitleSeparator Title="Tray popup" IconGlyph="&#xE770;" Margin="0,8"/>
 
-            <RadioButton GroupName="start"
-                 Content="Restore queue"
-                 Margin="8,0"
-                 IsChecked="{Binding RestoreQueueOnly, Mode=TwoWay}" />
-
-            <RadioButton GroupName="start"
-                 Content="Nothing"
-                 Margin="8,0"
-                 IsChecked="{Binding StartClean, Mode=TwoWay}" />
-        </StackPanel>
-        <controls:SectionTitleSeparator Title="Tray popup" IconGlyph="&#xE770;" Margin="0,8"/>
-
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="250"/>
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0">
-                <!-- Mockup -->
-                <Border 
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="250"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0">
+                    <!-- Mockup -->
+                    <Border 
                     Width="256" 
                     Height="144" 
                     CornerRadius="8" 
                     BorderThickness="1" 
                     BorderBrush="{StaticResource StrokeSurface}"
                     >
-                    <Border.Background>
-                        <ImageBrush
+                        <Border.Background>
+                            <ImageBrush
                             ImageSource="{Binding WallpaperPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:300}"
                             Stretch="UniformToFill"
                             />
-                    </Border.Background>
+                        </Border.Background>
 
-                    <Border Width="72" Height="24"
+                        <Border Width="72" Height="24"
                         CornerRadius="2"
                         Background="{StaticResource BackgroundFloating}"
                         BorderBrush="{StaticResource StrokeSurface}"
@@ -83,43 +88,44 @@
                         Margin="4"
                         HorizontalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToHAlign}}"
                         VerticalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToVAlign}}">
-                        <Border.Effect>
-                            <DropShadowEffect
+                            <Border.Effect>
+                                <DropShadowEffect
                                 Direction="270"
                                 BlurRadius="24"
                                 />
-                        </Border.Effect>
+                            </Border.Effect>
+                        </Border>
+
                     </Border>
-                    
-                </Border>
+                </Grid>
+                <StackPanel Grid.Column="1">
+                    <Label Content="Tray popup position:"/>
+                    <ComboBox SelectedItem="{Binding TrayPopupPosition}" ItemsSource="{Binding TrayPopupPositions}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource EnumToDisplayNameConverter}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
             </Grid>
-            <StackPanel Grid.Column="1">
-                <Label Content="Tray popup position:"/>
-                <ComboBox SelectedItem="{Binding TrayPopupPosition}" ItemsSource="{Binding TrayPopupPositions}">
-                    <ComboBox.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Converter={StaticResource EnumToDisplayNameConverter}}"/>
-                        </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
-            </StackPanel>
-        </Grid>
-        <controls:SectionTitleSeparator Title="User settings" IconGlyph="&#xE77B;" Margin="0,8"/>
-        <Grid Margin="0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="24"/>
-                <ColumnDefinition Width="auto"/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Restore playback settings" FontSize="14" FontWeight="SemiBold"/>
-                <TextBlock Text="shuffle, app behavior, startup and device settings" FontSize="12" Opacity="0.8" TextWrapping="Wrap"/>
-            </StackPanel>
-            <StackPanel Grid.Column="2" Margin="8,0">
-                <Button Content="Restore" Style="{StaticResource DefaultButton}"/>
-            </StackPanel>
-        </Grid>
-    </StackPanel>
+            <controls:SectionTitleSeparator Title="User settings" IconGlyph="&#xE77B;" Margin="0,8"/>
+            <Grid Margin="0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Restore playback settings" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="shuffle, app behavior, startup and device settings" FontSize="12" Opacity="0.8" TextWrapping="Wrap"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Margin="8,0">
+                    <Button Content="Restore" Style="{StaticResource DefaultButton}"/>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
 
 

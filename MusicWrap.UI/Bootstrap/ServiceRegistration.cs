@@ -55,6 +55,7 @@ public static class ServiceRegistration
         services.AddSingleton<WindowManager>();
         services.AddTransient<IEditMetadataService, EditMetadataService>();
         services.AddSingleton<TrackActionService>();
+        services.AddSingleton<ThemeService>();
 
         // Workspaces
         services.AddSingleton<LibraryWorkspace>();

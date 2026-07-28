@@ -93,6 +93,7 @@ namespace MusicWrap.Data.User.Models
 
         // Misc settings
         [Key(17)] public TrayPopupPosition TrayPopupPosition { get; set; } = TrayPopupPosition.BottomRight;
+        [Key(18)] public ThemePreference AppThemePreference { get; set; } = ThemePreference.System;
 
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
 
@@ -182,5 +183,11 @@ namespace MusicWrap.Data.User.Models
         BottomLeft,
         BottomCenter,
         BottomRight
+    }
+    public enum ThemePreference
+    {
+        System = 0,
+        Light = 1,
+        Dark = 2,
     }
 }

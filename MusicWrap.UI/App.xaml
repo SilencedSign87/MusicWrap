@@ -6,14 +6,14 @@
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:tb="http://www.hardcodet.net/taskbar"
              ShutdownMode="OnExplicitShutdown"
-             ThemeMode="Dark"
+             ThemeMode="System"
              >
     <Application.Resources>
 
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!--<ResourceDictionary Source="pack://application:,,,/PresentationFramework.Fluent;component/Themes/Fluent.xaml" />-->
                 <ResourceDictionary Source="/Styles/Resources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PresentationFramework.Fluent;component/Themes/Fluent.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Global Converters -->
@@ -30,6 +30,7 @@
             <converters:ItemCountToVisibilityConverter x:Key="ItemCountToVisibilityConverter"/>
             <converters:EnumToDisplayNameConverter x:Key="EnumToDisplayNameConverter"/>
             <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter"/>
+            <converters:EnumComparisonConverter x:Key="EnumComparisonConverter"/>
 
             <tb:TaskbarIcon
                 x:Key="TrayIcon"
@@ -40,7 +41,7 @@
                     <ContextMenu>
                         <MenuItem Header="{Binding PlayPauseStatus}" Command="{Binding TogglePlayPauseCommand}">
                             <MenuItem.Icon>
-                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="{Binding PlayPauseIcon}"/>
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}"/>
                             </MenuItem.Icon>
                         </MenuItem>
                         <MenuItem Header="Stop" Icon="{ex:Icon Glyph=E71A}" Command="{Binding StopCommand}"/>

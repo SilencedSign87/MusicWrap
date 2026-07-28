@@ -9,6 +9,7 @@
              mc:Ignorable="d" 
               x:Name="RootDetailPanel"
              d:DataContext="{d:DesignInstance Type=viewmodel:LibraryEntryDetailPanelViewModel}"
+             Foreground="{DynamicResource TextPrimaryBrush}"
              d:DesignHeight="800" d:DesignWidth="500">
     <Grid>
         <Grid.RowDefinitions>
@@ -57,7 +58,7 @@
 
                 </Grid>
 
-                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource BackgroundLayer}" Padding="96,0,0,0">
+                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}" Padding="96,0,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -84,7 +85,6 @@
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="Padding" Value="8,6"/>
                                     <Setter Property="Margin" Value="0"/>
-                                    <Setter Property="Foreground" Value="White"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="BorderThickness" Value="0"/>
@@ -99,10 +99,10 @@
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="TabBorder" Property="Background" Value="#0fFFFFFF"/>
+                                                        <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource BackgroundControlHover}"/>
                                                     </Trigger>
                                                     <Trigger Property="IsSelected" Value="True">
-                                                        <Setter TargetName="TabBorder" Property="Background" Value="#2EFFFFFF"/>
+                                                        <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource BackgroundControlDefault}"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>

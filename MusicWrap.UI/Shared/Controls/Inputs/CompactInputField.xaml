@@ -6,26 +6,27 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Controls"
              x:Name="Root"
              mc:Ignorable="d" 
+             Foreground="{DynamicResource TextPrimaryBrush}"
              d:DesignHeight="32" d:DesignWidth="120">
     <Border x:Name="Container"
             CornerRadius="0"
             BorderThickness="1"
             Padding="0"
             Margin="0"
-            Background="{StaticResource BackgroundControlDefault}"
-            BorderBrush="{StaticResource StrokeControl}">
+            Background="{DynamicResource BackgroundControlDefault}"
+            BorderBrush="{DynamicResource StrokeControl}">
         <Border.Style>
             <Style TargetType="Border">
-                <Setter Property="Background" Value="{StaticResource BackgroundControlDefault}" />
-                <Setter Property="BorderBrush" Value="{StaticResource StrokeControl}" />
+                <Setter Property="Background" Value="{DynamicResource BackgroundControlDefault}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource StrokeControl}" />
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="{StaticResource BackgroundControlHover}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource StrokeDivider}" />
+                        <Setter Property="Background" Value="{DynamicResource BackgroundControlHover}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource StrokeDivider}" />
                     </Trigger>
                     <DataTrigger Binding="{Binding IsKeyboardFocusWithin, ElementName=Root}" Value="True">
-                        <Setter Property="Background" Value="{StaticResource BackgroundControlPressed}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush100}" />
+                        <Setter Property="Background" Value="{DynamicResource BackgroundControlPressed}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush100}" />
                     </DataTrigger>
                     <DataTrigger Binding="{Binding IsEnabled, ElementName=Root}" Value="False">
                         <Setter Property="Opacity" Value="0.55" />
@@ -102,7 +103,7 @@
                            Margin="4,0,0,0"
                            FontSize="12"
                            VerticalAlignment="Center"
-                           Foreground="#80FFFFFF"
+                           Foreground="{DynamicResource TextDisabledBrush}"
                            IsHitTestVisible="False">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">

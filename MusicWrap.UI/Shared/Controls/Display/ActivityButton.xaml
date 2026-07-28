@@ -20,7 +20,6 @@
                            Text="&#xE9A4;"
                            FontFamily="Segoe Fluent Icons"
                            FontSize="16"
-                           Foreground="White"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"/>
                 <!-- Check icon (all completed) -->
@@ -65,13 +64,10 @@
                Width="400"
                MinHeight="120"
                MaxHeight="500"
-               HorizontalOffset="-130"
-               VerticalOffset="-12"
                >
             <Border CornerRadius="8"
-                    Margin="8,0,8,8"
-                    Padding="16,12">
-                <Border Background="#2c2c2c"
+                    Margin="8,0,8,16">
+                <Border Background="{DynamicResource BackgroundFloating}"
                         BorderBrush="{StaticResource StrokeFloating}"
                         BorderThickness="1"
                         Padding="16,12"

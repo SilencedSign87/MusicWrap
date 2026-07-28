@@ -11,23 +11,30 @@
              d:DesignHeight="40" 
              d:DesignWidth="1200"
              d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
-             Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}"
+             Foreground="{DynamicResource TextPrimaryBrush}"
              >
     <UserControl.Resources>
         <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-            <Setter Property="Foreground" Value="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
+                    <Setter Property="Background" Value="{DynamicResource BackgroundControlHover}"/>
                 </Trigger>
                 <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="{StaticResource BackgroundControlPressed}"/>
+                    <Setter Property="Background" Value="{DynamicResource BackgroundControlPressed}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <Border Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}">
+    <Border>
+        <Border.Background>
+            <ImageBrush
+                ImageSource="{Binding CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:300}"
+                Stretch="UniformToFill"
+                Opacity="0.2"
+                />
+        </Border.Background>
         
         <Grid>
             <Grid.ColumnDefinitions>
@@ -52,7 +59,8 @@
                         <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
                     </Button>
 
-                    <controls:VolumeControl DominantColorHex="{Binding DataContext.CurrentTrackHighlightColorHex, ElementName=RootPlayerPage}" Height="32" Width="120" Margin="8,0,0,0"/>
+                    <controls:VolumeControl  
+                        Height="32" Width="120" Margin="8,0,0,0"/>
                 </StackPanel>
             </Grid>
 
@@ -64,7 +72,6 @@
                     Height="36"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
-                    DominantColorHex="{Binding CurrentTrackHighlightColorHex}"
                     />
             </Grid>
 

@@ -9,7 +9,7 @@
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playlist.ViewModels"
              mc:Ignorable="d" 
              x:Name="RootControl"
-             Foreground="White"
+             Foreground="{DynamicResource TextPrimaryBrush}"
              d:DataContext="{d:DesignInstance Type=vm:PlaylistViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
     <UserControl.Resources>
@@ -30,16 +30,15 @@
 
         <Style x:Key="PlaylistCompactRow" TargetType="DataGridRow">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource BackgroundControlHover}"/>
+                    <Setter Property="Background" Value="{DynamicResource BackgroundControlHover}"/>
                 </Trigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{StaticResource AccentBrush100}"/>
-                    <Setter Property="Foreground" Value="{StaticResource TextOnAccentPrimaryBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource AccentBrush100}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentPrimaryBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -54,11 +53,11 @@
 
         <Style x:Key="PlaylistCompactHeader" TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="6,0"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource StrokeDivider}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource StrokeDivider}"/>
         </Style>
 
         <ContextMenu x:Key="PlaylistTracksContextMenu" Opened="ContextMenu_Opened">
@@ -135,7 +134,6 @@
                 </ListView.ContextMenu>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
-                        <Setter Property="Foreground" Value="White"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Height" Value="auto"/>
                         <Setter Property="Padding" Value="4"/>
@@ -205,7 +203,7 @@
             </ListView>
 
         </Grid>
-        <Border Grid.Column="1" Background="{StaticResource BackgroundSmoke}">
+        <Border Grid.Column="1" Background="{DynamicResource BackgroundLayer}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="120" />
@@ -240,7 +238,7 @@
                             </Button>
                         </StackPanel>
                     </Grid>
-                    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{StaticResource BackgroundLayer}">
+                    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}">
                         <ListBox
                             Margin="100,0,4,0"
                             ItemsSource="{Binding AllTabs}"
@@ -262,7 +260,6 @@
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="Padding" Value="8,6"/>
                                     <Setter Property="Margin" Value="2,0"/>
-                                    <Setter Property="Foreground" Value="White"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="BorderThickness" Value="0"/>
@@ -277,10 +274,10 @@
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="TabBorder" Property="Background" Value="#0fFFFFFF"/>
+                                                        <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource BackgroundControlHover}"/>
                                                     </Trigger>
                                                     <Trigger Property="IsSelected" Value="True">
-                                                        <Setter TargetName="TabBorder" Property="Background" Value="#2EFFFFFF"/>
+                                                        <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource BackgroundControlDefault}"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>

@@ -13,7 +13,7 @@
             <RowDefinition Height="48" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Padding="8" Background="{StaticResource BackgroundLayerAlt}">
+        <Border Grid.Row="0" Padding="8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -111,7 +111,7 @@
 
                 <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
-                <Border Grid.Column="2" Background="{StaticResource BackgroundSmoke}">
+                <Border Grid.Column="2" Background="{DynamicResource BackgroundLayer}">
                     <Grid>
                         <TextBlock Text="{Binding EmptyStateText}" Opacity="0.7" VerticalAlignment="Center" HorizontalAlignment="Center">
                             <TextBlock.Style>
