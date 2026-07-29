@@ -5,18 +5,38 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
+             x:Name="RootBarControl"
              d:DesignHeight="60" d:DesignWidth="400"
              SizeChanged="OnSizeChanged"
              IsHitTestVisible="False"
              >
+    <UserControl.Resources>
+        <LinearGradientBrush x:Key="SpectrumFadeMask" 
+                             StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#B3FFFFFF" Offset="0.0"/>
+            <GradientStop Color="#14FFFFFF" Offset="0.65"/>
+            <GradientStop Color="#00FFFFFF" Offset="1.0"/>
+        </LinearGradientBrush>
+    </UserControl.Resources>
     <Grid x:Name="BarContainer">
-       <Canvas x:Name="CanvasForeground">
+        <Canvas x:Name="CanvasForeground">
             <Canvas.Clip>
                 <RectangleGeometry x:Name="ProgressClip" Rect="0,0,0,0"/>
             </Canvas.Clip>
 
-            <Path x:Name="SpectrumFillPath" IsHitTestVisible="False"/>
-            <Path x:Name="SpectrumTopPath" IsHitTestVisible="False"/>
+            <Path x:Name="SpectrumFillPath" 
+                  IsHitTestVisible="False" 
+                  Fill="{Binding Foreground, ElementName=RootBarControl}"
+                  OpacityMask="{StaticResource SpectrumFadeMask}"
+                  />
+            <Path x:Name="SpectrumTopPath" 
+                  IsHitTestVisible="False" 
+                  Stroke="{Binding Foreground, ElementName=RootBarControl}"
+                  StrokeThickness="2"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"
+                  StrokeLineJoin="Round"
+                  />
         </Canvas>
     </Grid>
 </UserControl>

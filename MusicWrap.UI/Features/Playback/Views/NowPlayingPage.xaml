@@ -90,7 +90,7 @@
                 Height="120"
                 BarCount="120"
                 Opacity="0.5"
-                DominantColorHex="{Binding HighlightColorHex}"
+                Foreground="{Binding HighlightColorHex}"
                 />
         </Border>
     </Grid>

@@ -19,10 +19,6 @@ namespace MusicWrap.UI.Controls
         private readonly IMusicPlayerService _musicService;
         private readonly DispatcherTimer _timer;
 
-        private Brush? _fillBrush;
-        private Brush? _topBrush;
-        private string? _lastDominantColor;
-
         private float[] _currentHeights = [];
         private float[] _peakHold = [];
         private bool _isActive;
@@ -30,9 +26,9 @@ namespace MusicWrap.UI.Controls
         private const int AssumedSampleRate = 44100;
         private const float Amplification = 1.0f;
         private const float RiseSpeed = 0.6f; // how quickly the bars rise to the target value (0-1)
-        private const float FallSpeed = 0.4f; // how quickly the bars fall to the target value (0-1)
-        private const float PeakDecay = 0.03f; // how quickly the peak hold value falls (0-1)
-        private const float HeightDecay = 0.1f; // how quickly the current height value falls (0-1)
+        private const float FallSpeed = 0.5f; // how quickly the bars fall to the target value (0-1)
+        private const float PeakDecay = 0.1f; // how quickly the peak hold value falls (0-1)
+        private const float HeightDecay = 0.5f; // how quickly the current height value falls (0-1)
 
         private const float MinEqHz = 20f; // lowest frequency
         private const float MaxEqHz = 20000f; // highest frequency
@@ -40,9 +36,9 @@ namespace MusicWrap.UI.Controls
         private const float CeilingDb = -12f; // highest dB value to consider (anything above this is treated as max volume)
         private const float EqGamma = 1.0f; // 1 = linear, <1 = more energy on the low end, >1 = more energy on the high end
 
-        private const float HighShelfGain = 0.1f;     // 0 = off, 0.3 = subtle, 0.8 = agressive
-        private const float HighShelfCurve = 0.4f;     // <1 = more energy only on the high end
-        private const float GammaDelta = 0.2f;        // how much to reduce gamma for high frequencies (0 = off, 0.5 = strong)
+        private const float HighShelfGain = 0.3f;     // 0 = off, 0.3 = subtle, 0.8 = agressive
+        private const float HighShelfCurve = 0.1f;     // <1 = more energy only on the high end
+        private const float GammaDelta = 0.0f;        // how much to reduce gamma for high frequencies (0 = off, 0.5 = strong)
 
         private const int FFTSize = 16384;
 
@@ -56,11 +52,6 @@ namespace MusicWrap.UI.Controls
         public BarVisualizerControl()
         {
             InitializeComponent();
-
-            SpectrumTopPath.StrokeThickness = 2;
-            SpectrumTopPath.StrokeStartLineCap = PenLineCap.Round;
-            SpectrumTopPath.StrokeEndLineCap = PenLineCap.Round;
-            SpectrumTopPath.StrokeLineJoin = PenLineJoin.Round;
 
             _musicService = App.Services.GetRequiredService<IMusicPlayerService>();
 
@@ -84,17 +75,6 @@ namespace MusicWrap.UI.Controls
         {
             get => (int)GetValue(BarCountProperty);
             set => SetValue(BarCountProperty, value);
-        }
-        public static readonly DependencyProperty DominantColorHexProperty =
-            DependencyProperty.Register(
-                nameof(DominantColorHex),
-                typeof(string),
-                typeof(BarVisualizerControl),
-                new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
-        public string? DominantColorHex
-        {
-            get => (string?)GetValue(DominantColorHexProperty);
-            set => SetValue(DominantColorHexProperty, value);
         }
         private static void OnBarCountChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -291,69 +271,10 @@ namespace MusicWrap.UI.Controls
             }
             topGeometry.Freeze();
 
-            EnsureBrushes();
             SpectrumFillPath.Data = fillGeometry;
-            SpectrumFillPath.Fill = _fillBrush;
-
             SpectrumTopPath.Data = topGeometry;
-            SpectrumTopPath.Stroke = _topBrush;
-
-        }
-        private void EnsureBrushes()
-        {
-            if (_lastDominantColor == DominantColorHex &&
-        _fillBrush != null &&
-        _topBrush != null)
-                return;
-
-            _lastDominantColor = DominantColorHex;
-
-            _fillBrush = CreateSpectrumFillBrush();
-            _topBrush = CreateSpectrumTopBrush();
-
-            SpectrumFillPath.Fill = _fillBrush;
-            SpectrumTopPath.Stroke = _topBrush;
-        }
-        private Brush CreateSpectrumFillBrush()
-        {
-            Color baseColor = GetBaseColor();
-
-            var brush = new LinearGradientBrush
-            {
-                StartPoint = new Point(0.5, 0.0),
-                EndPoint = new Point(0.5, 1.0)
-            };
-
-            brush.GradientStops.Add(new GradientStop(Color.FromArgb(180, baseColor.R, baseColor.G, baseColor.B), 0.0));
-            brush.GradientStops.Add(new GradientStop(Color.FromArgb(20, baseColor.R, baseColor.G, baseColor.B), 0.65));
-            brush.GradientStops.Add(new GradientStop(Color.FromArgb(0, baseColor.R, baseColor.G, baseColor.B), 1.0));
-            brush.Freeze();
-            return brush;
         }
 
-        private Brush CreateSpectrumTopBrush()
-        {
-            Color baseColor = GetBaseColor();
-            var brush = new SolidColorBrush(Color.FromArgb(255, baseColor.R, baseColor.G, baseColor.B));
-            brush.Freeze();
-            return brush;
-        }
-        private Color GetBaseColor()
-        {
-            if (!string.IsNullOrWhiteSpace(DominantColorHex))
-            {
-                try
-                {
-                    var hex = DominantColorHex.StartsWith("#") ? DominantColorHex : "#" + DominantColorHex;
-                    return (Color)ColorConverter.ConvertFromString(hex);
-                }
-                catch
-                {
-                }
-            }
-
-            return Colors.White;
-        }
         private static void ApplyHanningWindow(float[] data, int length)
         {
             for (int i = 0; i < length; i++)

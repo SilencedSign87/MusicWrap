@@ -26,6 +26,7 @@
             Stretch="UniformToFill"/>
     </Window.Background>
     <Window.Resources>
+        <SolidColorBrush x:Key="highlightBrush" Color="{Binding NowPlayingViewModel.HighlightColorHex}"/>
         <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
@@ -133,22 +134,22 @@
                             Grid.Column="0" 
                             Grid.ColumnSpan="5"
                             Grid.Row="1"
-                            DominantColorHex="{Binding DataContext.NowPlayingViewModel.HighlightColorHex, ElementName=RootFullScreenWindow}"
                             Height="32"
                             ShowMuteButton="False"
+                            Foreground="{StaticResource highlightBrush}"
                             />
 
                     </Grid>
                     <controls:BarVisualizerControl
                         Opacity="0.5"
-                        DominantColorHex="{Binding NowPlayingViewModel.HighlightColorHex}"
                         Height="120"
                         BarCount="120"
                         Margin="0,-16,0,0"
+                        Foreground="{StaticResource highlightBrush}"
                     />
                     <controls:WaveformPlayerControl
-                        DominantColorHex="{Binding NowPlayingViewModel.HighlightColorHex}"
                         Height="48"
+                        Foreground="{StaticResource highlightBrush}"
                     />
                 </StackPanel>
             </Grid>
