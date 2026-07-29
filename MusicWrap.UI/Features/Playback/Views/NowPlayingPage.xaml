@@ -11,12 +11,12 @@
              d:DataContext="{d:DesignInstance Type=vm:NowPlayingViewModel}"
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="RootNowPlaying"
-             Foreground="{Binding ForegroundColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
              >
     <UserControl.Background>
         <ImageBrush 
             ImageSource="{Binding TrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}" 
             RenderOptions.BitmapScalingMode="HighQuality"
+            Opacity="0.3"
             Stretch="UniformToFill"/>
     </UserControl.Background>
 
@@ -40,10 +40,10 @@
                             />
                         </Border.Effect>
                         <Menu HorizontalAlignment="Right" VerticalAlignment="Top" Cursor="Hand">
-                            <MenuItem Icon="{ex:Icon Glyph=E712}" Foreground="{Binding Foreground, ElementName=RootNowPlaying}">
+                            <MenuItem Icon="{ex:Icon Glyph=E712}" Foreground="{Binding ForegroundColorHex}">
                                 <Separator/>
-                                <MenuItem Header="Lyrics" Foreground="White" IsCheckable="True"/>
-                                <MenuItem Header="Visualizer" Foreground="White" IsCheckable="True"/>
+                                <MenuItem Foreground="{Binding Foreground , ElementName=RootNowPlaying}" Header="Lyrics" IsCheckable="True"/>
+                                <MenuItem Foreground="{Binding Foreground , ElementName=RootNowPlaying}" Header="Visualizer" IsCheckable="True"/>
                             </MenuItem>
                         </Menu>
                     </Border>
@@ -90,7 +90,6 @@
                 Height="120"
                 BarCount="120"
                 Opacity="0.5"
-                Foreground="{Binding HighlightColorHex}"
                 />
         </Border>
     </Grid>
