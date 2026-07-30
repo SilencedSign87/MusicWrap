@@ -41,8 +41,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly ILogger _logger;
         private readonly SearchService _searchService;
         private readonly ActivityService _activityService;
-        private readonly UserSettings _userSettings;
-        private readonly ISaveCoordinator _saveCoordinator;
         private readonly IMessenger _messenger;
         private readonly IUIDispatcher _uiDispatcher;
         private readonly LibraryWorkspace _workspace;
@@ -52,12 +50,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public LibraryViewModel(
             ILibraryScanner scanner,
             ILibraryService libraryCache,
-            UserSettings settings,
             IMusicPlayerService player,
             IMessenger messenger,
             SearchService searchService,
             ActivityService activityService,
-            ISaveCoordinator saveCoordinator,
             IUIDispatcher uiDispatcher,
             LibraryWorkspace workspace,
             ILogger<LibraryViewModel> logger)
@@ -69,8 +65,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _player = player;
             _logger = logger;
             _searchService = searchService;
-            _userSettings = settings;
-            _saveCoordinator = saveCoordinator;
             _workspace = workspace;
             _uiDispatcher = uiDispatcher;
 
@@ -91,8 +85,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             });
 
             _searchService.SearchSubmitted += _searchService_SearchSubmitted;
-
-            _ = LoadEntriesAsync();
 
             _messenger.Register<EntriesReadyMessage>(this, (r, m) =>
             {
@@ -286,7 +278,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
         private async Task LoadEntriesAsync()
         {
-
             var requestId = Interlocked.Increment(ref _loadEntriesRequestId);
             var listBySnapshot = _workspace.ListBy;
             var ascendingSnapshot = _workspace.EntryListAscending;

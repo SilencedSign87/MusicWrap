@@ -42,15 +42,15 @@
                               Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="Album"
                               IsCheckable="True" 
-                              IsChecked="{Binding Workspace.IsAlbumView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Album}"
                               Icon="{ex:Icon Glyph=E93C}"
                               />
-                    
+
                     <MenuItem Header="Track Artist" 
                               Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="TrackArtist"
                               IsCheckable="True" 
-                              IsChecked="{Binding Workspace.IsTrackArtistView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=TrackArtist}"
                               Icon="{ex:Icon Glyph=E77B}"
                               />
 
@@ -58,7 +58,7 @@
                               Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="AlbumArtist"
                               IsCheckable="True" 
-                              IsChecked="{Binding Workspace.IsAlbumArtistView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=AlbumArtist}"
                               Icon="{ex:Icon Glyph=E77B}"
                               />
 
@@ -66,7 +66,7 @@
                               Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="Genre"
                               IsCheckable="True" 
-                              IsChecked="{Binding Workspace.IsGenreView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Genre}"
                               Icon="{ex:Icon Glyph=E8D6}"
                               />
 
@@ -74,7 +74,7 @@
                               Command="{Binding Workspace.SetViewModeCommand}" 
                               CommandParameter="Decade"
                               IsCheckable="True" 
-                              IsChecked="{Binding Workspace.IsDecadeView, Mode=OneWay}"
+                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Decade}"
                               Icon="{ex:Icon Glyph=E787}"
                               />
 
@@ -97,7 +97,7 @@
             <ListView
                     x:Name="EntriesListView"
                     ItemsSource="{Binding EntriesViewSource.View, Mode=OneWay}"
-                    SelectedItem="{Binding Workspace.SelectedEntry}"
+                    SelectedItem="{Binding Workspace.SelectedEntry, Converter={StaticResource NullToDoNothingConverter}}"
                     SelectionChanged="EntriesListView_SelectionChanged"
                     Grid.Row="1"
                     SelectionMode="Single"
@@ -150,31 +150,33 @@
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Height" Value="auto"/>
-                        <Setter Property="Padding" Value="4"/>
+                        <Setter Property="Padding" Value="0"/>
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="LibraryEntry">
-                        <Grid 
+                        <Border
+                            x:Name="RootBorderItem"
+                            Background="Transparent"
+                            Padding="4"
+                            >
+                            <Grid 
                             Margin="0"
                             ToolTipService.ToolTip="{Binding Title}"
-                            HorizontalAlignment="Stretch">
-                            <Grid.ContextMenu>
-                                <ContextMenu Opened="LibraryContextMenu_Opened" MinWidth="175">
-                                    <MenuItem Header="Play" Icon="{ex:Icon Glyph=E768}"/>
-                                    <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}"/>
-                                    <Separator/>
-                                    <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E710}"/>
-                                    <!-- track to playlist in code behind -->
-                                </ContextMenu>
-                            </Grid.ContextMenu>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="42"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Image
+                            HorizontalAlignment="Stretch"
+                            ColumnDefinitions="42,8,*,2"
+                            >
+                                <Grid.ContextMenu>
+                                    <ContextMenu Opened="LibraryContextMenu_Opened" MinWidth="175">
+                                        <MenuItem Header="Play" Icon="{ex:Icon Glyph=E768}"/>
+                                        <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}"/>
+                                        <Separator/>
+                                        <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E710}"/>
+                                        <!-- track to playlist in code behind -->
+                                    </ContextMenu>
+                                </Grid.ContextMenu>
+                                <Image
                                 Grid.Column="0"
                                 Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
                                 Width="42"
@@ -182,21 +184,29 @@
                                 Stretch="UniformToFill"
                                 RenderOptions.BitmapScalingMode="LowQuality"
                                 />
-                            <Grid Grid.Column="2">
-                                <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Stretch">
-                                    <TextBlock Text="{Binding Title}" 
+                                <Grid Grid.Column="2">
+                                    <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding Title}" 
                                            FontSize="12" 
                                            FontWeight="Normal"
                                            TextTrimming="CharacterEllipsis"
                                            />
-                                    <TextBlock Text="{Binding Description}" 
+                                        <TextBlock Text="{Binding Description}" 
                                            FontSize="12" 
                                            Opacity="0.7"
                                            TextTrimming="CharacterEllipsis"
                                            />
-                                </StackPanel>
+                                    </StackPanel>
+                                </Grid>
                             </Grid>
-                        </Grid>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=IsSelected}" Value="True">
+                                <Setter TargetName="RootBorderItem"
+                                    Property="Background"
+                                    Value="{DynamicResource BackgroundLayerAlt}"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

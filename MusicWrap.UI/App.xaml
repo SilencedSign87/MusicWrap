@@ -31,6 +31,7 @@
             <converters:EnumToDisplayNameConverter x:Key="EnumToDisplayNameConverter"/>
             <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter"/>
             <converters:EnumComparisonConverter x:Key="EnumComparisonConverter"/>
+            <converters:NullToDoNothingConverter x:Key="NullToDoNothingConverter"/>
 
             <tb:TaskbarIcon
                 x:Key="TrayIcon"

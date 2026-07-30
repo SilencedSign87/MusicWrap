@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.User.Models;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace MusicWrap.UI.Features.Library.Services
 {
@@ -42,11 +43,6 @@ namespace MusicWrap.UI.Features.Library.Services
         #region Properties
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(IsAlbumView))]
-        [NotifyPropertyChangedFor(nameof(IsTrackArtistView))]
-        [NotifyPropertyChangedFor(nameof(IsAlbumArtistView))]
-        [NotifyPropertyChangedFor(nameof(IsGenreView))]
-        [NotifyPropertyChangedFor(nameof(IsDecadeView))]
         [NotifyCanExecuteChangedFor(nameof(SetViewModeCommand))]
         private LibraryEntryType _listBy = LibraryEntryType.AlbumArtist;
 
@@ -146,6 +142,10 @@ namespace MusicWrap.UI.Features.Library.Services
             OnPropertyChanged(nameof(IsSortAscending));
             OnPropertyChanged(nameof(IsSortDescending));
             FlushSettings();
+        }
+        partial void OnSelectedEntryChanged(LibraryEntry? oldValue, LibraryEntry? newValue)
+        {
+            Debug.WriteLine($"SelectedEntry changed from {oldValue?.Title ?? "null"} to {newValue?.Title ?? "null"}");
         }
         #endregion
 
