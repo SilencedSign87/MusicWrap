@@ -1,18 +1,20 @@
 ﻿using MusicWrap.Data.Infrastructure;
 using NetVips;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 
 namespace MusicWrap.Core.Services.Images
 {
-
     public class ImageProcessor
     {
+        private static readonly ConcurrentDictionary<string, object> _fileLocks = new();
+
         public const int SmallCoverSize = 64;
         public const int MediumCoverSize = 180;
         public const int LargeCoverSize = 360;
         public const int BlurCoverSize = 1080;
 
-        private const int ColorSampleSize = 64;
+        private const int ColorSampleSize = 128;
 
         public ColorExtractionResult ProcessPipeline(byte[] imageBytes, string fileName)
         {
@@ -43,9 +45,11 @@ namespace MusicWrap.Core.Services.Images
         public void SaveOriginal(byte[] imageBytes, string fileName)
         {
             var path = Path.Combine(MusicWrapDirectories.CoverDirectory, fileName);
-            if (!File.Exists(path))
+            var lockObj = _fileLocks.GetOrAdd(path, _ => new object());
+            lock (lockObj)
             {
-                File.WriteAllBytes(path, imageBytes);
+                if (!File.Exists(path))
+                    File.WriteAllBytes(path, imageBytes);
             }
         }
         public void SaveResizedVariant(byte[] imageBytes, string fileName, int maxSize)
@@ -86,21 +90,21 @@ namespace MusicWrap.Core.Services.Images
         public Image CreateBlurredBackground(Image source, string dominantColorHex)
         {
             double scale = Math.Min((double)BlurCoverSize / source.Width,
-                                    (double)BlurCoverSize / source.Height);
-
+                             (double)BlurCoverSize / source.Height);
             using var resized = source.Resize(scale, kernel: Enums.Kernel.Lanczos3);
-
             double sigma = resized.Height / 18.0;
             using var blurred = resized.Gaussblur(sigma);
             var (baseR, baseG, baseB) = ParseHexColor(dominantColorHex);
-            // Blend: output = blurred * (1 - domFactor) + color * domFactor
             float domFactor = 0.85f;
             float imgFactor = 1f - domFactor;
-            using var blended = blurred.Linear(
-                new double[] { imgFactor },
-                new double[] { baseR * domFactor, baseG * domFactor, baseB * domFactor }
-            );
-
+            int bands = blurred.Bands;
+            double[] a = bands == 4
+                ? [imgFactor, imgFactor, imgFactor, imgFactor]
+                : [imgFactor];
+            double[] b = bands == 4
+                ? [baseR * domFactor, baseG * domFactor, baseB * domFactor, 0]
+                : [baseR * domFactor, baseG * domFactor, baseB * domFactor];
+            using var blended = blurred.Linear(a, b);
             using var ucharBlended = blended.Cast(Enums.BandFormat.Uchar);
             return AddNoiseGrain(ucharBlended, grainSize: 3, intensity: 0.02f);
         }
@@ -206,19 +210,26 @@ namespace MusicWrap.Core.Services.Images
 
         private static void SaveImage(Image image, string path, int quality = 90)
         {
-            var ext = Path.GetExtension(path).ToLowerInvariant();
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            switch (ext)
+            var lockObj = _fileLocks.GetOrAdd(path, _ => new object());
+            lock (lockObj)
             {
-                case ".png":
-                    image.Pngsave(path);
-                    break;
-                case ".webp":
-                    image.Webpsave(path, quality);
-                    break;
-                default:
-                    image.Jpegsave(path, quality);
-                    break;
+                if (File.Exists(path)) return;
+
+                var ext = Path.GetExtension(path).ToLowerInvariant();
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+                switch (ext)
+                {
+                    case ".png":
+                        image.Pngsave(path);
+                        break;
+                    case ".webp":
+                        image.Webpsave(path, quality);
+                        break;
+                    default:
+                        image.Jpegsave(path, quality);
+                        break;
+                }
             }
         }
         private static ColorExtractionResult ExtractColorPalette(Image sample)
@@ -226,18 +237,35 @@ namespace MusicWrap.Core.Services.Images
             var data = sample.WriteToMemory<byte>();
             int pixelCount = sample.Width * sample.Height;
             int bands = sample.Bands;
-            int bytesPerPixel = bands;
-            const int bucketSize = 8;
+
+            const int quantizeFactor = 32;
             var freq = new Dictionary<int, int>();
             var sums = new Dictionary<int, (long R, long G, long B)>();
+            int validPixels = 0;
+
             for (int i = 0; i < pixelCount; i++)
             {
-                int offset = i * bytesPerPixel;
-                byte r = data[offset];
-                byte g = data[offset + 1];
-                byte b = data[offset + 2];
-                // alpha
-                int key = (r / bucketSize) << 16 | (g / bucketSize) << 8 | (b / bucketSize);
+                int offset = i * bands;
+                byte r, g, b, a;
+                if (bands == 1)
+                {
+                    byte gray = data[offset];
+                    r = g = b = gray;
+                    a = 255;
+                }
+                else
+                {
+                    r = data[offset];
+                    g = data[offset + 1];
+                    b = data[offset + 2];
+                    a = bands >= 4 ? data[offset + 3] : (byte)255;
+                }
+
+                if (a < 25) continue;
+                validPixels++;
+                int key = (r / quantizeFactor) << 16
+                        | (g / quantizeFactor) << 8
+                        | (b / quantizeFactor);
                 freq.TryGetValue(key, out int count);
                 freq[key] = count + 1;
                 if (!sums.TryGetValue(key, out var s))
@@ -245,10 +273,24 @@ namespace MusicWrap.Core.Services.Images
                 else
                     sums[key] = (s.R + r, s.G + g, s.B + b);
             }
-            if (freq.Count == 0)
+
+            if (validPixels == 0 || freq.Count == 0)
                 return ColorExtractionResult.Default;
+
+            int minCount = Math.Max(1, (int)(validPixels * 0.008));
+
             var sorted = freq
+                .Where(kv => kv.Value >= minCount)
                 .OrderByDescending(kv => kv.Value)
+                .ThenByDescending(kv =>
+                {
+                    var s = sums[kv.Key];
+                    byte avgR = (byte)(s.R / kv.Value);
+                    byte avgG = (byte)(s.G / kv.Value);
+                    byte avgB = (byte)(s.B / kv.Value);
+                    var hsv = RgbToHsv(avgR, avgG, avgB);
+                    return hsv.S * 0.7 + hsv.V * 0.3;
+                })
                 .Select(kv =>
                 {
                     var s = sums[kv.Key];
@@ -256,26 +298,42 @@ namespace MusicWrap.Core.Services.Images
                         R: (byte)(s.R / kv.Value),
                         G: (byte)(s.G / kv.Value),
                         B: (byte)(s.B / kv.Value),
-                        Freq: (double)kv.Value / pixelCount
+                        Freq: (double)kv.Value / validPixels
                     );
                 })
-                .Where(c => c.Freq >= 0.002)
                 .ToList();
+
+            // fallback
             if (sorted.Count == 0)
-                return ColorExtractionResult.Default;
-            
+            {
+                sorted = freq
+                    .OrderByDescending(kv => kv.Value)
+                    .Select(kv =>
+                    {
+                        var s = sums[kv.Key];
+                        return (R: (byte)(s.R / kv.Value), G: (byte)(s.G / kv.Value),
+                                B: (byte)(s.B / kv.Value), Freq: (double)kv.Value / validPixels);
+                    })
+                    .ToList();
+            }
+
             // dominant
             var dom = sorted[0];
-            var domHsv = RgbToHsv(dom.R, dom.G, dom.B);
-            double domLum = CalculateLuminance(dom.R, dom.G, dom.B);
+            var boostedDom = BoostSaturation((dom.R, dom.G, dom.B), minSaturation: 0.14f);
+            string dominantHex = RgbToHex(boostedDom.R, boostedDom.G, boostedDom.B);
+            string dominantFg = GetContrastColor(boostedDom.R, boostedDom.G, boostedDom.B);
+            var domHsv = RgbToHsv(boostedDom.R, boostedDom.G, boostedDom.B);
 
-            // Highlight
-            (byte R, byte G, byte B) bestHighlight = (dom.R, dom.G, dom.B);
+            // highlight
+            (byte R, byte G, byte B) bestHighlight = (boostedDom.R, boostedDom.G, boostedDom.B);
             double bestScore = -1;
             int searchLimit = Math.Min(15, sorted.Count);
-            for (int idx = 1; idx < searchLimit; idx++)
+            for (int idx = 0; idx < searchLimit; idx++)
             {
                 var c = sorted[idx];
+                // Saltar el dominante
+                if (c.R == dom.R && c.G == dom.G && c.B == dom.B)
+                    continue;
                 var hsv = RgbToHsv(c.R, c.G, c.B);
                 float hueDiff = Math.Abs(hsv.H - domHsv.H);
                 hueDiff = Math.Min(hueDiff, 360f - hueDiff);
@@ -289,22 +347,30 @@ namespace MusicWrap.Core.Services.Images
                     bestHighlight = (c.R, c.G, c.B);
                 }
             }
-
-            // Fallback
             if (bestScore < 0 && sorted.Count > 1)
                 bestHighlight = (sorted[1].R, sorted[1].G, sorted[1].B);
-
-            // Adjust brightness for contrast
-            bestHighlight = EnsureMinimalContrast(bestHighlight, (dom.R, dom.G, dom.B));
+            bestHighlight = EnsureMinimalContrast(bestHighlight, (boostedDom.R, boostedDom.G, boostedDom.B));
+            string highlightHex = RgbToHex(bestHighlight.R, bestHighlight.G, bestHighlight.B);
+            string highlightFg = GetContrastColor(bestHighlight.R, bestHighlight.G, bestHighlight.B);
             return new ColorExtractionResult
             {
-                DominantColorHex = RgbToHex(dom.R, dom.G, dom.B),
-                DominantForegroundHex = GetContrastColor(dom.R, dom.G, dom.B),
-                HighlightColorHex = RgbToHex(bestHighlight.R, bestHighlight.G, bestHighlight.B),
-                HighlightForegroundHex = GetContrastColor(bestHighlight.R, bestHighlight.G, bestHighlight.B)
+                DominantColorHex = dominantHex,
+                DominantForegroundHex = dominantFg,
+                HighlightColorHex = highlightHex,
+                HighlightForegroundHex = highlightFg
             };
         }
-
+        private static (byte R, byte G, byte B) BoostSaturation((byte R, byte G, byte B) color, float minSaturation)
+        {
+            var hsv = RgbToHsv(color.R, color.G, color.B);
+            if (hsv.S < 0.06f) return color;
+            if (hsv.V > 0.92f && hsv.S < 0.18f) return color;
+            float s = hsv.S;
+            if (s < minSaturation)
+                s = s + (minSaturation - s) * 0.35f;
+            float v = Math.Min(1f, hsv.V * 1.01f);
+            return HsvToRgb(hsv.H, s, v);
+        }
         private static (byte R, byte G, byte B) EnsureMinimalContrast(
             (byte R, byte G, byte B) highlight,
             (byte R, byte G, byte B) dominant)

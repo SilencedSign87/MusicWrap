@@ -3,7 +3,6 @@ using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.Core.Services.Library
 {
-
     public interface ILibraryIndexer
     {
         Task IndexFileAsync(string filePath, CancellationToken ct = default);
@@ -29,13 +28,8 @@ namespace MusicWrap.Core.Services.Library
             ".bmp",
             ];
 
-        private const int SmallCoverSize = 64;
-        private const int MediumCoverSize = 180;
-        private const int LargeCoverSize = 360;
-        private const int BlurCoverSize = 1080;
-
         private readonly MusicLibrary _library;
-        private readonly object _lock = new();
+        private readonly Lock _lock = new();
 
         private readonly Dictionary<(long Size, long Ticks), Track> _fingerprint;
         private readonly ImageProcessor _imageProcessor;

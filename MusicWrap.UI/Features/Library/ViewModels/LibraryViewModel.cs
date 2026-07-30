@@ -25,9 +25,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     public partial class LibraryViewModel : ObservableObject, IDisposable
     {
 
-        [ObservableProperty] private IReadOnlyList<LibraryEntry> entries = [];
-
-        [ObservableProperty] private CollectionViewSource entriesViewSource = new();
+        [ObservableProperty]
+        public partial IReadOnlyList<LibraryEntry> Entries { get; set; } = [];
+        [ObservableProperty]
+        public partial CollectionViewSource EntriesViewSource { get; set; } = new();
 
         private bool _isDisposing;
         private int _loadEntriesRequestId;
@@ -89,8 +90,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 : $"{phase} ({progress.FilesProcessed}/{progress.TotalFiles})";
             });
 
-            //_workspace.PropertyChanged += OnWorkspacePropertyChanged;
-
             _searchService.SearchSubmitted += _searchService_SearchSubmitted;
 
             _ = LoadEntriesAsync();
@@ -100,9 +99,22 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 _uiDispatcher.Invoke(() => _ = LoadEntriesAsync());
             });
 
+            _workspace.PropertyChanged += OnWorkspacePropertyChanged;
+
+            if (!_workspace.IsInitialized)
+            {
+                _ = InitializeAndLoadAsync();
+            }
+            else
+            {
+                _ = LoadEntriesAsync();
+            }
+
         }
         private void OnWorkspacePropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (!_workspace.IsInitialized) return;
+
             if (e.PropertyName == nameof(LibraryWorkspace.ListBy) ||
                 e.PropertyName == nameof(LibraryWorkspace.EntryListAscending))
             {
@@ -113,6 +125,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             _ = LoadEntriesAsync();
         }
+        #region Relay Commands
 
         [RelayCommand]
         private async Task RescanAllDirectories()
@@ -263,7 +276,14 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             return entry != null && !ReferenceEquals(_workspace.SelectedEntry, entry);
         }
+        #endregion
 
+        private async Task InitializeAndLoadAsync()
+        {
+            var entries = await _LibraryCache.GetEntriesAsync(_workspace.ListBy, _workspace.EntryListAscending, true);
+            _workspace.Initialize(entries);
+            await LoadEntriesAsync();
+        }
         private async Task LoadEntriesAsync()
         {
 
@@ -274,21 +294,15 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             try
             {
                 var loadedEntries = await _LibraryCache.GetEntriesAsync(listBySnapshot, ascendingSnapshot, true);
-                
+
                 if (requestId != Volatile.Read(ref _loadEntriesRequestId)) return;
 
-                
+
                 ApplyGrouping(loadedEntries, ascendingSnapshot);
-                
+
                 _logger.LogInformation(
                     "Loaded {Count} entries for ListBy={ListBy}, Ascending={Ascending}",
                     loadedEntries.Count, listBySnapshot, ascendingSnapshot);
-
-                if (!_workspace.IsInitialized)
-                {
-                    _workspace.Initialize(Entries);
-                    _workspace.PropertyChanged += OnWorkspacePropertyChanged;
-                }
 
             }
             catch (Exception ex)
@@ -375,6 +389,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (_isDisposing) return;
             _isDisposing = true;
 
+            _workspace.PropertyChanged -= OnWorkspacePropertyChanged;
             _searchService.SearchSubmitted -= _searchService_SearchSubmitted;
             _messenger.UnregisterAll(this);
 

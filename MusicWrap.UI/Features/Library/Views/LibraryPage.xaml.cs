@@ -14,35 +14,17 @@ namespace MusicWrap.UI.Features.Library.Views
     public partial class LibraryPage : UserControl, IDisposable
     {
         public LibraryViewModel vm;
-        private readonly ILibraryService _libraryCacheService;
-        private bool _disposed = false;
+        private readonly ILibraryService _libraryService;
+        private  bool _disposed;
 
         public LibraryPage(LibraryViewModel viewmodel, ILibraryService libraryService)
         {
             InitializeComponent();
 
             vm = viewmodel;
-            _libraryCacheService = libraryService;
+            _libraryService = libraryService;
             DataContext = vm;
 
-            // Subscribe to property changes
-            vm.Workspace.PropertyChanged += OnWorkspaceChanged;
-
-        }
-
-        private void OnWorkspaceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(LibraryWorkspace.SelectedEntry))
-                HandleSelectionChanged();
-        }
-
-        private void HandleSelectionChanged()
-        {
-            var selected = vm.Workspace.SelectedEntry;
-            if (selected is not null && EntriesListView.SelectedItem != selected)
-            {
-                EntriesListView.SelectedItem = selected;
-            }
         }
 
         private void EntriesListView_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -98,36 +80,27 @@ namespace MusicWrap.UI.Features.Library.Views
             
             if (grid?.DataContext is not LibraryEntry entry) return;
 
-            var trackIds = _libraryCacheService.GetTrackIdsForEntry(entry).ToList();
+            var trackIds = _libraryService.GetTrackIdsForEntry(entry).ToList();
 
             TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
             TrackToPlaylistMenu.Shared.TrackIds = trackIds;
         }
         private void EntriesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView lv && lv.SelectedItem is LibraryEntry entry
-                && vm.SetSelectionCommand.CanExecute(entry))
+            if (sender is ListView lv && lv.SelectedItem is LibraryEntry entry)
             {
-                vm.SetSelectionCommand.Execute(entry);
+                // scroll to the selected item
+                lv.ScrollIntoView(entry);
             }
         }
 
         public void Dispose()
         {
-            if (_disposed)
-            {
-                return;
-            }
-
+            if (_disposed) return;
             _disposed = true;
 
-            vm.Workspace.PropertyChanged -= OnWorkspaceChanged;
             vm.Dispose();
-
-            DataContext = null;
         }
-
-
     }
 }
 

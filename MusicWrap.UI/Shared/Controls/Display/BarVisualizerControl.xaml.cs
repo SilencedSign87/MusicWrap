@@ -11,9 +11,6 @@ using System.Windows.Threading;
 
 namespace MusicWrap.UI.Controls
 {
-    /// <summary>
-    /// Lógica de interacción para BarVisualizerControl.xaml
-    /// </summary>
     public partial class BarVisualizerControl : UserControl
     {
         private readonly IMusicPlayerService _musicService;
@@ -26,9 +23,9 @@ namespace MusicWrap.UI.Controls
         private const int AssumedSampleRate = 44100;
         private const float Amplification = 1.0f;
         private const float RiseSpeed = 0.6f; // how quickly the bars rise to the target value (0-1)
-        private const float FallSpeed = 0.45f; // how quickly the bars fall to the target value (0-1)
-        private const float PeakDecay = 0.1f; // how quickly the peak hold value falls (0-1)
-        private const float HeightDecay = 0.4f; // how quickly the current height value falls (0-1)
+        private const float FallSpeed = 0.6f; // how quickly the bars fall to the target value (0-1)
+        private const float PeakDecay = 0.7f; // how quickly the peak hold value falls (0-1)
+        private const float HeightDecay = 0.03f; // how quickly the current height value falls (0-1)
 
         private const float MinEqHz = 20f; // lowest frequency
         private const float MaxEqHz = 20000f; // highest frequency
@@ -37,8 +34,8 @@ namespace MusicWrap.UI.Controls
         private const float EqGamma = 1.0f; // 1 = linear, <1 = more energy on the low end, >1 = more energy on the high end
 
         private const float HighShelfGain = 0.4f;     // 0 = off, 0.3 = subtle, 0.8 = agressive
-        private const float HighShelfCurve = 0.1f;     // <1 = more energy only on the high end
-        private const float GammaDelta = 0.0f;        // how much to reduce gamma for high frequencies (0 = off, 0.5 = strong)
+        private const float HighShelfCurve = 0.4f;     // <1 = more energy only on the high end
+        private const float GammaDelta = 0.3f;        // how much to reduce gamma for high frequencies (0 = off, 0.5 = strong)
 
         private const int FFTSize = 16384;
 
