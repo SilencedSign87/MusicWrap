@@ -9,21 +9,20 @@
         ResizeMode="NoResize"
         d:Background="#202020"
         d:Foreground="White"
-        FocusManager.FocusedElement="{Binding ElementName=PlaylistNameInput}"
-
         Title="New Playlist" Height="132" Width="300">
     <Grid>
         <StackPanel>
-            <controls:CompactInputField
+            <controls:AppInput
                 x:Name="PlaylistNameInput"
                 Margin="10"
+                Height="32"
                 PlaceholderText="Playlist name..."
                 PreviewKeyDown="PlaylistNameInput_KeyDown"
                 >
-                <controls:CompactInputField.BeforeContent>
+                <controls:AppInput.BeforeContent>
                     <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;"/>
-                </controls:CompactInputField.BeforeContent>
-            </controls:CompactInputField>
+                </controls:AppInput.BeforeContent>
+            </controls:AppInput>
             <Separator/>
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8">
                 <Button Content="Save" Style="{StaticResource AccentButton}" Margin="8,0" Click="SavePlaylist_Click"/>

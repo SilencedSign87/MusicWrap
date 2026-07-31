@@ -7,9 +7,9 @@
         <ResourceDictionary Source="/Styles/Colors.xaml"/>
         <ResourceDictionary Source="/Styles/Buttons.xaml"/>
         <ResourceDictionary Source="/Styles/TabControls.xaml"/>
-        <ResourceDictionary Source="/Styles/TextInputStyles.xaml"/>
         <ResourceDictionary Source="/Styles/MenuStyles.xaml"/>
         <ResourceDictionary Source="/Styles/ShellTabStyles.xaml" />
         <ResourceDictionary Source="/Styles/HyperLinks.xaml"/>
+        <ResourceDictionary Source="/Styles/TextInputStyles.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

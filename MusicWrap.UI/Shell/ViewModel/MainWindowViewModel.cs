@@ -23,6 +23,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         private readonly WindowManager _windowManager;
         private readonly ILogger _logger;
         private readonly UserSettings _userSettings;
+        private readonly Dictionary<int, UserControl> _pages = new();
 
         [ObservableProperty]
         private int selectedTabIndex;
@@ -65,7 +66,7 @@ namespace MusicWrap.UI.Shell.ViewModel
             IsSidePanelVisible = _userSettings.IsSidebarOpen;
 
             SelectedTabIndex = _userSettings.MainWindowTab;
-            _ = NavigateAsync(_userSettings.MainWindowTab);
+            Navigate(_userSettings.MainWindowTab);
         }
 
         private void _playerService_PlaybackStateChanged(object? sender, ManagedBass.PlaybackState e)
@@ -119,55 +120,28 @@ namespace MusicWrap.UI.Shell.ViewModel
         }
         #endregion
         #region Partial Functions
-        partial void OnSelectedTabIndexChanged(int value) => _ = NavigateAsync(value);
+        partial void OnSelectedTabIndexChanged(int value) => Navigate(value);
         #endregion
         #region Internal
-        private async Task NavigateAsync(int index)
+        private void Navigate(int index)
         {
-            var oldCts = _loadingCts;
-            var cts = new CancellationTokenSource();
-            _loadingCts = cts;
-
-            oldCts?.Cancel();
-            oldCts?.Dispose();
-
-            var token = cts.Token;
-            try
+            _userSettings.MainWindowTab = index;
+            if (!_pages.TryGetValue(index, out var page))
             {
-
-                await Dispatcher.Yield(DispatcherPriority.Background);
-
-                if (token.IsCancellationRequested) return;
-
-                UserControl page = index switch
-                {
-                    0 => _serviceProvider.GetRequiredService<LibraryPage>(),
-                    1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
-                    2 => _serviceProvider.GetRequiredService<ServicesPage>(),
-                    3 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
-                    _ => _serviceProvider.GetRequiredService<LibraryPage>()
-                };
-                _userSettings.MainWindowTab = index;
-
-                if (token.IsCancellationRequested) return;
-
-                if (CurrentControl is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-
-                CurrentControl = page;
-
+                page = CreatePage(index);
+                _pages[index] = page;
             }
-            catch (OperationCanceledException)
-            {
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error navigating to page index {Index}", index);
-            }
+            CurrentControl = page;
         }
+
+        private UserControl CreatePage(int index) => index switch
+        {
+            0 => _serviceProvider.GetRequiredService<LibraryPage>(),
+            1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
+            2 => _serviceProvider.GetRequiredService<ServicesPage>(),
+            3 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
+            _ => _serviceProvider.GetRequiredService<LibraryPage>()
+        };
 
         private static BitmapImage LoadBitmapFromResource(string uri)
         {
@@ -187,10 +161,12 @@ namespace MusicWrap.UI.Shell.ViewModel
                 return;
             _disposed = true;
 
-            if (CurrentControl is IDisposable disposable)
+            foreach (var page in _pages.Values)
             {
-                disposable.Dispose();
+                if (page is IDisposable disposable)
+                    disposable.Dispose();
             }
+            _pages.Clear();
         }
     }
 }

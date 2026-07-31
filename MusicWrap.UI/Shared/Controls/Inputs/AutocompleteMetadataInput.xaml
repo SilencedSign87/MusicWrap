@@ -6,17 +6,18 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Controls"
              x:Name="Root"
              mc:Ignorable="d"
-             Height="32"
              d:Width="200"
              IsVisibleChanged="UserControl_IsVisibleChanged"
              Unloaded="UserControl_Unloaded"
              ClipToBounds="False">
     <Grid>
-        <local:CompactInputField x:Name="CompactInput"
-                                 Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
-                                 BeforeContent="{Binding BeforeContent, ElementName=Root}"
-                                 AfterContent="{Binding AfterContent, ElementName=Root}"/>
+        <local:AppInput x:Name="CompactInput"
+                        Width="{Binding Width, ElementName=Root}"
+                        Height="{Binding Height, ElementName=Root}"
+                        Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
+                        BeforeContent="{Binding BeforeContent, ElementName=Root}"
+                        AfterContent="{Binding AfterContent, ElementName=Root}"/>
 
         <Popup x:Name="SuggestionsPopup"
                IsOpen="{Binding IsOpen, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"

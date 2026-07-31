@@ -41,7 +41,6 @@
             <Separator Margin="0,4"/>
             <ItemsControl
                 ItemsSource="{Binding Credits}"
-                Background="{StaticResource BackgroundSmoke}"
                 >
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="vm:Credits">

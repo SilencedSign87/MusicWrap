@@ -29,7 +29,14 @@ namespace MusicWrap.UI.Shell.Dialogs
             InitializeComponent();
             _playlistService = playlistService;
             _playlist = playlistData;
+            Loaded += NewPlaylistWindow_Loaded;
         }
+
+        private void NewPlaylistWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            PlaylistNameInput.Focus();
+        }
+
         public void Initialize(IEnumerable<int>? trackIds = null)
         {
             _trackIds = trackIds ?? [];

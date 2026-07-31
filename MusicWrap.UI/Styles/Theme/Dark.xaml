@@ -39,6 +39,11 @@
     <SolidColorBrush x:Key="StrokeLayerCard" Color="#000000" Opacity="0.1"/>
     <SolidColorBrush x:Key="StrokeFloating" Color="#000000" Opacity="0.2"/>
     <SolidColorBrush x:Key="StrokeControl" Color="#ffffff" Opacity="0.0698"/>
+    <LinearGradientBrush x:Key="StrokeControlGradient" StartPoint="0.5,0" EndPoint="0.5,1">
+        <GradientStop Color="#12FFFFFF" Offset="0.1" />
+        <GradientStop Color="#1FFFFFFF" Offset="0.07" />
+
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="StrokeDivider" Color="#ffffff" Opacity="0.0837"/>
 
     <!-- Text -->

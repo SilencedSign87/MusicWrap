@@ -19,7 +19,6 @@
             Opacity="0.3"
             Stretch="UniformToFill"/>
     </UserControl.Background>
-
     <Grid>
         <Grid ColumnDefinitions="500,*" RowDefinitions="*,Auto" HorizontalAlignment="Center" Width="Auto">
             <!-- Main View -->

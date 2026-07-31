@@ -30,18 +30,11 @@ namespace MusicWrap.UI.Controls
             // Initialize suggestions collection
             Suggestions = new ObservableCollection<string>();
 
-            // Subscribe to CompactInputField events after initialization
-            Loaded += (s, e) =>
-            {
-                if (CompactInput != null)
-                {
-                    CompactInput.TextBoxTextChanged += SearchTextBox_TextChanged;
-                    CompactInput.TextBoxPreviewTextInput += SearchTextBox_PreviewTextInput;
-                    CompactInput.TextBoxPasting += SearchTextBox_Pasting;
-                    CompactInput.TextBoxLostKeyboardFocus += SearchTextBox_LostKeyboardFocus;
-                    CompactInput.TextBoxPreviewKeyDown += SearchTextBox_PreviewKeyDown;
-                }
-            };
+            CompactInput.TextChanged += SearchTextBox_TextChanged;
+            CompactInput.PreviewTextInput += SearchTextBox_PreviewTextInput;
+            DataObject.AddPastingHandler(CompactInput, SearchTextBox_Pasting);
+            CompactInput.LostKeyboardFocus += SearchTextBox_LostKeyboardFocus;
+            CompactInput.PreviewKeyDown += SearchTextBox_PreviewKeyDown;
         }
 
         #region Dependency Properties
@@ -377,19 +370,11 @@ namespace MusicWrap.UI.Controls
             return new SegmentInfo(start, end, segment);
         }
 
-        private int GetCaretIndex()
-        {
-            var inputBox = CompactInput?.FindName("InputBox") as TextBox;
-            return inputBox?.CaretIndex ?? 0;
-        }
-
+        private int GetCaretIndex() => CompactInput?.CaretIndex ?? 0;
         private void SetCaretIndex(int index)
         {
-            var inputBox = CompactInput?.FindName("InputBox") as TextBox;
-            if (inputBox != null)
-            {
-                inputBox.CaretIndex = Math.Clamp(index, 0, Text.Length);
-            }
+            if (CompactInput != null)
+                CompactInput.CaretIndex = Math.Clamp(index, 0, Text.Length);
         }
         private string NormalizeCommaSpaces(string input)
         {

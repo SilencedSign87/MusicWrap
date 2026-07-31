@@ -14,7 +14,7 @@
 
 
         <StackPanel Margin="16">
-            <controls:SectionTitleSeparator Title="App theme" IconGlyph="&#xE790;" Margin="0,8"/>
+            <controls:SectionTitleSeparator Title="App theme" IconGlyph="&#xE790;" Margin="0,0,0,12"/>
             <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
                 <RadioButton GroupName="theme" 
                  Content="System" 

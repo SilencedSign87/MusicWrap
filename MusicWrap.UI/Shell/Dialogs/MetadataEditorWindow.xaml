@@ -88,7 +88,8 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Title:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:CompactInputField Grid.Column="2" 
+                                <controls:AppInput Grid.Column="2"
+                                                   Height="32"
                                                     Text="{Binding Title, Mode=TwoWay}"
                                                     PlaceholderText="{Binding TitlePlaceholder, Mode=OneWay}"
                                                     />
@@ -101,12 +102,13 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Artist:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:AutocompleteMetadataInput
-                            Grid.Column="2"
-                            Text="{Binding Artist, Mode=TwoWay}"
-                            MetadataType="ArtistName"
-                            PlaceholderText="{Binding ArtistPlaceholder, Mode=OneWay}"
-                            IsMultipleValueEnabled="True"
-                            />
+                                    Grid.Column="2"
+                                    Height="32"
+                                    Text="{Binding Artist, Mode=TwoWay}"
+                                    MetadataType="ArtistName"
+                                    PlaceholderText="{Binding ArtistPlaceholder, Mode=OneWay}"
+                                    IsMultipleValueEnabled="True"
+                                    />
                             </Grid>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -115,10 +117,11 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Album:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:CompactInputField Grid.Column="2" 
-                                                    Text="{Binding Album, Mode=TwoWay}"
-                                                    PlaceholderText="{Binding AlbumPlaceholder, Mode=OneWay}"
-                                                    />
+                                <controls:AppInput Grid.Column="2"
+                                                   Height="32"
+                                                   Text="{Binding Album, Mode=TwoWay}"
+                                                   PlaceholderText="{Binding AlbumPlaceholder, Mode=OneWay}"
+                                                   />
                             </Grid>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -128,12 +131,13 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Album artist:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:AutocompleteMetadataInput
-                            Grid.Column="2"
-                            Text="{Binding AlbumArtist, Mode=TwoWay}"
-                            PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
-                            MetadataType="ArtistName"
-                             IsMultipleValueEnabled="True"
-                            />
+                                    Height="32"
+                                    Grid.Column="2"
+                                    Text="{Binding AlbumArtist, Mode=TwoWay}"
+                                    PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
+                                    MetadataType="ArtistName"
+                                     IsMultipleValueEnabled="True"
+                                    />
                             </Grid>
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -143,12 +147,13 @@
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Genre:" VerticalAlignment="Center" FontSize="12"/>
                                 <controls:AutocompleteMetadataInput
-                            Grid.Column="2"
-                            Text="{Binding Genre, Mode=TwoWay}"
-                            PlaceholderText="{Binding GenrePlaceholder, Mode=OneWay}"
-                            MetadataType="GenreName"
-                             IsMultipleValueEnabled="True"
-                            />
+                                    Height="32"
+                                    Grid.Column="2"
+                                    Text="{Binding Genre, Mode=TwoWay}"
+                                    PlaceholderText="{Binding GenrePlaceholder, Mode=OneWay}"
+                                    MetadataType="GenreName"
+                                     IsMultipleValueEnabled="True"
+                                    />
                             </Grid>
                             <Separator Margin="0,0,0,4"/>
                             <Grid Margin="0,0,0,8">
@@ -167,12 +172,13 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <controls:CompactInputField Grid.Column="0" 
-                                                        Width="150" 
-                                                        VerticalAlignment="Top" 
-                                                        Text="{Binding Year, Mode=TwoWay}" 
-                                                        PlaceholderText="{Binding YearPlaceholder, Mode=OneWay}"
-                                                        />
+                                    <controls:AppInput Grid.Column="0" 
+                                                       Height="32"
+                                                       Width="150" 
+                                                       VerticalAlignment="Top" 
+                                                       Text="{Binding Year, Mode=TwoWay}" 
+                                                       PlaceholderText="{Binding YearPlaceholder, Mode=OneWay}"
+                                                       />
 
                                     <StackPanel Grid.Column="2">
                                         <Grid Margin="0,0,0,8">
@@ -182,10 +188,11 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Track:" VerticalAlignment="Center" FontSize="12"/>
-                                            <controls:CompactInputField Grid.Column="2" 
-                                                                Text="{Binding TrackNumber, Mode=TwoWay}" 
-                                                                PlaceholderText="{Binding TrackNumberPlaceholder, Mode=OneWay}"
-                                                                />
+                                            <controls:AppInput Grid.Column="2"
+                                                               Height="32"
+                                                               Text="{Binding TrackNumber, Mode=TwoWay}" 
+                                                               PlaceholderText="{Binding TrackNumberPlaceholder, Mode=OneWay}"
+                                                               />
                                         </Grid>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -194,10 +201,11 @@
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="Disk:" VerticalAlignment="Center" FontSize="12"/>
-                                            <controls:CompactInputField Grid.Column="2" 
-                                                                Text="{Binding DiskNumber, Mode=TwoWay}" 
-                                                                PlaceholderText="{Binding DiskNumberPlaceholder, Mode=OneWay}"
-                                                                />
+                                            <controls:AppInput Grid.Column="2"
+                                                               Height="32"
+                                                               Text="{Binding DiskNumber, Mode=TwoWay}" 
+                                                               PlaceholderText="{Binding DiskNumberPlaceholder, Mode=OneWay}"
+                                                               />
                                         </Grid>
                                     </StackPanel>
 

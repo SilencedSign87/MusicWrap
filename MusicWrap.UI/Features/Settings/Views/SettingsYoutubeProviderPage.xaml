@@ -14,7 +14,7 @@
              d:DesignHeight="800" d:DesignWidth="400">
 
     <StackPanel Margin="16">
-        <controls:SectionTitleSeparator Title="FFmpeg" IconGlyph="&#xE950;" Margin="0,8" />
+        <controls:SectionTitleSeparator Title="FFmpeg" IconGlyph="&#xE950;" Margin="0,0,0,12" />
         <CheckBox
             Margin="8,0,0,8"
             Content="Use custom ffmpeg.exe path"
@@ -24,17 +24,16 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <controls:CompactInputField
+            <controls:AppInput
                 Grid.Column="0"
                 Text="{Binding CustomFfmpegPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 IsEnabled="{Binding UseCustomFfmpegPath}"
                 PlaceholderText="Path to FFmpeg.exe"
                 >
-                <controls:CompactInputField.BeforeContent>
+                <controls:AppInput.BeforeContent>
                     <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" Text="&#xED25;"/>
-                </controls:CompactInputField.BeforeContent>
-
-            </controls:CompactInputField>
+                </controls:AppInput.BeforeContent>
+            </controls:AppInput>
 
             <Button
                 Grid.Column="1"

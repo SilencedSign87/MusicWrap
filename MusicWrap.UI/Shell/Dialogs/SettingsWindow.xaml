@@ -11,7 +11,6 @@
         Width="800"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        Background="{DynamicResource BackgroundSolid}"
         Foreground="{DynamicResource TextPrimaryBrush}"
         Icon="/Resources/icon.ico"
         d:DataContext="{d:DesignInstance Type=vm:SettingsIndexViewModel}"
@@ -23,7 +22,6 @@
         </Grid.ColumnDefinitions>
 
         <ListView 
-            Background="{DynamicResource BackgroundLayerAlt}" 
             Padding="2"
             Grid.Column="0"
             SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
@@ -65,7 +63,7 @@
                 </StackPanel>
             </ListViewItem>
         </ListView>
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="1" Background="{DynamicResource BackgroundLayer}">
             <ContentControl x:Name="SettingsContentControl" Content="{Binding CurrentControl}" />
         </Grid>
     </Grid>

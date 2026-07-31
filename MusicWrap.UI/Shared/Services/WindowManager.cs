@@ -16,7 +16,6 @@ namespace MusicWrap.UI.Shared.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly UserSettings _userSettings;
 
-
         private int _windowTransitionDepth = 0;
         public bool IsShuttingDown { get; set; }
         public bool IsWindowTransitioning => _windowTransitionDepth > 0;
@@ -27,6 +26,7 @@ namespace MusicWrap.UI.Shared.Services
         public Window? CurrentWindow { get; private set; }
         private NewPlaylistWindow? newPlaylistWindow = null;
         private MetadataEditorWindow? metadataEditorWindow = null;
+        private SettingsWindow? settingsWindow = null;
         public event Action<Window?>? CurrentWindowChanged;
 
         public WindowManager(IServiceProvider serviceProvider, UserSettings userSettings)
@@ -38,12 +38,23 @@ namespace MusicWrap.UI.Shared.Services
         #region Dialog launchers
         public void LaunchSettingsWindow()
         {
-            var currentWindow = CurrentWindow;
-            if (currentWindow is null) return;
-
-            var settingsWindow = _serviceProvider.GetRequiredService<SettingsWindow>();
-
-            WindowHelper.LauchFromParent(currentWindow, settingsWindow, false);
+            if (IsShuttingDown)
+            {
+                return;
+            }
+            if (settingsWindow is null)
+            {
+                settingsWindow = _serviceProvider.GetRequiredService<SettingsWindow>();
+                var currentWindow = CurrentWindow;
+                if (currentWindow is null) return;
+                settingsWindow.Closed += (_, _) => settingsWindow = null;
+                WindowHelper.LauchFromParent(currentWindow, settingsWindow, false);
+            }
+            else
+            {
+                settingsWindow.Activate();
+                return;
+            }
         }
 
         public void LaunchIndexingWindow()
@@ -70,7 +81,7 @@ namespace MusicWrap.UI.Shared.Services
 
                 WindowHelper.LauchFromParent(currentWindow, newPlaylistWindow, false);
 
-                newPlaylistWindow.Closed += NewPlaylistWindow_Closed;
+                newPlaylistWindow.Closed += (_, _) => newPlaylistWindow = null;
             }
             else
             {
@@ -78,12 +89,6 @@ namespace MusicWrap.UI.Shared.Services
             }
 
             newPlaylistWindow.Activate();
-        }
-
-        private void NewPlaylistWindow_Closed(object? sender, EventArgs e)
-        {
-            newPlaylistWindow?.Closed -= NewPlaylistWindow_Closed;
-            newPlaylistWindow = null;
         }
 
         #endregion

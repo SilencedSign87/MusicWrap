@@ -9,22 +9,23 @@
              x:Name="Root"
              d:DataContext="{d:DesignInstance Type=vm:CommandPaletteViewModel}"
              d:DesignHeight="100" d:DesignWidth="300">
-    <local:CompactInputField x:Name="CommandInput"
-                             VerticalAlignment="Center"
-                             HorizontalAlignment="Stretch"
-                             Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
-                             EnterPressed="CommandInput_EnterPressed"
-                             PreviewKeyDown="CommandInput_PreviewKeyDown"
-                             >
-        <local:CompactInputField.BeforeContent>
+    <local:AppInput x:Name="CommandInput"
+                    Height="28"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Stretch"
+                    Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
+                    EnterPressed="CommandInput_EnterPressed"
+                    PreviewKeyDown="CommandInput_PreviewKeyDown"
+                    >
+        <local:AppInput.BeforeContent>
             <TextBlock Text="&#xE721;"
                        FontFamily="Segoe Fluent Icons"
                        FontSize="12"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center"/>
-        </local:CompactInputField.BeforeContent>
-    </local:CompactInputField>
+        </local:AppInput.BeforeContent>
+    </local:AppInput>
 </UserControl>
 
 

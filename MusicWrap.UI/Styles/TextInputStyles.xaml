@@ -1,8 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/Styles/Colors.xaml"/>
-    </ResourceDictionary.MergedDictionaries>
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+                    >
 
     <!--Base input-->
     <Style x:Key="BaseTextInput" TargetType="TextBox">
@@ -62,5 +61,133 @@
                 <Setter Property="BorderBrush" Value="Transparent"/>
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- AppInput-->
+    <Style TargetType="controls:AppInput">
+        <Setter Property="Background" Value="{DynamicResource BackgroundControlDefault}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource StrokeControlGradient}"/>
+        <Setter Property="Padding" Value="4,0"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="controls:AppInput">
+                    <Border x:Name="Container"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4"
+                        >
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource BackgroundControlHover}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource StrokeDivider}"/>
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource BackgroundControlPressed}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush100}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <!-- Before Content -->
+                            <ContentPresenter Grid.Column="0"
+                                          Content="{TemplateBinding BeforeContent}"
+                                          VerticalAlignment="Center">
+                                <ContentPresenter.Style>
+                                    <Style TargetType="ContentPresenter">
+                                        <Setter Property="Margin" Value="6,0,2,0"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Content, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                                                <Setter Property="Margin" Value="0"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ContentPresenter.Style>
+                            </ContentPresenter>
+
+                            <!-- Main content -->
+                            <Grid Grid.Column="1">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                          Focusable="False"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden">
+                                    <ScrollViewer.Style>
+                                        <Style TargetType="ScrollViewer">
+                                            <Setter Property="Margin" Value="2,0,2,0"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding BeforeContent, RelativeSource={RelativeSource TemplatedParent}}" Value="{x:Null}">
+                                                    <Setter Property="Margin" Value="4,0,2,0"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding AfterContent, RelativeSource={RelativeSource TemplatedParent}}" Value="{x:Null}">
+                                                    <Setter Property="Margin" Value="2,0,4,0"/>
+                                                </DataTrigger>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding BeforeContent, RelativeSource={RelativeSource TemplatedParent}}" Value="{x:Null}"/>
+                                                        <Condition Binding="{Binding AfterContent, RelativeSource={RelativeSource TemplatedParent}}" Value="{x:Null}"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Margin" Value="0"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ScrollViewer.Style>
+                                </ScrollViewer>
+                                <TextBlock Text="{TemplateBinding PlaceholderText}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       VerticalAlignment="Center"
+                                           Margin="4,0"
+                                       IsHitTestVisible="False"
+                                       Foreground="{DynamicResource TextDisabledBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value=""/>
+                                                        <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource TemplatedParent}}" Value="False"/>
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+
+                            <!-- After Content -->
+                            <ContentPresenter Grid.Column="2"
+                                          Content="{TemplateBinding AfterContent}"
+                                          VerticalAlignment="Center">
+                                <ContentPresenter.Style>
+                                    <Style TargetType="ContentPresenter">
+                                        <Setter Property="Margin" Value="2,0,6,0"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Content, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                                                <Setter Property="Margin" Value="0"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ContentPresenter.Style>
+                            </ContentPresenter>
+
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>
