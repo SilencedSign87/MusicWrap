@@ -234,9 +234,11 @@ namespace MusicWrap.Core.Services.Images
         }
         private static ColorExtractionResult ExtractColorPalette(Image sample)
         {
-            var data = sample.WriteToMemory<byte>();
-            int pixelCount = sample.Width * sample.Height;
-            int bands = sample.Bands;
+            using var denoised = DenoiseForPalette(sample);
+
+            var data = denoised.WriteToMemory<byte>();
+            int pixelCount = denoised.Width * denoised.Height;
+            int bands = denoised.Bands;
 
             const int quantizeFactor = 32;
             var freq = new Dictionary<int, int>();
@@ -277,81 +279,66 @@ namespace MusicWrap.Core.Services.Images
             if (validPixels == 0 || freq.Count == 0)
                 return ColorExtractionResult.Default;
 
-            int minCount = Math.Max(1, (int)(validPixels * 0.008));
+            int minCount = Math.Max(1, (int)(validPixels * ColorExtractionTuning.MinClusterAreaFraction));
 
             var sorted = freq
-                .Where(kv => kv.Value >= minCount)
-                .OrderByDescending(kv => kv.Value)
-                .ThenByDescending(kv =>
-                {
-                    var s = sums[kv.Key];
-                    byte avgR = (byte)(s.R / kv.Value);
-                    byte avgG = (byte)(s.G / kv.Value);
-                    byte avgB = (byte)(s.B / kv.Value);
-                    var hsv = RgbToHsv(avgR, avgG, avgB);
-                    return hsv.S * 0.7 + hsv.V * 0.3;
-                })
-                .Select(kv =>
-                {
-                    var s = sums[kv.Key];
-                    return (
-                        R: (byte)(s.R / kv.Value),
-                        G: (byte)(s.G / kv.Value),
-                        B: (byte)(s.B / kv.Value),
-                        Freq: (double)kv.Value / validPixels
-                    );
-                })
-                .ToList();
-
-            // fallback
-            if (sorted.Count == 0)
-            {
-                sorted = freq
-                    .OrderByDescending(kv => kv.Value)
-                    .Select(kv =>
-                    {
-                        var s = sums[kv.Key];
-                        return (R: (byte)(s.R / kv.Value), G: (byte)(s.G / kv.Value),
-                                B: (byte)(s.B / kv.Value), Freq: (double)kv.Value / validPixels);
-                    })
-                    .ToList();
-            }
+                 .Where(kv => kv.Value >= minCount)
+                 .Select(kv =>
+                 {
+                     var s = sums[kv.Key];
+                     byte avgR = (byte)(s.R / kv.Value);
+                     byte avgG = (byte)(s.G / kv.Value);
+                     byte avgB = (byte)(s.B / kv.Value);
+                     double areaFraction = (double)kv.Value / validPixels;
+                     var hsv = RgbToHsv(avgR, avgG, avgB);
+                     double score = ScoreDominantCandidate(areaFraction, hsv.S, hsv.V);
+                     return (R: avgR, G: avgG, B: avgB, Freq: areaFraction, Score: score);
+                 })
+                 .OrderByDescending(c => c.Score)
+                 .ToList();
 
             // dominant
             var dom = sorted[0];
-            var boostedDom = BoostSaturation((dom.R, dom.G, dom.B), minSaturation: 0.14f);
+            var boostedDom = BoostSaturation((dom.R, dom.G, dom.B), ColorExtractionTuning.DominantMinVisibleSaturation);
             string dominantHex = RgbToHex(boostedDom.R, boostedDom.G, boostedDom.B);
             string dominantFg = GetContrastColor(boostedDom.R, boostedDom.G, boostedDom.B);
-            var domHsv = RgbToHsv(boostedDom.R, boostedDom.G, boostedDom.B);
+            double domLum = CalculateLuminance(boostedDom.R, boostedDom.G, boostedDom.B);
 
             // highlight
             (byte R, byte G, byte B) bestHighlight = (boostedDom.R, boostedDom.G, boostedDom.B);
-            double bestScore = -1;
+            double bestHighlightScore = -1;
             int searchLimit = Math.Min(15, sorted.Count);
+
             for (int idx = 0; idx < searchLimit; idx++)
             {
                 var c = sorted[idx];
-                // Saltar el dominante
                 if (c.R == dom.R && c.G == dom.G && c.B == dom.B)
                     continue;
+
                 var hsv = RgbToHsv(c.R, c.G, c.B);
-                float hueDiff = Math.Abs(hsv.H - domHsv.H);
-                hueDiff = Math.Min(hueDiff, 360f - hueDiff);
-                if (hueDiff < 15f || hsv.S < 0.08f) continue;
-                double score = c.Freq * 100.0
-                             + Math.Min(hueDiff, 180f) * 0.3
-                             + hsv.S * 20.0;
-                if (score > bestScore)
+                if (hsv.S < ColorExtractionTuning.HighlightMinSaturation)
+                    continue;
+
+                double candLum = CalculateLuminance(c.R, c.G, c.B);
+                double contrast = CalculateContrastRatio(domLum, candLum);
+                if (contrast < ColorExtractionTuning.HighlightMinContrastRatio)
+                    continue;
+
+                double score = hsv.S * Math.Pow(c.Freq, ColorExtractionTuning.HighlightAreaWeightExponent);
+                if (score > bestHighlightScore)
                 {
-                    bestScore = score;
+                    bestHighlightScore = score;
                     bestHighlight = (c.R, c.G, c.B);
                 }
             }
-            if (bestScore < 0 && sorted.Count > 1)
+
+            if (bestHighlightScore < 0 && sorted.Count > 1)
                 bestHighlight = (sorted[1].R, sorted[1].G, sorted[1].B);
+
             bestHighlight = EnsureMinimalContrast(bestHighlight, (boostedDom.R, boostedDom.G, boostedDom.B));
             string highlightHex = RgbToHex(bestHighlight.R, bestHighlight.G, bestHighlight.B);
             string highlightFg = GetContrastColor(bestHighlight.R, bestHighlight.G, bestHighlight.B);
+
             return new ColorExtractionResult
             {
                 DominantColorHex = dominantHex,
@@ -378,19 +365,19 @@ namespace MusicWrap.Core.Services.Images
             double domLum = CalculateLuminance(dominant.R, dominant.G, dominant.B);
             double hlLum = CalculateLuminance(highlight.R, highlight.G, highlight.B);
             double contrast = CalculateContrastRatio(domLum, hlLum);
-            if (contrast >= 3.0 || highlight == dominant)
+            if (contrast >= ColorExtractionTuning.HighlightMinContrastRatio || highlight == dominant)
                 return highlight;
             var hsv = RgbToHsv(highlight.R, highlight.G, highlight.B);
             bool needLighter = domLum < 0.5;
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < ColorExtractionTuning.ContrastAdjustMaxIterations; i++)
             {
                 hsv.V = needLighter
-                    ? Math.Min(1f, hsv.V + 0.06f)
-                    : Math.Max(0f, hsv.V - 0.06f);
+                    ? Math.Min(1f, hsv.V + (float)ColorExtractionTuning.ContrastAdjustStep)
+                    : Math.Max(0f, hsv.V - (float)ColorExtractionTuning.ContrastAdjustStep);
                 var (r, g, b) = HsvToRgb(hsv.H, hsv.S, hsv.V);
                 hlLum = CalculateLuminance(r, g, b);
                 contrast = CalculateContrastRatio(domLum, hlLum);
-                if (contrast >= 3.0)
+                if (contrast >= ColorExtractionTuning.HighlightMinContrastRatio)
                     return (r, g, b);
             }
             return highlight;
@@ -427,6 +414,24 @@ namespace MusicWrap.Core.Services.Images
             }
             return Image.NewFromMemory(data, image.Width, image.Height, bands, Enums.BandFormat.Uchar);
         }
+        private static Image DenoiseForPalette(Image sample)
+        {
+            return sample.Median(ColorExtractionTuning.DenoiseMedianWindow);
+        }
+        private static double ScoreDominantCandidate(double areaFraction, float saturation, float value)
+        {
+            float satNorm = Math.Clamp(saturation, 0f, 1f);
+            float f = ColorExtractionTuning.DominantSaturationFloor
+                    + (1f - ColorExtractionTuning.DominantSaturationFloor) * satNorm;
+
+            if (value <= ColorExtractionTuning.DominantValueLowCutoff ||
+                value >= ColorExtractionTuning.DominantValueHighCutoff)
+            {
+                f *= ColorExtractionTuning.DominantExtremeValuePenalty;
+            }
+
+            return areaFraction * f;
+        }
         #endregion
     }
 
@@ -444,6 +449,32 @@ namespace MusicWrap.Core.Services.Images
         public required string DominantForegroundHex { get; init; }
         public required string HighlightColorHex { get; init; }
         public required string HighlightForegroundHex { get; init; }
+    }
+
+    // Color extraction tuning parameters
+    internal static class ColorExtractionTuning
+    {
+        // Extraction Settings
+        public const int DenoiseMedianWindow = 3;
+        public const double MinClusterAreaFraction = 0.008;
+
+        // Dominant scoring
+        public const float DominantSaturationFloor = 0.6f;
+
+        public const float DominantValueLowCutoff = 0.08f;
+        public const float DominantValueHighCutoff = 0.95f;
+        public const float DominantExtremeValuePenalty = 0.5f;
+
+        // Highlight scoring
+        public const double HighlightMinContrastRatio = 2.0;
+        public const double HighlightAreaWeightExponent = 0.25;
+        public const float HighlightMinSaturation = 0.08f;
+
+        public const double ContrastAdjustStep = 0.06;
+        public const int ContrastAdjustMaxIterations = 15;
+
+        public const float DominantMinVisibleSaturation = 0.14f;
+        public const float DominantBoostBlend = 0.35f;
     }
 
     #endregion

@@ -34,7 +34,7 @@
                              AllTrackIds="{Binding AllTrackIds}"
                              SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
                              ContextMenu="{StaticResource TracksContextMenu}"
-                             VisualMode="ListImage"
+                             VisualMode="CompactNoCover"
                              IndexMode="ListIndex"
                              SelectionMode="Extended"
                              IsMouseWheelScrollEnabled="True"/>

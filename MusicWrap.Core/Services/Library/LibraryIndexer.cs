@@ -33,6 +33,8 @@ namespace MusicWrap.Core.Services.Library
 
         private readonly Dictionary<(long Size, long Ticks), Track> _fingerprint;
         private readonly ImageProcessor _imageProcessor;
+        private sealed record AlbumCoverSource(int Disk, int Track);
+        private readonly Dictionary<int, AlbumCoverSource> _albumCoverSource = [];
 
         public LibraryIndexer(MusicLibrary library, ImageProcessor imageProcessor)
         {
@@ -164,7 +166,10 @@ namespace MusicWrap.Core.Services.Library
                     albumArtists,
                     trackArtists,
                     (int)tagFile.Tag.Year,
-                    coverId
+                    coverId,
+                    filePath,
+                    (int)tagFile.Tag.Disc,
+                    (int)tagFile.Tag.Track
                 );
 
                 // Track
@@ -240,7 +245,8 @@ namespace MusicWrap.Core.Services.Library
                     artistIds,
                     artistIds,
                     request.Year,
-                    coverId);
+                    coverId
+                    );
 
                 var track = new Track
                 {
@@ -419,7 +425,7 @@ namespace MusicWrap.Core.Services.Library
                 }
             }
         }
-        private int GetOrCreateAlbum(string albumName, int[] albumArtistIds, int[] trackArtistIds, int year, int coverId)
+        private int GetOrCreateAlbum(string albumName, int[] albumArtistIds, int[] trackArtistIds, int year, int coverId = 0, string? audioFile = null, int disk = 0, int trackNumber = 0)
         {
             if (string.IsNullOrWhiteSpace(albumName)) albumName = "Unknown Album";
 
@@ -432,27 +438,44 @@ namespace MusicWrap.Core.Services.Library
                                 a.ArtistIds.SequenceEqual(preferredArtistIds)
                                 );
 
-                if (album != null)
+                int finalCoverId = coverId;
+
+
+                if (album is null)
                 {
-                    if (album.CoverId == 0 && coverId != 0)
+                    if (TryGetExternalCover(audioFile, out var extBytes, out var extMime))
                     {
-                        album.CoverId = coverId;
+                        finalCoverId = GetOrCreateCoverAsset(extBytes, extMime);
                     }
-                    return album.Id;
-                }
-                else
-                {
+
                     var newAlbum = new Album
                     {
                         Id = _library.GenerateAlbumId(),
                         Title = albumName,
                         ArtistIds = preferredArtistIds,
                         Year = year,
-                        CoverId = coverId
+                        CoverId = finalCoverId
                     };
                     _library.Albums.Add(newAlbum);
                     return newAlbum.Id;
                 }
+                if (album.CoverId == 0)
+                {
+                    if (coverId != 0 && IsBestCoverCandidate(album.Id, disk, trackNumber))
+                    {
+                        album.CoverId = coverId;
+                    }
+
+                    // backfill
+                    if (album.CoverId != 0)
+                    {
+                        foreach (var t in _library.Tracks.Where(t => t.AlbumId == album.Id && t.CoverId == 0))
+                        {
+                            t.CoverId = album.CoverId;
+                        }
+                    }
+                }
+                return album.Id;
 
             }
         }
@@ -525,6 +548,24 @@ namespace MusicWrap.Core.Services.Library
 
         }
 
+        private bool IsBestCoverCandidate(int albumId, int disk, int trackNumber)
+        {
+            bool isQualified = disk > 0 && trackNumber > 0;
+            if (!_albumCoverSource.TryGetValue(albumId, out var current))
+            {
+                _albumCoverSource[albumId] = new AlbumCoverSource(disk, trackNumber);
+                return true;
+            }
+            if (!isQualified) return false;
+            bool isBetter = current.Disk <= 0 || disk < current.Disk ||
+                            (disk == current.Disk && trackNumber < current.Track);
+            if (isBetter)
+            {
+                _albumCoverSource[albumId] = new AlbumCoverSource(disk, trackNumber);
+            }
+            return isBetter;
+        }
+
         private Track? FindExistingTrack(long fileSize, DateTime lastModifiedUtc)
         {
             long ticks = lastModifiedUtc.Ticks;
@@ -535,7 +576,7 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        private static bool TryGetExternalCover(string audioFilePath, out byte[] imageBytes, out string mimeType)
+        private static bool TryGetExternalCover(string? audioFilePath, out byte[] imageBytes, out string mimeType)
         {
             imageBytes = [];
             mimeType = "application/octet-stream";
