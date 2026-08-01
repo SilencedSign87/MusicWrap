@@ -27,11 +27,17 @@ namespace MusicWrap.UI.Shared.Services
         private NewPlaylistWindow? newPlaylistWindow = null;
         private MetadataEditorWindow? metadataEditorWindow = null;
         private SettingsWindow? settingsWindow = null;
+
         public event Action<Window?>? CurrentWindowChanged;
 
-        public WindowManager(IServiceProvider serviceProvider, UserSettings userSettings)
+        // scope
+        private readonly IServiceScopeFactory _scopeFactory;
+        private IServiceScope? _metadataEditorScope;
+
+        public WindowManager(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,UserSettings userSettings)
         {
             _serviceProvider = serviceProvider;
+            _scopeFactory = scopeFactory;
             _userSettings = userSettings;
         }
 
@@ -55,6 +61,34 @@ namespace MusicWrap.UI.Shared.Services
                 settingsWindow.Activate();
                 return;
             }
+        }
+        public void LaunchMetadataWindow(List<int> trackIds)
+        {
+            if(trackIds is null || trackIds.Count == 0 || IsShuttingDown || CurrentWindow is null) return;
+
+            if(metadataEditorWindow is { IsLoaded: true} w)
+            {
+                w.Initialize(trackIds);
+                w.Activate();
+                return;
+            }
+
+            var scope = _scopeFactory.CreateScope();
+            var window = scope.ServiceProvider.GetRequiredService<MetadataEditorWindow>();
+
+            window.Closed += (_, _) =>
+            {
+                metadataEditorWindow = null;
+                _metadataEditorScope?.Dispose();
+                _metadataEditorScope = null;
+            };
+
+            metadataEditorWindow = window;
+            _metadataEditorScope = scope;
+
+            window.Initialize(trackIds);
+            WindowHelper.LauchFromParent(CurrentWindow, window, false);
+
         }
 
         public void LaunchIndexingWindow()

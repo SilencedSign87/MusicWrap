@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Features.Metadata.Viewmodels;
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using TagLib.Riff;
 
 namespace MusicWrap.UI.Shell.Dialogs
 {
@@ -19,11 +21,13 @@ namespace MusicWrap.UI.Shell.Dialogs
     /// </summary>
     public partial class MetadataEditorWindow : Window
     {
-        public MetadataEditorWindow(MetadataEditorViewModel vm)
+        public MetadataEditorWindow(MetadataEditorWindowViewModel vm)
         {
             InitializeComponent();
             DataContext = vm;
         }
+
+        public void Initialize(List<int> trackIds) => (DataContext as MetadataEditorWindowViewModel)?.LoadTracks(trackIds);
     }
 }
 

@@ -1,6 +1,7 @@
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.UI.Shared.Services;
 using System.Diagnostics;
 using System.IO;
 
@@ -10,12 +11,12 @@ namespace MusicWrap.UI.Services
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly ILibraryService _libraryService;
-        private readonly IEditMetadataService _editMetadataService;
+        private readonly WindowManager _windowManager;
 
-        public TrackActionService(IMusicPlayerService musicPlayerService, IEditMetadataService editMetadataService, ILibraryService libraryService)
+        public TrackActionService(IMusicPlayerService musicPlayerService, WindowManager windowManager, ILibraryService libraryService)
         {
             _musicPlayerService = musicPlayerService;
-            _editMetadataService = editMetadataService;
+            _windowManager = windowManager;
             _libraryService = libraryService;
         }
 
@@ -65,7 +66,7 @@ namespace MusicWrap.UI.Services
             {
                 return;
             }
-            _editMetadataService.OpenMetadataWindow(selectedTrackIds.ToList());
+            _windowManager.LaunchMetadataWindow(selectedTrackIds.ToList());
         }
         public void ShowInFileExplorer(IReadOnlyList<int> selectedTrackIds)
         {

@@ -3,8 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MusicWrap.UI.Shell.Dialogs"
-        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+        xmlns:views="clr-namespace:MusicWrap.UI.Features.Metadata.Views"
         xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
         xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
         mc:Ignorable="d"
@@ -12,227 +11,42 @@
         Icon="/Resources/icon.ico"
         d:Background="#080808"
         d:Foreground="White"
-        d:DataContext="{d:DesignInstance Type=vm:MetadataEditorViewModel}"
-        Title="Metadata Editor" Height="650" Width="500">
+        d:DataContext="{d:DesignInstance Type=vm:MetadataEditorWindowViewModel}"
+        Title="{Binding DisplayTitle}" Height="650" Width="500">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
 
-        <nav:ShellTabControl Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <nav:ShellTabControl Grid.Row="0"
+                             SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <nav:ShellTabItem Icon="&#xEDA2;" IconSize="20" Spacing="8" Text="General" Orientation="Vertical">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Border 
-                        Grid.Row="0"
-                        Padding="8"
-                        Background="{DynamicResource BackgroundLayer}"
-                        BorderThickness="1"
-                        BorderBrush="{DynamicResource StrokeLayerCard}"
-                        >
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center" />
-                            <TextBlock Text="This is a read-only section" Margin="8,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
+                <views:MetadataGeneralView DataContext="{Binding General}"/>
             </nav:ShellTabItem>
             <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" Orientation="Vertical">
-                <Border Padding="8" Background="{DynamicResource BackgroundLayer}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition />
-                            <ColumnDefinition Width="12"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0">
-                            <controls:SectionTitleSeparator Title="Track Cover:" IconGlyph="&#xE91B;"/>
-                            <Image
-                        Margin="0,8"
-                        Width="200"
-                        Source="{Binding TrackArtworkUrl, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:200}"
-                        RenderOptions.BitmapScalingMode="LowQuality"
-                        />
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,8">
-                                <Button Style="{StaticResource DefaultButton}" Content="Change"/>
-                            </StackPanel>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2">
-
-                            <controls:SectionTitleSeparator Title="Album Cover:" IconGlyph="&#xE93C;"/>
-                            <Image
-                        Margin="0,8"
-                        Width="200"
-                        Source="{Binding AlbumArtworkUrl, Converter={StaticResource PathToImageConverter},  ConverterParameter=medium:200}"
-                        RenderOptions.BitmapScalingMode="LowQuality"
-                        />
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,8">
-                                <Button Style="{StaticResource DefaultButton}" Content="Change"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                <views:MetadataArtworkEditorView DataContext="{Binding Artwork}"/>
             </nav:ShellTabItem>
-            <nav:ShellTabItem IsSelected="True" IconSize="20" Spacing="8" Icon="&#xE90B;" Text="Metadata" Orientation="Vertical">
-                <Border Background="{DynamicResource BackgroundLayer}">
-                    <Grid Margin="8" Grid.IsSharedSizeScope="True">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Title:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:AppInput Grid.Column="2"
-                                                   Height="32"
-                                                    Text="{Binding Title, Mode=TwoWay}"
-                                                    PlaceholderText="{Binding TitlePlaceholder, Mode=OneWay}"
-                                                    />
-                            </Grid>
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Artist:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:AutocompleteMetadataInput
-                                    Grid.Column="2"
-                                    Height="32"
-                                    Text="{Binding Artist, Mode=TwoWay}"
-                                    MetadataType="ArtistName"
-                                    PlaceholderText="{Binding ArtistPlaceholder, Mode=OneWay}"
-                                    IsMultipleValueEnabled="True"
-                                    />
-                            </Grid>
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Album:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:AppInput Grid.Column="2"
-                                                   Height="32"
-                                                   Text="{Binding Album, Mode=TwoWay}"
-                                                   PlaceholderText="{Binding AlbumPlaceholder, Mode=OneWay}"
-                                                   />
-                            </Grid>
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Album artist:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:AutocompleteMetadataInput
-                                    Height="32"
-                                    Grid.Column="2"
-                                    Text="{Binding AlbumArtist, Mode=TwoWay}"
-                                    PlaceholderText="{Binding AlbumArtistPlaceholder, Mode=OneWay}"
-                                    MetadataType="ArtistName"
-                                     IsMultipleValueEnabled="True"
-                                    />
-                            </Grid>
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Genre:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:AutocompleteMetadataInput
-                                    Height="32"
-                                    Grid.Column="2"
-                                    Text="{Binding Genre, Mode=TwoWay}"
-                                    PlaceholderText="{Binding GenrePlaceholder, Mode=OneWay}"
-                                    MetadataType="GenreName"
-                                     IsMultipleValueEnabled="True"
-                                    />
-                            </Grid>
-                            <Separator Margin="0,0,0,4"/>
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0" Text="Year:" VerticalAlignment="Top" FontSize="12" Margin="0,4,0,0"/>
-
-                                <Grid Grid.Column="2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="auto"/>
-                                        <ColumnDefinition Width="12"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <controls:AppInput Grid.Column="0" 
-                                                       Height="32"
-                                                       Width="150" 
-                                                       VerticalAlignment="Top" 
-                                                       Text="{Binding Year, Mode=TwoWay}" 
-                                                       PlaceholderText="{Binding YearPlaceholder, Mode=OneWay}"
-                                                       />
-
-                                    <StackPanel Grid.Column="2">
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
-                                                <ColumnDefinition Width="12"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Track:" VerticalAlignment="Center" FontSize="12"/>
-                                            <controls:AppInput Grid.Column="2"
-                                                               Height="32"
-                                                               Text="{Binding TrackNumber, Mode=TwoWay}" 
-                                                               PlaceholderText="{Binding TrackNumberPlaceholder, Mode=OneWay}"
-                                                               />
-                                        </Grid>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
-                                                <ColumnDefinition Width="12"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Disk:" VerticalAlignment="Center" FontSize="12"/>
-                                            <controls:AppInput Grid.Column="2"
-                                                               Height="32"
-                                                               Text="{Binding DiskNumber, Mode=TwoWay}" 
-                                                               PlaceholderText="{Binding DiskNumberPlaceholder, Mode=OneWay}"
-                                                               />
-                                        </Grid>
-                                    </StackPanel>
-
-                                </Grid>
-                            </Grid>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+            <nav:ShellTabItem IconSize="20" Spacing="8" Icon="&#xE90B;" Text="Metadata" Orientation="Vertical">
+                <views:MetadataEditorView DataContext="{Binding Fields}"/>
             </nav:ShellTabItem>
             <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" Orientation="Vertical">
-                <TextBlock Text="Tags tab content goes here" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <views:MetadataTagEditorView DataContext="{Binding Tags}"/>
             </nav:ShellTabItem>
         </nav:ShellTabControl>
 
         <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="8" Orientation="Horizontal">
             <Button Margin="8,0" Style="{StaticResource AccentButton}"
-                    IsEnabled="{Binding HasChanges}"
-                    >
+                    Command="{Binding SaveCommand}"
+                    IsEnabled="{Binding SelectedTabHasChanges}">
                 Save
             </Button>
-            <Button Style="{StaticResource DefaultButton}" 
-                    Command="{Binding CancelChangesCommand}" 
-                    IsEnabled="{Binding HasChanges}">
+            <Button Style="{StaticResource DefaultButton}"
+                    Command="{Binding CancelChangesCommand}"
+                    IsEnabled="{Binding SelectedTabHasChanges}">
                 Cancel changes
             </Button>
         </StackPanel>
     </Grid>
 </Window>
-
-

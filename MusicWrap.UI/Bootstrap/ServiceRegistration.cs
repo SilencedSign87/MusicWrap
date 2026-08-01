@@ -8,6 +8,8 @@ using MusicWrap.UI.Features.Activity.Viewmodel;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Library.Views;
+using MusicWrap.UI.Features.Metadata.Services;
+using MusicWrap.UI.Features.Metadata.Viewmodels;
 using MusicWrap.UI.Features.Playback.ViewModels;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Playlist.ViewModels;
@@ -53,7 +55,6 @@ public static class ServiceRegistration
         services.AddSingleton<ITrayService, TrayService>();
         services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<WindowManager>();
-        services.AddTransient<IEditMetadataService, EditMetadataService>();
         services.AddSingleton<TrackActionService>();
         services.AddSingleton<ThemeService>();
 
@@ -79,7 +80,6 @@ public static class ServiceRegistration
         services.AddTransient<VolumeControlViewModel>();
         services.AddSingleton<CommandPaletteViewModel>();
         services.AddTransient<TaskbarIconViewModel>();
-        services.AddTransient<MetadataEditorViewModel>();
         services.AddTransient<DJControlViewModel>();
         services.AddTransient<LibraryEntryDetailPanelViewModel>();
         services.AddTransient<LibraryEntryAlbumViewModel>();
@@ -88,6 +88,13 @@ public static class ServiceRegistration
         services.AddTransient<TrackInformationViewModel>();
         services.AddTransient<NowPlayingViewModel>();
         services.AddTransient<FullscreenWindowViewModel>();
+
+        services.AddScoped<MetadataEditorWindowViewModel>();
+        services.AddScoped<MetadataEditorWorkspace>();
+        services.AddScoped<MetadataGeneralViewmodel>();
+        services.AddScoped<MetadataArtworkEditorViewmodel>();
+        services.AddScoped<MetadataEditorViewmodel>();
+        services.AddScoped<MetadataTagEditorViewmodel>();
 
         // UI
         services.AddTransient<MainWindow>();

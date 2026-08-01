@@ -9,6 +9,7 @@ using System.Diagnostics;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Contracts;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Library.Views
 {
@@ -19,7 +20,7 @@ namespace MusicWrap.UI.Features.Library.Views
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly ILibraryService _libraryCacheService;
-        private readonly IEditMetadataService _editMetadataService;
+        private readonly WindowManager _windowManager;
         private bool _playerEventsAttached;
 
         public AlbumTracksPage()
@@ -27,7 +28,7 @@ namespace MusicWrap.UI.Features.Library.Views
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
-            _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
+            _windowManager = App.Services.GetRequiredService<WindowManager>();
 
             Loaded += AlbumTracksPage_Loaded;
             Unloaded += AlbumTracksPage_Unloaded;
@@ -146,7 +147,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            _editMetadataService.OpenMetadataWindow(vm.SelectedTrackIds);
+            _windowManager.LaunchMetadataWindow(vm.SelectedTrackIds);
         }
 
         private void ShowInFileExplorerMenuItem_Click(object sender, RoutedEventArgs e)

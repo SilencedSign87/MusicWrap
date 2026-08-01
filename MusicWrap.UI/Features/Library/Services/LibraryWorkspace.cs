@@ -143,10 +143,10 @@ namespace MusicWrap.UI.Features.Library.Services
             OnPropertyChanged(nameof(IsSortDescending));
             FlushSettings();
         }
-        partial void OnSelectedEntryChanged(LibraryEntry? oldValue, LibraryEntry? newValue)
-        {
-            Debug.WriteLine($"SelectedEntry changed from {oldValue?.Title ?? "null"} to {newValue?.Title ?? "null"}");
-        }
+        //partial void OnSelectedEntryChanged(LibraryEntry? oldValue, LibraryEntry? newValue)
+        //{
+        //    Debug.WriteLine($"SelectedEntry changed from {oldValue?.Title ?? "null"} to {newValue?.Title ?? "null"}");
+        //}
         #endregion
 
         #region Public

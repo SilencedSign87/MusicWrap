@@ -3,6 +3,7 @@ using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Shared.Services;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -10,14 +11,14 @@ namespace MusicWrap.UI.Features.Library.Views
 {
     public partial class LibraryEntryTracksView : UserControl
     {
-        private readonly IEditMetadataService _editMetadataService;
+        private readonly WindowManager _windowManager;
         private readonly ILibraryService _libraryCacheService;
         private bool _isCommandPaletteSubscribed;
 
         public LibraryEntryTracksView()
         {
             InitializeComponent();
-            _editMetadataService = App.Services.GetRequiredService<IEditMetadataService>();
+            _windowManager = App.Services.GetRequiredService<WindowManager>();
             _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
 
             Loaded += LibraryEntryTracksView_Loaded;

@@ -50,7 +50,6 @@ namespace MusicWrap.UI.Shell.ViewModel
         public string SidebarTooltip
             => IsSidePanelVisible ? "Hide Sidebar" : "Show Sidebar";
 
-        private CancellationTokenSource? _loadingCts;
         private bool _disposed = false;
 
         public MainWindowViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WindowManager manager, UserSettings userSettings)
