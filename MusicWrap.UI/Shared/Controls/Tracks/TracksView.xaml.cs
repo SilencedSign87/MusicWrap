@@ -9,6 +9,7 @@ using System.Windows.Data;
 using ICommand = System.Windows.Input.ICommand;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Library;
+using System.Diagnostics;
 
 namespace MusicWrap.UI.Controls.Models
 {
@@ -59,16 +60,29 @@ namespace MusicWrap.UI.Controls.Models
             if (d is not TracksView tracksView)
                 return;
 
+            //Debug.WriteLine($"[TracksView {tracksView.GetHashCode()}] ItemsSource changed: {e.OldValue?.GetHashCode() ?? 0} -> {e.NewValue?.GetHashCode() ?? 0}");
+
+            //tracksView.UnsubscribeFromItemsSource();
+            //tracksView._itemsSource = e.NewValue as IEnumerable<TrackRowItem>;
+            //tracksView._itemsSourceCollection = tracksView._itemsSource as INotifyCollectionChanged;
+
+            //if (tracksView._itemsSourceCollection != null)
+            //{
+            //    tracksView._itemsSourceCollection.CollectionChanged += tracksView.ItemsSource_CollectionChanged;
+            //}
+
+            //tracksView.RefreshItemsSource();
+
             tracksView.UnsubscribeFromItemsSource();
-            tracksView._itemsSource = e.NewValue as IEnumerable<TrackRowItem>;
-            tracksView._itemsSourceCollection = tracksView._itemsSource as INotifyCollectionChanged;
-
-            if (tracksView._itemsSourceCollection != null)
-            {
-                tracksView._itemsSourceCollection.CollectionChanged += tracksView.ItemsSource_CollectionChanged;
-            }
-
+            tracksView.AttachItemsSource(e.NewValue as IEnumerable<TrackRowItem>);
             tracksView.RefreshItemsSource();
+        }
+        private void AttachItemsSource(IEnumerable<TrackRowItem>? source)
+        {
+            _itemsSource = source;
+            _itemsSourceCollection = _itemsSource as INotifyCollectionChanged;
+            if (_itemsSourceCollection != null)
+                _itemsSourceCollection.CollectionChanged += ItemsSource_CollectionChanged;
         }
 
         private void ItemsSource_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -380,13 +394,6 @@ namespace MusicWrap.UI.Controls.Models
             {
                 SelectedTrackIds = _orderedSelectedIds;
             }
-
-            //SelectedTrackIds.Clear();
-
-            //foreach (var row in TracksList.SelectedItems.OfType<TrackRowItem>())
-            //{
-            //    SelectedTrackIds.Add(row.Id);
-            //}
         }
         private void TracksList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -416,6 +423,7 @@ namespace MusicWrap.UI.Controls.Models
             }
 
             var alltracks = _itemsSource?.Select(t => t.Id).ToList() ?? [];
+            //Debug.WriteLine($"[TracksView {GetHashCode()}] Invoking track: {row.Id}, All tracks: {string.Join(", ", alltracks)}");
 
             _musicPlayerService.SetQueue(alltracks);
             _musicPlayerService.PlayTrack(row.Id);
@@ -571,14 +579,18 @@ namespace MusicWrap.UI.Controls.Models
 
         private void TracksView_Loaded(object sender, RoutedEventArgs e)
         {
-            if (_playerEventsAttached)
-            {
-                return;
-            }
-
+            if (_playerEventsAttached) return;
+            
             _musicPlayerService.TrackChanged += MusicPlayerService_TrackChanged;
             _musicPlayerService.PlaybackStateChanged += MusicPlayerService_PlaybackStateChanged;
             _playerEventsAttached = true;
+
+            // re-hidrate
+            if (_itemsSource is null && ItemsSource is not null)
+            {
+                AttachItemsSource(ItemsSource);
+                RefreshItemsSource();
+            }
 
             RefreshPlaybackIndicator();
         }
