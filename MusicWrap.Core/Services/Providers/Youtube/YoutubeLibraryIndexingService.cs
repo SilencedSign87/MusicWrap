@@ -51,7 +51,7 @@ namespace MusicWrap.Core.Services.Providers.Youtube
         private readonly ILibraryIndexer _libraryIndexer;
         private readonly ILibraryRepository _libraryRepository;
         private readonly MusicLibrary _library;
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
         private readonly ILogger _logger;
         private readonly ISaveCoordinator _saveCoordinator;
 
@@ -61,7 +61,7 @@ namespace MusicWrap.Core.Services.Providers.Youtube
             ILogger<YoutubeLibraryIndexingService> logger,
             MusicLibrary library,
             ISaveCoordinator saveCoordinator,
-            UserSettings userSettings)
+            MusicWrapSettings userSettings)
         {
             _logger = logger;
             _libraryIndexer = libraryIndexer;
@@ -421,9 +421,9 @@ namespace MusicWrap.Core.Services.Providers.Youtube
 
         private string ResolveOutputRoot()
         {
-            if (!string.IsNullOrWhiteSpace(_userSettings.YoutubeSettings.YoutubeLibraryRootPath))
+            if (!string.IsNullOrWhiteSpace(_userSettings.Youtube.YoutubeLibraryRootPath))
             {
-                return _userSettings.YoutubeSettings.YoutubeLibraryRootPath;
+                return _userSettings.Youtube.YoutubeLibraryRootPath;
             }
 
             return IOPath.Combine(MusicWrapDirectories.LibraryDirectory, "Youtube");
@@ -436,9 +436,9 @@ namespace MusicWrap.Core.Services.Providers.Youtube
             string title = string.IsNullOrWhiteSpace(request.Title) ? request.ExternalId : request.Title;
             string trackNumber = request.TrackNumber > 0 ? request.TrackNumber.ToString("D2") : "00";
 
-            string template = string.IsNullOrWhiteSpace(_userSettings.YoutubeSettings.YoutubePathTemplate)
+            string template = string.IsNullOrWhiteSpace(_userSettings.Youtube.YoutubePathTemplate)
                 ? "{artist}/{album}/{trackNumber} - {title}"
-                : _userSettings.YoutubeSettings.YoutubePathTemplate;
+                : _userSettings.Youtube.YoutubePathTemplate;
 
             string relativePath = template
                 .Replace("{artist}", SanitizePathSegment(artist), StringComparison.OrdinalIgnoreCase)

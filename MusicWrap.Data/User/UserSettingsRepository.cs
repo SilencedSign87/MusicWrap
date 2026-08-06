@@ -9,20 +9,20 @@ namespace MusicWrap.Data.User
 {
     public interface IUserSettingsRepository
     {
-        UserSettings Load();
-        void Save(UserSettings settings);
+        MusicWrapSettings Load();
+        void Save(MusicWrapSettings settings);
         void Clear();
         void Backup();
     }
 
-    public class UserSettingsRepository : IUserSettingsRepository, IRepository<UserSettings>
+    public class UserSettingsRepository : IUserSettingsRepository, IRepository<MusicWrapSettings>
     {
         private static readonly object _lock = new();
 
         private static readonly string UserSettingsFilePath = Path.Combine(MusicWrapDirectories.SettingsDirectory, "user.settings.dat");
         private static readonly string UserSettingsBackupFilePath = Path.Combine(MusicWrapDirectories.SettingsDirectory, "user.settings.bak");
 
-        public UserSettings Load()
+        public MusicWrapSettings Load()
         {
             lock (_lock)
             {
@@ -34,7 +34,7 @@ namespace MusicWrap.Data.User
                 try
                 {
                     var data = File.ReadAllBytes(UserSettingsFilePath);
-                    return MessagePackSerializer.Deserialize<UserSettings>(data);
+                    return MessagePackSerializer.Deserialize<MusicWrapSettings>(data);
                 }
                 catch
                 {
@@ -44,7 +44,7 @@ namespace MusicWrap.Data.User
             }
         }
 
-        public void Save(UserSettings settings)
+        public void Save(MusicWrapSettings settings)
         {
             if (settings == null)
             {
@@ -82,14 +82,10 @@ namespace MusicWrap.Data.User
             }
         }
 
-        private static UserSettings CreateDefault()
+        private static MusicWrapSettings CreateDefault()
         {
-            return new UserSettings
+            return new MusicWrapSettings
             {
-                PreferredDeviceIndex = -1,
-                PreferredSampleRate = SampleRatePreference.Auto,
-                PreferredOutputMode = OutputMode.WasapiShared,
-                PreferredVolume = 1.0f,
                 StartupBehavior = StartupBehavior.RestoreQueueOnly,
                 LastWindowMode = LastWindowMode.MainPlayer,
                 SavedAtUtc = DateTime.UtcNow

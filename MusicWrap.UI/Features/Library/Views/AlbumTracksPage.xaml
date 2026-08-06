@@ -39,7 +39,7 @@
 
         <!-- Album Header -->
         <StackPanel Grid.Row="0" Margin="8,8,0,0">
-            <StackPanel Margin="0,0,24,0">
+            <StackPanel Margin="0,0,0,4">
                 <TextBlock Text="{Binding AlbumTitle}" 
                            FontSize="16" 
                            FontWeight="Bold"
@@ -49,8 +49,7 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock FontSize="12" 
                            VerticalAlignment="Center"
-                           Foreground="{Binding HighlightColor, Converter={StaticResource HexToBrushConverter} }"
-                       Opacity="0.7">
+                           Opacity="0.7">
                     <Run Text="{Binding AlbumArtists}"/>
                     <Run Text=" • "/>
                     <Run Text="{Binding AlbumYear}"/>

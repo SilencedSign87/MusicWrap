@@ -32,10 +32,10 @@ namespace MusicWrap.UI.ViewModels
         private readonly IMusicPlayerService _player;
         private readonly IUserSettingsRepository _userSettingsRepository;
         private readonly ISaveCoordinator _saveCoordinator;
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
         private readonly int[] SampleRates = [-1, 44100, 48000, 88200, 96000, 176400, 192000];
         private readonly OutputMode[] Outputmodes = [OutputMode.WasapiShared, OutputMode.WasapiExclusive];
-        public DeviceViewModel(IMusicPlayerService player, IUserSettingsRepository userSettingsRepository, ISaveCoordinator saveCoordinator, UserSettings userSettings)
+        public DeviceViewModel(IMusicPlayerService player, IUserSettingsRepository userSettingsRepository, ISaveCoordinator saveCoordinator, MusicWrapSettings userSettings)
         {
             _player = player;
             _userSettingsRepository = userSettingsRepository;
@@ -76,9 +76,8 @@ namespace MusicWrap.UI.ViewModels
             if (target == _player.CurrentOutputMode) return;
 
             _player.ChangeOutputMode(target);
-            _userSettings.PreferredOutputMode = target;
+            _userSettings.Playback.PreferredOutputMode = target;
             _saveCoordinator.Enqueue(SaveKind.Settings);
-            //_userSettingsRepository.Save(_userSettings);
         }
 
         public void SetCurrentSampleRate(int index)
@@ -89,10 +88,8 @@ namespace MusicWrap.UI.ViewModels
             if (target == _player.CurrentSampleRate) return;
 
             _player.ChangeSampleRate(target);
-            _userSettings.PreferredSampleRate = (SampleRatePreference)target;
+            _userSettings.Playback.PreferredSampleRate = (SampleRatePreference)target;
             _saveCoordinator.Enqueue(SaveKind.Settings);
-            //_userSettingsRepository.Save(_userSettings);
-
         }
         public void SetCurrentDevice(int index)
         {
@@ -102,10 +99,8 @@ namespace MusicWrap.UI.ViewModels
             if (target == _player.CurrentDeviceIndex) return;
 
             _player.ChangeOutputDevice(target);
-            _userSettings.PreferredDeviceIndex = target;
+            _userSettings.Playback.PreferredDeviceIndex = target;
             _saveCoordinator.Enqueue(SaveKind.Settings);
-            //_userSettingsRepository.Save(_userSettings);
-
         }
 
         private void _player_SampleRateChanged(object? sender, SampleRateChangedEventArgs e)

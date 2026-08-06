@@ -37,7 +37,7 @@ namespace MusicWrap.Core.Saving
 
         // Entities
         private readonly MusicLibrary _library;
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
         private readonly PlaylistData _playlistData;
 
         private readonly IMusicPlayerService _player;
@@ -57,7 +57,7 @@ namespace MusicWrap.Core.Saving
         IPlaylistRepository playlistRepo,
         ILibraryService libraryCache,
         MusicLibrary library,
-        UserSettings userSettings,
+        MusicWrapSettings userSettings,
         PlaylistData playlistData,
         IMusicPlayerService player)
         {

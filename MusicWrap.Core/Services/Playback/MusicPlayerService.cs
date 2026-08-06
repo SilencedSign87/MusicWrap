@@ -94,7 +94,7 @@ namespace MusicWrap.Core.Services.Playback
         private readonly IPlaybackRepository _playbackRepository;
         private readonly IServiceProvider _serviceProvider;
         private readonly IUIDispatcher _dispatcher;
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
         private ISaveCoordinator? _saveCoordinator;
 
         private const int MaxErrorCount = 5;
@@ -167,14 +167,14 @@ namespace MusicWrap.Core.Services.Playback
 
         public float Volume
         {
-            get => _userSettings.PreferredVolume;
+            get => _userSettings.Playback.PreferredVolume;
             set
             {
                 var v = Math.Clamp(value, 0f, 1f);
-                if (Math.Abs(_userSettings.PreferredVolume - v) < 0.0001f) return;
-                _userSettings.PreferredVolume = v;
-                if (_currentStream != 0) _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
-                _dispatcher.Invoke(() => VolumeChanged?.Invoke(this, _userSettings.PreferredVolume));
+                if (Math.Abs(_userSettings.Playback.PreferredVolume - v) < 0.0001f) return;
+                _userSettings.Playback.PreferredVolume = v;
+                if (_currentStream != 0) _audioEngine.SetVolume(_currentStream, _userSettings.Playback.PreferredVolume);
+                _dispatcher.Invoke(() => VolumeChanged?.Invoke(this, _userSettings.Playback.PreferredVolume));
                 EnqueueSave(SaveKind.Settings);
             }
         }
@@ -186,32 +186,32 @@ namespace MusicWrap.Core.Services.Playback
         public int QueueCount => _queue.Items.Count;
         public Data.Library.Models.RepeatMode RepeatMode
         {
-            get => _userSettings.RepeatMode;
+            get => _userSettings.Playback.RepeatMode;
             set
             {
-                if (_userSettings.RepeatMode == value)
+                if (_userSettings.Playback.RepeatMode == value)
                 {
                     return;
                 }
 
-                _userSettings.RepeatMode = value;
+                _userSettings.Playback.RepeatMode = value;
                 EnqueueSave(SaveKind.Settings);
             }
         }
 
-        public bool IsShuffleEnabled => _userSettings.IsShuffleEnabled;
+        public bool IsShuffleEnabled => _userSettings.Playback.IsShuffleEnabled;
 
         public Data.Library.Models.ContinueMode ContinueMode
         {
-            get => _userSettings.ContinueMode;
+            get => _userSettings.Playback.ContinueMode;
             set
             {
-                if (_userSettings.ContinueMode == value)
+                if (_userSettings.Playback.ContinueMode == value)
                 {
                     return;
                 }
 
-                _userSettings.ContinueMode = value;
+                _userSettings.Playback.ContinueMode = value;
                 EnqueueSave(SaveKind.Settings);
             }
         }
@@ -239,7 +239,7 @@ namespace MusicWrap.Core.Services.Playback
             IServiceProvider serviceProvider,
             ILogger<MusicPlayerService> logger,
             IUIDispatcher dispatcher,
-            UserSettings userSettings
+            MusicWrapSettings userSettings
             )
         {
             _library = library;
@@ -277,7 +277,7 @@ namespace MusicWrap.Core.Services.Playback
             try
             {
                 ApplyPreferredAudioSettings(_userSettings);
-                Volume = Math.Clamp(_userSettings.PreferredVolume, 0f, 1f);
+                Volume = Math.Clamp(_userSettings.Playback.PreferredVolume, 0f, 1f);
 
                 var startupBehavior = _userSettings.StartupBehavior;
                 if (startupBehavior == StartupBehavior.StartClean)
@@ -304,8 +304,8 @@ namespace MusicWrap.Core.Services.Playback
                 }
 
                 SetQueue(queue, false);
-                _queue.SetShuffle(_userSettings.IsShuffleEnabled);
-                if (_userSettings.IsShuffleEnabled && snapshot.PlaybackOrderIndices is { Length: > 0 })
+                _queue.SetShuffle(_userSettings.Playback.IsShuffleEnabled);
+                if (_userSettings.Playback.IsShuffleEnabled && snapshot.PlaybackOrderIndices is { Length: > 0 })
                 {
                     SetPlaybackOrder(snapshot.PlaybackOrderIndices);
                 }
@@ -586,7 +586,7 @@ namespace MusicWrap.Core.Services.Playback
 
         public void SetShuffle(bool enabled)
         {
-            if (_userSettings.IsShuffleEnabled == enabled) return;
+            if (_userSettings.Playback.IsShuffleEnabled == enabled) return;
             _queue.SetShuffle(enabled);
             _dispatcher.Invoke(() => ShuffleStateChanged?.Invoke(this, enabled));
             EnqueueSave(SaveKind.Settings);
@@ -976,15 +976,15 @@ namespace MusicWrap.Core.Services.Playback
             };
         }
 
-        private void ApplyPreferredAudioSettings(UserSettings settings)
+        private void ApplyPreferredAudioSettings(MusicWrapSettings settings)
         {
-            int requestedDevice = settings.PreferredDeviceIndex;
+            int requestedDevice = settings.Playback.PreferredDeviceIndex;
             var availableDevices = GetAvailableDevices();
             bool requestedDeviceExists = requestedDevice < 0 || availableDevices.Any(d => d.Index == requestedDevice);
             int safeDevice = requestedDeviceExists ? requestedDevice : -1;
 
-            var preferredMode = settings.PreferredOutputMode;
-            int preferredSampleRate = (int)settings.PreferredSampleRate;
+            var preferredMode = settings.Playback.PreferredOutputMode;
+            int preferredSampleRate = (int)settings.Playback.PreferredSampleRate;
             int safeSampleRate = preferredSampleRate > 0 ? preferredSampleRate : 44100;
 
             bool appliedPreferred = TryReinitializeOutput(safeDevice, safeSampleRate, preferredMode);
@@ -1111,7 +1111,7 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             }
 
-            _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
+            _audioEngine.SetVolume(_currentStream, _userSettings.Playback.PreferredVolume);
             _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
             // Setup preload for next track
@@ -1214,7 +1214,7 @@ namespace MusicWrap.Core.Services.Playback
                     _audioEngine.DetachTrack(previousStream);
                     FreeStream(previousStream);
 
-                    _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
+                    _audioEngine.SetVolume(_currentStream, _userSettings.Playback.PreferredVolume);
                     _audioEngine.AttachTrackToMixer(_currentStream);
                     _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
@@ -1479,7 +1479,7 @@ namespace MusicWrap.Core.Services.Playback
             if (newStream == 0) return false;
 
             _currentStream = newStream;
-            _audioEngine.SetVolume(_currentStream, _userSettings.PreferredVolume);
+            _audioEngine.SetVolume(_currentStream, _userSettings.Playback.PreferredVolume);
             _audioEngine.AttachTrackToMixer(_currentStream);
             _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
             double duration = _audioEngine.GetDuration(_currentStream);

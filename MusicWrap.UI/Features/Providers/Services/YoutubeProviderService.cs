@@ -20,8 +20,8 @@ namespace MusicWrap.UI.Features.Providers.Services
         private readonly MusicLibrary _library;
         private readonly ILibraryIndexer _indexer;
         private readonly ILibraryRepository _repository;
-        private readonly UserSettings _settings;
-        public YoutubeProviderService(MusicLibrary library, ILibraryIndexer indexer, ILibraryRepository repository, UserSettings settings)
+        private readonly MusicWrapSettings _settings;
+        public YoutubeProviderService(MusicLibrary library, ILibraryIndexer indexer, ILibraryRepository repository, MusicWrapSettings settings)
         {
             _library = library;
             _indexer = indexer;
@@ -35,7 +35,7 @@ namespace MusicWrap.UI.Features.Providers.Services
             string cacheDir = Path.Combine(MusicWrapDirectories.CacheDirectory, "YoutubeAudio");
             if (!Directory.Exists(cacheDir)) 
                 return Task.FromResult(0);
-            if (string.IsNullOrWhiteSpace(_settings.YoutubeSettings.YoutubeLibraryRootPath)||!Directory.Exists(_settings.YoutubeSettings.YoutubeLibraryRootPath)) 
+            if (string.IsNullOrWhiteSpace(_settings.Youtube.YoutubeLibraryRootPath)||!Directory.Exists(_settings.Youtube.YoutubeLibraryRootPath)) 
                 return Task.FromResult(0);
 
             foreach(var track in _library.Tracks.Where(t=>t.Origin == TrackOrigin.Youtube && !string.IsNullOrWhiteSpace(t.ExternalId)))
@@ -78,9 +78,9 @@ namespace MusicWrap.UI.Features.Providers.Services
             string title = string.IsNullOrWhiteSpace(track.Title) ? (track.ExternalId ?? "Unknown Track") : track.Title;
             string num = track.TrackNumber > 0 ? track.TrackNumber.ToString("D2") : "00";
 
-            string template = string.IsNullOrWhiteSpace(_settings.YoutubeSettings.YoutubePathTemplate)
+            string template = string.IsNullOrWhiteSpace(_settings.Youtube.YoutubePathTemplate)
                 ? "{artist}/{album}/{trackNumber} - {title}"
-                : _settings.YoutubeSettings.YoutubePathTemplate;
+                : _settings.Youtube.YoutubePathTemplate;
 
             string rel = template
                 .Replace("{artist}", Sanitize(artist), StringComparison.OrdinalIgnoreCase)
@@ -104,7 +104,7 @@ namespace MusicWrap.UI.Features.Providers.Services
                 rel += normalizedExtension;
             }
 
-            return Path.Combine(_settings.YoutubeSettings.YoutubeLibraryRootPath, rel);
+            return Path.Combine(_settings.Youtube.YoutubeLibraryRootPath, rel);
         }
 
         private static string? ResolveCachedAudioPath(string cacheDir, string externalId)

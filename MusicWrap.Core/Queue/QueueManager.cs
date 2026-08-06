@@ -41,7 +41,7 @@ namespace MusicWrap.Core.Queue
     }
     public class QueueManager : IQueueManager
     {
-        private UserSettings _userSettings { get; set; }
+        private MusicWrapSettings _userSettings { get; set; }
         private readonly ObservableCollection<PlaybackQueueItem> _internalItems = new();
         public ReadOnlyObservableCollection<PlaybackQueueItem> Items { get; }
         private int _currentIndex = -1;
@@ -50,16 +50,16 @@ namespace MusicWrap.Core.Queue
             : (IsShuffleEnabled ? _shuffleCursor : _currentIndex);
         public PlaybackQueueItem? CurrentItem => (_currentIndex >= 0 && _currentIndex < _internalItems.Count)
             ? _internalItems[_currentIndex] : null;
-        public bool IsShuffleEnabled => _userSettings.IsShuffleEnabled;
+        public bool IsShuffleEnabled => _userSettings.Playback.IsShuffleEnabled;
 
         public RepeatMode RepeatMode
         {
-            get => _userSettings.RepeatMode;
+            get => _userSettings.Playback.RepeatMode;
             set
             {
-                if (_userSettings.RepeatMode != value)
+                if (_userSettings.Playback.RepeatMode != value)
                 {
-                    _userSettings.RepeatMode = value;
+                    _userSettings.Playback.RepeatMode = value;
                     OnQueueChanged();
                 }
             }
@@ -69,7 +69,7 @@ namespace MusicWrap.Core.Queue
         public event EventHandler? QueueChanged;
         public event EventHandler? CurrentChanged;
 
-        public QueueManager(UserSettings userSettings)
+        public QueueManager(MusicWrapSettings userSettings)
         {
             _userSettings = userSettings;
             Items = new ReadOnlyObservableCollection<PlaybackQueueItem>(_internalItems);
@@ -297,22 +297,22 @@ namespace MusicWrap.Core.Queue
         public void SetShuffle(bool enabled)
         {
             if (IsShuffleEnabled == enabled) return;
-            _userSettings.IsShuffleEnabled = enabled;
+            _userSettings.Playback.IsShuffleEnabled = enabled;
             ResetShuffle();
             OnQueueChanged();
         }
 
         public void SetRepeatMode(RepeatMode repeatMode)
         {
-            if (_userSettings.RepeatMode == repeatMode) return;
-            _userSettings.RepeatMode = repeatMode;
+            if (_userSettings.Playback.RepeatMode == repeatMode) return;
+            _userSettings.Playback.RepeatMode = repeatMode;
         }
 
         public PlaybackQueueItem? Next()
         {
             if (_internalItems.Count == 0) return null;
 
-            if (_userSettings.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
+            if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
                 return _internalItems[_currentIndex];
 
 
@@ -338,7 +338,7 @@ namespace MusicWrap.Core.Queue
                 _shuffleCursor++;
                 if (_shuffleCursor >= _shuffleOrder.Count)
                 {
-                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatAll)
                     {
                         ResetShuffle();
                         _shuffleCursor = 0;
@@ -356,7 +356,7 @@ namespace MusicWrap.Core.Queue
                 newIndex = _currentIndex + 1;
                 if (newIndex >= _internalItems.Count)
                 {
-                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatAll)
                         newIndex = 0;
                     else
                         return null;
@@ -371,7 +371,7 @@ namespace MusicWrap.Core.Queue
         {
             if (_internalItems.Count == 0) return null;
 
-            if (_userSettings.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
+            if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
                 return _internalItems[_currentIndex];
 
             if (_currentIndex < 0)
@@ -395,7 +395,7 @@ namespace MusicWrap.Core.Queue
                 _shuffleCursor--;
                 if (_shuffleCursor < 0)
                 {
-                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatAll)
                     {
                         _shuffleCursor = _shuffleOrder.Count - 1;
                     }
@@ -412,7 +412,7 @@ namespace MusicWrap.Core.Queue
                 prevIndex = _currentIndex - 1;
                 if (prevIndex < 0)
                 {
-                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatAll)
                         prevIndex = _internalItems.Count - 1;
                     else
                         return null;
@@ -427,7 +427,7 @@ namespace MusicWrap.Core.Queue
         {
             if (_internalItems.Count == 0) return null;
 
-            if (_userSettings.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
+            if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatOne && _currentIndex >= 0)
                 return _internalItems[_currentIndex];
 
             if (_currentIndex < 0)
@@ -448,7 +448,7 @@ namespace MusicWrap.Core.Queue
                 var nextCursor = _shuffleCursor + 1;
                 if (nextCursor >= _shuffleOrder.Count)
                 {
-                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatAll)
                     {
                         nextCursor = 0;
                     }
@@ -464,7 +464,7 @@ namespace MusicWrap.Core.Queue
                 nextIndex = _currentIndex + 1;
                 if (nextIndex >= _internalItems.Count)
                 {
-                    if (_userSettings.RepeatMode == RepeatMode.RepeatAll)
+                    if (_userSettings.Playback.RepeatMode == RepeatMode.RepeatAll)
                         nextIndex = 0;
                     else
                         return null;

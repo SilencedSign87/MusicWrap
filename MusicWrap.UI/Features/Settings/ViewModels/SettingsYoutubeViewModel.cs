@@ -14,13 +14,13 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         [ObservableProperty] private List<string> _supportedFormats = Enum.GetNames(typeof(SuportedFFMpegAudioFormat)).ToList();
         [ObservableProperty] private string _selectedFormat;
 
-        private readonly UserSettings _settings;
+        private readonly MusicWrapSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
-        public SettingsYoutubeViewModel(UserSettings settings, ISaveCoordinator saveCoordinator)
+        public SettingsYoutubeViewModel(MusicWrapSettings settings, ISaveCoordinator saveCoordinator)
         {
             _settings = settings;
             _saveCoordinator = saveCoordinator;
-            _selectedFormat = settings.YoutubeSettings.PreferredAudioFormatForYoutube.ToString();
+            _selectedFormat = settings.Youtube.PreferredAudioFormatForYoutube.ToString();
 
             LoadFromSettings();
         }
@@ -55,17 +55,17 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         #region Partials
         partial void OnUseCustomFfmpegPathChanged(bool value)
         {
-            _settings.FFMpegSettings.UseCustomFfmpegPath = value;
+            _settings.FFMpeg.UseCustomFfmpegPath = value;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         partial void OnCustomFfmpegPathChanged(string value)
         {
-            _settings.FFMpegSettings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
+            _settings.FFMpeg.CustomFfmpegPath = value?.Trim() ?? string.Empty;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         partial void OnSelectedFormatChanged(string value)
         {
-            _settings.YoutubeSettings.PreferredAudioFormatForYoutube = Enum.TryParse<SuportedFFMpegAudioFormat>(value, out var format) ? format : SuportedFFMpegAudioFormat.mp3;
+            _settings.Youtube.PreferredAudioFormatForYoutube = Enum.TryParse<SuportedFFMpegAudioFormat>(value, out var format) ? format : SuportedFFMpegAudioFormat.mp3;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion
@@ -73,8 +73,8 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         #region Internal
         private void LoadFromSettings()
         {
-            UseCustomFfmpegPath = _settings.FFMpegSettings.UseCustomFfmpegPath;
-            CustomFfmpegPath = _settings.FFMpegSettings.CustomFfmpegPath ?? string.Empty;
+            UseCustomFfmpegPath = _settings.FFMpeg.UseCustomFfmpegPath;
+            CustomFfmpegPath = _settings.FFMpeg.CustomFfmpegPath ?? string.Empty;
         }
         #endregion
 

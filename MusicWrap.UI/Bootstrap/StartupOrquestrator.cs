@@ -53,7 +53,7 @@ public static class StartupOrquestrator
         try
         {
             var musicLibrary = serviceProvider.GetService<MusicLibrary>();
-            var userSettings = serviceProvider.GetRequiredService<UserSettings>();
+            var userSettings = serviceProvider.GetRequiredService<MusicWrapSettings>();
             var player = serviceProvider.GetRequiredService<IMusicPlayerService>();
             var trayService = serviceProvider.GetService<ITrayService>();
             var hotkeyService = serviceProvider.GetRequiredService<GlobalHotkeyService>();
@@ -116,7 +116,7 @@ public static class StartupOrquestrator
             // subcribe to tray behavior changes
             void OnUserSettingsChanged(object? sender, PropertyChangedEventArgs e)
             {
-                if (e.PropertyName == nameof(UserSettings.KeepAppInTray))
+                if (e.PropertyName == nameof(MusicWrapSettings.KeepAppInTray))
                 {
                     if (!userSettings.KeepAppInTray)
                     {
@@ -146,8 +146,8 @@ public static class StartupOrquestrator
             userSettings.PropertyChanged += OnUserSettingsChanged;
 
             // Library cache initialization (preserve previous defaults)
-            var listBy = userSettings.LibrarySettings.EntryType;
-            var ascending = userSettings.LibrarySettings.EntryListAscending;
+            var listBy = userSettings.Library.EntryType;
+            var ascending = userSettings.Library.EntryListAscending;
 
             var libraryCache = serviceProvider.GetRequiredService<ILibraryService>();
             //await libraryCache.InitializeAsync(listBy, ascending);

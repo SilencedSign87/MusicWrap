@@ -31,11 +31,11 @@ namespace MusicWrap.UI.Features.Library.Services
 
     public sealed partial class LibraryWorkspace : ObservableObject
     {
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
         private bool _isRestoring = true;
         private bool _isInitialized;
 
-        public LibraryWorkspace(UserSettings settings)
+        public LibraryWorkspace(MusicWrapSettings settings)
         {
             _userSettings = settings;
         }
@@ -158,7 +158,7 @@ namespace MusicWrap.UI.Features.Library.Services
         {
             try
             {
-                var saved = _userSettings.LibrarySettings;
+                var saved = _userSettings.Library;
 
                 ListBy = saved.EntryType;
                 EntryListAscending = saved.EntryListAscending;
@@ -192,7 +192,7 @@ namespace MusicWrap.UI.Features.Library.Services
         {
             if (_isRestoring) return;
 
-            var ls = _userSettings.LibrarySettings;
+            var ls = _userSettings.Library;
             ls.EntryType = ListBy;
             ls.EntryListAscending = EntryListAscending;
             ls.SelectedEntryId = SelectedEntry?.Id;

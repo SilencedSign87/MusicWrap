@@ -10,10 +10,10 @@ namespace MusicWrap.UI.Shared.Services
 {
     public sealed class ThemeService
     {
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
         private readonly ISaveCoordinator _saveCoordinator;
 
-        public ThemeService(UserSettings userSettings, ISaveCoordinator saveCoordinator)
+        public ThemeService(MusicWrapSettings userSettings, ISaveCoordinator saveCoordinator)
         {
             _userSettings = userSettings;
             _saveCoordinator = saveCoordinator;

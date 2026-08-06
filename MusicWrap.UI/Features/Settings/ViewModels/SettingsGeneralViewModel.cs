@@ -13,7 +13,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 {
     public partial class SettingsGeneralViewModel : ObservableObject
     {
-        private readonly UserSettings _settings;
+        private readonly MusicWrapSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly ThemeService _themeService;
 
@@ -34,7 +34,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         public List<TrayPopupPosition> TrayPopupPositions { get; } = Enum.GetValues<TrayPopupPosition>().ToList();
 
         public SettingsGeneralViewModel(
-            UserSettings settings,
+            MusicWrapSettings settings,
             ISaveCoordinator saveCoordinator,
             ILibraryIntegrityService integrityService,
             ActivityService activityService,
@@ -81,8 +81,8 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         {
             MinimizeToTray = _settings.KeepAppInTray;
             ExitAppOnClose = !_settings.KeepAppInTray;
-            UseCustomFfmpegPath = _settings.FFMpegSettings.UseCustomFfmpegPath;
-            CustomFfmpegPath = _settings.FFMpegSettings.CustomFfmpegPath ?? string.Empty;
+            UseCustomFfmpegPath = _settings.FFMpeg.UseCustomFfmpegPath;
+            CustomFfmpegPath = _settings.FFMpeg.CustomFfmpegPath ?? string.Empty;
             TrayPopupPosition = _settings.TrayPopupPosition;
             SelectedTheme = _settings.AppThemePreference;
             StartupBehavior = _settings.StartupBehavior;
@@ -104,12 +104,12 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 
         partial void OnUseCustomFfmpegPathChanged(bool value)
         {
-            _settings.FFMpegSettings.UseCustomFfmpegPath = value;
+            _settings.FFMpeg.UseCustomFfmpegPath = value;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         partial void OnCustomFfmpegPathChanged(string value)
         {
-            _settings.FFMpegSettings.CustomFfmpegPath = value?.Trim() ?? string.Empty;
+            _settings.FFMpeg.CustomFfmpegPath = value?.Trim() ?? string.Empty;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
 

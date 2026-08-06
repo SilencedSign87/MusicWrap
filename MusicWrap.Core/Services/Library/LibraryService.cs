@@ -59,7 +59,7 @@ namespace MusicWrap.Core.Services.Library
 
         private readonly ISearchQueryProvider _searchQueryProvider;
         private readonly MusicLibrary _library;
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
         private readonly IMessenger _messenger;
         private readonly IServiceProvider _serviceProvider;
 
@@ -85,7 +85,7 @@ namespace MusicWrap.Core.Services.Library
 
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
-        public LibraryService(MusicLibrary library, UserSettings userSettings, ISearchQueryProvider searchQueryProvider, IMessenger messenger, IServiceProvider serviceProvider)
+        public LibraryService(MusicLibrary library, MusicWrapSettings userSettings, ISearchQueryProvider searchQueryProvider, IMessenger messenger, IServiceProvider serviceProvider)
         {
             _library = library;
             _userSettings = userSettings;
@@ -215,7 +215,7 @@ namespace MusicWrap.Core.Services.Library
             LoadFromDisk();
             BuildCoverLookUp();
 
-            switch (_userSettings.LibrarySettings.EntryType)
+            switch (_userSettings.Library.EntryType)
             {
                 case LibraryEntryType.Album:
                     _albumCache ??= ConstructAlbumEntries();

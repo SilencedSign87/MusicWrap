@@ -14,7 +14,7 @@ namespace MusicWrap.UI.Shared.Services
     public class WindowManager
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly UserSettings _userSettings;
+        private readonly MusicWrapSettings _userSettings;
 
         private int _windowTransitionDepth = 0;
         public bool IsShuttingDown { get; set; }
@@ -34,7 +34,7 @@ namespace MusicWrap.UI.Shared.Services
         private readonly IServiceScopeFactory _scopeFactory;
         private IServiceScope? _metadataEditorScope;
 
-        public WindowManager(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,UserSettings userSettings)
+        public WindowManager(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings)
         {
             _serviceProvider = serviceProvider;
             _scopeFactory = scopeFactory;

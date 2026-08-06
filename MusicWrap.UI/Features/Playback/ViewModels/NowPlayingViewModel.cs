@@ -3,6 +3,7 @@ using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,9 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         [ObservableProperty]
         public partial string? TrackImagePath { get; set; }
 
+        [ObservableProperty]
+        public partial bool ShowLyrics { get; set; } = false;
+
         private int _currentTrackId;
         private int _currentAlbumId;
         private int[] _currentArtistIds = [];
@@ -43,11 +47,13 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         private readonly ILibraryService _libraryService;
         private readonly IMusicPlayerService _musicPlayerService;
-
-        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService)
+        private readonly MusicWrapSettings _settings;
+        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings)
         {
             _libraryService = libraryService;
             _musicPlayerService = musicPlayerService;
+            _settings = settings;
+
 
             _musicPlayerService.TrackChanged += OnTrackChanged;
 

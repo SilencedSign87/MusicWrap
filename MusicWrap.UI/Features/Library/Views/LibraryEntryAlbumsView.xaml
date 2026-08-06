@@ -113,9 +113,10 @@
                                 x:Name="ExpandedAlbumBorder"
                                 DataContext="{Binding}"
                                 Visibility="{Binding ExpandedAlbumId, Converter={StaticResource NullToCollapseConverter}}"
-                                Margin="0,8,0,0"
-                                CornerRadius="2"
-                                BorderThickness="0"
+                                Margin="4,4,4,0"
+                                CornerRadius="4"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource StrokeSurface}"
                                 HorizontalAlignment="Stretch">
                             <Border.Background>
                                 <ImageBrush ImageSource="{Binding ExpandedImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}"

@@ -16,10 +16,10 @@ public class YoutubeStagingService : IYoutubeStagingService
     private readonly string _cacheDir;
     private readonly object _lock = new();
     private readonly Dictionary<string, string> _ready = new();
-    private readonly UserSettings _settings;
+    private readonly MusicWrapSettings _settings;
     private readonly ILogger<YoutubeStagingService> _logger;
 
-    public YoutubeStagingService(UserSettings userSettings, ILogger<YoutubeStagingService> logger)
+    public YoutubeStagingService(MusicWrapSettings userSettings, ILogger<YoutubeStagingService> logger)
     {
         _cacheDir = Path.Combine(MusicWrapDirectories.CacheDirectory, "YoutubeAudio");
         _settings = userSettings;
@@ -193,7 +193,7 @@ public class YoutubeStagingService : IYoutubeStagingService
 
     private FfmpegOutputOptions ResolveOutputOptions()
     {
-        return _settings.YoutubeSettings.PreferredAudioFormatForYoutube switch
+        return _settings.Youtube.PreferredAudioFormatForYoutube switch
         {
             SuportedFFMpegAudioFormat.webm => new FfmpegOutputOptions("webm", "libopus", "webm"),
             SuportedFFMpegAudioFormat.mp3 => new FfmpegOutputOptions("mp3", "libmp3lame"),
@@ -211,23 +211,23 @@ public class YoutubeStagingService : IYoutubeStagingService
 
     private string ResolveFfmpegPath()
     {
-        if (_settings.FFMpegSettings.UseCustomFfmpegPath)
+        if (_settings.FFMpeg.UseCustomFfmpegPath)
         {
-            if (string.IsNullOrWhiteSpace(_settings.FFMpegSettings.CustomFfmpegPath))
+            if (string.IsNullOrWhiteSpace(_settings.FFMpeg.CustomFfmpegPath))
             {
                 throw new YoutubeStagingException(
                     "No hay ruta de ffmpeg configurada. Configura ffmpeg en Settings > Youtube.",
                     isFfmpegConfigurationError: true);
             }
 
-            if (!File.Exists(_settings.FFMpegSettings.CustomFfmpegPath))
+            if (!File.Exists(_settings.FFMpeg.CustomFfmpegPath))
             {
                 throw new YoutubeStagingException(
-                    $"La ruta configurada de ffmpeg no existe: {_settings.FFMpegSettings.CustomFfmpegPath}",
+                    $"La ruta configurada de ffmpeg no existe: {_settings.FFMpeg.CustomFfmpegPath}",
                     isFfmpegConfigurationError: true);
             }
 
-            return _settings.FFMpegSettings.CustomFfmpegPath;
+            return _settings.FFMpeg.CustomFfmpegPath;
         }
 
         // fallback: PATH
