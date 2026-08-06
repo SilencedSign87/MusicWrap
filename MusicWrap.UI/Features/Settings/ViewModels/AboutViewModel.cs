@@ -24,17 +24,30 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
                 },
                 new Credits
                 {
-                    IconGlyph = "\xEA86",
-                    Name = "BASSmix",
-                    Description = "Add-on",
-                    Url = "https://www.un4seen.com/"
+                    IconGlyph = "\xE8F1",
+                    Name = "Managed Bass",
+                    Description = "Free Open-Source Cross-Platform .Net Wrapper for Un4seen Bass audio library and its AddOns.",
+                    Url ="https://github.com/ManagedBass/Home"
+                },
+                new Credits{
+                    IconGlyph = "\xE8F1",
+                    Name = "TagLibSharp",
+                    Description = ".NET platform-independent library for reading and writing metadata in media files.",
+                    Url ="https://github.com/mono/taglib-sharp"
                 },
                 new Credits
                 {
                     IconGlyph = "\xE8F1",
-                    Name = "BASS.NET",
-                    Description = "Wrapper for the BASS Audio Library",
-                    Url ="https://www.radio42.com/bass/index.html"
+                    Name = "NetVips",
+                    Description = ".NET binding for the libvips image processing library. ",
+                    Url ="https://kleisauke.github.io/net-vips/"
+                },
+                 new Credits
+                {
+                    IconGlyph = "\xE8F1",
+                    Name = "MessagePack for C#",
+                    Description = "The extremely fast MessagePack serializer for C#.",
+                    Url ="https://github.com/MessagePack-CSharp/MessagePack-CSharp"
                 }
             ];
         }
