@@ -142,7 +142,7 @@ namespace MusicWrap.UI.Controls
                nameof(MultipleValueSeparator),
                typeof(string),
                typeof(AutocompleteMetadataInput),
-               new PropertyMetadata(","));
+               new PropertyMetadata(";"));
         public string MultipleValueSeparator
         {
             get => (string)GetValue(MultipleValueSeparatorProperty);

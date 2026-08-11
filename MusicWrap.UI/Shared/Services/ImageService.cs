@@ -16,6 +16,8 @@ namespace MusicWrap.UI.Services
         BitmapImage? LoadForSize(string? fileName, int requestedSize, bool preferOriginal = false);
         Task<BitmapImage?> LoadForSizeAsync(string? fileName, int requestedSize, bool preferOriginal = false, CancellationToken ct = default);
         BitmapImage? GetDefaultImage(int size = 64, ImageVariant variant = ImageVariant.Original);
+        BitmapImage? LoadFromBytes(byte[]? data, int decodeSize = 0);
+        Task<BitmapImage?> LoadFromBytesAsync(byte[]? data, int decodeSize = 0, CancellationToken ct = default);
     }
     public class ImageService : IwindowsImageService
     {
@@ -310,6 +312,34 @@ namespace MusicWrap.UI.Services
                     return null;
                 }
             }
+        }
+        public BitmapImage? LoadFromBytes(byte[]? data, int decodeSize = 0)
+        {
+            if (data is null || data.Length == 0)
+                return null;
+            int size = NormalizeDecodeSize(decodeSize > 0 ? decodeSize : LargeThreshold);
+            try
+            {
+                using var stream = new MemoryStream(data, writable: false);
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.DecodePixelWidth = size;
+                bitmap.StreamSource = stream;
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        public async Task<BitmapImage?> LoadFromBytesAsync(byte[]? data, int decodeSize = 0, CancellationToken ct = default)
+        {
+            if (data is null || data.Length == 0)
+                return null;
+            return await Task.Run(() => LoadFromBytes(data, decodeSize), ct).ConfigureAwait(false);
         }
         private static ImageVariant ResolveVariantBySize(int size)
         {

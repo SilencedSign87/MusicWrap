@@ -4,35 +4,108 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
              mc:Ignorable="d"
+             x:Name="ArtworkEditorRoot"
+             Background="{DynamicResource BackgroundLayer}"
+             d:Foreground="White"
+             d:DataContext="{d:DesignInstance Type=vm:MetadataArtworkEditorViewmodel}"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Border Padding="8" Background="{DynamicResource BackgroundLayer}">
-        <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0">
-                <controls:SectionTitleSeparator Title="Track Cover:" IconGlyph="&#xE91B;"/>
-                <Image Margin="0,8"
-                       Width="200"
-                       Source="{Binding TrackArtworkUrl, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:200}"
-                       RenderOptions.BitmapScalingMode="LowQuality"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,8">
-                    <Button Style="{StaticResource DefaultButton}" Content="Change"/>
-                </StackPanel>
-            </StackPanel>
-            <StackPanel Grid.Column="2">
-                <controls:SectionTitleSeparator Title="Album Cover:" IconGlyph="&#xE93C;"/>
-                <Image Margin="0,8"
-                       Width="200"
-                       Source="{Binding AlbumArtworkUrl, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:200}"
-                       RenderOptions.BitmapScalingMode="LowQuality"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="12,8">
-                    <Button Style="{StaticResource DefaultButton}" Content="Change"/>
-                </StackPanel>
-            </StackPanel>
-        </Grid>
-    </Border>
+    <Grid Margin="8">
+        <ItemsControl 
+            ItemsSource="{Binding ArtworksViewSource.View, Mode=OneWay}"
+            ScrollViewer.CanContentScroll="True"
+            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+            ScrollViewer.VerticalScrollBarVisibility="Auto"
+
+            VirtualizingPanel.IsVirtualizing="True"
+            VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+            VirtualizingPanel.VirtualizationMode="Recycling"
+            VirtualizingPanel.ScrollUnit="Item"
+            VirtualizingPanel.CacheLength="2,2"
+            VirtualizingPanel.CacheLengthUnit="Page">
+            <ItemsControl.Template>
+                <ControlTemplate TargetType="{x:Type ItemsControl}">
+                    <ScrollViewer
+                        Padding="{TemplateBinding Padding}"
+                        HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                        VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                        CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}">
+
+                        <ItemsPresenter />
+                    </ScrollViewer>
+                </ControlTemplate>
+            </ItemsControl.Template>
+            <ItemsControl.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.HeaderTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,8">
+                                <controls:SectionTitleSeparator Title="{Binding Name}" />
+                            </Border>
+                        </DataTemplate>
+                    </GroupStyle.HeaderTemplate>
+                    <GroupStyle.ContainerStyle>
+                        <Style TargetType="{x:Type GroupItem}">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="{x:Type GroupItem}">
+                                        <StackPanel>
+                                            <ContentPresenter />
+                                            <ItemsPresenter/>
+                                        </StackPanel>
+                                    </ControlTemplate>
+                                </Setter.Value>
+
+                            </Setter>
+                        </Style>
+                    </GroupStyle.ContainerStyle>
+                </GroupStyle>
+            </ItemsControl.GroupStyle>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:ArtworkEntry">
+                    <Grid ColumnDefinitions="100,*" Height="100" Margin="8,0,0,8">
+                        <Image
+                        Grid.Column="0"
+                        Source="{Binding CurrentFilePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=100}"
+                        Width="100"
+                        Height="100"
+                        Stretch="UniformToFill"
+                        />
+                        <StackPanel Grid.Column="1" Margin="8,0">
+                            <TextBlock Text="{Binding Title}" FontSize="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="Changed" 
+                                       FontSize="12"
+                                       Opacity="0.5"
+                                       Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Bottom">
+                                <controls:AppButton 
+                                    Style="{DynamicResource DefaultButton}"
+                                    Icon="&#xE838;"
+                                    Text="Change"
+                                    Command="{Binding ElementName=ArtworkEditorRoot, Path=DataContext.ChangeArtworkCommand}"
+                                    CommandParameter="{Binding}"
+                                    />
+                                <controls:AppButton
+                                    Style="{DynamicResource SubtleButton}"
+                                    Icon="&#xE777;"
+                                    Text="Restore"
+                                    Margin="8,0,0,0"
+                                    Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    IsEnabled="{Binding HasChanged}"
+                                    Command="{Binding ElementName=ArtworkEditorRoot, Path=DataContext.RestoreArtworkCommand}"
+                                    CommandParameter="{Binding}"
+                                    />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
 </UserControl>

@@ -76,7 +76,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             OnPropertyChanged(nameof(HasChanges));
         }
 
-        // TODO fase 2: delegar en IMetadataWriter (Core). Tras guardar, f.Original = f.Value.
+
         [RelayCommand]
         private Task SaveAsync() => Task.CompletedTask;
     }

@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace MusicWrap.Data.User.Models
 {
     [MessagePackObject]
-    public sealed class PlaybackSettings : ObservableSettings
+    public sealed class PlaybackSettings : ObservableClass
     {
         private float _preferredVolume = 1.0f;
         [Key(0)]

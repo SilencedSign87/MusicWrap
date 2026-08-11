@@ -30,7 +30,7 @@ namespace MusicWrap.UI.Controls
             nameof(IconGlyph),
             typeof(string),
             typeof(SectionTitleSeparator),
-            new PropertyMetadata("\uE7E8"));
+            new PropertyMetadata(string.Empty));
 
         public string Title
         {

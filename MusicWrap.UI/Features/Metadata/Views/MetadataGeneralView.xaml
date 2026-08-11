@@ -3,13 +3,24 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d"
+             d:Foreground="White"
+             d:DataContext="{d:DesignInstance Type=vm:MetadataGeneralViewmodel}"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <UserControl.Resources>
+        <Style x:Key="MultipleValueTextStyle" TargetType="TextBlock">
+            <Setter Property="Opacity" Value="1" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource Self}}"
+                         Value="{x:Static vm:MetadataGeneralViewmodel.MultipleValuesString}">
+                    <Setter Property="Opacity" Value="0.35" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+    <Grid RowDefinitions="Auto,Auto,*">
         <Border
             Grid.Row="0"
             Padding="8"
@@ -19,7 +30,86 @@
             <StackPanel Orientation="Horizontal">
                 <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center" />
                 <TextBlock Text="This is a read-only section" Margin="8,0,0,0" VerticalAlignment="Center" />
+
+                <Button Style="{StaticResource LinkButtonStyle}"
+                    Command="{Binding ShowInExplorerCommand}"
+                    ToolTip="{Binding Filepath}"
+                    HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Filepath}" Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="Consolas" TextTrimming="CharacterEllipsis" MaxWidth="560" />
+                    </StackPanel>
+                </Button>
+
             </StackPanel>
         </Border>
+        <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+        <ScrollViewer Grid.Row="2" Margin="8,8,8,0">
+            <StackPanel>
+                <controls:SectionTitleSeparator Title="Pictures"  IconGlyph="&#xE8B9;"/>
+
+                <StackPanel Margin="0,16,0,0">
+                    <ItemsControl ItemsSource="{Binding Images}">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMultipleImages}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="120" Height="120" Margin="0,0,8,8" CornerRadius="6"
+                    BorderBrush="{DynamicResource StrokeLayerCard}" BorderThickness="1">
+                                    <Image Source="{Binding}" Stretch="Uniform" Margin="4" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    
+                    <TextBlock Text="{Binding MultipleImagesPlaceholder}" Opacity="0.6" Height="56">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMultipleImages}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    
+                </StackPanel>
+
+                <controls:SectionTitleSeparator Title="Information"  IconGlyph="&#xE946;"/>
+
+                <ItemsControl ItemsSource="{Binding Rows}" Margin="0,16,0,0" IsTabStop="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="Auto,*" Margin="0,4">
+                                <TextBlock Grid.Column="0" Text="{Binding Label}" MinWidth="150" Opacity="0.6" VerticalAlignment="Top" />
+                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Values}" IsTabStop="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Style="{StaticResource MultipleValueTextStyle}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

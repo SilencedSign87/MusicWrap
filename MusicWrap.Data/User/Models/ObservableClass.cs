@@ -6,7 +6,7 @@ using System.Text;
 
 namespace MusicWrap.Data.User.Models
 {
-    public abstract class ObservableSettings : INotifyPropertyChanged
+    public abstract class ObservableClass : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)

@@ -83,7 +83,7 @@ namespace MusicWrap.Core.Services.Library
                 {
                     foreach (var genre in tagFile.Tag.Genres)
                     {
-                        var genreNames = genre.Split(new[] { ',', ';', '&' }, StringSplitOptions.RemoveEmptyEntries);
+                        var genreNames = genre.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
                         foreach (var genreName in genreNames)
                         {
@@ -102,7 +102,7 @@ namespace MusicWrap.Core.Services.Library
                 if (tagFile.Tag.Performers.Length > 0)
                 {
                     var artistsNames = tagFile.Tag.Performers
-                        //.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                        .SelectMany(p => p.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
                         .Select(name => name.Trim())
                         .Where(name => !string.IsNullOrWhiteSpace(name))
                         .ToArray();
@@ -119,7 +119,7 @@ namespace MusicWrap.Core.Services.Library
                 if (tagFile.Tag.AlbumArtists.Length > 0)
                 {
                     var albumArtistNames = tagFile.Tag.AlbumArtists
-                        //.SelectMany(p => p.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+                        .SelectMany(p => p.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
                         .Select(name => name.Trim())
                         .Where(name => !string.IsNullOrWhiteSpace(name))
                         .ToArray();

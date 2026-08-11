@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace MusicWrap.Data.User.Models
 {
     [MessagePackObject]
-    public sealed class MusicWrapSettings : ObservableSettings
+    public sealed class MusicWrapSettings : ObservableClass
     {
         private bool _keepAppInTray = false;
         [Key(0)] public PlaybackSettings Playback { get; set; } = new PlaybackSettings();
