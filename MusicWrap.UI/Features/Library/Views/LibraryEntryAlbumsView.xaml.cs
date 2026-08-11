@@ -12,7 +12,7 @@ namespace MusicWrap.UI.Features.Library.Views
     public partial class LibraryEntryAlbumsView : UserControl
     {
         private const int MinTileWidth = 160;
-        private const int Gutter = 0;
+        private const int Gutter = 8;
         private const int MinColumns = 1;
 
         public LibraryEntryAlbumsView()

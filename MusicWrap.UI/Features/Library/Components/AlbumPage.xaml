@@ -10,7 +10,7 @@
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:LibraryEntryAlbumViewModel}"
-             d:DesignHeight="200" d:DesignWidth="200"
+             d:DesignHeight="200" d:DesignWidth="160"
              Cursor="Hand">
     <UserControl.Resources>
         <converters:PathToImageConverter x:Key="PathToImageConverter"/>
@@ -36,18 +36,21 @@
         </Border.ContextMenu>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="152"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- Album Cover -->
             <Border Grid.Row="0" 
                     Background="Transparent"
-                    Height="{Binding RelativeSource={RelativeSource Self}, Path=ActualWidth}"
+                    Width="152"
                     VerticalAlignment="Top">
                 <Image
                     Source="{Binding CoverImage}"
-                    Stretch="UniformToFill"/>
+                    Stretch="UniformToFill"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    />
             </Border>
 
             <!-- Album Info -->

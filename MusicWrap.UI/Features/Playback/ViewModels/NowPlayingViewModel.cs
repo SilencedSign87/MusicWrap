@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.ViewModels;
@@ -34,7 +36,15 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         public partial string? TrackImagePath { get; set; }
 
         [ObservableProperty]
-        public partial bool ShowLyrics { get; set; } = false;
+        public partial bool ShowLyrics { get; set; }
+        [ObservableProperty]
+        public partial bool BlurEffect { get; set; } = true;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsVisualizerVisible))]
+        public partial PreferredVisualizer PreferredVisualizer { get; set; } = PreferredVisualizer.LineSpectrum;
+
+        public bool IsVisualizerVisible => PreferredVisualizer != PreferredVisualizer.None;
 
         private int _currentTrackId;
         private int _currentAlbumId;
@@ -48,17 +58,35 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private readonly ILibraryService _libraryService;
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly MusicWrapSettings _settings;
-        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings)
+        private readonly ISaveCoordinator _saveCoordinator;
+        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings, ISaveCoordinator saveCoordinator)
         {
             _libraryService = libraryService;
             _musicPlayerService = musicPlayerService;
             _settings = settings;
+            _saveCoordinator = saveCoordinator;
 
+            ShowLyrics = settings.NowPlaying.ShowLyrics;
+            BlurEffect = settings.NowPlaying.BlurEffect;
+            PreferredVisualizer = settings.NowPlaying.PreferredVisualizer;
 
             _musicPlayerService.TrackChanged += OnTrackChanged;
 
             _ = LoadTrackData();
         }
+
+        #region Partial
+        partial void OnShowLyricsChanged(bool value) => SyncNowPlayingSettings();
+        partial void OnBlurEffectChanged(bool value) => SyncNowPlayingSettings();
+        partial void OnPreferredVisualizerChanged(PreferredVisualizer value) => SyncNowPlayingSettings();
+        private void SyncNowPlayingSettings()
+        {
+            _settings.NowPlaying.ShowLyrics = ShowLyrics;
+            _settings.NowPlaying.BlurEffect = BlurEffect;
+            _settings.NowPlaying.PreferredVisualizer = PreferredVisualizer;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+        #endregion
 
         private void OnTrackChanged(object? sender, string e)
         {

@@ -330,7 +330,7 @@ namespace MusicWrap.UI.Controls.Models
                 typeof(bool),
                 typeof(TracksView),
                 new PropertyMetadata(false));
-        public bool AutoScrollToCurrentTrack 
+        public bool AutoScrollToCurrentTrack
         {
             get => (bool)GetValue(AutoScrollToCurrentTrackProperty);
             set => SetValue(AutoScrollToCurrentTrackProperty, value);
@@ -450,20 +450,27 @@ namespace MusicWrap.UI.Controls.Models
 
         private void TracksList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var listBoxItem = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject);
-            if (listBoxItem == null)
+            try
             {
-                return;
-            }
-
-            if (!listBoxItem.IsSelected)
-            {
-                if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == ModifierKeys.None)
+                var listBoxItem = FindAncestor<ListBoxItem>(e.OriginalSource as DependencyObject);
+                if (listBoxItem == null)
                 {
-                    TracksList.SelectedItems.Clear();
+                    return;
                 }
 
-                listBoxItem.IsSelected = true;
+                if (!listBoxItem.IsSelected)
+                {
+                    if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == ModifierKeys.None)
+                    {
+                        TracksList.SelectedItems.Clear();
+                    }
+
+                    listBoxItem.IsSelected = true;
+                }
+            }
+            catch
+            {
+                // ignore exceptions, just in case
             }
         }
 
@@ -580,7 +587,7 @@ namespace MusicWrap.UI.Controls.Models
         private void TracksView_Loaded(object sender, RoutedEventArgs e)
         {
             if (_playerEventsAttached) return;
-            
+
             _musicPlayerService.TrackChanged += MusicPlayerService_TrackChanged;
             _musicPlayerService.PlaybackStateChanged += MusicPlayerService_PlaybackStateChanged;
             _playerEventsAttached = true;
@@ -647,7 +654,7 @@ namespace MusicWrap.UI.Controls.Models
                     return;
                 }
 
-            int index = _musicPlayerService.CurrentIndex;
+                int index = _musicPlayerService.CurrentIndex;
                 if (index < 0 || index >= TracksList.Items.Count)
                 {
                     return;

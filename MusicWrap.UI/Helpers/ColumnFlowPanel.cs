@@ -4,7 +4,6 @@ using System.Windows.Controls;
 
 namespace MusicWrap.UI.Helpers
 {
-
     public class ColumnFlowPanel : Panel
     {
         public static int GetColumns(DependencyObject obj)

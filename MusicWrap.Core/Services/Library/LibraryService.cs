@@ -866,12 +866,12 @@ namespace MusicWrap.Core.Services.Library
                 var names = album.ArtistIds
                     .Where(id => _artistNameById.ContainsKey(id))
                     .Select(id => _artistNameById[id]);
-                _artistNamesByAlbumId[album.Id] = AppStringPool.Intern(string.Join(", ", names)) ?? string.Join(", ", names);
+                _artistNamesByAlbumId[album.Id] = AppStringPool.Intern(string.Join("; ", names)) ?? string.Join("; ", names);
             }
             _artistNamesByTrackId = _library.Tracks.ToDictionary(t => t.Id, t =>
             AppStringPool.Intern(
                     t.ArtistIds.Length > 0
-                    ? string.Join(", ", t.ArtistIds.Where(id => _artistNameById.ContainsKey(id)).Select(id => _artistNameById[id]))
+                    ? string.Join("; ", t.ArtistIds.Where(id => _artistNameById.ContainsKey(id)).Select(id => _artistNameById[id]))
                     : (_artistNamesByAlbumId.TryGetValue(t.AlbumId, out var a) ? a : _unknownArtist)) ?? _unknownArtist
                     );
         }

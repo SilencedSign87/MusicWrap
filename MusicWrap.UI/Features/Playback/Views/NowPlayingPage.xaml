@@ -13,91 +13,75 @@
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="RootNowPlaying"
              >
-    <UserControl.Background>
-        <ImageBrush 
-            ImageSource="{Binding TrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}" 
-            RenderOptions.BitmapScalingMode="HighQuality"
-            Opacity="0.8"
-            Stretch="UniformToFill"/>
-    </UserControl.Background>
+    <UserControl.Style>
+        <Style TargetType="UserControl">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <ImageBrush ImageSource="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}"
+                            RenderOptions.BitmapScalingMode="HighQuality"
+                            Opacity="1" Stretch="UniformToFill"/>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding BlurEffect}" Value="False">
+                    <Setter Property="Background" Value="{Binding DominantColorHex}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Style>
+
     <UserControl.ContextMenu>
         <ContextMenu Foreground="{DynamicResource TextPrimaryBrush}">
-            <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=&#xEC4F;}">
-                <MenuItem Header="Show" IsCheckable="True" />
-                <MenuItem Header="Sync" IsCheckable="True" />
-                <Separator />
-                <MenuItem Header="Search..." />
-            </MenuItem>
+            <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=&#xEC4F;}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
+            <MenuItem Header="Blur" Icon="{ex:Icon Glyph=&#xE794;}" IsCheckable="True" IsChecked="{Binding BlurEffect}" />
+            <Separator/>
             <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=&#xF61F;}">
-                <MenuItem Header="Lines" IsCheckable="True" />
-                <MenuItem Header="Gradient" IsCheckable="True" />
+                <MenuItem Header="Off" IsCheckable="True"
+              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                <MenuItem Header="Lines" IsCheckable="True"
+              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
+                <MenuItem Header="Gradient" IsCheckable="True"
+              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=GradientSpectrum}" />
             </MenuItem>
         </ContextMenu>
     </UserControl.ContextMenu>
-    <Grid>
-        <Grid ColumnDefinitions="500,*" RowDefinitions="*,Auto" HorizontalAlignment="Center" Width="Auto">
-            <!-- Main View -->
-            <Border Grid.Column="0" Grid.Row="0">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Border CornerRadius="4" Width="400" Height="400" Margin="0,0,0,16">
-                        <Border.Background>
-                            <ImageBrush
-                            ImageSource="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:400}"
-                                Stretch="UniformToFill"
-                            />
-                        </Border.Background>
-                        <Border.Effect>
-                            <DropShadowEffect
-                            BlurRadius="16"
-                            Direction="270"
-                            Opacity="0.5"
-                            />
-                        </Border.Effect>
-                    </Border>
-                    <Grid>
 
-                        <StackPanel Orientation="Vertical">
-                            <TextBlock Text="{Binding TrackTitle}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" />
-                            <Button Style="{StaticResource TransparentButton}" Foreground="{Binding Foreground, ElementName=RootNowPlaying}" HorizontalAlignment="Center" Padding="0">
-                                <TextBlock Text="{Binding TrackAlbum}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,8" TextWrapping="Wrap" TextAlignment="Center"/>
-                            </Button>
-                            <ItemsControl ItemsSource="{Binding TrackArtists}" HorizontalAlignment="Center">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button
-                                        Style="{StaticResource TransparentButton}"
-                                        Foreground="{Binding Foreground, ElementName=RootNowPlaying}"
-                                        Content="{Binding Name}"
-                                        FontSize="12"
-                                        Padding="0"
-                                        Margin="0,0,2,0"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-
-
-                            </ItemsControl>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-            <!-- Lyrics View -->
-            <Border Grid.Column="1" Grid.Row="0">
-
-            </Border>
-        </Grid>
-        <!-- Visualizer -->
-        <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
-            <controls:BarVisualizerControl
-                HorizontalAlignment="Stretch"
-                Height="120"
-                BarCount="120"
-                Opacity="0.5"
+    <Grid x:Name="NowPlayingLayout" SizeChanged="OnNowPlayingLayoutSizeChanged">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="ArtworkColumn" Width="*"/>
+            <ColumnDefinition x:Name="LyricsColumn" Width="0"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition x:Name="ArtworkRow" Height="*"/>
+            <RowDefinition x:Name="LyricsRow" Height="0"/>
+            <RowDefinition x:Name="VisualizerRow" Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- Artwork -->
+        <controls:SquarePanel x:Name="ArtworkHost"
+                      Grid.Row="0" Grid.Column="0">
+            <Image
+                Source="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:1080}"
                 />
+        </controls:SquarePanel>
+        <!-- Lyrics -->
+        <Border x:Name="LyricsHost"
+            Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+            Visibility="{Binding ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid RowDefinitions="Auto,*">
+                <Menu Grid.Row="0" Foreground="{Binding Foreground ,ElementName=RootNowPlaying}">
+                    <MenuItem Header="Follow"/>
+                    <MenuItem Header="Edit"/>
+                </Menu>
+            </Grid>
+        </Border>
+
+        <!-- Visualizer -->
+        <Border x:Name="VisualizerHost"
+            Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+            Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <controls:BarVisualizerControl
+            HorizontalAlignment="Stretch"
+            Height="120" BarCount="120" Opacity="0.5"/>
         </Border>
     </Grid>
 </UserControl>
