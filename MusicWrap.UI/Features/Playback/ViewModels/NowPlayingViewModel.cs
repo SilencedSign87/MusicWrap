@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
@@ -43,6 +44,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsVisualizerVisible))]
+        [NotifyCanExecuteChangedFor(nameof(SetVisualizerCommand))]
         public partial PreferredVisualizer PreferredVisualizer { get; set; } = PreferredVisualizer.LineSpectrum;
 
         public bool IsVisualizerVisible => PreferredVisualizer != PreferredVisualizer.None;
@@ -50,6 +52,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private int[] _currentArtistIds = [];
 
         private bool _disposed;
+        private bool _isInitializing = true;
 
         public ObservableCollection<LinkItem> TrackArtists { get; } = [];
         public ObservableCollection<LinkItem> TrackAlbumArtists { get; } = [];
@@ -64,25 +67,42 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             _musicPlayerService = musicPlayerService;
             _settings = settings;
             _saveCoordinator = saveCoordinator;
+            _isInitializing = true;
 
             ShowLyrics = settings.NowPlaying.ShowLyrics;
             BlurEffect = settings.NowPlaying.BlurEffect;
             PreferredVisualizer = settings.NowPlaying.PreferredVisualizer;
+            _isInitializing = false;
 
             _musicPlayerService.TrackChanged += OnTrackChanged;
 
             _ = LoadTrackData();
         }
-
+        #region Relay Commands
+        [RelayCommand(CanExecute = nameof(CanSetVisualizer))]
+        private void SetVisualizer(string visualizer)
+        {
+            if (Enum.TryParse<PreferredVisualizer>(visualizer, out var parsed))
+            {
+                PreferredVisualizer = parsed;
+            }
+        }
+        private bool CanSetVisualizer(string visualizer)
+        {
+            if(!Enum.TryParse<PreferredVisualizer>(visualizer, out var parsed))
+            {
+                return false;
+            }
+            return PreferredVisualizer != parsed;
+        }
+        #endregion
         #region Partial
         partial void OnShowLyricsChanged(bool value) => SyncNowPlayingSettings();
         partial void OnBlurEffectChanged(bool value) => SyncNowPlayingSettings();
-        partial void OnPreferredVisualizerChanged(PreferredVisualizer value)
-        {
-            SyncNowPlayingSettings();
-        }
+        partial void OnPreferredVisualizerChanged(PreferredVisualizer value) => SyncNowPlayingSettings();
         private void SyncNowPlayingSettings()
         {
+            if (_isInitializing) return;
             _settings.NowPlaying.ShowLyrics = ShowLyrics;
             _settings.NowPlaying.BlurEffect = BlurEffect;
             _settings.NowPlaying.PreferredVisualizer = PreferredVisualizer;

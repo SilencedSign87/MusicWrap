@@ -41,12 +41,20 @@
             <Separator/>
             <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=&#xF61F;}">
                 <MenuItem Header="Off" IsCheckable="True" 
+                          Command="{Binding SetVisualizerCommand}"
+                          CommandParameter="None"
                           IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
                 <MenuItem Header="Line" IsCheckable="True" 
+                          Command="{Binding SetVisualizerCommand}"
+                          CommandParameter="LineSpectrum"
                           IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
                 <MenuItem Header="Bars" IsCheckable="True" 
+                          Command="{Binding SetVisualizerCommand}"
+                          CommandParameter="BarSpectrum"
                           IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
                 <MenuItem Header="Wave" IsCheckable="True" 
+                          Command="{Binding SetVisualizerCommand}"
+                          CommandParameter="MirroredBarSpectrum"
                           IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
             </MenuItem>
         </ContextMenu>

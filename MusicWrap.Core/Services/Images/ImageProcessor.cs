@@ -89,24 +89,45 @@ namespace MusicWrap.Core.Services.Images
 
         public Image CreateBlurredBackground(Image source, string dominantColorHex)
         {
-            double scale = Math.Min((double)BlurCoverSize / source.Width,
-                             (double)BlurCoverSize / source.Height);
+            double scale = Math.Min(
+                (double)BlurCoverSize / source.Width,
+                (double)BlurCoverSize / source.Height);
+
             using var resized = source.Resize(scale, kernel: Enums.Kernel.Lanczos3);
+
             double sigma = resized.Height / 18.0;
             using var blurred = resized.Gaussblur(sigma);
+
+            using var rgb = blurred.Bands == 4
+                ? blurred.ExtractBand(0, n: 3)
+                : blurred;
+
             var (baseR, baseG, baseB) = ParseHexColor(dominantColorHex);
+
             float domFactor = 0.85f;
             float imgFactor = 1f - domFactor;
-            int bands = blurred.Bands;
-            double[] a = bands == 4
-                ? [imgFactor, imgFactor, imgFactor, imgFactor]
-                : [imgFactor];
-            double[] b = bands == 4
-                ? [baseR * domFactor, baseG * domFactor, baseB * domFactor, 0]
-                : [baseR * domFactor, baseG * domFactor, baseB * domFactor];
-            using var blended = blurred.Linear(a, b);
+
+            double[] a =
+            [
+                imgFactor,
+                imgFactor,
+                imgFactor
+            ];
+
+            double[] b =
+            [
+                baseR * domFactor,
+                baseG * domFactor,
+                baseB * domFactor
+            ];
+
+            using var blended = rgb.Linear(a, b);
             using var ucharBlended = blended.Cast(Enums.BandFormat.Uchar);
-            return AddNoiseGrain(ucharBlended, grainSize: 3, intensity: 0.02f);
+
+            return AddNoiseGrain(
+                ucharBlended,
+                grainSize: 3,
+                intensity: 0.02f);
         }
 
         public static Image ResizeSquare(Image source, int maxSize)
@@ -263,7 +284,7 @@ namespace MusicWrap.Core.Services.Images
                     a = bands >= 4 ? data[offset + 3] : (byte)255;
                 }
 
-                if (a < 25) continue;
+                if (a != 255) continue; // ignore transparent pixels
                 validPixels++;
                 int key = (r / quantizeFactor) << 16
                         | (g / quantizeFactor) << 8
