@@ -18,8 +18,12 @@
             <Setter Property="Background">
                 <Setter.Value>
                     <ImageBrush ImageSource="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}"
-                            RenderOptions.BitmapScalingMode="HighQuality"
-                            Opacity="1" Stretch="UniformToFill"/>
+                                RenderOptions.BitmapScalingMode="HighQuality"
+                                Opacity="1" 
+                                AlignmentX="Center"
+                                AlignmentY="Center"
+                                Stretch="UniformToFill"
+                                />
                 </Setter.Value>
             </Setter>
             <Style.Triggers>

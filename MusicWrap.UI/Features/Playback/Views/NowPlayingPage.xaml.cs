@@ -1,18 +1,7 @@
 using MusicWrap.UI.Features.Playback.ViewModels;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Features.Playback.Views
 {
@@ -88,7 +77,6 @@ namespace MusicWrap.UI.Features.Playback.Views
             double visualizer = _viewModel.IsVisualizerVisible ? VisualizerHeight : 0;
             double lyrics = _viewModel.ShowLyrics ? LyricsBandHeight : 0;
             ArtworkColumn.Width = new GridLength(1, GridUnitType.Star);
-            ArtworkHost.Margin = new Thickness(0, 18, 0, 0); // Add top margin to artwork in portrait mode
             LyricsColumn.Width = new GridLength(0);
             ArtworkRow.Height = new GridLength(1, GridUnitType.Star);
             LyricsRow.Height = new GridLength(lyrics);
@@ -102,7 +90,6 @@ namespace MusicWrap.UI.Features.Playback.Views
             double visualizer = _viewModel.IsVisualizerVisible ? VisualizerHeight : 0;
             double side = Math.Max(0, ActualHeight - visualizer);
             ArtworkColumn.Width = new GridLength(side);
-            ArtworkHost.Margin = new Thickness(0, 0, 0, 0);
             LyricsColumn.Width = new GridLength(1, GridUnitType.Star);
             ArtworkRow.Height = new GridLength(1, GridUnitType.Star);
             LyricsRow.Height = new GridLength(0);
@@ -116,7 +103,6 @@ namespace MusicWrap.UI.Features.Playback.Views
             double visualizer = _viewModel.IsVisualizerVisible ? VisualizerHeight : 0;
             double side = Math.Max(0, ActualHeight);
             ArtworkColumn.Width = new GridLength(side);
-            ArtworkHost.Margin = new Thickness(0, 0, 0, 0);
             LyricsColumn.Width = new GridLength(1, GridUnitType.Star);
             ArtworkRow.Height = new GridLength(1, GridUnitType.Star);
             LyricsRow.Height = new GridLength(visualizer);

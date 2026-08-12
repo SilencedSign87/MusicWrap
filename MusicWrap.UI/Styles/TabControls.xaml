@@ -139,12 +139,12 @@
                         UseLayoutRounding="True">
                         <Grid ClipToBounds="True">
                             <Border x:Name="SelectedBackground"
-                                Background="{DynamicResource BackgroundControlHover}"
+                                Background="{DynamicResource BackgroundControlPressed}"
                                 CornerRadius="4,4,0,0"
                                 Opacity="0"/>
 
                             <Border x:Name="HoverBackground"
-                                Background="{DynamicResource BackgroundControlPressed}"
+                                Background="{DynamicResource BackgroundControlHover}"
                                 CornerRadius="4,4,0,0"
                                 Opacity="0"/>
 

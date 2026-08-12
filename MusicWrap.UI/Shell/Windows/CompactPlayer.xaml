@@ -17,18 +17,12 @@
         d:Height="700"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanMinimize"
-        Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"
+        Foreground="{Binding CurrentTrackHighlightColorHex}"
         d:Background="#2c2c2c"
         d:Foreground="White"
         >
-    <Window.Background>
-        <ImageBrush 
-            ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}" 
-            RenderOptions.BitmapScalingMode="HighQuality"
-            Stretch="UniformToFill"/>
-    </Window.Background>
     <Window.Resources>
-        <Style x:Key="CompactPlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}" >
+        <Style x:Key="CompactPlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
             <Setter Property="Foreground" Value="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
@@ -39,26 +33,14 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="CompactTitleButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}" >
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+        </Style>
+
         <Style x:Key="CompactClosePlayerButton" TargetType="Button" BasedOn="{StaticResource CloseButton}" >
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
-            <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType=Window}}"/>
-        </Style>
-        <Style x:Key="TitlebarButton" TargetType="Button" BasedOn="{StaticResource CompactPlayerButton}">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=Titlebar, Path=IsMouseOver}" Value="True">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="TitlebarCloseButton" TargetType="Button" BasedOn="{StaticResource CompactClosePlayerButton}">
-            <Setter Property="Visibility" Value="Collapsed"/>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=Titlebar, Path=IsMouseOver}" Value="True">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
         </Style>
     </Window.Resources>
     <WindowChrome.WindowChrome>
@@ -84,41 +66,53 @@
                     Width="250"
                     RenderOptions.BitmapScalingMode="HighQuality"
                     />
-                <StackPanel 
-                    x:Name="Titlebar"
-                    Orientation="Horizontal" 
+                <controls:HiddenPanel
+                    Height="32"
+                    Width="128"
                     HorizontalAlignment="Right" 
                     VerticalAlignment="Top" 
                     WindowChrome.IsHitTestVisibleInChrome="True"
-                    Background="Transparent"
-                    Height="32"
-                    Width="128">
-                    <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" Click="HandleToggleAllwayOnTop">
-                        <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="14" />
-                    </Button>
-                    <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" Click="MinimizeClick" ToolTip="Minimize">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE921;" FontSize="12" />
-                    </Button>
-                    <Button Style="{StaticResource TitlebarButton}" Width="32" Height="32" ToolTip="Open main player" Click="HandleOpenMainPlayer">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEE47;" FontSize="14" />
-                    </Button>
-                    <Button Style="{StaticResource TitlebarCloseButton}" Width="32" Height="32" Click="HandleCloseApp" ToolTip="Close">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BB;" FontSize="12" />
-                    </Button>
-                </StackPanel>
+                    >
+                    <StackPanel Orientation="Horizontal" Background="{DynamicResource BackgroundSolid}">
+                        <Button Style="{StaticResource CompactTitleButton}"  Click="HandleToggleAllwayOnTop">
+                            <TextBlock x:Name="PinIconFont" FontFamily="Segoe Fluent Icons" Text="&#xe718;" FontSize="14" />
+                        </Button>
+                        <Button Style="{StaticResource CompactTitleButton}"  Click="MinimizeClick" ToolTip="Minimize">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE921;" FontSize="12" />
+                        </Button>
+                        <Button Style="{StaticResource CompactTitleButton}"  ToolTip="Open main player" Click="HandleOpenMainPlayer">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xEE47;" FontSize="14" />
+                        </Button>
+                        <Button Style="{StaticResource CompactClosePlayerButton}"  Click="HandleCloseApp" ToolTip="Close">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8BB;" FontSize="12" />
+                        </Button>
+                    </StackPanel>
+                </controls:HiddenPanel>
             </Grid>
             <!--Controls-->
             <Grid Grid.Row="1">
+
+
                 <Grid.RowDefinitions>
                     <RowDefinition/>
                     <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0" Margin="8,0">
+
+                <Grid Grid.Row="0" Margin="0">
+                    <Grid.Background>
+                        <ImageBrush 
+                        ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}" 
+                        RenderOptions.BitmapScalingMode="HighQuality"
+                        AlignmentX="Center"
+                        AlignmentY="Center"
+                        Stretch="UniformToFill"/>
+                    </Grid.Background>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="32" />
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <Grid Grid.Row="0">
+
+                    <Grid Grid.Row="0" Margin="8,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="20" />
                             <ColumnDefinition Width="*" />
@@ -198,21 +192,25 @@
                         </Border>
                     </Popup>
                 </Grid>
+
+                <!-- Bottom Panel -->
+
                 <Grid
                     Grid.Row="1"
                     x:Name="QueuePanel"
                     Visibility="Collapsed"
-                    d:Visibility="Visible">
-                    <TabControl Style="{StaticResource SubtleTabControl}" >
-                        <TabItem x:Name="QueueTab" Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}">
+                    d:Visibility="Visible"
+                    Background="{DynamicResource BackgroundSolid2}"
+                    >
+                    <TabControl Style="{StaticResource SubtleTabControl}">
+                        <TabItem x:Name="QueueTab" Style="{StaticResource SubtleTabItem}" >
                             <TabItem.Header>
                                 <StackPanel>
                                     <TextBlock Text="Queue" />
                                 </StackPanel>
                             </TabItem.Header>
-                            <!--<mw:QueueListPage />-->
                         </TabItem>
-                        <TabItem Style="{StaticResource SubtleTabItem}" Foreground="{Binding CurrentTrackHighlightColorHex, Converter={StaticResource HexToBrushConverter}}">
+                        <TabItem Style="{StaticResource SubtleTabItem}">
                             <TabItem.Header>
                                 <StackPanel>
                                     <TextBlock Text="Library" />

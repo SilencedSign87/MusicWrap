@@ -32,29 +32,18 @@
         <SolidColorBrush x:Key="DominantColor" Color="{Binding NowPlayingViewModel.DominantColorHex}" />
         <SolidColorBrush x:Key="DominantForegroundColor" Color="{Binding NowPlayingViewModel.ForegroundColorHex}" />
 
-        <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
+        <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" 
-                Value="{StaticResource HighligtColor}"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Foreground" 
-                        Value="{StaticResource HighligtForegroundColor}"
-                            />
-                    <Setter Property="Background" 
-                        Value="{StaticResource HighligtColor}"/>
-                </Trigger>
-            </Style.Triggers>
         </Style>
     </Window.Resources>
 
     <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
         <controls:HiddenPanel Grid.Column="0">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto" Background="{StaticResource BackgroundSolid}">
                 <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="4,0,0,0">
                     <Button 
                         Grid.Column="0" 
@@ -96,34 +85,31 @@
                             Height="32"
                             Width="120"
                             ShowMuteButton="False"
+                            Foreground="{StaticResource TextPrimaryBrush}"
                             Margin="4,0"
                             />
                 </Grid>
 
                 <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="0,0,4,0">
-                    <Menu Foreground="{StaticResource HighligtColor}">
+                    <Menu Foreground="{DynamicResource TextPrimaryBrush}" >
                         <MenuItem Icon="{ex:Icon Glyph=&#xE93E;}" Header="Progress">
-                            <MenuItem Header="Show" IsCheckable="True" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <MenuItem Header="Show" IsCheckable="True" />
                         </MenuItem>
                         <MenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
                             <MenuItem Header="Off" IsCheckable="True" 
-                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
                             <MenuItem Header="Line" IsCheckable="True" 
-                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
                             <MenuItem Header="Bars" IsCheckable="True" 
-                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
                             <MenuItem Header="Wave" IsCheckable="True" 
-                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
                         </MenuItem>
                         <MenuItem Icon="{ex:Icon Glyph=&#xEC4F;}"  Header="Lyrics">
                             <MenuItem Header="Show" IsCheckable="True" Foreground="{DynamicResource TextPrimaryBrush}" />
                         </MenuItem>
                     </Menu>
-                    <Border Margin="4" Width="1" Background="{StaticResource HighligtColor}"/>
+                    <Border Margin="4" Width="1" Background="{StaticResource StrokeSurface}"/>
                     <Button 
                         Style="{StaticResource PlayerButton}"
                         Command="{Binding ExitFullScreenCommand}"
