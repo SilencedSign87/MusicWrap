@@ -17,6 +17,8 @@ namespace MusicWrap.Data.User.Models
     {
         None,
         LineSpectrum,
+        BarSpectrum,
+        MirroredBarSpectrum,
         GradientSpectrum,
     }
 }

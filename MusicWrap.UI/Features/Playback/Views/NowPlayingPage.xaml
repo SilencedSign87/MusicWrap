@@ -36,12 +36,14 @@
             <MenuItem Header="Blur" Icon="{ex:Icon Glyph=&#xE794;}" IsCheckable="True" IsChecked="{Binding BlurEffect}" />
             <Separator/>
             <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=&#xF61F;}">
-                <MenuItem Header="Off" IsCheckable="True"
-              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
-                <MenuItem Header="Lines" IsCheckable="True"
-              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
-                <MenuItem Header="Gradient" IsCheckable="True"
-              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=GradientSpectrum}" />
+                <MenuItem Header="Off" IsCheckable="True" 
+                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                <MenuItem Header="Line" IsCheckable="True" 
+                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
+                <MenuItem Header="Bars" IsCheckable="True" 
+                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
+                <MenuItem Header="Wave" IsCheckable="True" 
+          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
             </MenuItem>
         </ContextMenu>
     </UserControl.ContextMenu>
@@ -79,9 +81,13 @@
         <Border x:Name="VisualizerHost"
             Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
             Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <controls:BarVisualizerControl
-            HorizontalAlignment="Stretch"
-            Height="120" BarCount="120" Opacity="0.5"/>
+            <controls:SpectrumVisualizerControl
+                HorizontalAlignment="Stretch"
+                Visualizer="{Binding PreferredVisualizer}"
+                Height="120" 
+                BarCount="120" 
+                Opacity="0.5"
+                />
         </Border>
     </Grid>
 </UserControl>

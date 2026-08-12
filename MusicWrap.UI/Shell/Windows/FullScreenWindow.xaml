@@ -138,11 +138,11 @@
                             />
 
                     </Grid>
-                    <controls:BarVisualizerControl
-                        Opacity="0.5"
+                    <controls:SpectrumVisualizerControl
                         Height="120"
                         BarCount="120"
                         Margin="0,-16,0,0"
+                        Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
                     />
                     <controls:WaveformPlayerControl
                         Height="48"

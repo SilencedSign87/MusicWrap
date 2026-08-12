@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.User.Models;
 using System.Diagnostics;
 using System.Numerics;
 using System.Windows;
@@ -11,20 +12,18 @@ using System.Windows.Threading;
 
 namespace MusicWrap.UI.Controls
 {
-    public partial class BarVisualizerControl : UserControl
+    public partial class SpectrumVisualizerControl : UserControl
     {
         private readonly IMusicPlayerService _musicService;
         private readonly DispatcherTimer _timer;
 
         private float[] _currentHeights = [];
-        private float[] _peakHold = [];
         private bool _isActive;
 
         private const int AssumedSampleRate = 44100;
         private const float Amplification = 1.0f;
         private const float RiseSpeed = 0.6f; // how quickly the bars rise to the target value (0-1)
         private const float FallSpeed = 0.6f; // how quickly the bars fall to the target value (0-1)
-        private const float PeakDecay = 0.7f; // how quickly the peak hold value falls (0-1)
         private const float HeightDecay = 0.03f; // how quickly the current height value falls (0-1)
 
         private const float MinEqHz = 20f; // lowest frequency
@@ -33,8 +32,8 @@ namespace MusicWrap.UI.Controls
         private const float CeilingDb = -12f; // highest dB value to consider (anything above this is treated as max volume)
         private const float EqGamma = 1.0f; // 1 = linear, <1 = more energy on the low end, >1 = more energy on the high end
 
-        private const float HighShelfGain = 0.4f;     // 0 = off, 0.3 = subtle, 0.8 = agressive
-        private const float HighShelfCurve = 0.4f;     // <1 = more energy only on the high end
+        private const float HighShelfGain = 0.6f;     // 0 = off, 0.3 = subtle, 0.8 = agressive
+        private const float HighShelfCurve = 0.8f;     // <1 = more energy only on the high end
         private const float GammaDelta = 0.3f;        // how much to reduce gamma for high frequencies (0 = off, 0.5 = strong)
 
         private const int FFTSize = 16384;
@@ -46,7 +45,9 @@ namespace MusicWrap.UI.Controls
         private Point[] _points = [];
         private BandMapping[] _bandMap = [];
 
-        public BarVisualizerControl()
+        private readonly Brush _fadeMask;
+
+        public SpectrumVisualizerControl()
         {
             InitializeComponent();
 
@@ -60,13 +61,15 @@ namespace MusicWrap.UI.Controls
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+
+            _fadeMask = (Brush)FindResource("SpectrumFadeMask");
         }
         #region Dependency Properties
         public static readonly DependencyProperty BarCountProperty =
             DependencyProperty.Register(
                 nameof(BarCount),
                 typeof(int),
-                typeof(BarVisualizerControl),
+                typeof(SpectrumVisualizerControl),
                 new PropertyMetadata(8, OnBarCountChanged));
         public int BarCount
         {
@@ -75,8 +78,29 @@ namespace MusicWrap.UI.Controls
         }
         private static void OnBarCountChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is BarVisualizerControl widget)
+            if (d is SpectrumVisualizerControl widget)
                 widget.ReinitArrays();
+        }
+
+        public static readonly DependencyProperty VisualizerProperty =
+            DependencyProperty.Register(
+                nameof(Visualizer),
+                typeof(PreferredVisualizer),
+                typeof(SpectrumVisualizerControl),
+                new PropertyMetadata(PreferredVisualizer.LineSpectrum, OnVisualizerChanged)
+                );
+        public PreferredVisualizer Visualizer
+        {
+            get => (PreferredVisualizer)GetValue(VisualizerProperty);
+            set => SetValue(VisualizerProperty, value);
+        }
+        private static void OnVisualizerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is SpectrumVisualizerControl widget)
+            {
+                widget.RebuildPointCache();
+                widget.Render();
+            }
         }
         #endregion
 
@@ -112,8 +136,6 @@ namespace MusicWrap.UI.Controls
 
             int fftSize = Math.Min(FFTSize, PrevPow2(monoAvailable));
 
-            //Debug.WriteLine("[BarVisualizer] Captured PCM floats: {0} \n Mono available: {1} \n FFT size: {2} \n target: {3}", capturedFloats, monoAvailable, fftSize, FFTSize);
-
             if (fftSize < FFTSize)
             {
                 DecayAll();
@@ -147,15 +169,26 @@ namespace MusicWrap.UI.Controls
 
             float[] bands = MapFFTToBands(_magnitudes, BarCount);
             UpdateHeights(bands);
-            DrawBars();
+            Render();
         }
+        private void OnSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            // recalculate clip
+            var width = e.NewSize.Width;
+            var height = e.NewSize.Height;
+            ProgressClip.Rect = new Rect(0, 0, width, height);
+            // recaculate point cache
+            RebuildPointCache();
+            Render();
+        }
+
         #endregion
+
         #region Rendering
         private void ReinitArrays()
         {
             int count = Math.Max(BarCount, 1);
             _currentHeights = new float[count];
-            _peakHold = new float[count];
             _points = new Point[count];
             RebuildPointCache();
             RebuildBandMapping();
@@ -163,26 +196,20 @@ namespace MusicWrap.UI.Controls
         private void DecayAll()
         {
             bool changed = false;
-            for (int i = 0; i < _peakHold.Length; i++)
+            for (int i = 0; i < _currentHeights.Length; i++)
             {
-                if (_peakHold[i] > 0) { _peakHold[i] -= PeakDecay; changed = true; }
                 if (_currentHeights[i] > 0) { _currentHeights[i] -= HeightDecay; changed = true; }
-                _peakHold[i] = Math.Max(_peakHold[i], 0);
                 _currentHeights[i] = Math.Max(_currentHeights[i], 0);
             }
-            if (changed) DrawBars();
+            if (changed) Render();
         }
         private void UpdateHeights(float[] bands)
         {
             for (int i = 0; i < _currentHeights.Length && i < bands.Length; i++)
             {
                 float target = Math.Clamp(bands[i] * Amplification, 0f, 1f);
-                if (target >= _peakHold[i])
-                    _peakHold[i] = target;
                 float speed = target > _currentHeights[i] ? RiseSpeed : FallSpeed;
                 _currentHeights[i] += (target - _currentHeights[i]) * speed;
-                if (_currentHeights[i] > _peakHold[i])
-                    _currentHeights[i] = _peakHold[i];
             }
         }
 
@@ -213,11 +240,6 @@ namespace MusicWrap.UI.Controls
                 // variable gamma
                 float bandGamma = Math.Max(EqGamma - GammaDelta * t, 0.4f);
                 result[i] = MathF.Pow(norm, bandGamma);
-
-                //float db = 20f * MathF.Log10(magnitude + 1e-8f);
-                //float norm = (db - NoiseFloorDb) / (CeilingDb - NoiseFloorDb);
-                //norm = Math.Clamp(norm, 0f, 1f);
-                //result[i] = MathF.Pow(norm, EqGamma);
             }
 
             return result;
@@ -228,13 +250,32 @@ namespace MusicWrap.UI.Controls
                    spectrum[sample.Bin1] * sample.Fraction;
         }
 
-        private void DrawBars()
+        private void Render()
         {
             double width = BarContainer.ActualWidth;
             double height = BarContainer.ActualHeight;
             if (width <= 0 || height <= 0 || _currentHeights.Length == 0)
                 return;
 
+            switch (Visualizer)
+            {
+                case PreferredVisualizer.LineSpectrum:
+                    {   
+                        DrawLines(width, height); break;
+                    }
+                case PreferredVisualizer.BarSpectrum:
+                    {
+                        DrawBars(width, height, false); break;
+                    }
+                case PreferredVisualizer.MirroredBarSpectrum:
+                    {
+                        DrawBars(width, height, true); break;
+                    }
+            }
+        }
+
+        private void DrawLines(double width, double height)
+        {
             int bandCount = _currentHeights.Length;
             double baseY = height;
 
@@ -270,8 +311,55 @@ namespace MusicWrap.UI.Controls
 
             SpectrumFillPath.Data = fillGeometry;
             SpectrumTopPath.Data = topGeometry;
+            SpectrumFillPath.OpacityMask = _fadeMask;
         }
 
+        private void DrawBars(double width, double height, bool mirrored)
+        {
+            int bandCount = _currentHeights.Length;
+            double slot = width / bandCount;
+            // separation
+            double barWidth = slot * 0.6;
+            double centerY = height / 2;
+            var geometry = new StreamGeometry();
+            using (var ctx = geometry.Open())
+            {
+                for (int i = 0; i < bandCount; i++)
+                {
+                    double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
+                    double barHeight = Math.Max(normalized * height, 1.0);
+                    double x0 = slot * i + (slot - barWidth) / 2;
+                    double x1 = x0 + barWidth;
+                    double yTop, yBottom;
+                    if (mirrored)
+                    {
+                        double half = barHeight / 2;
+                        yTop = centerY - half;
+                        yBottom = centerY + half;
+                    }
+                    else
+                    {
+                        yTop = height - barHeight;
+                        yBottom = height;
+                    }
+                    //ctx.BeginFigure(new Point(x0, yTop), true, true);
+                    //ctx.LineTo(new Point(x1, yTop), true, false);
+                    //ctx.LineTo(new Point(x1, yBottom), true, false);
+                    ctx.BeginFigure(new Point(x0, yTop), true, true);
+                    ctx.LineTo(new Point(x1, yTop), true, false);
+                    ctx.LineTo(new Point(x1, yBottom), true, false);
+                    ctx.LineTo(new Point(x0, yBottom), true, false);
+                }
+            }
+
+            geometry.Freeze();
+            SpectrumFillPath.Data = geometry;
+            SpectrumTopPath.Data = null;
+            SpectrumFillPath.OpacityMask = null;
+        }
+        #endregion
+
+        #region Computation
         private static void ApplyHanningWindow(float[] data, int length)
         {
             for (int i = 0; i < length; i++)
@@ -395,17 +483,6 @@ namespace MusicWrap.UI.Controls
         }
 
         #endregion
-
-        private void OnSizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            // recalculate clip
-            var width = e.NewSize.Width;
-            var height = e.NewSize.Height;
-            ProgressClip.Rect = new Rect(0, 0, width, height);
-            // recaculate point cache
-            RebuildPointCache();
-            DrawBars();
-        }
 
         private readonly struct InterpolatedSample
         {
