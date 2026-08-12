@@ -10,6 +10,7 @@ using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Text;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
@@ -46,8 +47,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         public bool IsVisualizerVisible => PreferredVisualizer != PreferredVisualizer.None;
 
-        private int _currentTrackId;
-        private int _currentAlbumId;
         private int[] _currentArtistIds = [];
 
         private bool _disposed;
@@ -78,7 +77,10 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         #region Partial
         partial void OnShowLyricsChanged(bool value) => SyncNowPlayingSettings();
         partial void OnBlurEffectChanged(bool value) => SyncNowPlayingSettings();
-        partial void OnPreferredVisualizerChanged(PreferredVisualizer value) => SyncNowPlayingSettings();
+        partial void OnPreferredVisualizerChanged(PreferredVisualizer value)
+        {
+            SyncNowPlayingSettings();
+        }
         private void SyncNowPlayingSettings()
         {
             _settings.NowPlaying.ShowLyrics = ShowLyrics;
@@ -104,14 +106,12 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                 return;
             }
 
-            _currentTrackId = track.Id;
             TrackTitle = track.Title;
 
             Album? album = null;
 
             if (track.AlbumId != 0)
             {
-                _currentAlbumId = track.AlbumId;
                 album = _libraryService.GetAlbumById(track.AlbumId);
                 TrackAlbum = album?.Title ?? "";
             }
@@ -151,9 +151,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
 
         private void SetEmptyState()
         {
-            _currentAlbumId = 0;
             _currentArtistIds = [];
-            _currentTrackId = 0;
 
             TrackTitle = "No track playing";
             TrackAlbum = "";

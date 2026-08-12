@@ -11,5 +11,6 @@
         <ResourceDictionary Source="/Styles/ShellTabStyles.xaml" />
         <ResourceDictionary Source="/Styles/HyperLinks.xaml"/>
         <ResourceDictionary Source="/Styles/TextInputStyles.xaml"/>
+        <ResourceDictionary Source="/Styles/Panels.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

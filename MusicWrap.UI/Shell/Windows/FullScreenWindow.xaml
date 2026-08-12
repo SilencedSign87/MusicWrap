@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MusicWrap.UI.Shell.Windows"
         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+        xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
         xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
         mc:Ignorable="d"
         Title="MusicWrap"
@@ -26,6 +27,11 @@
             Stretch="UniformToFill"/>
     </Window.Background>
     <Window.Resources>
+        <SolidColorBrush x:Key="HighligtColor" Color="{Binding NowPlayingViewModel.HighlightColorHex}" />
+        <SolidColorBrush x:Key="HighligtForegroundColor" Color="{Binding NowPlayingViewModel.HighlightForegroundHex}" />
+        <SolidColorBrush x:Key="DominantColor" Color="{Binding NowPlayingViewModel.DominantColorHex}" />
+        <SolidColorBrush x:Key="DominantForegroundColor" Color="{Binding NowPlayingViewModel.ForegroundColorHex}" />
+
         <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
@@ -33,31 +39,100 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Foreground" 
-                Value="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"/>
+                Value="{StaticResource HighligtColor}"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Foreground" 
-                        Value="{Binding NowPlayingViewModel.HighlightForegroundHex, Converter={StaticResource HexToBrushConverter}, ConverterParameter=foreground}"/>
+                        Value="{StaticResource HighligtForegroundColor}"
+                            />
                     <Setter Property="Background" 
-                        Value="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"/>
+                        Value="{StaticResource HighligtColor}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <Grid RowDefinitions="48,*" ColumnDefinitions="*">
+    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
+        <controls:HiddenPanel Grid.Column="0">
+            <Grid ColumnDefinitions="*,Auto">
+                <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="4,0,0,0">
+                    <Button 
+                        Grid.Column="0" 
+                        Style="{StaticResource PlayerButton}"  
+                        ToolTip="Previous track" 
+                        Command="{Binding PlayerViewModel.PreviousCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
+                    </Button>
+                    <Button 
+                        Grid.Column="1" 
+                        Style="{StaticResource PlayerButton}"  
+                        Command="{Binding PlayerViewModel.PlayPauseCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.PlayPauseIcon, Mode=OneWay}" FontSize="20"/>
+                    </Button>
+                    <Button 
+                        Grid.Column="2"
+                        Style="{StaticResource PlayerButton}" 
+                        ToolTip="Next track" 
+                        Command="{Binding PlayerViewModel.NextCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
+                    </Button>
+                    <Button 
+                        Grid.Column="3"
+                        Style="{StaticResource PlayerButton}" 
+                        ToolTip="{Binding PlayerViewModel.RepeatModeTooltip}" 
+                        Command="{Binding PlayerViewModel.CicleRepeatModeCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.RepeatModeIcon}" FontSize="14"/>
+                    </Button>
+                    <Button 
+                        Grid.Column="4"
+                        Style="{StaticResource PlayerButton}" 
+                        ToolTip="{Binding PlayerViewModel.ShuffleTooltip}"
+                        Command="{Binding PlayerViewModel.ToggleShuffleCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.ShuffleIcon}" FontSize="12"/>
+                    </Button>
 
-        <StackPanel 
-            x:Name="WindowHandler" 
-            Grid.Row="0" 
-            HorizontalAlignment="Right" >
-            <Button 
-                Style="{StaticResource PlayerButton}"
-                Command="{Binding ExitFullScreenCommand}"
+                    <controls:VolumeControl 
+                            Grid.Column="5"
+                            Height="32"
+                            Width="120"
+                            ShowMuteButton="False"
+                            Margin="4,0"
+                            />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="0,0,4,0">
+                    <Menu Foreground="{StaticResource HighligtColor}">
+                        <MenuItem Icon="{ex:Icon Glyph=&#xE93E;}" Header="Progress">
+                            <MenuItem Header="Show" IsCheckable="True" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </MenuItem>
+                        <MenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
+                            <MenuItem Header="Off" IsCheckable="True" 
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                            <MenuItem Header="Line" IsCheckable="True" 
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
+                            <MenuItem Header="Bars" IsCheckable="True" 
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
+                            <MenuItem Header="Wave" IsCheckable="True" 
+                                      Foreground="{DynamicResource TextPrimaryBrush}"
+                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                        </MenuItem>
+                        <MenuItem Icon="{ex:Icon Glyph=&#xEC4F;}"  Header="Lyrics">
+                            <MenuItem Header="Show" IsCheckable="True" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </MenuItem>
+                    </Menu>
+                    <Border Margin="4" Width="1" Background="{StaticResource HighligtColor}"/>
+                    <Button 
+                        Style="{StaticResource PlayerButton}"
+                        Command="{Binding ExitFullScreenCommand}"
                     >
-                <TextBlock Text="&#xE73F;" FontSize="20" FontWeight="Light" FontFamily="Segoe Fluent Icons" />
-            </Button>
-        </StackPanel>
+                        <TextBlock Text="&#xE73F;" FontSize="20" FontWeight="Light" FontFamily="Segoe Fluent Icons" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </controls:HiddenPanel>
 
         <Grid RowDefinitions="*" ColumnDefinitions="Auto,*" Grid.Row="0" Grid.RowSpan="2">
             <!-- Sidebar -->
@@ -77,10 +152,11 @@
                         </Border.Background>
                         <Border.Effect>
                             <DropShadowEffect
-                        BlurRadius="16"
-                        Direction="270"
-                        Opacity="0.5"
-                        />
+                                BlurRadius="16"
+                                Direction="270"
+                                Opacity="0.24"
+                                ShadowDepth="8"
+                                />
                         </Border.Effect>
                     </Border>
                     <TextBlock Text="{Binding NowPlayingViewModel.TrackTitle}" TextAlignment="Center" FontSize="24" FontWeight="Bold" />
@@ -88,60 +164,11 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
-                    <Grid HorizontalAlignment="Center" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,42">
-                        <Button 
-                        x:Name="RepeadButton" 
-                        Grid.Column="0"
-                        Style="{StaticResource PlayerButton}" 
-                        ToolTip="{Binding PlayerViewModel.RepeatModeTooltip}" 
-                        Command="{Binding PlayerViewModel.CicleRepeatModeCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.RepeatModeIcon}" FontSize="14"/>
-                        </Button>
-                        <Button 
-                        x:Name="PrevButton" 
-                        Grid.Column="1" 
-                        Style="{StaticResource PlayerButton}"  
-                        ToolTip="Previous track" 
-                        Command="{Binding PlayerViewModel.PreviousCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
-                        </Button>
-                        <Button 
-                        x:Name="PlayButton" 
-                        Grid.Column="2" 
-                        Style="{StaticResource PlayerButton}"  
-                        Command="{Binding PlayerViewModel.PlayPauseCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.PlayPauseIcon, Mode=OneWay}" FontSize="20"/>
-                        </Button>
-                        <Button 
-                        x:Name="NextButton" 
-                        Grid.Column="3"
-                        Style="{StaticResource PlayerButton}" 
-                        ToolTip="Next track" 
-                        Command="{Binding PlayerViewModel.NextCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
-                        </Button>
-                        <Button 
-                        x:Name="ShuffleButton" 
-                        Grid.Column="4"
-                        Style="{StaticResource PlayerButton}" 
-                        ToolTip="{Binding PlayerViewModel.ShuffleTooltip}"
-                        Command="{Binding PlayerViewModel.ToggleShuffleCommand}">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.ShuffleIcon}" FontSize="12"/>
-                        </Button>
-
-                        <controls:VolumeControl 
-                            Grid.Column="0" 
-                            Grid.ColumnSpan="5"
-                            Grid.Row="1"
-                            Height="32"
-                            ShowMuteButton="False"
-                            />
-
-                    </Grid>
                     <controls:SpectrumVisualizerControl
                         Height="120"
                         BarCount="120"
                         Margin="0,-16,0,0"
+                         Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
                     />
                     <controls:WaveformPlayerControl

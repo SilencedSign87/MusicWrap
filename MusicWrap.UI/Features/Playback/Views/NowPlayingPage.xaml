@@ -43,7 +43,7 @@
                 <MenuItem Header="Bars" IsCheckable="True" 
                           IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
                 <MenuItem Header="Wave" IsCheckable="True" 
-          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
             </MenuItem>
         </ContextMenu>
     </UserControl.ContextMenu>
