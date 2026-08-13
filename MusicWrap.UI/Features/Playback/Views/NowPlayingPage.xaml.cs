@@ -7,8 +7,8 @@ namespace MusicWrap.UI.Features.Playback.Views
 {
     public partial class NowPlayingPage : UserControl
     {
-        private const double BalancedMinRatio = 1.4;
-        private const double LandscapeMinRatio = 1.7;
+        private const double BalancedMinRatio = 1.2;
+        private const double LandscapeMinRatio = 1.6;
         private const double VisualizerHeight = 120;
         private const double LyricsBandHeight = 140;
 

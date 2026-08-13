@@ -319,7 +319,7 @@ namespace MusicWrap.UI.Controls
             int bandCount = _currentHeights.Length;
             double slot = width / bandCount;
             // separation
-            double barWidth = slot * 0.6;
+            double barWidth = slot * 0.8;
             double centerY = height / 2;
             var geometry = new StreamGeometry();
             using (var ctx = geometry.Open())
