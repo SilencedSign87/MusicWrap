@@ -1,0 +1,48 @@
+﻿<UserControl x:Class="MusicWrap.UI.Features.Metadata.Views.MetadataLyricsEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             mc:Ignorable="d"
+             d:Foreground="White"
+             d:DesignHeight="650" d:DesignWidth="500">
+    <Grid x:Name="LyricsGridRoot" RowDefinitions="Auto,*" >
+        <Border x:Name="Toolbar" Grid.Row="0" Background="{DynamicResource BackgroundFloating}" BorderThickness="1" BorderBrush="{DynamicResource BackgroundFloating}" Margin="8,0,8,8" CornerRadius="2" >
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Direction="270" ShadowDepth="1" BlurRadius="8" Opacity="0.5"/>
+            </Border.Effect>
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,8">
+                <Menu Grid.Column="0" Grid.Row="0">
+                    <MenuItem Icon="{ex:Icon Glyph=&#xE74E;}" ToolTip="Save" />
+                    <MenuItem Icon="{ex:Icon Glyph=&#xE8B7;}">
+                        <MenuItem Header="Import" />
+                        <MenuItem Header="Export" />
+                    </MenuItem>
+                    <MenuItem Icon="{ex:Icon Glyph=&#xE710;}" ToolTip="Add paragraph" />
+                    <MenuItem Icon="{ex:Icon Glyph=&#xE75C;}" ToolTip="Remove paragraph" />
+                </Menu>
+                <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
+                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Rewind" Icon="&#xEB9E;" />
+                    <controls:AppButton Grid.Column="4" Style="{StaticResource SubtleButton}" ToolTip="Start sync" Icon="&#xE7C8;" />
+                    <Border Style="{DynamicResource VerticalSeparator}" Width="2" Margin="4" />
+                    <controls:AppButton Grid.Column="2" Style="{StaticResource SubtleButton}" ToolTip="Previous paragraph" Icon="&#xE760;" />
+                    <controls:AppButton Grid.Column="3" Style="{StaticResource SubtleButton}" ToolTip="Next paragraph" Icon="&#xE761;" />
+                </StackPanel>
+                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+                    <controls:WaveformPlayerControl 
+                        UsePlaceholderWaveform="True"
+                        />
+                </Grid>
+            </Grid>
+        </Border>
+        <Grid Grid.Row="1">
+            <ListView
+                SelectionMode="Extended"
+                >
+                
+            </ListView>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -10,6 +10,7 @@ using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Media.Imaging;
+using static MusicWrap.UI.Features.Metadata.Viewmodels.FileDataBuilder;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {
@@ -22,8 +23,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         private readonly IwindowsImageService _imageService;
         private readonly TrackActionService _trackActionService;
         private readonly ILogger _logger;
-        public bool HasChanges => false;
-        
+
         private int _loadVersion;
 
         [ObservableProperty]
@@ -66,7 +66,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             {
                 var result = await Task.Run(() => BuildData(trackIds));
                 if (version != _loadVersion)
-                    return; 
+                    return;
                 Filepath = result.Filepath;
                 HasMultipleImages = result.HasMultipleImages;
                 foreach (var row in result.Rows)
@@ -131,7 +131,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             }
             catch
             {
-                return null; 
+                return null;
             }
         }
 
@@ -142,12 +142,6 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
 
         [RelayCommand]
         private void ShowInExplorer() => _trackActionService.ShowInFileExplorer(_workspace.TrackIds);
-
-        [RelayCommand]
-        private void CancelChanges() { }
-
-        [RelayCommand]
-        private Task SaveAsync() => Task.CompletedTask;
     }
     public sealed record FileData(string Label, string[] Values)
     {
@@ -192,7 +186,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             if (perTrackRows.Count == 1)
                 return [.. perTrackRows[0]];
             var result = new List<FileData>();
-            
+
             var orderedLabels = new List<string>();
             foreach (var rows in perTrackRows)
                 foreach (var row in rows)
@@ -224,5 +218,6 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             if (cleaned.Length > 0)
                 rows.Add(new FileData(label, cleaned));
         }
+
     }
 }

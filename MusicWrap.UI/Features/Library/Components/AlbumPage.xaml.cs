@@ -97,7 +97,7 @@ namespace MusicWrap.UI.Features.Library.Components
             if (DataContext is LibraryViewModel.AlbumData data)
             {
                 var tracks = _libraryService.GetTracksForAlbum(data.Id).ToList();
-                _trackActions.EditMetadata(tracks);
+                _trackActions.ShowTrackInformationDialog(tracks);
             }
 
         }

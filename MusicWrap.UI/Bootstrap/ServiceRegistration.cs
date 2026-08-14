@@ -89,12 +89,12 @@ public static class ServiceRegistration
         services.AddTransient<NowPlayingViewModel>();
         services.AddTransient<FullscreenWindowViewModel>();
 
-        services.AddScoped<MetadataEditorWindowViewModel>();
+        services.AddScoped<InformationWindowViewModel>();
         services.AddScoped<MetadataEditorWorkspace>();
         services.AddScoped<MetadataGeneralViewmodel>();
         services.AddScoped<MetadataArtworkEditorViewmodel>();
         services.AddScoped<MetadataEditorViewmodel>();
-        services.AddScoped<MetadataTagEditorViewmodel>();
+        services.AddScoped<MetadataLyricsEditorViewmodel>();
 
         // UI
         services.AddTransient<MainWindow>();
@@ -110,7 +110,7 @@ public static class ServiceRegistration
         services.AddTransient<SettingsYoutubeProviderPage>();
 
         services.AddTransient<IndexingWindow>();
-        services.AddTransient<MetadataEditorWindow>();
+        services.AddTransient<InformationWindow>();
         services.AddTransient<NewPlaylistWindow>();
         services.AddTransient<QueueListPage>();
         services.AddTransient<TrackInformationPage>();

@@ -87,7 +87,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private void EditSelectedTracksMetadata()
         {
-            _tracksContextMenuService.EditMetadata(SelectedTrackIds);
+            _tracksContextMenuService.ShowTrackInformationDialog(SelectedTrackIds);
         }
         #endregion
         #region Public methods

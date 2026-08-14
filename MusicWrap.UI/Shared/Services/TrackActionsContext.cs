@@ -60,13 +60,13 @@ namespace MusicWrap.UI.Services
             var indices = _musicPlayerService.GetPlaybackIndices(selectedTrackIds);
             _musicPlayerService.AddIndicesToNext(indices);
         }
-        public void EditMetadata(IReadOnlyList<int> selectedTrackIds)
+        public void ShowTrackInformationDialog(IReadOnlyList<int> selectedTrackIds)
         {
             if (selectedTrackIds.Count == 0)
             {
                 return;
             }
-            _windowManager.LaunchMetadataWindow(selectedTrackIds.ToList());
+            _windowManager.LaunchInformationWindow(selectedTrackIds.ToList());
         }
         public void ShowInFileExplorer(IReadOnlyList<int> selectedTrackIds)
         {

@@ -1,4 +1,4 @@
-<Window x:Class="MusicWrap.UI.Shell.Dialogs.MetadataEditorWindow"
+<Window x:Class="MusicWrap.UI.Shell.Dialogs.InformationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -11,7 +11,7 @@
         Icon="/Resources/icon.ico"
         d:Background="#080808"
         d:Foreground="White"
-        d:DataContext="{d:DesignInstance Type=vm:MetadataEditorWindowViewModel}"
+        d:DataContext="{d:DesignInstance Type=vm:InformationWindowViewModel}"
         Title="{Binding DisplayTitle}" Height="650" Width="500">
     <Grid>
         <Grid.RowDefinitions>
@@ -25,14 +25,14 @@
             <nav:ShellTabItem Icon="&#xEDA2;" IconSize="20" Spacing="8" Text="General" Orientation="Vertical">
                 <views:MetadataGeneralView DataContext="{Binding General}"/>
             </nav:ShellTabItem>
+            <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" Orientation="Vertical">
+                <views:MetadataEditorView DataContext="{Binding Fields }"/>
+            </nav:ShellTabItem>
             <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" Orientation="Vertical">
                 <views:MetadataArtworkEditorView DataContext="{Binding Artwork}"/>
             </nav:ShellTabItem>
-            <nav:ShellTabItem IconSize="20" Spacing="8" Icon="&#xE90B;" Text="Metadata" Orientation="Vertical">
-                <views:MetadataEditorView DataContext="{Binding Fields}"/>
-            </nav:ShellTabItem>
-            <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" Orientation="Vertical">
-                <views:MetadataTagEditorView DataContext="{Binding Tags}"/>
+            <nav:ShellTabItem Icon="&#xEC4F;" IconSize="20" Spacing="8" Text="Lyrics" Orientation="Vertical">
+                <views:MetadataLyricsEditorView DataContext="{Binding Lyrics}"/>
             </nav:ShellTabItem>
         </nav:ShellTabControl>
 

@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace MusicWrap.UI.ViewModels
 {
-    public partial class MetadataEditorWindowViewModel : ObservableObject
+    public partial class InformationWindowViewModel : ObservableObject
     {
         private readonly MetadataEditorWorkspace _workspace;
         private readonly IReadOnlyList<IMetadataEditorTabViewmodel> _tabs;
@@ -16,12 +16,11 @@ namespace MusicWrap.UI.ViewModels
         public MetadataGeneralViewmodel General { get; }
         public MetadataArtworkEditorViewmodel Artwork { get; }
         public MetadataEditorViewmodel Fields { get; }
-        public MetadataTagEditorViewmodel Tags { get; }
+        public MetadataLyricsEditorViewmodel Lyrics { get; }
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(SelectedTab))]
-        [NotifyPropertyChangedFor(nameof(SelectedTabHasChanges))]
-        private int selectedTabIndex = 2;
+        private int selectedTabIndex = 0;
 
         [ObservableProperty]
         private string displayTitle = "Edit Metadata";
@@ -29,29 +28,20 @@ namespace MusicWrap.UI.ViewModels
         public IMetadataEditorTabViewmodel? SelectedTab =>
             _tabs.Count == 0 ? null : _tabs[Math.Clamp(SelectedTabIndex, 0, _tabs.Count - 1)];
 
-        public bool SelectedTabHasChanges => SelectedTab?.HasChanges == true;
-
-        public MetadataEditorWindowViewModel(
+        public InformationWindowViewModel(
              MetadataEditorWorkspace workspace,
              MetadataGeneralViewmodel general,
              MetadataArtworkEditorViewmodel artwork,
              MetadataEditorViewmodel fields,
-             MetadataTagEditorViewmodel tags
+             MetadataLyricsEditorViewmodel lyrics
             )
         {
             _workspace = workspace;
             General = general;
             Artwork = artwork;
             Fields = fields;
-            Tags = tags;
-            _tabs = [general, artwork, fields, tags];
-
-            foreach (var tab in _tabs)
-                tab.PropertyChanged += (_, e) =>
-                {
-                    if (e.PropertyName == nameof(IMetadataEditorTabViewmodel.HasChanges))
-                        OnPropertyChanged(nameof(SelectedTabHasChanges));
-                };
+            Lyrics = lyrics;
+            _tabs = [general, artwork, fields, lyrics];
         }
 
         public void LoadTracks(IReadOnlyList<int> trackIds)
@@ -62,14 +52,9 @@ namespace MusicWrap.UI.ViewModels
                 ? $"Edit Metadata - {Fields.DetailTitle ?? "Track"}"
                 : $"Edit Metadata - {trackIds.Count} Tracks";
         }
-        [RelayCommand] private void Save() => SelectedTab?.SaveCommand.Execute(null);
-        [RelayCommand] private void CancelChanges() => SelectedTab?.CancelChangesCommand.Execute(null);
     }
     public interface IMetadataEditorTabViewmodel : INotifyPropertyChanged
     {
-        bool HasChanges { get; }
         void Load();
-        IAsyncRelayCommand SaveCommand { get; }
-        IRelayCommand CancelChangesCommand { get; }
     }
 }

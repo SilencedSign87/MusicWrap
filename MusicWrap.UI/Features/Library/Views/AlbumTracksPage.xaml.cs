@@ -147,7 +147,7 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
 
-            _windowManager.LaunchMetadataWindow(vm.SelectedTrackIds);
+            _windowManager.LaunchInformationWindow(vm.SelectedTrackIds);
         }
 
         private void ShowInFileExplorerMenuItem_Click(object sender, RoutedEventArgs e)

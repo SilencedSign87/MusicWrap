@@ -125,20 +125,6 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             if (e.PropertyName == nameof(ArtworkEntry.HasChanged))
                 OnPropertyChanged(nameof(HasChanges));
         }
-
-        [RelayCommand]
-        private void CancelChanges() {
-            foreach (var entry in _entries)
-            {
-                if (entry.HasChanged)
-                {
-                    entry.RestoreOriginal();
-                }
-            }
-        }
-
-        [RelayCommand]
-        private Task SaveAsync() => Task.CompletedTask;
     }
 
     public class ArtworkEntry : ObservableClass

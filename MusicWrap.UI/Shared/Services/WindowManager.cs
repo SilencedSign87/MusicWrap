@@ -25,7 +25,7 @@ namespace MusicWrap.UI.Shared.Services
         // windows
         public Window? CurrentWindow { get; private set; }
         private NewPlaylistWindow? newPlaylistWindow = null;
-        private MetadataEditorWindow? metadataEditorWindow = null;
+        private InformationWindow? metadataEditorWindow = null;
         private SettingsWindow? settingsWindow = null;
 
         public event Action<Window?>? CurrentWindowChanged;
@@ -62,7 +62,7 @@ namespace MusicWrap.UI.Shared.Services
                 return;
             }
         }
-        public void LaunchMetadataWindow(List<int> trackIds)
+        public void LaunchInformationWindow(List<int> trackIds)
         {
             if(trackIds is null || trackIds.Count == 0 || IsShuttingDown || CurrentWindow is null) return;
 
@@ -74,7 +74,7 @@ namespace MusicWrap.UI.Shared.Services
             }
 
             var scope = _scopeFactory.CreateScope();
-            var window = scope.ServiceProvider.GetRequiredService<MetadataEditorWindow>();
+            var window = scope.ServiceProvider.GetRequiredService<InformationWindow>();
 
             window.Closed += (_, _) =>
             {

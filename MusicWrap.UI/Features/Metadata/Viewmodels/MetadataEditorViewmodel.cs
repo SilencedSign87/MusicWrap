@@ -68,17 +68,6 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
 
             OnPropertyChanged(nameof(HasChanges));
         }
-
-        [RelayCommand]
-        private void CancelChanges()
-        {
-            foreach (var f in AllFields) f.Reset();
-            OnPropertyChanged(nameof(HasChanges));
-        }
-
-
-        [RelayCommand]
-        private Task SaveAsync() => Task.CompletedTask;
     }
 
     public partial class EditableField : ObservableObject

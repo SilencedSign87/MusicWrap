@@ -13,12 +13,9 @@ using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Features.Metadata.Views
 {
-    /// <summary>
-    /// Lógica de interacción para MetadataTagEditorView.xaml
-    /// </summary>
-    public partial class MetadataTagEditorView : UserControl
+    public partial class MetadataLyricsEditorView : UserControl
     {
-        public MetadataTagEditorView()
+        public MetadataLyricsEditorView()
         {
             InitializeComponent();
         }

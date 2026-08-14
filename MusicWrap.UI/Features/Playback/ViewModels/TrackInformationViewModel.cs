@@ -128,7 +128,7 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void EditTrackInfo()
         {
-            _trackActions.EditMetadata([_currentTrackId]);
+            _trackActions.ShowTrackInformationDialog([_currentTrackId]);
         }
         [RelayCommand]
         private void NavigateToAlbum()

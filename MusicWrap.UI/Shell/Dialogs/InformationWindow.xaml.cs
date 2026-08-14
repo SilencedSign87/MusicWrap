@@ -16,18 +16,15 @@ using TagLib.Riff;
 
 namespace MusicWrap.UI.Shell.Dialogs
 {
-    /// <summary>
-    /// Lógica de interacción para MetadataEditorWindow.xaml
-    /// </summary>
-    public partial class MetadataEditorWindow : Window
+    public partial class InformationWindow : Window
     {
-        public MetadataEditorWindow(MetadataEditorWindowViewModel vm)
+        public InformationWindow(InformationWindowViewModel vm)
         {
             InitializeComponent();
             DataContext = vm;
         }
 
-        public void Initialize(List<int> trackIds) => (DataContext as MetadataEditorWindowViewModel)?.LoadTracks(trackIds);
+        public void Initialize(List<int> trackIds) => (DataContext as InformationWindowViewModel)?.LoadTracks(trackIds);
     }
 }
 
