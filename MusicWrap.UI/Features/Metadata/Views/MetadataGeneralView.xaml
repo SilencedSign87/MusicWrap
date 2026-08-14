@@ -27,24 +27,16 @@
             Background="{DynamicResource BackgroundLayer}"
             BorderThickness="1"
             BorderBrush="{DynamicResource StrokeLayerCard}">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center" />
-                <TextBlock Text="This is a read-only section" Margin="8,0,0,0" VerticalAlignment="Center" />
-
-                <Button Style="{StaticResource LinkButtonStyle}"
-                    Command="{Binding ShowInExplorerCommand}"
-                    ToolTip="{Binding Filepath}"
-                    HorizontalAlignment="Left">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Filepath}" Margin="8,0,0,0" VerticalAlignment="Center" FontFamily="Consolas" TextTrimming="CharacterEllipsis" MaxWidth="560" />
-                    </StackPanel>
-                </Button>
-
-            </StackPanel>
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center" />
+                    <TextBlock Text="Embedded Metadata" Margin="8,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <controls:AppButton Style="{DynamicResource DefaultButton}" HorizontalAlignment="Right" Command="{Binding ShowInExplorerCommand}" Icon="&#xEC50;" ToolTip="Open in explorer" />
+            </Grid>
         </Border>
-        <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="4" Margin="0,8,0,0" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-        <ScrollViewer Grid.Row="2" Margin="8,8,8,0">
+        <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="4" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+        <ScrollViewer Grid.Row="2" Margin="8,4,8,0">
             <StackPanel>
                 <controls:SectionTitleSeparator Title="Pictures"  IconGlyph="&#xE8B9;"/>
 
@@ -67,14 +59,13 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Width="120" Height="120" Margin="0,0,8,8" CornerRadius="6"
-                    BorderBrush="{DynamicResource StrokeLayerCard}" BorderThickness="1">
+                                <Border Width="120" Height="120" Margin="0,0,8,8" CornerRadius="6" BorderBrush="{DynamicResource StrokeLayerCard}" BorderThickness="1">
                                     <Image Source="{Binding}" Stretch="Uniform" Margin="4" />
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    
+
                     <TextBlock Text="{Binding MultipleImagesPlaceholder}" Opacity="0.6" Height="56">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -87,12 +78,12 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    
+
                 </StackPanel>
 
                 <controls:SectionTitleSeparator Title="Information"  IconGlyph="&#xE946;"/>
 
-                <ItemsControl ItemsSource="{Binding Rows}" Margin="0,16,0,0" IsTabStop="False">
+                <ItemsControl ItemsSource="{Binding Rows}" Margin="0,16" IsTabStop="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid ColumnDefinitions="Auto,*" Margin="0,4">

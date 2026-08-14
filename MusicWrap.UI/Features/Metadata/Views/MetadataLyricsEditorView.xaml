@@ -17,8 +17,8 @@
                 <Menu Grid.Column="0" Grid.Row="0">
                     <MenuItem Icon="{ex:Icon Glyph=&#xE74E;}" ToolTip="Save" />
                     <MenuItem Icon="{ex:Icon Glyph=&#xE8B7;}">
-                        <MenuItem Header="Import" />
-                        <MenuItem Header="Export" />
+                        <MenuItem Header="Import" Icon="{ex:Icon Glyph=&#xE8B5;}" />
+                        <MenuItem Header="Export"  Icon="{ex:Icon Glyph=&#xEDE1;}"/>
                     </MenuItem>
                     <MenuItem Icon="{ex:Icon Glyph=&#xE710;}" ToolTip="Add paragraph" />
                     <MenuItem Icon="{ex:Icon Glyph=&#xE75C;}" ToolTip="Remove paragraph" />

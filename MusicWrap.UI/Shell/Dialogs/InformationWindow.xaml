@@ -13,12 +13,7 @@
         d:Foreground="White"
         d:DataContext="{d:DesignInstance Type=vm:InformationWindowViewModel}"
         Title="{Binding DisplayTitle}" Height="650" Width="500">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="auto"/>
-        </Grid.RowDefinitions>
-
+    <Grid RowDefinitions="*">
         <nav:ShellTabControl Grid.Row="0"
                              SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -35,18 +30,5 @@
                 <views:MetadataLyricsEditorView DataContext="{Binding Lyrics}"/>
             </nav:ShellTabItem>
         </nav:ShellTabControl>
-
-        <StackPanel Grid.Row="1" HorizontalAlignment="Right" Margin="8" Orientation="Horizontal">
-            <Button Margin="8,0" Style="{StaticResource AccentButton}"
-                    Command="{Binding SaveCommand}"
-                    IsEnabled="{Binding SelectedTabHasChanges}">
-                Save
-            </Button>
-            <Button Style="{StaticResource DefaultButton}"
-                    Command="{Binding CancelChangesCommand}"
-                    IsEnabled="{Binding SelectedTabHasChanges}">
-                Cancel changes
-            </Button>
-        </StackPanel>
     </Grid>
 </Window>

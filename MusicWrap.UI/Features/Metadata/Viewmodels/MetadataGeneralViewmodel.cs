@@ -159,6 +159,8 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                 AddRow(rows, "Album Artist", tag.AlbumArtists);
                 AddRow(rows, "Artist", tag.Performers);
                 AddRow(rows, "Composer", tag.Composers);
+                AddRow(rows, "Publisher", tag.Publisher);
+                AddRow(rows, "Copyright", tag.Copyright);
                 AddRow(rows, "Conductor", tag.Conductor);
                 AddRow(rows, "Genre", tag.Genres);
                 AddRow(rows, "Year", tag.Year is 0 ? null : tag.Year.ToString(CultureInfo.InvariantCulture));
@@ -177,6 +179,8 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                 AddRow(rows, "Bit Depth", props.BitsPerSample > 0 ? $"{props.BitsPerSample} bit" : null);
                 AddRow(rows, "Channels", props.AudioChannels > 0 ? props.AudioChannels.ToString() : null);
             }
+            AddRow(rows, "Health", file.PossiblyCorrupt ? "Possibly Corrupt" : null);
+
             return rows;
         }
         public static List<FileData> Merge(IReadOnlyList<IReadOnlyList<FileData>> perTrackRows)
