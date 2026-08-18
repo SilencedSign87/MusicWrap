@@ -46,6 +46,8 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string? currentTrackDominantColorHex;
         [ObservableProperty]
+        private string? currentTackDominantForegroundColorHex;
+        [ObservableProperty]
         private string? currentTrackHighlightColorHex;
 
         
@@ -231,6 +233,7 @@ namespace MusicWrap.UI.ViewModels
                     ArtworkPath = _imageService.ResolvePath(coverAsset.FileName, ImageVariant.Original) ?? string.Empty;
                     CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
                     CurrentTrackHighlightColorHex = coverAsset.HighlightColorHex;
+                    CurrentTackDominantForegroundColorHex = coverAsset.DominantForegroundHex;
                 }
                 else
                 {
@@ -238,12 +241,14 @@ namespace MusicWrap.UI.ViewModels
                     ArtworkPath = string.Empty;
                     CurrentTrackDominantColorHex = "#808080";
                     CurrentTrackHighlightColorHex = "#FFFFFF";
+                    CurrentTackDominantForegroundColorHex = "#FFFFFF";
                 }
             }
             else
             {
                 CurrentTrackDominantColorHex = "#808080";
                 CurrentTrackHighlightColorHex = "#FFFFFF";
+                CurrentTackDominantForegroundColorHex = "#FFFFFF";
             }
         }
 
@@ -259,6 +264,7 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackImagePath = string.Empty;
             CurrentTrackDominantColorHex = "#808080";
             CurrentTrackHighlightColorHex = "#FFFFFF";
+            CurrentTackDominantForegroundColorHex = "#FFFFFF";
             ArtworkPath = string.Empty;
         }
 

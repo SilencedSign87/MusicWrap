@@ -59,6 +59,8 @@ public static class StartupOrquestrator
             var hotkeyService = serviceProvider.GetRequiredService<GlobalHotkeyService>();
             var uiDispatcher = serviceProvider.GetRequiredService<IUIDispatcher>();
             var themeService = serviceProvider.GetRequiredService<ThemeService>();
+            var windowManager = serviceProvider.GetRequiredService<WindowManager>();
+            var taskbarController = serviceProvider.GetRequiredService<TaskbarController>();
             themeService.Initialize();
 
             trayService?.Initialize();
@@ -113,6 +115,26 @@ public static class StartupOrquestrator
                 Log.Warning(ex, "Could not register global hotkey");
             }
 
+            // taskbar thumbnail buttons
+            taskbarController.PreviousRequested += () =>
+            {
+                Application.Current.Dispatcher.Invoke(() => player.Previous());
+            };
+
+            taskbarController.PlayPauseRequested += () =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (player.IsPlaying) player.Pause();
+                    else player.Play();
+                });
+            };
+
+            taskbarController.NextRequested += () =>
+            {
+                Application.Current.Dispatcher.Invoke(() => player.Next());
+            };
+
             // subcribe to tray behavior changes
             void OnUserSettingsChanged(object? sender, PropertyChangedEventArgs e)
             {
@@ -122,7 +144,6 @@ public static class StartupOrquestrator
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            var windowManager = serviceProvider.GetRequiredService<WindowManager>();
                             var current = windowManager.CurrentWindow;
                             if (current is not null
                             && current.IsLoaded
@@ -144,6 +165,8 @@ public static class StartupOrquestrator
             }
 
             userSettings.PropertyChanged += OnUserSettingsChanged;
+
+                
 
             // Library cache initialization (preserve previous defaults)
             var listBy = userSettings.Library.EntryType;

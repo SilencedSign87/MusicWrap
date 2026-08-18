@@ -35,28 +35,6 @@
             NonClientFrameEdges="None"
             />
     </WindowChrome.WindowChrome>
-    <Window.TaskbarItemInfo>
-        <TaskbarItemInfo>
-            <TaskbarItemInfo.ThumbButtonInfos>
-                <ThumbButtonInfo
-                    Description="Previous track"
-                    ImageSource="/Resources/Icons/PreviousIcon.png"
-                    Command="{Binding PreviousCommand}"
-                    />
-                <ThumbButtonInfo
-                    ImageSource="{Binding PlayPauseIcon}"
-                    Description="Play"
-                    Command="{Binding PlayPauseCommand}"
-                    />
-                <ThumbButtonInfo
-                    Description="Next track"
-                    ImageSource="/Resources/Icons/NextIcon.png"
-                    Command="{Binding NextCommnad}"
-                    />
-            </TaskbarItemInfo.ThumbButtonInfos>
-        </TaskbarItemInfo>
-    </Window.TaskbarItemInfo>
-
     <!--Window-->
     <Border
         x:Name="BorderWindow"

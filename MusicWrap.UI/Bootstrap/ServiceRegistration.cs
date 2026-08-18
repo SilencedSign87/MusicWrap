@@ -57,6 +57,7 @@ public static class ServiceRegistration
         services.AddSingleton<WindowManager>();
         services.AddSingleton<TrackActionService>();
         services.AddSingleton<ThemeService>();
+        services.AddSingleton<TaskbarController>();
 
         // Workspaces
         services.AddSingleton<LibraryWorkspace>();

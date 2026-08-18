@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Services.Library.Models;
-using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
@@ -33,12 +31,14 @@ namespace MusicWrap.UI.Shared.Services
         // scope
         private readonly IServiceScopeFactory _scopeFactory;
         private IServiceScope? _metadataEditorScope;
+        private readonly TaskbarController _taskbarController;
 
-        public WindowManager(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings)
+        public WindowManager(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings, TaskbarController taskbarController)
         {
             _serviceProvider = serviceProvider;
             _scopeFactory = scopeFactory;
             _userSettings = userSettings;
+            _taskbarController = taskbarController;
         }
 
         #region Dialog launchers
@@ -245,9 +245,12 @@ namespace MusicWrap.UI.Shared.Services
 
         private void TrackCurrentWindow(Window window)
         {
+            _taskbarController.Attach(window);
+
             window.Closed += (_, _) =>
             {
                 if (ReferenceEquals(CurrentWindow, window))
+                    _taskbarController.Detach();
                     CurrentWindow = null;
                 // no windows and tray
                 if (!IsWindowTransitioning && CurrentWindow is null && ShouldKeepAppInTray())
