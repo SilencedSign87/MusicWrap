@@ -9,19 +9,17 @@ using System.Windows;
 
 namespace MusicWrap.UI.Shared.Services
 {
-    public class WindowManager
+    public class WindowManagerService
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly MusicWrapSettings _userSettings;
-
-        private int _windowTransitionDepth = 0;
         public bool IsShuttingDown { get; set; }
-        public bool IsWindowTransitioning => _windowTransitionDepth > 0;
 
         private readonly List<IDisposable> _trackedDisposables = [];
 
         // windows
-        public Window? CurrentWindow { get; private set; }
+        public ShellWindow? ShellWindow { get; private set; }
+        public Window? CurrentWindow => ShellWindow;
         private NewPlaylistWindow? newPlaylistWindow = null;
         private InformationWindow? metadataEditorWindow = null;
         private SettingsWindow? settingsWindow = null;
@@ -33,7 +31,7 @@ namespace MusicWrap.UI.Shared.Services
         private IServiceScope? _metadataEditorScope;
         private readonly TaskbarController _taskbarController;
 
-        public WindowManager(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings, TaskbarController taskbarController)
+        public WindowManagerService(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings, TaskbarController taskbarController)
         {
             _serviceProvider = serviceProvider;
             _scopeFactory = scopeFactory;
@@ -135,29 +133,22 @@ namespace MusicWrap.UI.Shared.Services
 
         #region Window Switching
 
-        public void SwitchToCompactPlayer() => ShowCompactPlayer();
-        public void SwitchToFullScreenPlayer() => ShowFullScreenPlayer();
-        public void SwitchToMainPlayer() => ShowMainPlayer();
+        public void SwitchToCompactPlayer() => ShowMode(PlayerMode.CompactPlayer);
+        public void SwitchToFullScreenPlayer() => ShowMode(PlayerMode.FullScreenPlayer);
+        public void SwitchToMainPlayer() => ShowMode(PlayerMode.MainPlayer);
 
         #endregion
         #region Window Management
         public void ShowOrRestoreCurrentWindow()
         {
-            if (!TryShowWindow(CurrentWindow))
+            if (ShellWindow is not null && IsWindowUsable(ShellWindow))
             {
-                switch (_userSettings.LastWindowMode)
-                {
-                    case LastWindowMode.FullScreen:
-                        ShowFullScreenPlayer();
-                        break;
-                    case LastWindowMode.CompactPlayer:
-                        ShowCompactPlayer();
-                        break;
-                    default:
-                        ShowMainPlayer();
-                        break;
-                }
+                ShellWindow.ApplyMode(_userSettings.LastWindowMode);
+                TryShowWindow(ShellWindow);
+                return;
             }
+
+            ShowMode(_userSettings.LastWindowMode);
         }
         public void RequestShutdown()
         {
@@ -168,60 +159,44 @@ namespace MusicWrap.UI.Shared.Services
             _userSettings?.KeepAppInTray == true;
         #endregion
         #region Internal
-        private void ShowMainPlayer()
+        private UIElement GetContent(PlayerMode mode) => mode switch
         {
-            if (CurrentWindow is MainWindow existingMain && TryShowWindow(existingMain))
+            PlayerMode.CompactPlayer => _serviceProvider.GetRequiredService<CompactPlayer>(),
+            PlayerMode.FullScreenPlayer => _serviceProvider.GetRequiredService<FullScreenWindow>(),
+            _ => _serviceProvider.GetRequiredService<MainPlayer>(),
+        };
+        private void ShowMode(PlayerMode mode)
+        {
+            if (IsShuttingDown) return;
+           
+            EnsureShellWindow();
+
+            var content = GetContent(mode);
+
+            ShellWindow!.ApplyMode(mode);
+            ShellWindow.SetContent(content);
+
+            if (!ShellWindow.IsVisible)
+                ShellWindow.Show();
+
+            ShellWindow.Activate();
+            ShellWindow.Focus();
+
+            _userSettings.LastWindowMode = mode;
+
+        }
+        private void EnsureShellWindow()
+        {
+            if (ShellWindow is not null)
                 return;
 
-            if (IsWindowUsable(CurrentWindow))
-                CloseForWindowTransition(CurrentWindow!);
+            ShellWindow = _serviceProvider.GetRequiredService<ShellWindow>();
 
-            var main = _serviceProvider.GetRequiredService<MainWindow>();
-            TrackCurrentWindow(main);
+            TrackCurrentWindow(ShellWindow);
 
-            if (main.DataContext is IDisposable disposable)
-            {
-                TrackForCleanup(disposable);
-            }
-
-            main.Show();
-            CurrentWindow = main;
-            CurrentWindowChanged?.Invoke(main);
-            _userSettings.LastWindowMode = LastWindowMode.MainPlayer;
+            CurrentWindowChanged?.Invoke(ShellWindow);
         }
-        private void ShowCompactPlayer()
-        {
-            if (CurrentWindow is CompactPlayer existingCompact && TryShowWindow(existingCompact))
-                return;
 
-            if (IsWindowUsable(CurrentWindow))
-                CloseForWindowTransition(CurrentWindow!);
-
-            var player = _serviceProvider.GetRequiredService<CompactPlayer>();
-            TrackCurrentWindow(player);
-
-            player.Show();
-            CurrentWindow = player;
-            CurrentWindowChanged?.Invoke(player);
-            _userSettings.LastWindowMode = LastWindowMode.CompactPlayer;
-        }
-        private void ShowFullScreenPlayer()
-        {
-            if (CurrentWindow is FullScreenWindow existing && TryShowWindow(existing))
-                return;
-
-            if (IsWindowUsable(CurrentWindow))
-                CloseForWindowTransition(CurrentWindow!);
-
-            var fullscreen = _serviceProvider.GetRequiredService<FullScreenWindow>();
-
-            TrackCurrentWindow(fullscreen);
-
-            fullscreen.Show();
-            CurrentWindow = fullscreen;
-            CurrentWindowChanged?.Invoke(fullscreen);
-            _userSettings.LastWindowMode = LastWindowMode.FullScreen;
-        }
         private static bool TryShowWindow(Window? window)
         {
             if (!IsWindowUsable(window))
@@ -249,35 +224,20 @@ namespace MusicWrap.UI.Shared.Services
 
             window.Closed += (_, _) =>
             {
-                if (ReferenceEquals(CurrentWindow, window))
-                    _taskbarController.Detach();
-                    CurrentWindow = null;
-                // no windows and tray
-                if (!IsWindowTransitioning && CurrentWindow is null && ShouldKeepAppInTray())
+                _taskbarController.Detach();
+
+                if (ReferenceEquals(ShellWindow, window))
+                    ShellWindow = null;
+
+                if (ShouldKeepAppInTray())
                 {
                     CleanupForTray();
                     return;
                 }
 
-                // no windows and no tray
-                if (!IsWindowTransitioning && !ShouldKeepAppInTray())
-                    RequestShutdown();
-
+                RequestShutdown();
             };
         }
-        private void CloseForWindowTransition(Window window)
-        {
-            _windowTransitionDepth++;
-            try
-            {
-                window.Close();
-            }
-            finally
-            {
-                _windowTransitionDepth--;
-            }
-        }
-
         private void CleanupForTray()
         {
             var imageService = _serviceProvider.GetService<IwindowsImageService>();
@@ -290,9 +250,6 @@ namespace MusicWrap.UI.Shared.Services
                 try { d.Dispose(); } catch { }
             }
             _trackedDisposables.Clear();
-
-            //GC.Collect();
-            //GC.WaitForPendingFinalizers();
         }
         #endregion
     }

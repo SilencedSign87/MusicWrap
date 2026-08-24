@@ -20,7 +20,7 @@ namespace MusicWrap.UI.Shared.Services
     public sealed class GlobalHotkeyService : IDisposable
     {
         private readonly ILogger _logger;
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
 
         // personalized hotkeys
         private readonly List<RegisteredHotkey> _hotkeys = new();
@@ -77,7 +77,7 @@ namespace MusicWrap.UI.Shared.Services
         }
         #endregion
 
-        public GlobalHotkeyService(ILogger<GlobalHotkeyService> logger, WindowManager windowManager)
+        public GlobalHotkeyService(ILogger<GlobalHotkeyService> logger, WindowManagerService windowManager)
         {
             _logger = logger;
             _windowManager = windowManager;

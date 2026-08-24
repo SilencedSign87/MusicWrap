@@ -59,7 +59,7 @@ public static class StartupOrquestrator
             var hotkeyService = serviceProvider.GetRequiredService<GlobalHotkeyService>();
             var uiDispatcher = serviceProvider.GetRequiredService<IUIDispatcher>();
             var themeService = serviceProvider.GetRequiredService<ThemeService>();
-            var windowManager = serviceProvider.GetRequiredService<WindowManager>();
+            var windowManager = serviceProvider.GetRequiredService<WindowManagerService>();
             var taskbarController = serviceProvider.GetRequiredService<TaskbarController>();
             themeService.Initialize();
 
@@ -200,7 +200,7 @@ public static class StartupOrquestrator
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var wm = serviceProvider.GetRequiredService<WindowManager>();
+                var wm = serviceProvider.GetRequiredService<WindowManagerService>();
                 try
                 {
                     splash?.Close(TimeSpan.FromSeconds(0.5));

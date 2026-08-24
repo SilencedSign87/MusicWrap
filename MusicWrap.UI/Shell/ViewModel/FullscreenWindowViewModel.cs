@@ -12,12 +12,12 @@ namespace MusicWrap.UI.Shell.ViewModel
     public partial class FullscreenWindowViewModel : ObservableObject, IDisposable
     {
 
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
 
         public NowPlayingViewModel NowPlayingViewModel { get; private set; }
         public PlayerViewModel PlayerViewModel { get; private set; }
 
-        public FullscreenWindowViewModel(NowPlayingViewModel vm1, PlayerViewModel vm2, WindowManager windowManager)
+        public FullscreenWindowViewModel(NowPlayingViewModel vm1, PlayerViewModel vm2, WindowManagerService windowManager)
         {
             NowPlayingViewModel = vm1;
             PlayerViewModel = vm2;

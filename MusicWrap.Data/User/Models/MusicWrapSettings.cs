@@ -1,9 +1,5 @@
 ﻿using MessagePack;
 using MusicWrap.Data.Library.Models;
-using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-
 namespace MusicWrap.Data.User.Models
 {
     [MessagePackObject]
@@ -16,7 +12,7 @@ namespace MusicWrap.Data.User.Models
         [Key(3)] public YoutubeSettings Youtube { get; set; } = new YoutubeSettings();
         [Key(4)] public NowPlayingSettings NowPlaying { get; set; } = new NowPlayingSettings();
         [Key(5)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestorePosition;
-        [Key(6)] public LastWindowMode LastWindowMode { get; set; } = LastWindowMode.MainPlayer;
+        [Key(6)] public PlayerMode LastWindowMode { get; set; } = PlayerMode.MainPlayer;
 
         [Key(7)] public bool KeepAppInTray
         {
@@ -27,15 +23,17 @@ namespace MusicWrap.Data.User.Models
         [Key(9)] public int MainWindowTab{ get; set; } = 0;
         [Key(10)] public TrayPopupPosition TrayPopupPosition { get; set; } = TrayPopupPosition.BottomRight;
         [Key(11)] public ThemePreference AppThemePreference { get; set; } = ThemePreference.System;
+        [Key(12)] public WindowBoundsState MainPlayerBounds { get; set; } = new WindowBoundsState();
+        [Key(13)] public WindowBoundsState CompactPlayerBounds { get; set; } = new WindowBoundsState();
 
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
     }
 
-    public enum LastWindowMode
+    public enum PlayerMode
     {
         MainPlayer = 0,
         CompactPlayer = 1,
-        FullScreen = 2
+        FullScreenPlayer = 2
     }
 
     public enum StartupBehavior
@@ -81,5 +79,16 @@ namespace MusicWrap.Data.User.Models
         System = 0,
         Light = 1,
         Dark = 2,
+    }
+
+    [MessagePackObject]
+    public sealed class WindowBoundsState
+    {
+        [Key(0)] public double Left { get; set; } = double.NaN;
+        [Key(1)] public double Top { get; set; } = double.NaN;
+        [Key(2)] public double Width { get; set; } = double.NaN;
+        [Key(3)] public double Height { get; set; } = double.NaN;
+        [Key(4)] public bool IsMaximized { get; set; } = false;
+
     }
 }

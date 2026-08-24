@@ -87,7 +87,7 @@ namespace MusicWrap.Data.User
             return new MusicWrapSettings
             {
                 StartupBehavior = StartupBehavior.RestoreQueueOnly,
-                LastWindowMode = LastWindowMode.MainPlayer,
+                LastWindowMode = PlayerMode.MainPlayer,
                 SavedAtUtc = DateTime.UtcNow
             };
         }

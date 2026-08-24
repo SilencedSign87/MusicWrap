@@ -19,7 +19,7 @@ namespace MusicWrap.UI.Controls.Models
         public static TrackToPlaylistMenu Shared => _sharedInstance ??= CreateShared();
         private bool _isInitialized;
 
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
         private readonly IPlaylistService _playlistService;
         private readonly IMessenger _messenger;
         private readonly IUIDispatcher _uiDispatcher;
@@ -28,7 +28,7 @@ namespace MusicWrap.UI.Controls.Models
         private TrackToPlaylistMenu()
         {
             _playlistService = App.Services.GetRequiredService<IPlaylistService>();
-            _windowManager = App.Services.GetRequiredService<WindowManager>();
+            _windowManager = App.Services.GetRequiredService<WindowManagerService>();
             _messenger = App.Services.GetRequiredService<IMessenger>();
             _uiDispatcher = App.Services.GetRequiredService<IUIDispatcher>();
         }

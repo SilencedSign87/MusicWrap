@@ -1,40 +1,21 @@
-<Window x:Class="MusicWrap.UI.Shell.Windows.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MusicWrap.UI"
-        xmlns:pages="clr-namespace:MusicWrap.UI.Features.Playback.Views"
-        xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
-        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
-        xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
-        xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
-        xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
-        xmlns:shellControls="clr-namespace:MusicWrap.UI.Shell.Controls"
-        mc:Ignorable="d"
-        x:Name="MainWindowRoot"
-        Icon="/Resources/icon.ico"
-        Title="MusicWrap"
-        Height="800"
-        Width="1200"
-        MinHeight="670"
-        MinWidth="900"
-        WindowStartupLocation="CenterScreen"
-        d:Background="#000000"
-        ResizeMode="CanResize"
-        KeyDown="MainWindowRoot_KeyDown"
-        d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
-        >
-    <WindowChrome.WindowChrome>
-        <WindowChrome
-            CaptionHeight="32"
-            CornerRadius="12"
-            GlassFrameThickness="-1"
-            ResizeBorderThickness="4"
-            UseAeroCaptionButtons="True"
-            NonClientFrameEdges="None"
-            />
-    </WindowChrome.WindowChrome>
+<UserControl x:Class="MusicWrap.UI.Shell.Windows.MainPlayer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:MusicWrap.UI"
+             xmlns:pages="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
+             xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
+             xmlns:shellControls="clr-namespace:MusicWrap.UI.Shell.Controls"
+             mc:Ignorable="d"
+             x:Name="MainWindowRoot"
+             d:Background="#000000"
+             d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
+             >
     <!--Window-->
     <Border
         x:Name="BorderWindow"
@@ -123,6 +104,6 @@
             </Grid>
         </Grid>
     </Border>
-</Window>
+</UserControl>
 
 

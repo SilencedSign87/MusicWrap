@@ -54,7 +54,7 @@ public static class ServiceRegistration
         services.AddSingleton<IwindowsImageService, ImageService>();
         services.AddSingleton<ITrayService, TrayService>();
         services.AddSingleton<GlobalHotkeyService>();
-        services.AddSingleton<WindowManager>();
+        services.AddSingleton<WindowManagerService>();
         services.AddSingleton<TrackActionService>();
         services.AddSingleton<ThemeService>();
         services.AddSingleton<TaskbarController>();
@@ -98,10 +98,11 @@ public static class ServiceRegistration
         services.AddScoped<MetadataLyricsEditorViewmodel>();
 
         // UI
-        services.AddTransient<MainWindow>();
+        services.AddTransient<ShellWindow>();
+        services.AddTransient<MainPlayer>();
         services.AddTransient<CompactPlayer>();
-        services.AddTransient<TrayFlyoutWindow>();
         services.AddTransient<FullScreenWindow>();
+        services.AddTransient<TrayFlyoutWindow>();
 
         services.AddTransient<SettingsWindow>();
         services.AddTransient<SettingsGeneralPage>();

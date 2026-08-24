@@ -20,7 +20,7 @@ namespace MusicWrap.UI.Features.Library.Views
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly ILibraryService _libraryCacheService;
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
         private bool _playerEventsAttached;
 
         public AlbumTracksPage()
@@ -28,7 +28,7 @@ namespace MusicWrap.UI.Features.Library.Views
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
-            _windowManager = App.Services.GetRequiredService<WindowManager>();
+            _windowManager = App.Services.GetRequiredService<WindowManagerService>();
 
             Loaded += AlbumTracksPage_Loaded;
             Unloaded += AlbumTracksPage_Unloaded;

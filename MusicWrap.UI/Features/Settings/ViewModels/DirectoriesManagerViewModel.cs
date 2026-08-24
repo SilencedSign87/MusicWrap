@@ -43,11 +43,11 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         private readonly ActivityService _activityService;
         private readonly ILibraryIntegrityService _libraryIntegrityService;
         private readonly ISaveCoordinator _saveCoordinator;
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
 
         private ActivityScope? _currentScanScope;
 
-        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService, ActivityService activityService, ILibraryIntegrityService libraryIntegrityService, ISaveCoordinator saveCoordinator, WindowManager windowManager)
+        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService, ActivityService activityService, ILibraryIntegrityService libraryIntegrityService, ISaveCoordinator saveCoordinator, WindowManagerService windowManager)
         {
             _scanner = scanner;
             _libraryService = libraryService;

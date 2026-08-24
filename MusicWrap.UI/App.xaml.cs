@@ -57,7 +57,7 @@ namespace MusicWrap.UI
         }
         protected override void OnExit(ExitEventArgs e)
         {
-            var WindowManager = Services.GetRequiredService<WindowManager>();
+            var WindowManager = Services.GetRequiredService<WindowManagerService>();
             WindowManager.IsShuttingDown = true;
 
             try

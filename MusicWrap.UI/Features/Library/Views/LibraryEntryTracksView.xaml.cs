@@ -11,14 +11,14 @@ namespace MusicWrap.UI.Features.Library.Views
 {
     public partial class LibraryEntryTracksView : UserControl
     {
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
         private readonly ILibraryService _libraryCacheService;
         private bool _isCommandPaletteSubscribed;
 
         public LibraryEntryTracksView()
         {
             InitializeComponent();
-            _windowManager = App.Services.GetRequiredService<WindowManager>();
+            _windowManager = App.Services.GetRequiredService<WindowManagerService>();
             _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
 
             Loaded += LibraryEntryTracksView_Loaded;

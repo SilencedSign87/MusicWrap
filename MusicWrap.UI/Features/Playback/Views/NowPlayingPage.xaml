@@ -75,6 +75,8 @@
                       Grid.Row="0" Grid.Column="0">
             <Image
                 Source="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:1080}"
+                Stretch="UniformToFill"
+                
                 />
         </controls:SquarePanel>
         <!-- Lyrics -->

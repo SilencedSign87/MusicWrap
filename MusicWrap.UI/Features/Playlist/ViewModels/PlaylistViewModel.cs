@@ -33,11 +33,11 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly IPlaylistService _playlistService;
         private readonly SearchService _searchService;
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
         private readonly IMessenger _messenger;
         private readonly IUIDispatcher _uiDispatcher;
 
-        public PlaylistViewModel(ILibraryService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService, SearchService searchService, WindowManager windowManager, IMessenger messenger, IUIDispatcher uiDispatcher)
+        public PlaylistViewModel(ILibraryService cache, ISaveCoordinator saveCoordinator, IMusicPlayerService musicPlayerService, IPlaylistService playlistService, SearchService searchService, WindowManagerService windowManager, IMessenger messenger, IUIDispatcher uiDispatcher)
         {
             _libraryCacheService = cache;
             _saveCoordinator = saveCoordinator;

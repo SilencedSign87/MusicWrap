@@ -25,7 +25,7 @@ namespace MusicWrap.UI.Shell.Tray
     public partial class TrayFlyoutWindow : Window
     {
         private readonly PlayerViewModel _viewmodel;
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
         private readonly MusicWrapSettings _userSettings;
 
         private bool _isAnimatingClose;
@@ -34,7 +34,7 @@ namespace MusicWrap.UI.Shell.Tray
         private bool IsTopPosition => _userSettings.TrayPopupPosition is TrayPopupPosition.TopLeft or TrayPopupPosition.TopCenter or TrayPopupPosition.TopRight;
         private double SlideOffset => IsTopPosition ? -15 : 15;
 
-        public TrayFlyoutWindow(PlayerViewModel vm, WindowManager windowManager, MusicWrapSettings userSettings)
+        public TrayFlyoutWindow(PlayerViewModel vm, WindowManagerService windowManager, MusicWrapSettings userSettings)
         {
             InitializeComponent();
             _viewmodel = vm;

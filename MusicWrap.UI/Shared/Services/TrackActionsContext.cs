@@ -11,9 +11,9 @@ namespace MusicWrap.UI.Services
     {
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly ILibraryService _libraryService;
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
 
-        public TrackActionService(IMusicPlayerService musicPlayerService, WindowManager windowManager, ILibraryService libraryService)
+        public TrackActionService(IMusicPlayerService musicPlayerService, WindowManagerService windowManager, ILibraryService libraryService)
         {
             _musicPlayerService = musicPlayerService;
             _windowManager = windowManager;

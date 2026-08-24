@@ -20,7 +20,7 @@ namespace MusicWrap.UI.Shell.ViewModel
     {
         private readonly IMusicPlayerService _playerService;
         private readonly IServiceProvider _serviceProvider;
-        private readonly WindowManager _windowManager;
+        private readonly WindowManagerService _windowManager;
         private readonly ILogger _logger;
         private readonly MusicWrapSettings _userSettings;
         private readonly Dictionary<int, UserControl> _pages = new();
@@ -52,7 +52,7 @@ namespace MusicWrap.UI.Shell.ViewModel
 
         private bool _disposed = false;
 
-        public MainWindowViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WindowManager manager, MusicWrapSettings userSettings)
+        public MainWindowViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WindowManagerService manager, MusicWrapSettings userSettings)
         {
             _playerService = playerService;
             _serviceProvider = serviceProvider;

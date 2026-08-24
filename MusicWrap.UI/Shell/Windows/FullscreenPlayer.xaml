@@ -1,32 +1,26 @@
-﻿<Window x:Class="MusicWrap.UI.Shell.Windows.FullScreenWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MusicWrap.UI.Shell.Windows"
-        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
-        xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
-        xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
-        mc:Ignorable="d"
-        Title="MusicWrap"
-        WindowStyle="None"
-        ResizeMode="NoResize"
-        WindowState="Maximized"
-        Topmost="False"
-        x:Name="RootFullScreenWindow"
-        KeyDown="FullScreenWindowOnKeyDown"
-        d:DataContext="{d:DesignInstance Type=vm:FullscreenWindowViewModel}"
-        Foreground="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"
-        d:Width="1920"
-        d:Height="1080"
-        >
-    <Window.Background>
+﻿<UserControl x:Class="MusicWrap.UI.Shell.Windows.FullScreenWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:MusicWrap.UI.Shell.Windows"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
+             mc:Ignorable="d"
+             x:Name="RootFullScreenWindow"
+             d:DataContext="{d:DesignInstance Type=vm:FullscreenWindowViewModel}"
+             Foreground="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"
+             d:Width="1920"
+             d:Height="1080"
+             >
+    <UserControl.Background>
         <ImageBrush 
             ImageSource="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}" 
             RenderOptions.BitmapScalingMode="HighQuality"
             Stretch="UniformToFill"/>
-    </Window.Background>
-    <Window.Resources>
+    </UserControl.Background>
+    <UserControl.Resources>
         <SolidColorBrush x:Key="HighligtColor" Color="{Binding NowPlayingViewModel.HighlightColorHex}" />
         <SolidColorBrush x:Key="HighligtForegroundColor" Color="{Binding NowPlayingViewModel.HighlightForegroundHex}" />
         <SolidColorBrush x:Key="DominantColor" Color="{Binding NowPlayingViewModel.DominantColorHex}" />
@@ -39,7 +33,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
-    </Window.Resources>
+    </UserControl.Resources>
 
     <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
         <controls:HiddenPanel Grid.Column="0">
@@ -164,4 +158,4 @@
             </Grid>
         </Grid>
     </Grid>
-</Window>
+</UserControl>

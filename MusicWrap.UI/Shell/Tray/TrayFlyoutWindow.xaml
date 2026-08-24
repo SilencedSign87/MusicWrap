@@ -65,18 +65,19 @@
                 RenderOptions.BitmapScalingMode="LowQuality"
                 />
 
-        <Border Grid.Row="0" Grid.Column="2" Padding="8,8,8,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="auto"/>
-                </Grid.RowDefinitions>
-                <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
+
+        <Grid  Grid.Row="0" Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Padding="8,8,8,0">
+                    <StackPanel>
                         <TextBlock FontSize="13" TextTrimming="CharacterEllipsis">
                             <Run Text="{Binding CurrentTrackTitle}" />
                         </TextBlock>
@@ -87,70 +88,70 @@
                             <Run Text="{Binding FormattedDuration, ElementName=TrayWaveForm, Mode=OneWay}" />
                         </TextBlock>
                     </StackPanel>
-                    <StackPanel Grid.Column="1">
-                        <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Close" Click="ExitApp">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE711;"/>
-                        </Button>
-                        <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Open MusicWrap" Click="OpenMainWindow">
-                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8A7;"/>
-                        </Button>
-                    </StackPanel>
-                </Grid>
-                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button x:Name="RepeadButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
+                </Border>
+                <StackPanel Grid.Column="1">
+                    <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Close" Click="ExitApp">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE711;"/>
                     </Button>
-                    <Button x:Name="PrevButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Previous track" Command="{Binding PreviousCommand}"
-        >
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
-                    </Button>
-                    <Button x:Name="PlayButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" Command="{Binding PlayPauseCommand}"
-        >
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="14"/>
-                    </Button>
-                    <Button x:Name="NextButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Next track" Command="{Binding NextCommand}"
-        >
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
-                    </Button>
-                    <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Volume">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE767;" FontSize="14"/>
+                    <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Open MusicWrap" Click="OpenMainWindow">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8A7;"/>
                     </Button>
                 </StackPanel>
-                <Popup
+            </Grid>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="RepeadButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
+                </Button>
+                <Button x:Name="PrevButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Previous track" Command="{Binding PreviousCommand}"
+        >
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
+                </Button>
+                <Button x:Name="PlayButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" Command="{Binding PlayPauseCommand}"
+        >
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="14"/>
+                </Button>
+                <Button x:Name="NextButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Next track" Command="{Binding NextCommand}"
+        >
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
+                </Button>
+                <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Volume">
+                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE767;" FontSize="14"/>
+                </Button>
+            </StackPanel>
+            <Popup
                         x:Name="VolumePopup"
                         PlacementTarget="{Binding ElementName=VolumeButton}"
                         Placement="Center"
                         PopupAnimation="None"
                         AllowsTransparency="True"
                         StaysOpen="False">
-                    <Border>
-                        <Border 
+                <Border>
+                    <Border 
                                 Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}" 
                                 BorderBrush="{DynamicResource StrokeFloating}" 
                                 CornerRadius="8" 
                                 Margin="8,16"
                                 Padding="8,4"
                                 BorderThickness="1">
-                            <Border.Effect>
-                                <DropShadowEffect Color="#000000"
+                        <Border.Effect>
+                            <DropShadowEffect Color="#000000"
                                         BlurRadius="16"
                                         ShadowDepth="4"
                                         Direction="270"
                                         Opacity="0.5"/>
-                            </Border.Effect>
-                            <StackPanel>
-                                <controls:VolumeControl
+                        </Border.Effect>
+                        <StackPanel>
+                            <controls:VolumeControl
                                                         Orientation="Horizontal"
                                                         Width="120"
                                                         ShowMuteButton="True"
                                                         Height="32"
                                                         />
-                            </StackPanel>
-                        </Border>
+                        </StackPanel>
                     </Border>
-                </Popup>
-            </Grid>
-        </Border>
+                </Border>
+            </Popup>
+        </Grid>
 
         <controls:WaveformPlayerControl
                     x:Name="TrayWaveForm"

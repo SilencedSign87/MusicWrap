@@ -1,47 +1,30 @@
-using Jot;
-using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Features.Playback.Views;
-using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
-using System;
-using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace MusicWrap.UI.Shell.Windows
 {
-    public partial class CompactPlayer : Window
+    public partial class CompactPlayer : UserControl
     {
-        private PlayerViewModel? _viewModel;
-        private readonly QueueListPage _queuePage;
-        private readonly WindowManager _windowManager;
-
+        private readonly WindowManagerService _windowManager;
         private bool _isQueueOpen = false;
+
         private const int _playerWidth = 250;
         private const int _compactHeight = 320;
         private const int _expandedHeight = 700;
 
-        public CompactPlayer(Tracker tracker, PlayerViewModel playervm, QueueListPage queuepage, WindowManager wm)
+        public CompactPlayer(PlayerViewModel playervm, QueueListPage queuepage, WindowManagerService wm)
         {
-            _viewModel = playervm;
             _windowManager = wm;
-            _queuePage = queuepage;
 
             InitializeComponent();
             InitializeWindow();
 
-            DataContext = _viewModel;
-
-            Closed += CompactPlayer_Closed;
-            Closing += CompactPlayer_Closing;
+            DataContext = playervm;
 
             QueueTab.Content = queuepage;
-        }
-
-        private void CompactPlayer_Closed(object? sender, EventArgs e)
-        {
-            Closed -= CompactPlayer_Closed;
         }
 
         private void InitializeWindow()
@@ -57,58 +40,52 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void HandleOpenQueue(object sender, RoutedEventArgs e)
         {
+            var window = _windowManager.ShellWindow;
+            if (window is null)
+                return;
+
             _isQueueOpen = !_isQueueOpen;
+
             if (_isQueueOpen)
             {
-                Height = _expandedHeight;
                 QueuePanel.Visibility = Visibility.Visible;
                 QueuePanel.Height = _expandedHeight - _compactHeight;
                 PanelIcon.Text = "\xE70E";
+                window.Height = _expandedHeight;
+                MusicWrapCompactWindow.Height = _expandedHeight;
             }
             else
             {
                 QueuePanel.Visibility = Visibility.Collapsed;
-                Height = _compactHeight;
                 PanelIcon.Text = "\xE70D";
+                window.Height = _compactHeight;
+                MusicWrapCompactWindow.Height = _compactHeight;
             }
         }
 
         private void HandleToggleAllwayOnTop(object sender, RoutedEventArgs e)
         {
-            Topmost = !Topmost;
-            if (Topmost)
-            {
-                PinIconFont.Text = "\ue77a";
-            }
-            else
-            {
-                PinIconFont.Text = "\ue718";
-            }
+            var window = _windowManager.ShellWindow;
+            if (window is null)
+                return;
+
+            window.Topmost = !window.Topmost;
+
+            PinIconFont.Text = window.Topmost
+                ? "\ue77a"
+                : "\ue718";
         }
 
         private void HandleCloseApp(object sender, RoutedEventArgs e)
         {
-            Close();
+            _windowManager.ShellWindow?.Close();
         }
 
         private void MinimizeClick(object sender, RoutedEventArgs e)
         {
-            WindowState = WindowState.Minimized;
-        }
-
-        private void CompactPlayer_Closing(object? sender, CancelEventArgs e)
-        {
-            if (_windowManager.IsShuttingDown || _windowManager.IsWindowTransitioning)
-            {
-                return;
-            }
-
-            if (_windowManager.ShouldKeepAppInTray())
-            {
-                return;
-            }
-
-            _windowManager.RequestShutdown();
+            var window = _windowManager.ShellWindow;
+            if (window is not null)
+                window.WindowState = WindowState.Minimized;
         }
 
         private void VolumeButton_Click(object sender, RoutedEventArgs e)

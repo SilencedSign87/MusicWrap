@@ -15,13 +15,13 @@ namespace MusicWrap.UI.Features.Providers.Views
     {
         private readonly YoutubeProviderViewModel _viewModel;
         private readonly SearchService _searchService;
-        private WindowManager _windowManager;
+        private WindowManagerService _windowManager;
         private bool _isSubscribed;
         private bool _isClearingTrackSelections;
 
         public event EventHandler? HomeRequested;
 
-        public YoutubeProviderPage(YoutubeProviderViewModel viewModel, SearchService searchService, WindowManager windowManager)
+        public YoutubeProviderPage(YoutubeProviderViewModel viewModel, SearchService searchService, WindowManagerService windowManager)
         {
             InitializeComponent();
 

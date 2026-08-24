@@ -22,8 +22,8 @@ namespace MusicWrap.UI.ViewModels
 
         private readonly IMusicPlayerService _playerService;
         private readonly ITrayService _trayService;
-        private readonly WindowManager _windowManager;
-        public TaskbarIconViewModel(IMusicPlayerService musicPlayerService, ITrayService trayService, WindowManager windowManager)
+        private readonly WindowManagerService _windowManager;
+        public TaskbarIconViewModel(IMusicPlayerService musicPlayerService, ITrayService trayService, WindowManagerService windowManager)
         {
             _playerService = musicPlayerService;
             _trayService = trayService;

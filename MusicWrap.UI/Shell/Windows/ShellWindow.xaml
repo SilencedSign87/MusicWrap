@@ -1,0 +1,17 @@
+﻿<Window x:Class="MusicWrap.UI.Shell.Windows.ShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MusicWrap.UI.Shell.Windows"
+        mc:Ignorable="d"
+        x:Name="RootShellWindow"
+        Title="MusicWrap" 
+        Icon="/Resources/icon.ico"
+        StateChanged="RootShellWindow_StateChanged"
+        Closing="ShellWindow_Closing"
+        Closed="ShellWindow_Closed"
+        KeyDown="ShellWindow_KeyDown"
+        >
+    <ContentControl x:Name="ContentHost" />
+</Window>
