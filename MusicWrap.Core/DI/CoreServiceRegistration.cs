@@ -7,6 +7,7 @@ using MusicWrap.Core.Services.Activity;
 using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Images;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Lyrics;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Playlists;
 using MusicWrap.Core.Services.Providers.Youtube;
@@ -57,6 +58,7 @@ namespace MusicWrap.Core.DI
             services.AddSingleton<SearchService>();
             services.AddSingleton<ISearchQueryProvider, SearchService>(
                 sp => sp.GetRequiredService<SearchService>());
+            services.AddSingleton<LyricsProviderService>();
 
             // Providers
             services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();

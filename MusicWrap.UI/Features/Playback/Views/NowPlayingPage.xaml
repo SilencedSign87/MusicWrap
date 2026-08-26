@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playback.Views"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playback.ViewModels"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:lyrics="clr-namespace:MusicWrap.UI.Features.Lyrics.View"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:NowPlayingViewModel}"
@@ -85,12 +86,6 @@
         <Border x:Name="LyricsHost"
             Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
             Visibility="{Binding ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Grid RowDefinitions="Auto,*">
-                <Menu Grid.Row="0" Foreground="{Binding Foreground ,ElementName=RootNowPlaying}">
-                    <MenuItem Header="Follow"/>
-                    <MenuItem Header="Edit"/>
-                </Menu>
-            </Grid>
         </Border>
 
         <!-- Visualizer -->

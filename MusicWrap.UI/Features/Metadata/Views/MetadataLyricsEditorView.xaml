@@ -7,28 +7,26 @@
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              mc:Ignorable="d"
              d:Foreground="White"
-             d:DesignHeight="650" d:DesignWidth="500">
+             d:DesignHeight="650" d:DesignWidth="500"
+             PreviewKeyDown="UserControl_PreviewKeyDown"
+             >
     <Grid x:Name="LyricsGridRoot" RowDefinitions="Auto,*" >
         <Border x:Name="Toolbar" Grid.Row="0" Background="{DynamicResource BackgroundFloating}" BorderThickness="1" BorderBrush="{DynamicResource BackgroundFloating}" Margin="8,0,8,8" CornerRadius="2" >
             <Border.Effect>
                 <DropShadowEffect Color="Black" Direction="270" ShadowDepth="1" BlurRadius="8" Opacity="0.5"/>
             </Border.Effect>
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,8">
-                <Menu Grid.Column="0" Grid.Row="0">
-                    <MenuItem Icon="{ex:Icon Glyph=&#xE74E;}" ToolTip="Save" />
-                    <MenuItem Icon="{ex:Icon Glyph=&#xE8B7;}">
-                        <MenuItem Header="Import" Icon="{ex:Icon Glyph=&#xE8B5;}" />
-                        <MenuItem Header="Export"  Icon="{ex:Icon Glyph=&#xEDE1;}"/>
-                    </MenuItem>
-                    <MenuItem Icon="{ex:Icon Glyph=&#xE710;}" ToolTip="Add paragraph" />
-                    <MenuItem Icon="{ex:Icon Glyph=&#xE75C;}" ToolTip="Remove paragraph" />
-                </Menu>
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="42,8">
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Save" Icon="&#xE74E;" />
+                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Import" Icon="&#xE8B5;" />
+                </StackPanel>
                 <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
-                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Rewind" Icon="&#xEB9E;" />
-                    <controls:AppButton Grid.Column="4" Style="{StaticResource SubtleButton}" ToolTip="Start sync" Icon="&#xE7C8;" />
+                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Add paragraph" Icon="&#xE751;" />
+                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Remove paragraph" Icon="&#xE750;" />
                     <Border Style="{DynamicResource VerticalSeparator}" Width="2" Margin="4" />
-                    <controls:AppButton Grid.Column="2" Style="{StaticResource SubtleButton}" ToolTip="Previous paragraph" Icon="&#xE760;" />
-                    <controls:AppButton Grid.Column="3" Style="{StaticResource SubtleButton}" ToolTip="Next paragraph" Icon="&#xE761;" />
+                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Rewind" Icon="&#xEB9E;" />
+                    <controls:AppButton Grid.Column="4" Style="{StaticResource SubtleButton}" ToolTip="Add timestamp" Icon="&#xECC8;" />
+                    <controls:AppButton Grid.Column="4" Style="{StaticResource SubtleButton}" ToolTip="Remove timestamp" Icon="&#xECC9;" />
                 </StackPanel>
                 <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
                     <controls:WaveformPlayerControl 
@@ -38,11 +36,20 @@
             </Grid>
         </Border>
         <Grid Grid.Row="1">
-            <ListView
-                SelectionMode="Extended"
-                >
-                
-            </ListView>
+            <TextBox
+                Grid.Row="1"
+                Margin="4"
+                Style="{DynamicResource TransparentTextInput}"
+                BorderBrush="{DynamicResource StrokeSurface}"
+                BorderThickness="1"
+                AcceptsReturn="True"
+                AcceptsTab="True"
+                TextWrapping="NoWrap"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Auto"
+                FontSize="12"
+                Padding="4"
+                />
         </Grid>
     </Grid>
 </UserControl>

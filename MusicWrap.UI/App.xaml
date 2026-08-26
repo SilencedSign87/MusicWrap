@@ -32,6 +32,7 @@
             <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter"/>
             <converters:EnumComparisonConverter x:Key="EnumComparisonConverter"/>
             <converters:NullToDoNothingConverter x:Key="NullToDoNothingConverter"/>
+            <converters:EqualityConverter x:Key="EqualityConverter"/>
 
             <tb:TaskbarIcon
                 x:Key="TrayIcon"

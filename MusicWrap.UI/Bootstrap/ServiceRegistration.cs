@@ -8,6 +8,8 @@ using MusicWrap.UI.Features.Activity.Viewmodel;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Library.Views;
+using MusicWrap.UI.Features.Lyrics.View;
+using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.Features.Metadata.Viewmodels;
 using MusicWrap.UI.Features.Playback.ViewModels;
@@ -89,6 +91,7 @@ public static class ServiceRegistration
         services.AddTransient<TrackInformationViewModel>();
         services.AddTransient<NowPlayingViewModel>();
         services.AddTransient<FullscreenWindowViewModel>();
+        services.AddSingleton<LyricsViewModel>();
 
         services.AddScoped<InformationWindowViewModel>();
         services.AddScoped<MetadataEditorWorkspace>();
@@ -110,6 +113,7 @@ public static class ServiceRegistration
         services.AddTransient<DevicePage>();
         services.AddTransient<AboutPage>();
         services.AddTransient<SettingsYoutubeProviderPage>();
+        services.AddTransient<LyricsView>();
 
         services.AddTransient<IndexingWindow>();
         services.AddTransient<InformationWindow>();

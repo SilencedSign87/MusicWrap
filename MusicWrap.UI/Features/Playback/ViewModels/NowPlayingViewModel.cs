@@ -7,6 +7,7 @@ using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System;
@@ -55,6 +56,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private bool _disposed;
         private bool _isInitializing = true;
 
+
         public ObservableCollection<LinkItem> TrackArtists { get; } = [];
         public ObservableCollection<LinkItem> TrackAlbumArtists { get; } = [];
 
@@ -63,13 +65,15 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private readonly MusicWrapSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly WindowManagerService _windowManagerService;
-        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings, ISaveCoordinator saveCoordinator, WindowManagerService windowManagerService)
+        public LyricsViewModel LyricsViewModel { get; }
+        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings, ISaveCoordinator saveCoordinator, WindowManagerService windowManagerService, LyricsViewModel lyricsViewModel)
         {
             _libraryService = libraryService;
             _musicPlayerService = musicPlayerService;
             _settings = settings;
             _saveCoordinator = saveCoordinator;
             _windowManagerService = windowManagerService;
+            LyricsViewModel = lyricsViewModel;
             _isInitializing = true;
 
             ShowLyrics = settings.NowPlaying.ShowLyrics;
@@ -194,7 +198,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         {
             if (_disposed) return;
             _disposed = true;
-
+            (LyricsViewModel as IDisposable)?.Dispose();
             _musicPlayerService.TrackChanged -= OnTrackChanged;
         }
     }

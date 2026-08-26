@@ -56,6 +56,7 @@
 
 	<ItemGroup>
 		<Folder Include="Behaviors\" />
+		<Folder Include="Features\Lyrics\Services\" />
 		<Folder Include="Shell\View\" />
 	</ItemGroup>
 
