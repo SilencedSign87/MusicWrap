@@ -8,7 +8,7 @@ namespace MusicWrap.Data.Infrastructure
     {
         public static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".mp3", ".flac", ".wav", ".aac", ".ogg", ".opus", ".m4a"
+            ".mp3", ".flac", ".wav", ".aac", ".ogg", ".opus", ".m4a", ".aiff", ".alac", ".wma"
         };
 
     }

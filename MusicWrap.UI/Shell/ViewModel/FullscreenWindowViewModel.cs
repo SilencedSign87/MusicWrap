@@ -17,6 +17,9 @@ namespace MusicWrap.UI.Shell.ViewModel
         public NowPlayingViewModel NowPlayingViewModel { get; private set; }
         public PlayerViewModel PlayerViewModel { get; private set; }
 
+        [ObservableProperty]
+        public partial bool IsProgressBarVisible { get; set; } = true;
+
         public FullscreenWindowViewModel(NowPlayingViewModel vm1, PlayerViewModel vm2, WindowManagerService windowManager)
         {
             NowPlayingViewModel = vm1;

@@ -7,6 +7,7 @@ using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -61,12 +62,14 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private readonly IMusicPlayerService _musicPlayerService;
         private readonly MusicWrapSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
-        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings, ISaveCoordinator saveCoordinator)
+        private readonly WindowManagerService _windowManagerService;
+        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings, ISaveCoordinator saveCoordinator, WindowManagerService windowManagerService)
         {
             _libraryService = libraryService;
             _musicPlayerService = musicPlayerService;
             _settings = settings;
             _saveCoordinator = saveCoordinator;
+            _windowManagerService = windowManagerService;
             _isInitializing = true;
 
             ShowLyrics = settings.NowPlaying.ShowLyrics;
@@ -94,6 +97,11 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
                 return false;
             }
             return PreferredVisualizer != parsed;
+        }
+        [RelayCommand]
+        private void OpenProperties()
+        {
+            _windowManagerService.LaunchInformationWindow([_musicPlayerService.CurrentTrackId]);
         }
         #endregion
         #region Partial

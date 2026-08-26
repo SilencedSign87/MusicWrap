@@ -86,21 +86,36 @@
 
                 <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="0,0,4,0">
                     <Menu Foreground="{DynamicResource TextPrimaryBrush}" >
-                        <MenuItem Icon="{ex:Icon Glyph=&#xE93E;}" Header="Progress">
-                            <MenuItem Header="Show" IsCheckable="True" />
+                        <MenuItem Icon="{ex:Icon Glyph=&#xE90F;}" Header="Properties" Command="{Binding NowPlayingViewModel.OpenPropertiesCommand}"/>
+                        <MenuItem Icon="{ex:Icon Glyph=&#xE72A;}" Header="Progress">
+                            <MenuItem Header="Show" 
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding IsProgressBarVisible}"
+                                      />
                         </MenuItem>
                         <MenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
                             <MenuItem Header="Off" IsCheckable="True" 
+                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      CommandParameter="None"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
                             <MenuItem Header="Line" IsCheckable="True" 
+                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      CommandParameter="LineSpectrum"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
                             <MenuItem Header="Bars" IsCheckable="True" 
+                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      CommandParameter="BarSpectrum"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
-                            <MenuItem Header="Wave" IsCheckable="True" 
+                            <MenuItem Header="Wave" IsCheckable="True"
+                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      CommandParameter="MirroredBarSpectrum"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
                         </MenuItem>
                         <MenuItem Icon="{ex:Icon Glyph=&#xEC4F;}"  Header="Lyrics">
-                            <MenuItem Header="Show" IsCheckable="True" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <MenuItem Header="Show" 
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding NowPlayingViewModel.ShowLyrics}"
+                                      />
                         </MenuItem>
                     </Menu>
                     <Border Margin="4" Width="1" Background="{StaticResource StrokeSurface}"/>
@@ -123,21 +138,13 @@
             <Grid Grid.Row="1" Grid.Column="1">
 
                 <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                    <Border CornerRadius="4" Width="400" Height="400" Margin="0,0,0,16">
+                    <Border CornerRadius="4" Width="500" Height="500" Margin="0,0,0,16">
                         <Border.Background>
                             <ImageBrush
                                 ImageSource="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:400}"
                                 Stretch="UniformToFill"
                                 />
                         </Border.Background>
-                        <Border.Effect>
-                            <DropShadowEffect
-                                BlurRadius="16"
-                                Direction="270"
-                                Opacity="0.24"
-                                ShadowDepth="8"
-                                />
-                        </Border.Effect>
                     </Border>
                     <TextBlock Text="{Binding NowPlayingViewModel.TrackTitle}" TextAlignment="Center" FontSize="24" FontWeight="Bold" />
                     <TextBlock Text="{Binding NowPlayingViewModel.TrackAlbum}" TextAlignment="Center" FontSize="20" FontWeight="Medium" Opacity="0.8"/>
@@ -152,6 +159,7 @@
                         Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
                     />
                     <controls:WaveformPlayerControl
+                        Visibility="{Binding IsProgressBarVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Height="48"
                     />
                 </StackPanel>

@@ -26,7 +26,7 @@
             <!--<uimodels:TrackToPlaylistMenu x:Name="AlbumTracksTrackToPlaylistMenu"
                                           TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>-->
             <Separator/>
-            <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" Click="EditMenuItem_Click"/>
+            <MenuItem Header="Properties" Icon="{helpers:Icon Glyph=E90F}" Click="EditMenuItem_Click"/>
             <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" IsEnabled="False"/>
             <MenuItem Header="Show in file explorer" Icon="{helpers:Icon Glyph=EC50}" Click="ShowInFileExplorerMenuItem_Click"/>
         </ContextMenu>

@@ -36,6 +36,8 @@
 
     <UserControl.ContextMenu>
         <ContextMenu Foreground="{DynamicResource TextPrimaryBrush}">
+            <MenuItem Icon="{ex:Icon Glyph=E90F}" Header="Properties" Command="{Binding OpenPropertiesCommand}" IsCheckable="False" />
+            <Separator/>
             <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=&#xEC4F;}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
             <MenuItem Header="Blur" Icon="{ex:Icon Glyph=&#xE794;}" IsCheckable="True" IsChecked="{Binding BlurEffect}" />
             <Separator/>

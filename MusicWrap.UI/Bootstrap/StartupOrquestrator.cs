@@ -91,30 +91,6 @@ public static class StartupOrquestrator
                 });
             };
 
-            try
-            {
-                int vk = System.Windows.Input.KeyInterop.VirtualKeyFromKey(System.Windows.Input.Key.T);
-
-                int hotkeyId = hotkeyService.RegisterHotkey(
-                    GlobalHotkeyService.MOD_CONTROL | GlobalHotkeyService.MOD_SHIFT,
-                    vk,
-                    () =>
-                    {
-                        Log.Debug("Ctrl+Shift+T hotkey callback invoked");
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            Log.Debug("Dispatcher invoke: ToggleFlyout()");
-                            trayService?.ToggleFlyout();
-                        });
-                    }
-                );
-                Log.Information("Ctrl+Shift+T hotkey registered successfully (id={HotkeyId})", hotkeyId);
-            }
-            catch (InvalidOperationException ex)
-            {
-                Log.Warning(ex, "Could not register global hotkey");
-            }
-
             // taskbar thumbnail buttons
             taskbarController.PreviousRequested += () =>
             {
@@ -133,40 +109,7 @@ public static class StartupOrquestrator
             taskbarController.NextRequested += () =>
             {
                 Application.Current.Dispatcher.Invoke(() => player.Next());
-            };
-
-            // subcribe to tray behavior changes
-            void OnUserSettingsChanged(object? sender, PropertyChangedEventArgs e)
-            {
-                if (e.PropertyName == nameof(MusicWrapSettings.KeepAppInTray))
-                {
-                    if (!userSettings.KeepAppInTray)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            var current = windowManager.CurrentWindow;
-                            if (current is not null
-                            && current.IsLoaded
-                            && !current.Dispatcher.HasShutdownStarted
-                            && !current.Dispatcher.HasShutdownFinished
-                            && !current.IsVisible
-                            )
-                            {
-                                try
-                                {
-                                    current.Show();
-                                    current.Activate();
-                                }
-                                catch { }
-                            }
-                        });
-                    }
-                }
-            }
-
-            userSettings.PropertyChanged += OnUserSettingsChanged;
-
-                
+            };    
 
             // Library cache initialization (preserve previous defaults)
             var listBy = userSettings.Library.EntryType;

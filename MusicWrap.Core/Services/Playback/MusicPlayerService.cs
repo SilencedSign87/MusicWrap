@@ -51,6 +51,7 @@ namespace MusicWrap.Core.Services.Playback
         void LoadIndex(int index, bool autoPlay);
         void Play();
         void Pause();
+        void TogglePlayPause();
         void Stop(bool hardStop = false);
         void Next();
         void Previous();
@@ -421,6 +422,18 @@ namespace MusicWrap.Core.Services.Playback
             _dispatcher.Invoke(() => PositionChanged?.Invoke(this, _trackedPositon));
             SetPlaybackState(PlaybackState.Paused);
             EnqueueSave(SaveKind.Playback);
+        }
+
+        public void TogglePlayPause()
+        {
+            if (IsPlaying)
+            {
+                Pause();
+            }
+            else
+            {
+                Play();
+            }
         }
 
         public void Stop(bool hardStop = false)

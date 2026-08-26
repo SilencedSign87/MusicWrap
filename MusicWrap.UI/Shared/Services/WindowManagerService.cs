@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
@@ -30,13 +31,34 @@ namespace MusicWrap.UI.Shared.Services
         private readonly IServiceScopeFactory _scopeFactory;
         private IServiceScope? _metadataEditorScope;
         private readonly TaskbarController _taskbarController;
+        private readonly IUIDispatcher _dispatcher;
 
-        public WindowManagerService(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings, TaskbarController taskbarController)
+        public WindowManagerService(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings, TaskbarController taskbarController, IUIDispatcher dispatcher)
         {
             _serviceProvider = serviceProvider;
             _scopeFactory = scopeFactory;
             _userSettings = userSettings;
             _taskbarController = taskbarController;
+            _dispatcher = dispatcher;
+            _userSettings.PropertyChanged += OnSettingsChanged;
+        }
+
+        private void OnSettingsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // restore window if tray is disabled to prevent the app from being stuck in tray
+            if (e.PropertyName == nameof(MusicWrapSettings.KeepAppInTray))
+            {
+                var tray = _serviceProvider.GetService<ITrayService>();
+                tray?.SetEnabled(_userSettings.KeepAppInTray);
+                
+                if(!_userSettings.KeepAppInTray && ShellWindow is not null && !ShellWindow.IsVisible)
+                {
+                    _dispatcher.Invoke(() =>
+                    {
+                        ShowOrRestoreCurrentWindow();
+                    });
+                }
+            }
         }
 
         #region Dialog launchers

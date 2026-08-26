@@ -21,7 +21,7 @@
             <MenuItem Header="Add to queue" Icon="{helpers:Icon Glyph=E710}" Command="{Binding AddSelectedTracksToQueueCommand}"/>
             <!--<uimodels:TrackToPlaylistMenu x:Name="TracksTrackToPlaylistMenu" TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>-->
             <Separator/>
-            <MenuItem Header="Edit" Icon="{helpers:Icon Glyph=E70F}" Command="{Binding EditSelectedTracksMetadataCommand}"/>
+            <MenuItem Header="Properties" Icon="{helpers:Icon Glyph=E90F}" Command="{Binding EditSelectedTracksMetadataCommand}"/>
             <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" IsEnabled="False"/>
             <MenuItem Header="Show in file explorer" Icon="{helpers:Icon Glyph=EC50}" Command="{Binding ShowSelectedTracksInFileExplorerCommand}"/>
         </ContextMenu>

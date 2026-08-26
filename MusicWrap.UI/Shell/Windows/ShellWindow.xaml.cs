@@ -1,4 +1,5 @@
 ﻿using MusicWrap.Core.Saving;
+using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Shared.Services;
 using System.ComponentModel;
@@ -16,12 +17,14 @@ namespace MusicWrap.UI.Shell.Windows
         private bool _isInitializing = true;
         private readonly WindowManagerService _windowManager;
         private readonly MusicWrapSettings _settings;
+        private readonly IMusicPlayerService _musicPlayerService;
         public PlayerMode CurrentMode { get; private set; }
-        public ShellWindow(WindowManagerService windowManager, MusicWrapSettings settings)
+        public ShellWindow(WindowManagerService windowManager, MusicWrapSettings settings, IMusicPlayerService musicPlayerService)
         {
             InitializeComponent();
             _windowManager = windowManager;
             _settings = settings;
+            _musicPlayerService = musicPlayerService;
             CurrentMode = PlayerMode.MainPlayer;
         }
         public void ApplyMode(PlayerMode mode)
@@ -59,7 +62,6 @@ namespace MusicWrap.UI.Shell.Windows
 
             WindowStyle = WindowStyle.SingleBorderWindow;
             ResizeMode = ResizeMode.CanResize;
-            WindowState = WindowState.Normal;
             Topmost = false;
 
             MinWidth = 900;
@@ -119,6 +121,9 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void ConfigureFullScreenPlayer()
         {
+            if (WindowState != WindowState.Normal)
+                WindowState = WindowState.Normal;
+
             WindowChrome.SetWindowChrome(this, null);
 
             WindowStyle = WindowStyle.None;
@@ -132,9 +137,10 @@ namespace MusicWrap.UI.Shell.Windows
             MaxHeight = double.PositiveInfinity;
 
             ContentHost.Margin = new Thickness(0);
-            WindowState = WindowState.Maximized;
 
             UpdateLayout();
+
+            WindowState = WindowState.Maximized;
         }
         private void CaptureCurrentModeBounds()
         {
@@ -178,21 +184,36 @@ namespace MusicWrap.UI.Shell.Windows
         #region Listeners
         private void ShellWindow_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.F11)
+            switch (e.Key)
             {
-                if (CurrentMode == PlayerMode.FullScreenPlayer)
-                    _windowManager.SwitchToMainPlayer();
-                else
-                    _windowManager.SwitchToFullScreenPlayer();
-
-                e.Handled = true;
-            }
-
-            if (e.Key == Key.Escape &&
-                CurrentMode == PlayerMode.FullScreenPlayer)
-            {
-                _windowManager.SwitchToMainPlayer();
-                e.Handled = true;
+                case Key.F11:
+                    if (CurrentMode == PlayerMode.MainPlayer)
+                        _windowManager.SwitchToFullScreenPlayer();
+                    else if (CurrentMode == PlayerMode.FullScreenPlayer)
+                        _windowManager.SwitchToMainPlayer();
+                    e.Handled = true;
+                    return;
+                case Key.K:
+                    if (!IsTextInputFocused())
+                    {
+                        _musicPlayerService.TogglePlayPause();
+                        e.Handled = true;
+                    }
+                    break;
+                case Key.L:
+                    if (!IsTextInputFocused())
+                    {
+                        _musicPlayerService.Next();
+                        e.Handled = true;
+                    }
+                    break;
+                case Key.J:
+                    if (!IsTextInputFocused())
+                    {
+                        _musicPlayerService.Previous();
+                        e.Handled = true;
+                    }
+                    break;
             }
         }
 
@@ -225,6 +246,14 @@ namespace MusicWrap.UI.Shell.Windows
             Closing -= ShellWindow_Closing;
             Closed -= ShellWindow_Closed;
             KeyDown -= ShellWindow_KeyDown;
+        }
+        private static bool IsTextInputFocused()
+        {
+            var focusedElement = Keyboard.FocusedElement;
+            return focusedElement is System.Windows.Controls.TextBox ||
+                   focusedElement is System.Windows.Controls.PasswordBox ||
+                   focusedElement is System.Windows.Controls.RichTextBox ||
+                   focusedElement is System.Windows.Controls.Primitives.TextBoxBase;
         }
         #endregion
 
