@@ -4,11 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:vm ="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              mc:Ignorable="d"
              d:Foreground="White"
              d:DesignHeight="650" d:DesignWidth="500"
              PreviewKeyDown="UserControl_PreviewKeyDown"
+             d:DataContext="{d:DesignInstance Type=vm:MetadataLyricsEditorViewmodel}"
              >
     <Grid x:Name="LyricsGridRoot" RowDefinitions="Auto,*" >
         <Border x:Name="Toolbar" Grid.Row="0" Background="{DynamicResource BackgroundFloating}" BorderThickness="1" BorderBrush="{DynamicResource BackgroundFloating}" Margin="8,0,8,8" CornerRadius="2" >
@@ -17,7 +19,7 @@
             </Border.Effect>
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="42,8">
                 <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Save" Icon="&#xE74E;" />
+                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Save" Icon="&#xE74E;" Command="{Binding SaveLyricsCommand}" />
                     <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Import" Icon="&#xE8B5;" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
@@ -38,6 +40,7 @@
         <Grid Grid.Row="1">
             <TextBox
                 Grid.Row="1"
+                Text="{Binding RawLyrics}"
                 Margin="4"
                 Style="{DynamicResource TransparentTextInput}"
                 BorderBrush="{DynamicResource StrokeSurface}"

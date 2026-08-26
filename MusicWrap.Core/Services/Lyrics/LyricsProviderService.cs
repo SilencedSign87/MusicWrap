@@ -11,6 +11,7 @@ namespace MusicWrap.Core.Services.Lyrics
     {
         private readonly IMusicPlayerService _player;
         private readonly ILibraryService _library;
+        private readonly MetadataEditorService _metadataEditorService;
         private readonly ILogger<LyricsProviderService> _logger;
         private readonly SemaphoreSlim _gate = new(1, 1);
         private ParsedLyrics _current = ParsedLyrics.Empty;
@@ -21,11 +22,12 @@ namespace MusicWrap.Core.Services.Lyrics
 
         public ParsedLyrics Current => _current;
         public event EventHandler<ParsedLyrics>? LyricsChanged;
-        public LyricsProviderService(IMusicPlayerService player, ILibraryService library, ILogger<LyricsProviderService> logger)
+        public LyricsProviderService(IMusicPlayerService player, ILibraryService library, ILogger<LyricsProviderService> logger, MetadataEditorService metadataEditorService)
         {
             _player = player;
             _library = library;
             _logger = logger;
+            _metadataEditorService = metadataEditorService;
             _player.TrackChanged += OnTrackChanged;
         }
         private void OnTrackChanged(object? sender, string e) => _ = GetCurrentAsync();
@@ -74,6 +76,32 @@ namespace MusicWrap.Core.Services.Lyrics
             }
         }
 
+        public ParsedLyrics GetLyricsForTrackId(int trackId)
+        {
+            var track = _library.GetTrackById(trackId);
+            if (track is null || track.Id == 0) return ParsedLyrics.Empty;
+            try
+            {
+                using var f = TagLib.File.Create(track.Path);
+                return LyricsParser.Parse(f.Tag.Lyrics, LyricsSource.Embedded);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to read lyrics from file {Path}", track.Path);
+                return ParsedLyrics.Empty;
+            }
+        }
+
+        public async Task<bool> EmbedLyricsAsync(int trackId, string rawLyrics, CancellationToken ct = default)
+        {
+            var success = await _metadataEditorService.EditTagAsync(trackId, tag =>
+            {
+                tag.Lyrics = rawLyrics;
+            }, ct);
+
+            return success;
+        }
+
         private ParsedLyrics UpdateCache(ParsedLyrics p, int id, string path, long ticks)
         {
             _cachedTrackId = id;
@@ -91,6 +119,5 @@ namespace MusicWrap.Core.Services.Lyrics
             _player.TrackChanged -= OnTrackChanged;
             _gate.Dispose();
         }
-
     }
 }

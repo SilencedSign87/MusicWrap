@@ -14,7 +14,8 @@
              d:DataContext="{d:DesignInstance Type=vm:LyricsViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid RowDefinitions="*">
-        <Border Grid.Row="0">
+        <!-- Lyrics Content -->
+        <Border Grid.Row="0" Visibility="{Binding HasSyncedLyrics, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Border.OpacityMask>
                 <LinearGradientBrush
                     StartPoint="0,0"
@@ -38,7 +39,7 @@
                 PreviewMouseDown="LyricsScrollViewer_PreviewMouseDown"
                 ScrollChanged="LyricsScrollViewer_ScrollChanged"
                 >
-                <StackPanel>
+                <StackPanel Background="Transparent">
                     <Border x:Name="TopSpacer"/>
                     <ItemsControl
                     x:Name="LyricsItems"
@@ -67,6 +68,32 @@
                 </StackPanel>
             </ScrollViewer>
         </Border>
+        <!-- Raw Lyrics -->
+        <Border Grid.Row="0" Visibility="{Binding HasSyncedLyrics, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}" Padding="8">
+            <ScrollViewer
+                HorizontalScrollBarVisibility="Disabled"
+                VerticalScrollBarVisibility="Auto"
+                BorderThickness="0"
+                >
+                <TextBlock
+                Text="{Binding Lyrics.RawText}"
+                HorizontalAlignment="Center"
+                TextAlignment="Center"
+                TextWrapping="Wrap"
+                FontSize="14"
+                />
+            </ScrollViewer>
+        </Border>
+        <Border Grid.Row="0" Visibility="{Binding HasLyrics, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}">
+            <TextBlock
+                Text="No lyrics available"
+                HorizontalAlignment="Center"
+                TextAlignment="Center"
+                TextWrapping="Wrap"
+                FontSize="16"
+                />
+        </Border>
+        <!-- Controls -->
         <controls:HiddenPanel HorizontalAlignment="Stretch" VerticalAlignment="Top">
             <Border 
                 Background="{DynamicResource BackgroundSolid}" 
@@ -78,13 +105,14 @@
                 <StackPanel Orientation="Horizontal">
                     <Menu>
                         <MenuItem 
+                            Icon="{ex:Icon Glyph=E72C}"
+                            ToolTip="Refresh"
+                            Command="{Binding RefreshCommand}"
+                            />
+                        <MenuItem 
                             Icon="{ex:Icon Glyph=E768}"
                             Header="Sync lyrics"
                             Click="AppButton_Click"
-                            />
-                        <MenuItem 
-                            Icon="{ex:Icon Glyph=E8B5}"
-                            Header="Import lyrics"
                             />
                     </Menu>
                 </StackPanel>
