@@ -57,7 +57,7 @@ namespace MusicWrap.UI.Features.Playback.Views
             if (double.IsNaN(ratio)) ratio = 1.0;
             // no visualizer
             if (!showVisualizer)
-                return ratio < BalancedMinRatio
+                return ratio < LandscapeMinRatio
                     ? NowPlayingLayoutMode.Portrait
                     : NowPlayingLayoutMode.Landscape;
             // all active

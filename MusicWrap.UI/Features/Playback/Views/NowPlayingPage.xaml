@@ -63,7 +63,7 @@
         </ContextMenu>
     </UserControl.ContextMenu>
 
-    <Grid x:Name="NowPlayingLayout" SizeChanged="OnNowPlayingLayoutSizeChanged">
+    <Grid x:Name="NowPlayingLayout" SizeChanged="OnNowPlayingLayoutSizeChanged" Background="{DynamicResource TintOnText}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ArtworkColumn" Width="*"/>
             <ColumnDefinition x:Name="LyricsColumn" Width="0"/>

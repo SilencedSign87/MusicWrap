@@ -11,6 +11,7 @@
              x:Name="RootFullScreenWindow"
              d:DataContext="{d:DesignInstance Type=vm:FullscreenWindowViewModel}"
              Foreground="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"
+             Loaded="RootFullScreenWindow_Loaded"
              d:Width="1920"
              d:Height="1080"
              >
@@ -35,8 +36,8 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
-        <controls:HiddenPanel Grid.Column="0">
+    <Grid RowDefinitions="*" ColumnDefinitions="*">
+        <controls:HiddenPanel HorizontalAlignment="Stretch" VerticalAlignment="Top">
             <Grid ColumnDefinitions="*,Auto" Background="{StaticResource BackgroundSolid}">
                 <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="4,0,0,0">
                     <Button 
@@ -128,42 +129,41 @@
                 </StackPanel>
             </Grid>
         </controls:HiddenPanel>
+        <!-- MainContent -->
+        <Grid Grid.Row="1" x:Name="MainContentGrid" Grid.Column="1" ColumnDefinitions="*,Auto">
 
-        <Grid RowDefinitions="*" ColumnDefinitions="Auto,*" Grid.Row="0" Grid.RowSpan="2">
-            <!-- Sidebar -->
-            <Border Grid.Row="1" Grid.Column="0">
-
-            </Border>
-            <!-- MainContent -->
-            <Grid Grid.Row="1" Grid.Column="1">
-
-                <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-                    <Border CornerRadius="4" Width="500" Height="500" Margin="0,0,0,16">
-                        <Border.Background>
-                            <ImageBrush
+            <StackPanel Orientation="Vertical" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0">
+                <Border CornerRadius="4" Width="500" Height="500" Margin="0,0,0,16">
+                    <Border.Background>
+                        <ImageBrush
                                 ImageSource="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:400}"
                                 Stretch="UniformToFill"
                                 />
-                        </Border.Background>
-                    </Border>
-                    <TextBlock Text="{Binding NowPlayingViewModel.TrackTitle}" TextAlignment="Center" FontSize="24" FontWeight="Bold" />
-                    <TextBlock Text="{Binding NowPlayingViewModel.TrackAlbum}" TextAlignment="Center" FontSize="20" FontWeight="Medium" Opacity="0.8"/>
-                </StackPanel>
+                    </Border.Background>
+                </Border>
+                <TextBlock Text="{Binding NowPlayingViewModel.TrackTitle}" TextAlignment="Center" FontSize="24" FontWeight="Bold" />
+                <TextBlock Text="{Binding NowPlayingViewModel.TrackAlbum}" TextAlignment="Center" FontSize="20" FontWeight="Medium" Opacity="0.8"/>
+            </StackPanel>
+            <Border Grid.Column="1" Visibility="{Binding NowPlayingViewModel.ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Border 
+                    x:Name="LyricsContainer"
+                    >
 
-                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
-                    <controls:SpectrumVisualizerControl
+                </Border>
+            </Border>
+            <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="8">
+                <controls:SpectrumVisualizerControl
                         Height="120"
                         BarCount="120"
                         Margin="0,-16,0,0"
                          Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
                     />
-                    <controls:WaveformPlayerControl
+                <controls:WaveformPlayerControl
                         Visibility="{Binding IsProgressBarVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Height="48"
                     />
-                </StackPanel>
-            </Grid>
+            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

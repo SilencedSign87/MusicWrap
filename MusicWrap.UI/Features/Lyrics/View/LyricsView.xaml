@@ -11,6 +11,7 @@
              x:Name="LyricsViewRoot"
              Loaded="OnLoaded"
              Unloaded="OnUnloaded"
+             FontSize="18"
              d:DataContext="{d:DesignInstance Type=vm:LyricsViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid RowDefinitions="*">
@@ -57,7 +58,7 @@
                                            HorizontalAlignment="Center"
                                            TextAlignment="Center"
                                            TextWrapping="Wrap"
-                                           FontSize="18"
+                                           FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
                                            FontWeight="SemiBold"/>
                                 </Border>
                             </DataTemplate>
@@ -80,7 +81,7 @@
                 HorizontalAlignment="Center"
                 TextAlignment="Center"
                 TextWrapping="Wrap"
-                FontSize="14"
+                FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
                 />
             </ScrollViewer>
         </Border>
@@ -100,19 +101,21 @@
                 BorderThickness="1" 
                 BorderBrush="{DynamicResource StrokeSurface}" 
                 Padding="2" 
-                Margin="2" 
+                Margin="2"
                 CornerRadius="4">
                 <StackPanel Orientation="Horizontal">
                     <Menu>
                         <MenuItem 
                             Icon="{ex:Icon Glyph=E72C}"
                             ToolTip="Refresh"
+                            FontSize="14"
                             Command="{Binding RefreshCommand}"
                             />
                         <MenuItem 
                             Icon="{ex:Icon Glyph=E768}"
                             Header="Sync lyrics"
                             Click="AppButton_Click"
+                            FontSize="14"
                             />
                     </Menu>
                 </StackPanel>

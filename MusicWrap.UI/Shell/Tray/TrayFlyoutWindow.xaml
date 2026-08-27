@@ -45,7 +45,7 @@
                       CornerRadius="8" 
                       ResizeBorderThickness="4"/>
     </WindowChrome.WindowChrome>
-    <Grid x:Name="RootPanel" Opacity="1">
+    <Grid x:Name="RootPanel" Opacity="1" Background="{DynamicResource TintOnText}">
         <Grid.RenderTransform>
             <TranslateTransform x:Name="RootTranslate"/>
         </Grid.RenderTransform>

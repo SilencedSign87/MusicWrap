@@ -5,6 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Threading;
 
 namespace MusicWrap.UI.Features.Lyrics.View
@@ -14,6 +16,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
         private bool _followLyrics = true;
         private readonly LyricsViewModel _viewModel;
         private readonly IUIDispatcher _dispatcher;
+        private BlurEffect _textBlurEffect = new() { Radius = 3 };
         public LyricsView(LyricsViewModel viewModel, IUIDispatcher dispatcher)
         {
             InitializeComponent();
@@ -28,7 +31,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
             _viewModel.PropertyChanged += OnViewmodelPropertyChanged;
 
             UpdateSpacers();
-            
+
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
                 new Action(UpdateLineOpacities));
@@ -96,6 +99,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
             CenterActiveLine();
         }
+        #region Rendering
         private void CenterActiveLine()
         {
             if (!_followLyrics)
@@ -163,8 +167,9 @@ namespace MusicWrap.UI.Features.Lyrics.View
                     0,
                     maxOffset);
 
-            LyricsScrollViewer.ScrollToVerticalOffset(
-                targetOffset);
+            //LyricsScrollViewer.ScrollToVerticalOffset(
+            //    targetOffset);
+            AnimateScrollTo(targetOffset);
         }
 
         private void UpdateLineOpacities()
@@ -178,8 +183,51 @@ namespace MusicWrap.UI.Features.Lyrics.View
                     .ContainerFromIndex(i) is FrameworkElement container)
                 {
                     container.Opacity = i == activeIdx ? 1.0 : 0.3;
+                    container.Effect = i == activeIdx ? null : _textBlurEffect;
                 }
             }
         }
+        #endregion
+        #region Animation
+        private void AnimateScrollTo(double targetOffset)
+        {
+            var animation = new DoubleAnimation
+            {
+                From = LyricsScrollViewer.VerticalOffset,
+                To = targetOffset,
+                Duration = TimeSpan.FromMilliseconds(400),
+                EasingFunction = new CubicEase
+                {
+                    EasingMode = EasingMode.EaseOut
+                }
+            };
+
+            BeginAnimation(
+                AnimatedScrollOffsetProperty,
+                animation);
+        }
+        private double AnimatedScrollOffset
+        {
+            get => (double)GetValue(AnimatedScrollOffsetProperty);
+            set => SetValue(AnimatedScrollOffsetProperty, value);
+        }
+
+        private static readonly DependencyProperty AnimatedScrollOffsetProperty =
+            DependencyProperty.Register(
+                nameof(AnimatedScrollOffset),
+                typeof(double),
+                typeof(LyricsView),
+                new PropertyMetadata(0.0, OnAnimatedScrollOffsetChanged));
+
+        private static void OnAnimatedScrollOffsetChanged(
+            DependencyObject d,
+            DependencyPropertyChangedEventArgs e)
+        {
+            var view = (LyricsView)d;
+
+            view.LyricsScrollViewer.ScrollToVerticalOffset(
+                (double)e.NewValue);
+        }
+        #endregion
     }
 }

@@ -104,7 +104,7 @@ namespace MusicWrap.Core.Services.Images
 
             var (baseR, baseG, baseB) = ParseHexColor(dominantColorHex);
 
-            float domFactor = 0.85f;
+            float domFactor = 0.70f;
             float imgFactor = 1f - domFactor;
 
             double[] a =
@@ -122,12 +122,9 @@ namespace MusicWrap.Core.Services.Images
             ];
 
             using var blended = rgb.Linear(a, b);
-            using var ucharBlended = blended.Cast(Enums.BandFormat.Uchar);
+            return blended.Cast(Enums.BandFormat.Uchar);
 
-            return AddNoiseGrain(
-                ucharBlended,
-                grainSize: 3,
-                intensity: 0.02f);
+            //return ucharBlended;
         }
 
         public static Image ResizeSquare(Image source, int maxSize)

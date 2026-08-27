@@ -51,6 +51,8 @@
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FFB0B0B0"/>
     <SolidColorBrush x:Key="TextDisabledBrush" Color="#FF666666"/>
 
+    <SolidColorBrush x:Key="TintOnText" Color="#000000" Opacity="0.1"/>
+
     <!--Text in accent-->
     <SolidColorBrush x:Key="TextOnAccentPrimaryBrush" Color="#000000"/>
     <SolidColorBrush x:Key="TextOnAccentSecondaryBrush" Color="#121212"/>
