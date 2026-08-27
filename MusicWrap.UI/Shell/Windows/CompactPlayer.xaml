@@ -81,15 +81,7 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="0">
-                <Grid.Background>
-                    <ImageBrush 
-                        ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:512}" 
-                        RenderOptions.BitmapScalingMode="HighQuality"
-                        AlignmentX="Center"
-                        AlignmentY="Center"
-                        Stretch="UniformToFill"/>
-                </Grid.Background>
+            <Grid Grid.Row="0" Margin="0" Background="{Binding CurrentTrackDominantColorHex}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32" />
                     <RowDefinition />

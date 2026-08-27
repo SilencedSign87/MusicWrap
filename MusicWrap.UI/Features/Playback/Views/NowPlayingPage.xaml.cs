@@ -20,6 +20,7 @@ namespace MusicWrap.UI.Features.Playback.Views
             _viewModel = viewmodel;
             DataContext = viewmodel;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            lyricsView.FontSize = 18.0;
             LyricsHost.Child = lyricsView;
             ApplyLayout();
         }

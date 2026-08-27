@@ -53,13 +53,14 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="24,16" HorizontalAlignment="Stretch">
-                                    <TextBlock Text="{Binding Text}"
-                                           HorizontalAlignment="Center"
-                                           TextAlignment="Center"
-                                           TextWrapping="Wrap"
-                                           FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
-                                           FontWeight="SemiBold"/>
+                                <Border Padding="24" HorizontalAlignment="Stretch">
+                                    <TextBlock 
+                                        Text="{Binding Text}"
+                                        HorizontalAlignment="Center"
+                                        TextAlignment="Center"
+                                        TextWrapping="Wrap"
+                                        FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
+                                        FontWeight="Bold"/>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -77,11 +78,12 @@
                 BorderThickness="0"
                 >
                 <TextBlock
-                Text="{Binding Lyrics.RawText}"
-                HorizontalAlignment="Center"
-                TextAlignment="Center"
-                TextWrapping="Wrap"
-                FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
+                    Text="{Binding Lyrics.RawText}"
+                    HorizontalAlignment="Center"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap"
+                    FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
+                    FontWeight="SemiBold"
                 />
             </ScrollViewer>
         </Border>
@@ -100,24 +102,22 @@
                 Background="{DynamicResource BackgroundSolid}" 
                 BorderThickness="1" 
                 BorderBrush="{DynamicResource StrokeSurface}" 
-                Padding="2" 
+                Padding="4" 
                 Margin="2"
                 CornerRadius="4">
                 <StackPanel Orientation="Horizontal">
-                    <Menu>
-                        <MenuItem 
-                            Icon="{ex:Icon Glyph=E72C}"
+                    <controls:AppButton
+                            Style="{DynamicResource SubtleButton}"
+                            Icon="&#xE72C;"
                             ToolTip="Refresh"
-                            FontSize="14"
                             Command="{Binding RefreshCommand}"
                             />
-                        <MenuItem 
-                            Icon="{ex:Icon Glyph=E768}"
-                            Header="Sync lyrics"
-                            Click="AppButton_Click"
-                            FontSize="14"
-                            />
-                    </Menu>
+                    <controls:AppButton
+                        Style="{DynamicResource SubtleButton}"
+                        Icon="&#xE768;"
+                        ToolTip="Sync lyrics"
+                        Command="{Binding SyncLyricsCommand}"
+                        />
                 </StackPanel>
             </Border>
         </controls:HiddenPanel>

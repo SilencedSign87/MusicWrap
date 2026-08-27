@@ -104,7 +104,7 @@ namespace MusicWrap.Core.Services.Images
 
             var (baseR, baseG, baseB) = ParseHexColor(dominantColorHex);
 
-            float domFactor = 0.70f;
+            float domFactor = 0.85f;
             float imgFactor = 1f - domFactor;
 
             double[] a =
