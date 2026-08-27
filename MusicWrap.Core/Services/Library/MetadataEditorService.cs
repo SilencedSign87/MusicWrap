@@ -45,8 +45,13 @@ namespace MusicWrap.Core.Services.Library
 
                 byte[] fileData = System.IO.File.ReadAllBytes(track.Path);
 
+                //using var ms = new MemoryStream(fileData, writable: true);
                 // modify the tag in memory
-                using var ms = new MemoryStream(fileData, writable: true);
+                // expandable memory stream
+                using var ms = new MemoryStream();
+                ms.Write(fileData, 0, fileData.Length);
+                ms.Position = 0;
+
                 using (var tagFile = TagLib.File.Create(new StreamFileAbstraction(track.Path, ms)))
                 {
                     applyChanges(tagFile.Tag);
