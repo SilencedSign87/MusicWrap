@@ -86,6 +86,10 @@
         <Border x:Name="LyricsHost"
             Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
             Visibility="{Binding ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <lyrics:LyricsView
+                FontSize="18"
+                AllowSeek="True"
+                />
         </Border>
 
         <!-- Visualizer -->

@@ -11,13 +11,11 @@ namespace MusicWrap.UI.Shell.Windows
     /// </summary>
     public partial class FullScreenWindow : UserControl
     {
-        public FullScreenWindow(FullscreenWindowViewModel viewmodel, LyricsView lyricsView)
+        public FullScreenWindow(FullscreenWindowViewModel viewmodel)
         {
             InitializeComponent();
 
             DataContext = viewmodel;
-            lyricsView.FontSize = 36.0;
-            LyricsContainer.Child = lyricsView;
             viewmodel.NowPlayingViewModel.PropertyChanged += OnViewmodelPropertyChanged;
         }
 
@@ -29,9 +27,7 @@ namespace MusicWrap.UI.Shell.Windows
             }
         }
 
-        private readonly Thickness LyricsPadding = new(48);
-        private readonly Thickness NoLyricsPadding = new(0);
-        private readonly GridLength LyricsWidth = new(1, GridUnitType.Star);
+        private readonly GridLength LyricsWidth = new(700);
         private readonly GridLength NoLyricsWidth = new(0);
 
         private void UpdateLyricsLayout(bool showLyrics)
@@ -39,12 +35,10 @@ namespace MusicWrap.UI.Shell.Windows
             if (showLyrics)
             {
                 MainContentGrid.ColumnDefinitions[1].Width = LyricsWidth;
-                LyricsContainer.Padding = LyricsPadding;
             }
             else
             {
                 MainContentGrid.ColumnDefinitions[1].Width = NoLyricsWidth;
-                LyricsContainer.Padding = NoLyricsPadding;
             }
         }
 

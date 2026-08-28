@@ -14,14 +14,12 @@ namespace MusicWrap.UI.Features.Playback.Views
         private const double LyricsBandHeight = 140;
 
         private readonly NowPlayingViewModel _viewModel;
-        public NowPlayingPage(NowPlayingViewModel viewmodel, LyricsView lyricsView)
+        public NowPlayingPage(NowPlayingViewModel viewmodel)
         {
             InitializeComponent();
             _viewModel = viewmodel;
             DataContext = viewmodel;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
-            lyricsView.FontSize = 18.0;
-            LyricsHost.Child = lyricsView;
             ApplyLayout();
         }
         private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

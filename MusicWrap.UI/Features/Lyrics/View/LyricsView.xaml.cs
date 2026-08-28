@@ -1,4 +1,5 @@
-﻿using MusicWrap.Core.Threading;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using System.ComponentModel;
 using System.Windows;
@@ -15,15 +16,59 @@ namespace MusicWrap.UI.Features.Lyrics.View
     {
         private bool _followLyrics = true;
         private readonly LyricsViewModel _viewModel;
-        private readonly IUIDispatcher _dispatcher;
         private BlurEffect _textBlurEffect = new() { Radius = 3 };
-        public LyricsView(LyricsViewModel viewModel, IUIDispatcher dispatcher)
+        public LyricsView()
         {
             InitializeComponent();
+            var viewModel = App.Services.GetRequiredService<LyricsViewModel>();
             _viewModel = viewModel;
-            _dispatcher = dispatcher;
             DataContext = viewModel;
         }
+
+        #region Dependency Properties
+
+        public bool ShowToolbar
+        {
+            get { return (bool)GetValue(ShowToolbarProperty); }
+            set { SetValue(ShowToolbarProperty, value); }
+        }
+
+        public static readonly DependencyProperty ShowToolbarProperty =
+            DependencyProperty.Register(nameof(ShowToolbar), typeof(bool), typeof(LyricsView), new PropertyMetadata(true));
+
+        public bool AllowScroll
+        {
+            get { return (bool)GetValue(AllowScrollProperty); }
+            set { SetValue(AllowScrollProperty, value); }
+        }
+
+        public static readonly DependencyProperty AllowScrollProperty =
+            DependencyProperty.Register(nameof(AllowScroll), typeof(bool), typeof(LyricsView), new PropertyMetadata(true));
+
+
+
+        public bool AllowSeek
+        {
+            get { return (bool)GetValue(AllowSeekProperty); }
+            set { SetValue(AllowSeekProperty, value); }
+        }
+
+        public static readonly DependencyProperty AllowSeekProperty =
+            DependencyProperty.Register(nameof(AllowSeek), typeof(bool), typeof(LyricsView), new PropertyMetadata(false));
+
+
+
+        public TextAlignment LyricsAligment
+        {
+            get { return (TextAlignment)GetValue(LyricsAligmentProperty); }
+            set { SetValue(LyricsAligmentProperty, value); }
+        }
+
+        public static readonly DependencyProperty LyricsAligmentProperty =
+            DependencyProperty.Register(nameof(LyricsAligment), typeof(TextAlignment), typeof(LyricsView), new PropertyMetadata(TextAlignment.Center));
+
+
+        #endregion
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -49,11 +94,18 @@ namespace MusicWrap.UI.Features.Lyrics.View
         }
         private void OnViewmodelPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName != nameof(LyricsViewModel.ActiveIndex))
+            switch (e.PropertyName)
             {
-                return;
+                case nameof(LyricsViewModel.ActiveIndex):
+                    OnActiveIndexChanged();
+                    break;
+                case nameof(LyricsViewModel.Lyrics):
+                    OnLyricsChanged();
+                    break;
             }
-
+        }
+        private void OnActiveIndexChanged()
+        {
             UpdateLineOpacities();
 
             if (!_followLyrics) return;
@@ -61,6 +113,20 @@ namespace MusicWrap.UI.Features.Lyrics.View
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
                 new Action(CenterActiveLine));
+        }
+        private void OnLyricsChanged()
+        {
+            _followLyrics = true;
+            LyricsScrollViewer.ScrollToVerticalOffset(0);
+
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Loaded,
+                new Action(() =>
+                {
+                    UpdateSpacers();
+                    UpdateLineOpacities();
+                    CenterActiveLine();
+                }));
         }
         private void UpdateSpacers()
         {
@@ -75,12 +141,33 @@ namespace MusicWrap.UI.Features.Lyrics.View
         }
         private void LyricsScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
         {
+            if (!AllowScroll)
+            {
+                e.Handled = true;
+                return;
+            }
             DisableFollow();
         }
 
         private void LyricsScrollViewer_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            DisableFollow();
+            //DisableFollow();
+        }
+
+        private void LyricsScrollViewer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!AllowSeek) return;
+
+            var container = ItemsControl.ContainerFromElement(LyricsItems, (DependencyObject)sender);
+            if (container is null) return;
+
+            var index = LyricsItems.ItemContainerGenerator.IndexFromContainer(container);
+
+            if (index >= 0 && _viewModel.CanSeek)
+            {
+                _followLyrics = true;
+                _viewModel.SeekToLineCommand.Execute(index);
+            }
         }
 
         private void LyricsScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
@@ -93,7 +180,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
             _followLyrics = false;
         }
 
-        private void AppButton_Click(object sender, RoutedEventArgs e)
+        private void HandleResumeFollow(object sender, RoutedEventArgs e)
         {
             _followLyrics = true;
 
@@ -116,12 +203,9 @@ namespace MusicWrap.UI.Features.Lyrics.View
             if (index >= LyricsItems.Items.Count)
                 return;
 
-            var container =
-                LyricsItems.ItemContainerGenerator
-                    .ContainerFromIndex(index)
-                    as FrameworkElement;
 
-            if (container == null)
+            if (LyricsItems.ItemContainerGenerator
+                    .ContainerFromIndex(index) is not FrameworkElement container)
             {
                 Dispatcher.BeginInvoke(
                     DispatcherPriority.Loaded,
@@ -167,8 +251,6 @@ namespace MusicWrap.UI.Features.Lyrics.View
                     0,
                     maxOffset);
 
-            //LyricsScrollViewer.ScrollToVerticalOffset(
-            //    targetOffset);
             AnimateScrollTo(targetOffset);
         }
 

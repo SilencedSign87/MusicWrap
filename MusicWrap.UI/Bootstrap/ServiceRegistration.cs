@@ -113,7 +113,6 @@ public static class ServiceRegistration
         services.AddTransient<DevicePage>();
         services.AddTransient<AboutPage>();
         services.AddTransient<SettingsYoutubeProviderPage>();
-        services.AddTransient<LyricsView>();
 
         services.AddTransient<IndexingWindow>();
         services.AddTransient<InformationWindow>();

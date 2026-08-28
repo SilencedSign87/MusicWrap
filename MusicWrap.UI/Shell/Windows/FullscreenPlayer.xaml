@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:MusicWrap.UI.Shell.Windows"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:lyrics="clr-namespace:MusicWrap.UI.Features.Lyrics.View"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
              mc:Ignorable="d"
@@ -130,28 +131,31 @@
             </Grid>
         </controls:HiddenPanel>
         <!-- MainContent -->
-        <Grid Grid.Row="1" x:Name="MainContentGrid" Grid.Column="1" ColumnDefinitions="*,Auto">
-
-            <StackPanel Orientation="Vertical" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0">
-                <Border CornerRadius="4" Width="500" Height="500" Margin="0,0,0,16">
-                    <Border.Background>
-                        <ImageBrush
+        <Grid>
+            <Grid x:Name="MainContentGrid" Grid.Column="1" ColumnDefinitions="*,Auto" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Orientation="Vertical" VerticalAlignment="Center" Grid.Column="0" Grid.Row="0">
+                    <Border CornerRadius="4" Width="500" Height="500" Margin="0,0,0,16">
+                        <Border.Background>
+                            <ImageBrush
                                 ImageSource="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=large:400}"
                                 Stretch="UniformToFill"
                                 />
-                    </Border.Background>
+                        </Border.Background>
+                    </Border>
+                    <TextBlock Text="{Binding NowPlayingViewModel.TrackTitle}" TextAlignment="Center" FontSize="24" FontWeight="Bold" />
+                    <TextBlock Text="{Binding NowPlayingViewModel.TrackAlbum}" TextAlignment="Center" FontSize="20" FontWeight="Medium" Opacity="0.8"/>
+                </StackPanel>
+                <Border Grid.Column="1" Visibility="{Binding NowPlayingViewModel.ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}" Padding="52">
+                    <lyrics:LyricsView 
+                        FontSize="36"
+                        AllowScroll="False"
+                        AllowSeek="False"
+                        ShowToolbar="False"
+                        LyricsAligment="Left"
+                        />
                 </Border>
-                <TextBlock Text="{Binding NowPlayingViewModel.TrackTitle}" TextAlignment="Center" FontSize="24" FontWeight="Bold" />
-                <TextBlock Text="{Binding NowPlayingViewModel.TrackAlbum}" TextAlignment="Center" FontSize="20" FontWeight="Medium" Opacity="0.8"/>
-            </StackPanel>
-            <Border Grid.Column="1" Visibility="{Binding NowPlayingViewModel.ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Border 
-                    x:Name="LyricsContainer"
-                    >
-
-                </Border>
-            </Border>
-            <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Margin="8">
+            </Grid>
+            <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
                 <controls:SpectrumVisualizerControl
                         Height="120"
                         BarCount="120"

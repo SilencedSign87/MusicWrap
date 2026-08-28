@@ -21,10 +21,16 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
 
         private bool _disposed;
 
-        [ObservableProperty] public partial ParsedLyrics? Lyrics { get; set; }
-        [ObservableProperty] public partial int ActiveIndex { get; set; } = -1;
-        [ObservableProperty] public partial bool HasLyrics { get; set; }
-        [ObservableProperty] public partial bool HasSyncedLyrics { get; set; }
+        [ObservableProperty, NotifyPropertyChangedFor(nameof(Lines))] 
+        public partial ParsedLyrics? Lyrics { get; set; }
+
+        [ObservableProperty, NotifyPropertyChangedFor(nameof(CanSeek))]
+        public partial int ActiveIndex { get; set; } = -1;
+        [ObservableProperty] 
+        public partial bool HasLyrics { get; set; }
+
+        [ObservableProperty, NotifyPropertyChangedFor(nameof(CanSeek))] 
+        public partial bool HasSyncedLyrics { get; set; }
 
         public bool CanSeek => HasSyncedLyrics && Lyrics != null && Lyrics.Lines.Count > 0;
 
@@ -94,8 +100,6 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
             Lyrics = p;
             HasLyrics = p.HasContent;
             HasSyncedLyrics = p.IsSynced;
-            OnPropertyChanged(nameof(CanSeek));
-            OnPropertyChanged(nameof(Lines));
             ActiveIndex = -1;
             SyncBaseline();
             UpdateActiveIndexImmediate();

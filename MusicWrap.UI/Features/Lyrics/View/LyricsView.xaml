@@ -13,7 +13,8 @@
              Unloaded="OnUnloaded"
              FontSize="18"
              d:DataContext="{d:DesignInstance Type=vm:LyricsViewModel}"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800"
+             >
     <Grid RowDefinitions="*">
         <!-- Lyrics Content -->
         <Border Grid.Row="0" Visibility="{Binding HasSyncedLyrics, Converter={StaticResource BooleanToVisibilityConverter}}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -27,7 +28,6 @@
                     <GradientStop Color="White" Offset="0.80"/>
                     <GradientStop Color="#40FFFFFF" Offset="0.92"/>
                     <GradientStop Color="Transparent" Offset="1"/>
-
                 </LinearGradientBrush>
             </Border.OpacityMask>
             <ScrollViewer
@@ -53,13 +53,17 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="24" HorizontalAlignment="Stretch">
+                                <Border 
+                                    Padding="24" 
+                                    HorizontalAlignment="Stretch"
+                                    PreviewMouseLeftButtonUp="LyricsScrollViewer_PreviewMouseLeftButtonUp"
+                                    >
                                     <TextBlock 
                                         Text="{Binding Text}"
-                                        HorizontalAlignment="Center"
-                                        TextAlignment="Center"
+                                        HorizontalAlignment="Stretch"
                                         TextWrapping="Wrap"
                                         FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
+                                        TextAlignment="{Binding LyricsAligment, ElementName=LyricsViewRoot}"
                                         FontWeight="Bold"/>
                                 </Border>
                             </DataTemplate>
@@ -79,10 +83,10 @@
                 >
                 <TextBlock
                     Text="{Binding Lyrics.RawText}"
-                    HorizontalAlignment="Center"
-                    TextAlignment="Center"
+                    HorizontalAlignment="Stretch"
                     TextWrapping="Wrap"
                     FontSize="{Binding FontSize , ElementName=LyricsViewRoot}"
+                    TextAlignment="{Binding LyricsAligment, ElementName=LyricsViewRoot}"
                     FontWeight="SemiBold"
                 />
             </ScrollViewer>
@@ -90,22 +94,26 @@
         <Border Grid.Row="0" Visibility="{Binding HasLyrics, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}">
             <TextBlock
                 Text="No lyrics available"
-                HorizontalAlignment="Center"
+                HorizontalAlignment="Stretch"
                 TextAlignment="Center"
                 TextWrapping="Wrap"
                 FontSize="16"
                 />
         </Border>
         <!-- Controls -->
-        <controls:HiddenPanel HorizontalAlignment="Stretch" VerticalAlignment="Top">
+        <controls:HiddenPanel 
+            HorizontalAlignment="Stretch" 
+            VerticalAlignment="Top" 
+            Visibility="{Binding ShowToolbar, ElementName=LyricsViewRoot, Converter={StaticResource BooleanToVisibilityConverter}}"
+            >
             <Border 
                 Background="{DynamicResource BackgroundSolid}" 
                 BorderThickness="1" 
                 BorderBrush="{DynamicResource StrokeSurface}" 
-                Padding="4" 
+                Padding="2" 
                 Margin="2"
                 CornerRadius="4">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Height="32">
                     <controls:AppButton
                             Style="{DynamicResource SubtleButton}"
                             Icon="&#xE72C;"
@@ -116,7 +124,7 @@
                         Style="{DynamicResource SubtleButton}"
                         Icon="&#xE768;"
                         ToolTip="Sync lyrics"
-                        Command="{Binding SyncLyricsCommand}"
+                        Click="HandleResumeFollow"
                         />
                 </StackPanel>
             </Border>
