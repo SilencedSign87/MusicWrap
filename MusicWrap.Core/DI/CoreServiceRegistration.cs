@@ -17,6 +17,7 @@ using MusicWrap.Core.Sources.Providers.Local;
 using MusicWrap.Core.Sources.Providers.Queue;
 using MusicWrap.Core.Sources.Providers.Runtime;
 using MusicWrap.Core.Sources.Providers.Youtube;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Playlist;
@@ -75,6 +76,15 @@ namespace MusicWrap.Core.DI
 
             // Player
             services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
+
+
+            // Startup Initializers
+            services.AddSingleton<IStartupInitializer>(sp =>
+                (IStartupInitializer)sp.GetRequiredService<IMusicPlayerService>()
+                );
+            services.AddSingleton<IStartupInitializer>(sp =>
+                (IStartupInitializer)sp.GetRequiredService<ILibraryIntegrityService>()
+                );
 
 
             return services;

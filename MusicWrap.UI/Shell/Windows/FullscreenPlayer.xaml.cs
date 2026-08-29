@@ -27,18 +27,18 @@ namespace MusicWrap.UI.Shell.Windows
             }
         }
 
-        private readonly GridLength LyricsWidth = new(700);
-        private readonly GridLength NoLyricsWidth = new(0);
-
         private void UpdateLyricsLayout(bool showLyrics)
         {
             if (showLyrics)
             {
-                MainContentGrid.ColumnDefinitions[1].Width = LyricsWidth;
+                ArtworkColumn.Width = new GridLength(1, GridUnitType.Star);
+                LyricsColumn.Width = new GridLength(1, GridUnitType.Star);
+
             }
             else
             {
-                MainContentGrid.ColumnDefinitions[1].Width = NoLyricsWidth;
+                ArtworkColumn.Width = new GridLength(1, GridUnitType.Star);
+                LyricsColumn.Width = new GridLength(0, GridUnitType.Star);
             }
         }
 

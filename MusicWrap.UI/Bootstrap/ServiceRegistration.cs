@@ -1,14 +1,12 @@
-using Jot;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.DI;
-using MusicWrap.Core.Services.Contracts;
+using MusicWrap.Core.Saving;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Activity.Viewmodel;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Features.Library.Views;
-using MusicWrap.UI.Features.Lyrics.View;
 using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.Features.Metadata.Viewmodels;
@@ -47,14 +45,9 @@ public static class ServiceRegistration
                        loggingBuilder.AddSerilog(dispose: true);
                    });
 
-        var Tracker = new Tracker();
-        ConfigureJot(Tracker);
-
-        services.AddSingleton(Tracker);
-
         services.AddSingleton<IUIDispatcher, UIDispatcher>();
         services.AddSingleton<IwindowsImageService, ImageService>();
-        services.AddSingleton<ITrayService, TrayService>();
+        services.AddSingleton<TrayService>();
         services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<WindowManagerService>();
         services.AddSingleton<TrackActionService>();
@@ -127,13 +120,11 @@ public static class ServiceRegistration
         services.AddTransient<NowPlayingPage>();
 
         services.AddTransient<YoutubeProviderPage>();
-    }
 
-    private static void ConfigureJot(Tracker tracker)
-    {
-        tracker.Configure<Window>()
-            .Id(w => w.Name)
-            .Properties(w => new { w.Top, w.Left, w.Width, w.Height, w.WindowState })
-            .PersistOn(nameof(Window.Closing));
+        // Startup
+        services.AddSingleton<IStartupInitializer>(sp => sp.GetRequiredService<ThemeService>());
+        services.AddSingleton<IStartupInitializer>(sp => sp.GetRequiredService<TrayService>());
+        services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(ISaveCoordinator)));
+        services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(PlayerViewModel)));
     }
 }

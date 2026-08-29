@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Threading;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -77,7 +79,12 @@ namespace MusicWrap.UI.Shared.Services
         }
         #endregion
 
-        public GlobalHotkeyService(ILogger<GlobalHotkeyService> logger, WindowManagerService windowManager)
+        public GlobalHotkeyService(
+            ILogger<GlobalHotkeyService> logger,
+            WindowManagerService windowManager,
+            IMusicPlayerService player,
+            IUIDispatcher dispatcher
+            )
         {
             _logger = logger;
             _windowManager = windowManager;
@@ -103,6 +110,26 @@ namespace MusicWrap.UI.Shared.Services
             {
                 _logger.LogInformation("Low-level keyboard hook installed for media keys.");
             }
+
+            MediaKeyPressed += key => dispatcher.Invoke(() =>
+            {
+                switch (key)
+                {
+                    case MediaKey.PlayPause:
+                        if (player.IsPlaying) player.Pause();
+                        else player.Play();
+                        break;
+                    case MediaKey.Next:
+                        player.Next();
+                        break;
+                    case MediaKey.Previous:
+                        player.Previous();
+                        break;
+                    case MediaKey.Stop:
+                        player.Stop();
+                        break;
+                }
+            });
         }
 
         public int RegisterHotkey(int modifiers, int key, Action callback)
@@ -129,6 +156,7 @@ namespace MusicWrap.UI.Shared.Services
             if (_disposed) return;
             _disposed = true;
             _windowManager.CurrentWindowChanged -= OnCurrentWindowChanged;
+            MediaKeyPressed = null;
             DetachFromCurrentWindow();
             if (_keyboardHookId != 0)
                 UnhookWindowsHookEx(_keyboardHookId);

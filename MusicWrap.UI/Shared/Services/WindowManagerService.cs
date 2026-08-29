@@ -47,10 +47,7 @@ namespace MusicWrap.UI.Shared.Services
         {
             // restore window if tray is disabled to prevent the app from being stuck in tray
             if (e.PropertyName == nameof(MusicWrapSettings.KeepAppInTray))
-            {
-                var tray = _serviceProvider.GetService<ITrayService>();
-                tray?.SetEnabled(_userSettings.KeepAppInTray);
-                
+            {   
                 if(!_userSettings.KeepAppInTray && ShellWindow is not null && !ShellWindow.IsVisible)
                 {
                     _dispatcher.Invoke(() =>

@@ -91,15 +91,6 @@
                 />
             </ScrollViewer>
         </Border>
-        <Border Grid.Row="0" Visibility="{Binding HasLyrics, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}">
-            <TextBlock
-                Text="No lyrics available"
-                HorizontalAlignment="Stretch"
-                TextAlignment="Center"
-                TextWrapping="Wrap"
-                FontSize="16"
-                />
-        </Border>
         <!-- Controls -->
         <controls:HiddenPanel 
             HorizontalAlignment="Stretch" 

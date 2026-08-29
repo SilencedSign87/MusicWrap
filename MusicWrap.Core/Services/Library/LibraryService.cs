@@ -82,6 +82,7 @@ namespace MusicWrap.Core.Services.Library
         private Dictionary<int, string> _artistNamesByTrackId = [];
         private Dictionary<int, string> _artistNameById = [];
         private Dictionary<int, int>? _albumDurationById = [];
+        private Dictionary<int, Genre> _genreById = [];
 
 
         private Dictionary<int, CoverAsset> _coverLookUp = [];
@@ -93,7 +94,8 @@ namespace MusicWrap.Core.Services.Library
             _messenger = messenger;
             _serviceProvider = serviceProvider;
             BuildIndexes();
-            Initialize();
+            //Initialize();
+            LoadFromDisk();
             _messenger.Register<LibraryChangedMessage>(this, OnLibraryChanged);
         }
 
@@ -111,7 +113,7 @@ namespace MusicWrap.Core.Services.Library
                     break;
             }
 
-            RebuildAllEntryCaches();
+            //RebuildAllEntryCaches();
             _messenger.Send(new EntriesReadyMessage());
         }
 
@@ -210,31 +212,31 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        public void Initialize()
-        {
-            LoadFromDisk();
-            BuildCoverLookUp();
+        //public void Initialize()
+        //{
+        //    LoadFromDisk();
+        //    BuildCoverLookUp();
 
-            switch (_userSettings.Library.EntryType)
-            {
-                case LibraryEntryType.Album:
-                    _albumCache ??= ConstructAlbumEntries();
-                    break;
-                case LibraryEntryType.TrackArtist:
-                    _trackArtistCache ??= ConstructTrackArtistEntries();
-                    break;
-                case LibraryEntryType.AlbumArtist:
-                default:
-                    _albumArtistCache ??= ConstructAlbumArtistEntries();
-                    break;
-                case LibraryEntryType.Genre:
-                    _genreCache ??= ConstructGenreEntries();
-                    break;
-                case LibraryEntryType.Decade:
-                    _decadeCache ??= ConstructDecadeEntries();
-                    break;
-            }
-        }
+        //    switch (_userSettings.Library.EntryType)
+        //    {
+        //        case LibraryEntryType.Album:
+        //            _albumCache ??= ConstructAlbumEntries();
+        //            break;
+        //        case LibraryEntryType.TrackArtist:
+        //            _trackArtistCache ??= ConstructTrackArtistEntries();
+        //            break;
+        //        case LibraryEntryType.AlbumArtist:
+        //        default:
+        //            _albumArtistCache ??= ConstructAlbumArtistEntries();
+        //            break;
+        //        case LibraryEntryType.Genre:
+        //            _genreCache ??= ConstructGenreEntries();
+        //            break;
+        //        case LibraryEntryType.Decade:
+        //            _decadeCache ??= ConstructDecadeEntries();
+        //            break;
+        //    }
+        //}
 
         public async Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(LibraryEntryType viewType, bool ascending, bool useSearchQuery = false)
         {
@@ -371,6 +373,7 @@ namespace MusicWrap.Core.Services.Library
             _trackCountByAlbumId = [];
             _artistNamesByAlbumId = [];
             _artistNameById = [];
+            _genreById = [];
             _coverLookUp = [];
             _albumDurationById = [];
         }
@@ -382,7 +385,11 @@ namespace MusicWrap.Core.Services.Library
         public IReadOnlyList<Track> GetTrackById(IEnumerable<int> trackIds)
         {
             EnsureIndexes();
-            return trackIds.Select(GetTrackById).Where(t => t is not null).Cast<Track>().ToList();
+            //return trackIds.Select(GetTrackById).Where(t => t is not null).Cast<Track>().ToList();
+            return trackIds.Select(id => _trackById.TryGetValue(id, out var track) ? track : null)
+                           .Where(t => t is not null)
+                           .Cast<Track>()
+                           .ToList();
         }
         public Album? GetAlbumById(int albumId)
         {
@@ -391,7 +398,8 @@ namespace MusicWrap.Core.Services.Library
         }
         public List<Genre> GetGenreById(List<int> genreIds)
         {
-            return genreIds.Select(genreId => _library.Genres.FirstOrDefault(g => g.Id == genreId) ?? new Genre { Id = genreId, Name = _unknownGenre }).ToList();
+            EnsureIndexes();
+            return genreIds.Select(genreId => _genreById.TryGetValue(genreId, out var genre) ? genre : new Genre { Id = genreId, Name = _unknownGenre }).ToList();
         }
         public IReadOnlyList<AlbumSummary> GetAlbumsForEntry(LibraryEntry entry, bool useSearchQuery = false)
         {
@@ -552,7 +560,12 @@ namespace MusicWrap.Core.Services.Library
 
         public IReadOnlyList<Album> GetAlbumsByIds(IEnumerable<int> albumIds)
         {
-            return _library.Albums.Where(a => albumIds.Contains(a.Id)).ToList();
+            EnsureIndexes();
+            return albumIds.Select(id => _albumById.TryGetValue(id, out var album) ? album : null)
+                           .Where(a => a is not null)
+                           .Cast<Album>()
+                           .ToList();
+            //return _library.Albums.Where(a => albumIds.Contains(a.Id)).ToList();
         }
 
         public ScanDirectory[] GetDirectories()
@@ -567,7 +580,8 @@ namespace MusicWrap.Core.Services.Library
 
                 foreach (var albumId in albumIds)
                 {
-                    var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
+                    //var album = _library.Albums.FirstOrDefault(a => a.Id == albumId);
+                    var album = GetAlbumById(albumId);
                     if (album is null) continue;
 
                     if (album.CoverId != 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
@@ -581,7 +595,8 @@ namespace MusicWrap.Core.Services.Library
             {
                 foreach (var trackId in trackIds)
                 {
-                    var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+                    //var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+                    var track = GetTrackById(trackId);
                     if (track is null) continue;
 
                     if (track.CoverId != 0 && _coverLookUp.TryGetValue(track.CoverId, out var cover))
@@ -810,6 +825,7 @@ namespace MusicWrap.Core.Services.Library
             {
                 bool mustRebuildIndexes =
                     _albumById.Count != _library.Albums.Count ||
+                    _genreById.Count != _library.Genres.Count ||
                     _artistNameById.Count != _library.Artists.Count ||
                     _trackCountByAlbumId.Count != _library.Albums.Count ||
                     _artistNamesByAlbumId.Count != _library.Albums.Count;
@@ -834,6 +850,8 @@ namespace MusicWrap.Core.Services.Library
             _trackById = _library.Tracks.ToDictionary(t => t.Id);
 
             _albumById = _library.Albums.ToDictionary(a => a.Id);
+
+            _genreById = _library.Genres.ToDictionary(g => g.Id);
 
             _artistNameById = _library.Artists.ToDictionary(ar => ar.Id, ar => AppStringPool.Intern(ar.Name) ?? ar.Name);
 
@@ -926,14 +944,14 @@ namespace MusicWrap.Core.Services.Library
             _queueManager.Remove(toRemove);
         }
 
-        private void RebuildAllEntryCaches()
-        {
-            _albumCache = ConstructAlbumEntries();
-            _trackArtistCache = ConstructTrackArtistEntries();
-            _albumArtistCache = ConstructAlbumArtistEntries();
-            _genreCache = ConstructGenreEntries();
-            _decadeCache = ConstructDecadeEntries();
-        }
+        //private void RebuildAllEntryCaches()
+        //{
+        //    _albumCache = ConstructAlbumEntries();
+        //    _trackArtistCache = ConstructTrackArtistEntries();
+        //    _albumArtistCache = ConstructAlbumArtistEntries();
+        //    _genreCache = ConstructGenreEntries();
+        //    _decadeCache = ConstructDecadeEntries();
+        //}
         private bool TryGetDecadeAlbumIds(string decadeTitle, out int[] albumIds)
         {
             albumIds = [];

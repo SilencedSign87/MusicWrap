@@ -4,24 +4,16 @@ using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.ViewModels;
+using MusicWrap.Core.Threading;
+using MusicWrap.Data.User.Models;
 
 namespace MusicWrap.UI.Services
 {
-    public interface ITrayService
-    {
-        void Initialize();
-        void SetEnabled(bool enabled);
-        void ShowFlyout();
-        void HideFlyout();
-        void ToggleFlyout();
-    }
-    class TrayService : ITrayService, IDisposable
+    public class TrayService : IStartupInitializer, IDisposable
     {
         private readonly IServiceProvider _serviceProvider;
-
         private TaskbarIcon? _trayIcon;
         private TrayFlyoutWindow? _flyout;
-        private Icon? _icon;
         private bool _isSubscribed;
 
         public TrayService(IServiceProvider serviceProvider)
@@ -31,24 +23,6 @@ namespace MusicWrap.UI.Services
 
         public void Initialize()
         {
-            SetEnabled(true);
-        }
-
-        public void SetEnabled(bool enabled)
-        {
-            if (!enabled)
-            {
-                if (_trayIcon is not null)
-                {
-                    _trayIcon.TrayLeftMouseUp -= _trayIcon_TrayLeftMouseUp;
-                    _trayIcon.DataContext = null;
-                    _trayIcon.Visibility = Visibility.Collapsed;
-                    _isSubscribed = false;
-                }
-
-                return;
-            }
-
             _trayIcon ??= (TaskbarIcon)App.Current.Resources["TrayIcon"];
             _trayIcon.DataContext = _serviceProvider.GetRequiredService<TaskbarIconViewModel>();
             _trayIcon.Visibility = Visibility.Visible;
@@ -68,8 +42,7 @@ namespace MusicWrap.UI.Services
 
         public void ShowFlyout()
         {
-            if (_flyout == null || !_flyout.IsLoaded)
-                _flyout = null; // relese reference
+            if (_flyout is null || !_flyout.IsLoaded)
                 _flyout = _serviceProvider.GetRequiredService<TrayFlyoutWindow>();
 
             _flyout.ShowFlyout();
@@ -109,9 +82,6 @@ namespace MusicWrap.UI.Services
                 _trayIcon.Dispose();
                 _trayIcon = null;
             }
-
-            _icon?.Dispose();
-            _icon = null;
         }
         #endregion
     }

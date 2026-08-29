@@ -41,6 +41,8 @@ public static class StartupOrquestrator
                         )
                         .CreateLogger();
 
+        Log.Information("Starting application...");
+
         services.AddAppServices();
 
         return services.BuildServiceProvider();
@@ -48,91 +50,19 @@ public static class StartupOrquestrator
 
     public static async Task InitializeAsync(IServiceProvider serviceProvider, SplashScreen? splash = null)
     {
-        int windowToShow = 0;
+        WindowManagerService? windowManager = null;
+        PlayerMode modeToShow = PlayerMode.MainPlayer;
 
         try
         {
-            var musicLibrary = serviceProvider.GetService<MusicLibrary>();
-            var userSettings = serviceProvider.GetRequiredService<MusicWrapSettings>();
-            var player = serviceProvider.GetRequiredService<IMusicPlayerService>();
-            var trayService = serviceProvider.GetService<ITrayService>();
-            var hotkeyService = serviceProvider.GetRequiredService<GlobalHotkeyService>();
-            var uiDispatcher = serviceProvider.GetRequiredService<IUIDispatcher>();
-            var themeService = serviceProvider.GetRequiredService<ThemeService>();
-            var windowManager = serviceProvider.GetRequiredService<WindowManagerService>();
-            var taskbarController = serviceProvider.GetRequiredService<TaskbarController>();
-            themeService.Initialize();
+            windowManager = serviceProvider.GetRequiredService<WindowManagerService>();
+            modeToShow = serviceProvider.GetRequiredService<MusicWrapSettings>().LastWindowMode;
 
-            trayService?.Initialize();
-
-            player.LoadInitialState();
-
-            // Keyboard Register
-            hotkeyService.MediaKeyPressed += key =>
+            foreach (var initializer in serviceProvider.GetServices<IStartupInitializer>())
             {
-                uiDispatcher.Invoke(() =>
-                {
-                    switch (key)
-                    {
-                        case MediaKey.PlayPause:
-                            if (player.IsPlaying) player.Pause();
-                            else player.Play();
-                            break;
-                        case MediaKey.Next:
-                            player.Next();
-                            break;
-                        case MediaKey.Previous:
-                            player.Previous();
-                            break;
-                        case MediaKey.Stop:
-                            player.Stop();
-                            break;
-                    }
-                });
-            };
-
-            // taskbar thumbnail buttons
-            taskbarController.PreviousRequested += () =>
-            {
-                Application.Current.Dispatcher.Invoke(() => player.Previous());
-            };
-
-            taskbarController.PlayPauseRequested += () =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (player.IsPlaying) player.Pause();
-                    else player.Play();
-                });
-            };
-
-            taskbarController.NextRequested += () =>
-            {
-                Application.Current.Dispatcher.Invoke(() => player.Next());
-            };    
-
-            // Library cache initialization (preserve previous defaults)
-            var listBy = userSettings.Library.EntryType;
-            var ascending = userSettings.Library.EntryListAscending;
-
-            var libraryCache = serviceProvider.GetRequiredService<ILibraryService>();
-            //await libraryCache.InitializeAsync(listBy, ascending);
-
-            // Pre-resolve important VMs / services
-            serviceProvider.GetService<PlayerViewModel>();
-
-            windowToShow = (int)userSettings.LastWindowMode;
-
-            // Ensure save orchestration/coordinator are created (they may be used on exit)
-            serviceProvider.GetService<ISaveCoordinator>();
-
-            // If keep in tray, ensure tray is initialized (safe to call again)
-            if (userSettings.KeepAppInTray)
-            {
-                try { trayService?.SetEnabled(true); } catch { }
+                Log.Information("Initializing service {Initializer}...", initializer.GetType().Name);
+                initializer.Initialize();
             }
-
-            RunIntegrityCheck(serviceProvider);
 
         }
         catch (Exception ex)
@@ -143,7 +73,6 @@ public static class StartupOrquestrator
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                var wm = serviceProvider.GetRequiredService<WindowManagerService>();
                 try
                 {
                     splash?.Close(TimeSpan.FromSeconds(0.5));
@@ -152,13 +81,13 @@ public static class StartupOrquestrator
 
                 try
                 {
-                    if (windowToShow == 1)
+                    if (modeToShow == PlayerMode.CompactPlayer)
                     {
-                        wm.SwitchToCompactPlayer();
+                        windowManager?.SwitchToCompactPlayer();
                     }
                     else
                     {
-                        wm.SwitchToMainPlayer();
+                        windowManager?.SwitchToMainPlayer();
                     }
                 }
                 catch (Exception ex)
@@ -167,22 +96,5 @@ public static class StartupOrquestrator
                 }
             });
         }
-
     }
-
-    private static void RunIntegrityCheck(IServiceProvider serviceProvider)
-    {
-        try
-        {
-            var integrity = serviceProvider.GetRequiredService<ILibraryIntegrityService>();
-
-            integrity.Verify();
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error during library integrity check");
-        }
-
-    }
-
 }

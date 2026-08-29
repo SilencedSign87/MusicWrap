@@ -66,10 +66,7 @@ namespace MusicWrap.UI
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                 coordinator.FlushAsync(cts.Token).GetAwaiter().GetResult();
 
-                if (Services.GetServices<ITrayService>()  is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
+                Services.GetService<TrayService>()?.Dispose();
             }
             catch (Exception ex)
             {
@@ -77,7 +74,7 @@ namespace MusicWrap.UI
             }
             finally
             {
-                Log.Information("Application exiting");
+                Log.Information("Exiting application...");
                 Log.CloseAndFlush();
                 base.OnExit(e);
             }

@@ -1,4 +1,5 @@
 ﻿using MusicWrap.Core.Saving;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
 using System;
@@ -8,7 +9,7 @@ using System.Windows;
 
 namespace MusicWrap.UI.Shared.Services
 {
-    public sealed class ThemeService
+    public sealed class ThemeService : IStartupInitializer
     {
         private readonly MusicWrapSettings _userSettings;
         private readonly ISaveCoordinator _saveCoordinator;

@@ -18,12 +18,11 @@ namespace MusicWrap.UI.ViewModels
         private const string playIcon = "\xE768";
         [ObservableProperty] private string playPauseStatus = "Play";
         [ObservableProperty] private string playPauseIcon = playIcon;
-        private float previousVolume = 1.0f;
 
         private readonly IMusicPlayerService _playerService;
-        private readonly ITrayService _trayService;
+        private readonly TrayService _trayService;
         private readonly WindowManagerService _windowManager;
-        public TaskbarIconViewModel(IMusicPlayerService musicPlayerService, ITrayService trayService, WindowManagerService windowManager)
+        public TaskbarIconViewModel(IMusicPlayerService musicPlayerService, TrayService trayService, WindowManagerService windowManager)
         {
             _playerService = musicPlayerService;
             _trayService = trayService;
@@ -91,7 +90,6 @@ namespace MusicWrap.UI.ViewModels
             {
                 SetUiPlayingState(PlaybackState.Paused);
             }
-            previousVolume = _playerService.Volume;
         }
         private void _playerService_PlaybackStateChanged(object? sender, PlaybackState e)
         {

@@ -84,7 +84,7 @@ namespace MusicWrap.Core.Services.Playback
         PlaybackQueueSnapshot BuildPlaybackSnapshot();
         void LoadInitialState();
     }
-    public class MusicPlayerService : IMusicPlayerService, IDisposable
+    public class MusicPlayerService : IMusicPlayerService, IStartupInitializer, IDisposable
     {
         // Providers
         private readonly IQueueManager _queue;
@@ -354,6 +354,8 @@ namespace MusicWrap.Core.Services.Playback
 
             EnqueueSave(SaveKind.Playback);
         }
+
+        void IStartupInitializer.Initialize() => LoadInitialState();
 
         public event EventHandler<string>? TrackChanged;
         public event EventHandler? TrackEnded;

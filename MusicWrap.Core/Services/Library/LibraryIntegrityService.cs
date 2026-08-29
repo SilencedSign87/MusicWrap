@@ -4,6 +4,7 @@ using MusicWrap.Core.Messages;
 using MusicWrap.Core.Queue;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library.Models;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
@@ -24,7 +25,7 @@ namespace MusicWrap.Core.Services.Library
         void Verify(IProgress<LibraryVerificationProgress>? progress = null, CancellationToken cancellationToken = default);
     }
 
-    public class LibraryIntegrityService : ILibraryIntegrityService
+    public class LibraryIntegrityService : ILibraryIntegrityService, IStartupInitializer
     {
         private readonly MusicLibrary _library;
         private readonly ILibraryService _libraryService;
@@ -117,6 +118,10 @@ namespace MusicWrap.Core.Services.Library
                     _saveCoordinator.Enqueue(SaveKind.Library);
                 }
             }
+        }
+        void IStartupInitializer.Initialize()
+        {
+            Task.Run(() => Verify());
         }
     }
     public sealed record TrackVerificationResult

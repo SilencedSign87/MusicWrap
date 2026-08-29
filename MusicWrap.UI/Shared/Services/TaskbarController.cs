@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Core.Threading;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.Drawing;
@@ -22,25 +23,25 @@ namespace MusicWrap.UI.Shared.Services
         private bool _buttonsAdded;
         private bool _isPlaying;
 
-        public event Action? PreviousRequested;
-        public event Action? PlayPauseRequested;
-        public event Action? NextRequested;
-
         private const uint ButtonPrevious = 1;
         private const uint ButtonPlayPause = 2;
         private const uint ButtonNext = 3;
         private const int IconSize = 32;
 
         private readonly IMusicPlayerService _playerService;
+        private readonly IUIDispatcher _dispatcher;
         private readonly ILogger _logger;
         private List<IntPtr> _createdIcons = new();
 
         public TaskbarController(
             IMusicPlayerService playerService,
-            ILogger<TaskbarController> logger)
+            ILogger<TaskbarController> logger,
+            IUIDispatcher dispatcher
+            )
         {
             _playerService = playerService;
             _logger = logger;
+            _dispatcher = dispatcher;
 
             var type = Type.GetTypeFromCLSID(
                 new Guid("56FDF344-FD6D-11D0-958A-006097C9A090"));
@@ -244,13 +245,17 @@ namespace MusicWrap.UI.Shared.Services
             switch (id)
             {
                 case ButtonPrevious:
-                    PreviousRequested?.Invoke();
+                    _dispatcher.Invoke(() => _playerService.Previous());
                     break;
                 case ButtonPlayPause:
-                    PlayPauseRequested?.Invoke();
+                    _dispatcher.Invoke(() =>
+                            {
+                                if (_playerService.IsPlaying) _playerService.Pause();
+                                else _playerService.Play();
+                            });
                     break;
                 case ButtonNext:
-                    NextRequested?.Invoke();
+                    _dispatcher.Invoke(() => _playerService.Next());
                     break;
             }
         }
