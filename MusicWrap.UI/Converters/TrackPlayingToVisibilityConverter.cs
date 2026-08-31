@@ -1,4 +1,4 @@
-using System;
+using MusicWrap.UI.Helpers;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
@@ -14,7 +14,7 @@ namespace MusicWrap.UI.Converters
                 return Visibility.Collapsed;
             }
 
-            if (!TryToInt(values[0], out var currentTrackId) || !TryToInt(values[1], out var rowTrackId))
+            if (!CastingHelpers.TryToInt(values[0], out var currentTrackId) || !CastingHelpers.TryToInt(values[1], out var rowTrackId))
             {
                 return Visibility.Collapsed;
             }
@@ -25,32 +25,18 @@ namespace MusicWrap.UI.Converters
                 return Visibility.Collapsed;
             }
 
-            return currentTrackId == rowTrackId && currentTrackId > 0
-                ? Visibility.Visible
-                : Visibility.Collapsed;
+            var isPlaying = currentTrackId == rowTrackId && currentTrackId > 0;
+            var negate = parameter is string s && s.Equals("negative", StringComparison.OrdinalIgnoreCase);
+
+            if (negate)
+                return isPlaying ? Visibility.Collapsed : Visibility.Visible;
+
+            return isPlaying ? Visibility.Visible : Visibility.Collapsed;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
-        }
-
-        private static bool TryToInt(object value, out int result)
-        {
-            if (value is int i)
-            {
-                result = i;
-                return true;
-            }
-
-            if (value is string s && int.TryParse(s, out var parsed))
-            {
-                result = parsed;
-                return true;
-            }
-
-            result = 0;
-            return false;
         }
     }
 }

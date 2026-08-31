@@ -60,19 +60,6 @@ namespace MusicWrap.UI.Controls.Models
             if (d is not TracksView tracksView)
                 return;
 
-            //Debug.WriteLine($"[TracksView {tracksView.GetHashCode()}] ItemsSource changed: {e.OldValue?.GetHashCode() ?? 0} -> {e.NewValue?.GetHashCode() ?? 0}");
-
-            //tracksView.UnsubscribeFromItemsSource();
-            //tracksView._itemsSource = e.NewValue as IEnumerable<TrackRowItem>;
-            //tracksView._itemsSourceCollection = tracksView._itemsSource as INotifyCollectionChanged;
-
-            //if (tracksView._itemsSourceCollection != null)
-            //{
-            //    tracksView._itemsSourceCollection.CollectionChanged += tracksView.ItemsSource_CollectionChanged;
-            //}
-
-            //tracksView.RefreshItemsSource();
-
             tracksView.UnsubscribeFromItemsSource();
             tracksView.AttachItemsSource(e.NewValue as IEnumerable<TrackRowItem>);
             tracksView.RefreshItemsSource();
