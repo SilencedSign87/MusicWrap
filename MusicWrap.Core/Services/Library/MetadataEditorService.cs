@@ -11,37 +11,66 @@ namespace MusicWrap.Core.Services.Library
     public class MetadataEditorService
     {
         private readonly ILibraryService _library;
+        private readonly ILibraryIndexer _libraryIndexer;
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly ILogger<MetadataEditorService> _logger;
         private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-        public MetadataEditorService(ILibraryService library, ISaveCoordinator saveCoordinator, ILogger<MetadataEditorService> logger)
+        public MetadataEditorService(ILibraryService library, ISaveCoordinator saveCoordinator, ILogger<MetadataEditorService> logger, ILibraryIndexer libraryIndexer)
         {
             _library = library;
             _saveCoordinator = saveCoordinator;
             _logger = logger;
+            _libraryIndexer = libraryIndexer;
+        }
+        public async Task<int> EditTagsAsync(IReadOnlyCollection<int> trackIds, Action<TagLib.Tag> applyChanges, CancellationToken ct = default)
+        {
+            int ok = 0;
+            foreach (var trackId in trackIds)
+            {
+                if (await EditTagAsync(trackId, applyChanges, ct))
+                    ok++;
+            }
+
+            if (ok > 0)
+                _library.RefreshLibrary();
+
+            return ok;
         }
         public async Task<bool> EditTagAsync(int trackId, Action<TagLib.Tag> applyChanges, CancellationToken ct = default)
         {
             var track = _library.GetTrackById(trackId);
             if (track is null || track.Id == 0 || string.IsNullOrWhiteSpace(track.Path)) return false;
 
-            await _writeLock.WaitAsync();
+            await _writeLock.WaitAsync(ct);
             try
             {
-                return await Task.Run(() => EditTagsCore(track, applyChanges));
+
+                MemoryStream? stream = await Task.Run(() => WriteTagsCore(track, applyChanges));
+                if (stream is null) return false;
+
+                try
+                {
+                    await _libraryIndexer.ReplaceTrackAsync(trackId, ct);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Reindex failed after editing tags for {Path}; refreshing cached fields instead.", track.Path);
+                    RefreshTrackFromStream(track, stream);
+                }
+                return true;
             }
             finally
             {
                 _writeLock.Release();
             }
         }
-        private bool EditTagsCore(Track track, Action<TagLib.Tag> applyChanges)
+        private MemoryStream? WriteTagsCore(Track track, Action<TagLib.Tag> applyChanges)
         {
             string? tempPath = null;
             try
             {
-                if (!System.IO.File.Exists(track.Path)) return false;
+                if (!System.IO.File.Exists(track.Path)) return null;
 
                 byte[] fileData = System.IO.File.ReadAllBytes(track.Path);
 
@@ -68,12 +97,13 @@ namespace MusicWrap.Core.Services.Library
 
                 _saveCoordinator.Enqueue(SaveKind.Library);
 
-                return true;
+                ms.Position = 0;
+                return ms;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to edit tags for file {Path}", track.Path);
-                return false;
+                return null;
             }
             finally
             {

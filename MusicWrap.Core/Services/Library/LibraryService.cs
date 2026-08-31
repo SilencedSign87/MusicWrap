@@ -41,6 +41,7 @@ namespace MusicWrap.Core.Services.Library
         int[] GetTrackQueueForAlbum(int albumId);
         void SaveToDisk();
         void ClearLibraryCache();
+        void RefreshLibrary();
     }
     public class LibraryService : ILibraryService, IDisposable
     {
@@ -160,6 +161,14 @@ namespace MusicWrap.Core.Services.Library
             BuildIndexes();
             BuildCoverLookUp();
 
+            _messenger.Send(new LibraryChangedMessage(LibraryChangeType.FullReload));
+        }
+
+        public void RefreshLibrary()
+        {
+            CleanupOrphans();
+            BuildIndexes();
+            BuildCoverLookUp();
             _messenger.Send(new LibraryChangedMessage(LibraryChangeType.FullReload));
         }
 

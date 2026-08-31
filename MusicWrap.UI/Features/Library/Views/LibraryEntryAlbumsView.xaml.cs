@@ -60,7 +60,6 @@ namespace MusicWrap.UI.Features.Library.Views
                     var workspace = viewModel.Workspace;
                     var libraryCacheService = viewModel.LibraryService;
                     var tracksContextMenuService = App.Services.GetRequiredService<TrackActionService>();
-                    var searchService = App.Services.GetRequiredService<SearchService>();
 
                     int[]? filteredTrackIds = null;
                     var entry = workspace.SelectedEntry;
@@ -72,10 +71,8 @@ namespace MusicWrap.UI.Features.Library.Views
 
                     var tracksViewModel = new AlbumTracksViewModel(
                         libraryCacheService,
-                        searchService,
                         tracksContextMenuService,
                         row.ExpandedAlbumId.Value,
-                        "",
                         filteredTrackIds
                     );
                     var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };

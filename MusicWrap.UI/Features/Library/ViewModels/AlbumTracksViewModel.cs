@@ -39,9 +39,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private List<int> selectedTrackIds = [];
 
         private readonly ILibraryService _libraryService;
-        private readonly SearchService _searchService;
         private readonly TrackActionService _tracksContextMenuService;
-        private readonly string _searchQuery;
         private HashSet<int> _albumTrackIds = [];
 
         private readonly int[]? _filteredTrackIds;
@@ -50,17 +48,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         public AlbumTracksViewModel(
             ILibraryService libraryCache,
-            SearchService searchService,
             TrackActionService tracksContextMenuService,
             int albumId,
-            string? searchQuery = null,
             int[]? filteredTrackIds = null
             )
         {
             _libraryService = libraryCache;
-            _searchService = searchService;
             _tracksContextMenuService = tracksContextMenuService;
-            _searchQuery = searchQuery?.Trim() ?? string.Empty;
             _filteredTrackIds = filteredTrackIds;
             this.albumId = albumId;
             selectedTrackIds = [];

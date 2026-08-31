@@ -7,6 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace MusicWrap.UI.Controls
 {
@@ -23,6 +24,7 @@ namespace MusicWrap.UI.Controls
         public AutocompleteMetadataInput()
         {
             InitializeComponent();
+            CompactInput.Foreground = Foreground;
 
             // Get service from DI container
             _autocompleteService = App.Services.GetRequiredService<IMetadataAutocompleteService>();
@@ -80,10 +82,6 @@ namespace MusicWrap.UI.Controls
 
         private static void OnSelectedSuggestionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            //if (e.NewValue is string suggestion && !string.IsNullOrEmpty(suggestion))
-            //{
-            //    ((AutocompleteMetadataInput)d).CommitSuggestion(suggestion);
-            //}
         }
 
         public static readonly DependencyProperty SuggestionsProperty =
@@ -149,7 +147,7 @@ namespace MusicWrap.UI.Controls
             set => SetValue(MultipleValueSeparatorProperty, value);
         }
 
-        public static readonly DependencyProperty PlaceholderTextProperty = 
+        public static readonly DependencyProperty PlaceholderTextProperty =
             DependencyProperty.Register(
                 nameof(PlaceholderText),
                 typeof(string),
@@ -159,6 +157,24 @@ namespace MusicWrap.UI.Controls
         {
             get => (string)GetValue(PlaceholderTextProperty);
             set => SetValue(PlaceholderTextProperty, value);
+        }
+
+        public static readonly DependencyProperty ForegroundProperty =
+                   DependencyProperty.Register(
+                       nameof(Foreground),
+                       typeof(Brush),
+                       typeof(AutocompleteMetadataInput),
+                       new FrameworkPropertyMetadata(null, OnForegroundForwarded));
+        public Brush Foreground
+        {
+            get => (Brush)GetValue(ForegroundProperty);
+            set => SetValue(ForegroundProperty, value);
+        }
+        private static void OnForegroundForwarded(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = (AutocompleteMetadataInput)d;
+            if (control.CompactInput is not null)
+                control.CompactInput.Foreground = (Brush?)e.NewValue;
         }
 
         public static readonly DependencyProperty BeforeContentProperty =
@@ -411,7 +427,7 @@ namespace MusicWrap.UI.Controls
                 string after = current[segment.End..];
                 string mergued = before + suggestion.Trim() + after;
                 mergued = NormalizeCommaSpaces(mergued);
-                int newCaret = (before + suggestion.Trim()).Length;
+                int newCaret = (before + suggestion.Trim()).Length + 1;
                 Text = mergued;
                 SetCaretIndex(newCaret);
 

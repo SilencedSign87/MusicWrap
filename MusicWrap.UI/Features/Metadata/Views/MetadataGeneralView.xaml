@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:Foreground="White"
              d:DataContext="{d:DesignInstance Type=vm:MetadataGeneralViewmodel}"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="800" d:DesignWidth="500">
     <UserControl.Resources>
         <Style x:Key="MultipleValueTextStyle" TargetType="TextBlock">
             <Setter Property="Opacity" Value="1" />
@@ -30,77 +30,32 @@
             <Grid>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center" />
-                    <TextBlock Text="Embedded Metadata" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock Text="File Information" Margin="8,0,0,0" VerticalAlignment="Center" />
                 </StackPanel>
                 <controls:AppButton Style="{DynamicResource DefaultButton}" HorizontalAlignment="Right" Command="{Binding ShowInExplorerCommand}" Icon="&#xEC50;" ToolTip="Open in explorer" />
             </Grid>
         </Border>
         <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="4" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-        <ScrollViewer Grid.Row="2" Margin="8,4,8,0">
-            <StackPanel>
-                <controls:SectionTitleSeparator Title="Pictures"  IconGlyph="&#xE8B9;"/>
 
-                <StackPanel Margin="0,16,0,0">
-                    <ItemsControl ItemsSource="{Binding Images}">
-                        <ItemsControl.Style>
-                            <Style TargetType="ItemsControl">
-                                <Setter Property="Visibility" Value="Visible" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasMultipleImages}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ItemsControl.Style>
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Width="120" Height="120" Margin="0,0,8,8" CornerRadius="6" BorderBrush="{DynamicResource StrokeLayerCard}" BorderThickness="1">
-                                    <Image Source="{Binding}" Stretch="Uniform" Margin="4" />
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+        <StackPanel  Grid.Row="2" Margin="16,4,16,0">
+            <ItemsControl ItemsSource="{Binding Rows}" IsTabStop="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="Auto,*" Margin="0,8">
+                            <TextBlock Grid.Column="0" Text="{Binding Label}" MinWidth="150" Opacity="0.6" VerticalAlignment="Top" />
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding Values}" IsTabStop="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" TextWrapping="Wrap" Style="{StaticResource MultipleValueTextStyle}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-                    <TextBlock Text="{Binding MultipleImagesPlaceholder}" Opacity="0.6" Height="56">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding HasMultipleImages}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+        </StackPanel>
 
-                </StackPanel>
-
-                <controls:SectionTitleSeparator Title="Information"  IconGlyph="&#xE946;"/>
-
-                <ItemsControl ItemsSource="{Binding Rows}" Margin="0,16" IsTabStop="False">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Grid ColumnDefinitions="Auto,*" Margin="0,4">
-                                <TextBlock Grid.Column="0" Text="{Binding Label}" MinWidth="150" Opacity="0.6" VerticalAlignment="Top" />
-                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Values}" IsTabStop="False">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Style="{StaticResource MultipleValueTextStyle}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-            </StackPanel>
-        </ScrollViewer>
     </Grid>
 </UserControl>

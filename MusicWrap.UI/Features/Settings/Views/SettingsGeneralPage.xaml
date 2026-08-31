@@ -9,7 +9,7 @@
       mc:Ignorable="d" 
       d:Background="#1fffffff"
       d:DataContext="{d:DesignInstance Type=vm:SettingsGeneralViewModel}"
-      d:DesignHeight="450" d:DesignWidth="800">
+      d:DesignHeight="800" d:DesignWidth="800">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
 
 
@@ -71,7 +71,7 @@
                     Height="144" 
                     CornerRadius="8" 
                     BorderThickness="1" 
-                    BorderBrush="{StaticResource StrokeSurface}"
+                    BorderBrush="{DynamicResource StrokeSurface}"
                     >
                         <Border.Background>
                             <ImageBrush
@@ -81,13 +81,13 @@
                         </Border.Background>
 
                         <Border Width="72" Height="24"
-                        CornerRadius="2"
-                        Background="{StaticResource BackgroundFloating}"
-                        BorderBrush="{StaticResource StrokeSurface}"
-                        BorderThickness="1"
-                        Margin="4"
-                        HorizontalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToHAlign}}"
-                        VerticalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToVAlign}}">
+                                CornerRadius="2"
+                                Background="{DynamicResource BackgroundFloating}"
+                                BorderBrush="{DynamicResource StrokeSurface}"
+                                BorderThickness="1"
+                                Margin="4"
+                                HorizontalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToHAlign}}"
+                                VerticalAlignment="{Binding TrayPopupPosition, Converter={StaticResource TrayPosToVAlign}}">
                             <Border.Effect>
                                 <DropShadowEffect
                                 Direction="270"

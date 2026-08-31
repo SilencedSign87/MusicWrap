@@ -8,19 +8,16 @@ using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
-using System.Globalization;
-using System.Windows.Media.Imaging;
-using static MusicWrap.UI.Features.Metadata.Viewmodels.FileDataBuilder;
+using System.IO;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {
     public partial class MetadataGeneralViewmodel : ObservableObject, IMetadataEditorTabViewmodel
     {
-        public static string MultipleValuesString = "-- Multiple Values --";
+        public static string MultipleValuesString = "Mixed Values";
 
         private readonly MetadataEditorWorkspace _workspace;
         private readonly ILibraryService _libraryService;
-        private readonly IwindowsImageService _imageService;
         private readonly TrackActionService _trackActionService;
         private readonly ILogger _logger;
 
@@ -30,17 +27,12 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         public partial bool IsLoading { get; set; }
         [ObservableProperty]
         public partial string Filepath { get; set; } = string.Empty;
-        [ObservableProperty]
-        public partial bool HasMultipleImages { get; set; }
-        public string MultipleImagesPlaceholder => MultipleValuesString;
-        public ObservableCollection<BitmapImage> Images { get; } = [];
         public ObservableCollection<FileData> Rows { get; } = [];
 
-        public MetadataGeneralViewmodel(MetadataEditorWorkspace workspace, ILibraryService libraryService, IwindowsImageService imageService, TrackActionService trackActionService, ILogger<MetadataGeneralViewmodel> logger)
+        public MetadataGeneralViewmodel(MetadataEditorWorkspace workspace, ILibraryService libraryService, TrackActionService trackActionService, ILogger<MetadataGeneralViewmodel> logger)
         {
             _workspace = workspace;
             _libraryService = libraryService;
-            _imageService = imageService;
             _trackActionService = trackActionService;
             _logger = logger;
         }
@@ -48,11 +40,8 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         public void Load()
         {
             int version = ++_loadVersion;
-
-            Images.Clear();
             Rows.Clear();
             Filepath = MultipleValuesString;
-            HasMultipleImages = false;
             IsLoading = true;
 
             var trackIds = _workspace.TrackIds.ToList();
@@ -68,11 +57,8 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                 if (version != _loadVersion)
                     return;
                 Filepath = result.Filepath;
-                HasMultipleImages = result.HasMultipleImages;
                 foreach (var row in result.Rows)
                     Rows.Add(row);
-                foreach (var image in result.Images)
-                    Images.Add(image);
             }
             catch (Exception ex)
             {
@@ -84,7 +70,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                     IsLoading = false;
             }
         }
-        private (string Filepath, bool HasMultipleImages, IReadOnlyList<FileData> Rows, IReadOnlyList<BitmapImage> Images) BuildData(IReadOnlyList<int> trackIds)
+        private (string Filepath, IReadOnlyList<FileData> Rows) BuildData(IReadOnlyList<int> trackIds)
         {
             var tracks = trackIds
                 .Select(_libraryService.GetTrackById)
@@ -92,53 +78,34 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                 .Cast<Track>()
                 .ToList();
             if (tracks.Count == 0)
-                return (MultipleValuesString, false, [], []);
-            // Lectura paralela de archivos, escribiendo por índice para preservar el orden
-            var perTrack = new (IReadOnlyList<FileData> Rows, List<byte[]> ImageBytes)?[tracks.Count];
+                return (MultipleValuesString, []);
+
+            var perTrack = new IReadOnlyList<FileData>?[tracks.Count];
             var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2) };
             Parallel.ForEach(Enumerable.Range(0, tracks.Count), options, i =>
             {
                 perTrack[i] = ReadTrack(tracks[i]);
             });
-            var readable = perTrack.Where(r => r is not null).Select(r => r!.Value).ToList();
+            var readable = perTrack.Where(rows => rows is not null).Cast<IReadOnlyList<FileData>>().ToList();
             if (readable.Count == 0)
-                return (MultipleValuesString, false, [], []);
+                return (MultipleValuesString, []);
+
             string filepath = tracks.Count == 1 ? tracks[0].Path : MultipleValuesString;
-            var rows = FileDataBuilder.Merge(readable.Select(r => r.Rows).ToList());
-            var firstBytes = readable[0].ImageBytes;
-            bool imagesShared = readable.All(r => ImageCollectionsEqual(r.ImageBytes, firstBytes));
-            var images = new List<BitmapImage>();
-            if (imagesShared)
-            {
-                foreach (var bytes in firstBytes)
-                    if (_imageService.LoadFromBytes(bytes) is { } image)
-                        images.Add(image);
-                if (images.Count == 0 && _imageService.GetDefaultImage(120) is { } fallback)
-                    images.Add(fallback);
-            }
-            return (filepath, !imagesShared, rows, images);
+            var rows = FileDataBuilder.Merge(readable);
+            return (filepath, rows);
         }
-        private static (IReadOnlyList<FileData> Rows, List<byte[]> ImageBytes)? ReadTrack(Track track)
+        private static IReadOnlyList<FileData>? ReadTrack(Track track)
         {
             try
             {
                 using var filetag = TagLib.File.Create(track.Path);
-                var imageBytes = filetag.Tag.Pictures
-                    .Where(p => p?.Data?.Data is { Length: > 0 })
-                    .Select(p => p.Data.Data)
-                    .ToList();
-                return (FileDataBuilder.Build(filetag), imageBytes);
+                return FileDataBuilder.Build(filetag, track.Path);
             }
             catch
             {
                 return null;
             }
         }
-
-        private static bool ImageCollectionsEqual(List<byte[]> a, List<byte[]> b)
-           => a.Count == b.Count && a.Zip(b).All(pair => BytesEqual(pair.First, pair.Second));
-        private static bool BytesEqual(byte[] a, byte[] b)
-            => a.Length == b.Length && a.AsSpan().SequenceEqual(b);
 
         [RelayCommand]
         private void ShowInExplorer() => _trackActionService.ShowInFileExplorer(_workspace.TrackIds);
@@ -149,35 +116,18 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
     }
     public static class FileDataBuilder
     {
-        public static IReadOnlyList<FileData> Build(TagLib.File file)
+        public static IReadOnlyList<FileData> Build(TagLib.File file, string filepath)
         {
             var rows = new List<FileData>();
-            if (file.Tag is { } tag)
-            {
-                AddRow(rows, "Title", tag.Title);
-                AddRow(rows, "Album", tag.Album);
-                AddRow(rows, "Album Artist", tag.AlbumArtists);
-                AddRow(rows, "Artist", tag.Performers);
-                AddRow(rows, "Composer", tag.Composers);
-                AddRow(rows, "Publisher", tag.Publisher);
-                AddRow(rows, "Copyright", tag.Copyright);
-                AddRow(rows, "Conductor", tag.Conductor);
-                AddRow(rows, "Genre", tag.Genres);
-                AddRow(rows, "Year", tag.Year is 0 ? null : tag.Year.ToString(CultureInfo.InvariantCulture));
-                AddRow(rows, "Track", tag.Track is 0 ? null : $"{tag.Track}/{tag.TrackCount}");
-                AddRow(rows, "Disc", tag.Disc is 0 ? null : $"{tag.Disc}/{tag.DiscCount}");
-                AddRow(rows, "BPM", tag.BeatsPerMinute is 0 ? null : tag.BeatsPerMinute.ToString());
-                AddRow(rows, "Comment", tag.Comment);
-                AddRow(rows, "Lyrics", tag.Lyrics);
-            }
+            AddFileInfoRows(rows, filepath);
             if (file.Properties is { } props)
             {
                 AddRow(rows, "Duration", FormatHelpers.FormatDuration(props.Duration));
                 AddRow(rows, "Codec", props.Codecs.Select(c => c.Description).ToArray());
-                AddRow(rows, "Bitrate", props.AudioBitrate > 0 ? $"{props.AudioBitrate} kbps" : null);
-                AddRow(rows, "Sample Rate", props.AudioSampleRate > 0 ? $"{props.AudioSampleRate} Hz" : null);
-                AddRow(rows, "Bit Depth", props.BitsPerSample > 0 ? $"{props.BitsPerSample} bit" : null);
-                AddRow(rows, "Channels", props.AudioChannels > 0 ? props.AudioChannels.ToString() : null);
+                AddRow(rows, "Bitrate", props.AudioBitrate > 0 ? FormatHelpers.FormatBitrate(props.AudioBitrate) : null);
+                AddRow(rows, "Sample Rate", props.AudioSampleRate > 0 ? FormatHelpers.FormatSampleRate(props.AudioSampleRate) : null);
+                AddRow(rows, "Bit Depth", props.BitsPerSample > 0 ? FormatHelpers.FormatBitDepth(props.BitsPerSample) : null);
+                AddRow(rows, "Channels", props.AudioChannels > 0 ? FormatHelpers.FormatChannels(props.AudioChannels) : null);
             }
             AddRow(rows, "Health", file.PossiblyCorrupt ? "Possibly Corrupt" : null);
 
@@ -221,6 +171,24 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             var cleaned = values.Where(v => !string.IsNullOrWhiteSpace(v)).ToArray();
             if (cleaned.Length > 0)
                 rows.Add(new FileData(label, cleaned));
+        }
+        private static void AddFileInfoRows(List<FileData> rows, string? filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return;
+            try
+            {
+                var info = new FileInfo(filePath);
+                if (!info.Exists)
+                    return;
+                AddRow(rows, "File Path", info.FullName);
+                AddRow(rows, "File Size", FormatHelpers.FormatFileSize(info.Length));
+                AddRow(rows, "Last Modified", FormatHelpers.FormatDateTime(info.LastWriteTime));
+            }
+            catch
+            {
+
+            }
         }
 
     }

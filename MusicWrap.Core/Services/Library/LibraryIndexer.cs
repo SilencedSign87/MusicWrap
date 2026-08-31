@@ -8,6 +8,7 @@ namespace MusicWrap.Core.Services.Library
         Task IndexFileAsync(string filePath, CancellationToken ct = default);
         ExternalTrackIndexResult IndexExternalTrack(ExternalTrackIndexRequest request);
         ExternalTrackIndexResult UpsertExternalTrack(ExternalTrackIndexRequest request, bool updateExistingMetadata);
+        Task ReplaceTrackAsync(int trackId, CancellationToken ct = default);
         bool TryAttachExternalTrackLocalFile(ExternalTrackLocalFileRequest request, out int trackId);
     }
     public class LibraryIndexer : ILibraryIndexer
@@ -51,6 +52,53 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
+        public Task ReplaceTrackAsync(int trackId, CancellationToken ct = default)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+
+                Track? track;
+                lock (_lock)
+                {
+                    track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+                    if(track is null || !System.IO.File.Exists(track.Path))
+                    {
+                        return;
+                    }
+
+                    _fingerprint.Remove((track.FileSize, track.LastWriteTime));
+                }
+
+                var fileInfo = new FileInfo(track.Path);
+                var lastModifiedUtc = System.IO.File.GetLastWriteTimeUtc(track.Path);
+                var fileSize = fileInfo.Length;
+
+                using var tagFile = TagLib.File.Create(track.Path);
+                var tags = ResolveTags(tagFile, track.Path);
+
+                lock (_lock)
+                {
+                    track.Title = tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(track.Path);
+                    track.ArtistIds = tags.TrackArtists;
+                    track.AlbumId = tags.AlbumId;
+                    track.GenreIds = tags.GenreIds;
+                    track.CoverId = tags.CoverId;
+                    track.Duration = (int)tagFile.Properties.Duration.TotalSeconds;
+                    track.SamplingRate = tagFile.Properties.AudioSampleRate;
+                    track.Bitrate = tagFile.Properties.AudioBitrate;
+                    track.Channels = tagFile.Properties.AudioChannels;
+                    track.BitDeph = tagFile.Properties.BitsPerSample;
+                    track.Disk = (int)tagFile.Tag.Disc;
+                    track.TrackNumber = (int)tagFile.Tag.Track;
+                    track.FileSize = fileSize;
+                    track.LastWriteTime = lastModifiedUtc.Ticks;
+
+                    _fingerprint[(track.FileSize, track.LastWriteTime)] = track;
+                }
+            }, ct);
+        }
+
         public Task IndexFileAsync(string filePath, CancellationToken ct = default)
         {
             return Task.Run(() =>
@@ -77,119 +125,24 @@ namespace MusicWrap.Core.Services.Library
                 }
 
                 using var tagFile = TagLib.File.Create(filePath);
+                var tags = ResolveTags(tagFile, filePath);
 
-                int[] genreIds = [];
-                if (tagFile.Tag.Genres.Length > 0)
-                {
-                    foreach (var genre in tagFile.Tag.Genres)
-                    {
-                        var genreNames = genre.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-
-                        foreach (var genreName in genreNames)
-                        {
-                            var trimmedGenre = genreName.Trim();
-                            if (!string.IsNullOrWhiteSpace(trimmedGenre))
-                            {
-                                var genreId = GetOrCreateGenre(trimmedGenre);
-                                genreIds = [.. genreIds, genreId];
-                            }
-                        }
-                    }
-                }
-
-                // Track artist
-                int[] trackArtists = [];
-                if (tagFile.Tag.Performers.Length > 0)
-                {
-                    var artistsNames = tagFile.Tag.Performers
-                        .SelectMany(p => p.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
-                        .Select(name => name.Trim())
-                        .Where(name => !string.IsNullOrWhiteSpace(name))
-                        .ToArray();
-
-                    foreach (var performer in artistsNames)
-                    {
-                        var artistId = GetOrCreateArtist(performer);
-                        trackArtists = [.. trackArtists, artistId];
-                    }
-                }
-
-                // Album artist
-                int[] albumArtists = [];
-                if (tagFile.Tag.AlbumArtists.Length > 0)
-                {
-                    var albumArtistNames = tagFile.Tag.AlbumArtists
-                        .SelectMany(p => p.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
-                        .Select(name => name.Trim())
-                        .Where(name => !string.IsNullOrWhiteSpace(name))
-                        .ToArray();
-
-                    foreach (var performer in albumArtistNames)
-                    {
-                        var artistId = GetOrCreateArtist(performer);
-                        albumArtists = [.. albumArtists, artistId];
-                    }
-                }
-
-                if (trackArtists.Length == 0 && albumArtists.Length > 0)
-                {
-                    trackArtists = albumArtists;
-                }
-                else if (albumArtists.Length == 0 && trackArtists.Length > 0)
-                {
-                    albumArtists = trackArtists;
-                }
-                else if (trackArtists.Length == 0 && albumArtists.Length == 0)
-                {
-                    var unknownArtistId = GetOrCreateArtist("Unknown Artist");
-                    trackArtists = [unknownArtistId];
-                    albumArtists = [unknownArtistId];
-                }
-
-                // Cover
-                int coverId = 0;
-                var picture = tagFile.Tag.Pictures?.FirstOrDefault();
-                if (picture is not null && picture.Data?.Data is { Length: > 0 } bytes)
-                {
-                    coverId = GetOrCreateCoverAsset(bytes, picture.MimeType);
-                }
-                else if (TryGetExternalCover(filePath, out var externalCoverBytes, out var externalMimeType))
-                {
-                    coverId = GetOrCreateCoverAsset(externalCoverBytes, externalMimeType);
-                }
-
-                // Album
-                int albumId = 0;
-                string albumName = tagFile.Tag.Album ?? tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(filePath);
-                albumId = GetOrCreateAlbum(
-                    albumName,
-                    albumArtists,
-                    trackArtists,
-                    (int)tagFile.Tag.Year,
-                    coverId,
-                    filePath,
-                    (int)tagFile.Tag.Disc,
-                    (int)tagFile.Tag.Track
-                );
-
-                // Track
                 lock (_lock)
                 {
-
                     var track = new Track
                     {
                         Id = _library.GenerateTrackId(),
                         Path = filePath,
                         Title = tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(filePath),
-                        ArtistIds = trackArtists,
-                        AlbumId = albumId,
+                        ArtistIds = tags.TrackArtists,
+                        AlbumId = tags.AlbumId,
                         Duration = (int)tagFile.Properties.Duration.TotalSeconds,
                         FileSize = fileSize,
-                        CoverId = coverId,
+                        CoverId = tags.CoverId,
                         LastWriteTime = LastModifiedUtc.Ticks,
                         Disk = (int)tagFile.Tag.Disc,
                         TrackNumber = (int)tagFile.Tag.Track,
-                        GenreIds = genreIds,
+                        GenreIds = tags.GenreIds,
                         SamplingRate = tagFile.Properties.AudioSampleRate,
                         Bitrate = tagFile.Properties.AudioBitrate,
                         Channels = tagFile.Properties.AudioChannels,
@@ -384,6 +337,82 @@ namespace MusicWrap.Core.Services.Library
         }
 
         #region  Internal
+        private sealed record ResolvedTags(int[] GenreIds, int[] TrackArtists, int[] AlbumArtists, int CoverId, int AlbumId);
+        private ResolvedTags ResolveTags(TagLib.File tagFile, string filePath)
+        {
+            int[] genreIds = [];
+            if (tagFile.Tag.Genres.Length > 0)
+            {
+                foreach (var genre in tagFile.Tag.Genres)
+                {
+                    var genreNames = genre.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var genreName in genreNames)
+                    {
+                        var trimmedGenre = genreName.Trim();
+                        if (!string.IsNullOrWhiteSpace(trimmedGenre))
+                        {
+                            var genreId = GetOrCreateGenre(trimmedGenre);
+                            genreIds = [.. genreIds, genreId];
+                        }
+                    }
+                }
+            }
+
+            int[] trackArtists = [];
+            if (tagFile.Tag.Performers.Length > 0)
+            {
+                var artistsNames = tagFile.Tag.Performers
+                    .SelectMany(p => p.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(name => name.Trim())
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToArray();
+                foreach (var performer in artistsNames)
+                    trackArtists = [.. trackArtists, GetOrCreateArtist(performer)];
+            }
+
+            int[] albumArtists = [];
+            if (tagFile.Tag.AlbumArtists.Length > 0)
+            {
+                var albumArtistNames = tagFile.Tag.AlbumArtists
+                    .SelectMany(p => p.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Select(name => name.Trim())
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .ToArray();
+                foreach (var performer in albumArtistNames)
+                    albumArtists = [.. albumArtists, GetOrCreateArtist(performer)];
+            }
+
+            if (trackArtists.Length == 0 && albumArtists.Length > 0)
+                trackArtists = albumArtists;
+            else if (albumArtists.Length == 0 && trackArtists.Length > 0)
+                albumArtists = trackArtists;
+            else if (trackArtists.Length == 0 && albumArtists.Length == 0)
+            {
+                var unknownArtistId = GetOrCreateArtist("Unknown Artist");
+                trackArtists = [unknownArtistId];
+                albumArtists = [unknownArtistId];
+            }
+
+            int coverId = 0;
+            var picture = tagFile.Tag.Pictures?.FirstOrDefault();
+            if (picture is not null && picture.Data?.Data is { Length: > 0 } bytes)
+                coverId = GetOrCreateCoverAsset(bytes, picture.MimeType);
+            else if (TryGetExternalCover(filePath, out var externalCoverBytes, out var externalMimeType))
+                coverId = GetOrCreateCoverAsset(externalCoverBytes, externalMimeType);
+
+            int albumId = GetOrCreateAlbum(
+                tagFile.Tag.Album ?? tagFile.Tag.Title ?? Path.GetFileNameWithoutExtension(filePath),
+                albumArtists,
+                trackArtists,
+                (int)tagFile.Tag.Year,
+                coverId,
+                filePath,
+                (int)tagFile.Tag.Disc,
+                (int)tagFile.Tag.Track
+            );
+
+            return new ResolvedTags(genreIds, trackArtists, albumArtists, coverId, albumId);
+        }
         private static string NormalizeKey(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))

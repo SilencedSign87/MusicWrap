@@ -4,131 +4,112 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:vm="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
              mc:Ignorable="d"
              d:Foreground="white"
              d:Background="Black"
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Border Background="{DynamicResource BackgroundLayer}">
-        <Grid Margin="8" Grid.IsSharedSizeScope="True">
-            <StackPanel>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Title:" VerticalAlignment="Center" FontSize="12"/>
-                    <controls:AppInput Grid.Column="2"
-                                       Height="32"
-                                       Text="{Binding Title.Value, Mode=TwoWay}"
-                                       PlaceholderText="{Binding Title.Placeholder, Mode=OneWay}"/>
-                </Grid>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Artist:" VerticalAlignment="Center" FontSize="12"/>
-                    <controls:AutocompleteMetadataInput
-                        Grid.Column="2"
-                        Height="32"
-                        Text="{Binding Artist.Value, Mode=TwoWay}"
-                        MetadataType="ArtistName"
-                        PlaceholderText="{Binding Artist.Placeholder, Mode=OneWay}"
-                        IsMultipleValueEnabled="True"/>
-                </Grid>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Album:" VerticalAlignment="Center" FontSize="12"/>
-                    <controls:AppInput Grid.Column="2"
-                                       Height="32"
-                                       Text="{Binding Album.Value, Mode=TwoWay}"
-                                       PlaceholderText="{Binding Album.Placeholder, Mode=OneWay}"/>
-                </Grid>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Album artist:" VerticalAlignment="Center" FontSize="12"/>
-                    <controls:AutocompleteMetadataInput
-                        Grid.Column="2"
-                        Height="32"
-                        Text="{Binding AlbumArtist.Value, Mode=TwoWay}"
-                        PlaceholderText="{Binding AlbumArtist.Placeholder, Mode=OneWay}"
-                        MetadataType="ArtistName"
-                        IsMultipleValueEnabled="True"/>
-                </Grid>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Genre:" VerticalAlignment="Center" FontSize="12"/>
-                    <controls:AutocompleteMetadataInput
-                        Grid.Column="2"
-                        Height="32"
-                        Text="{Binding Genre.Value, Mode=TwoWay}"
-                        PlaceholderText="{Binding Genre.Placeholder, Mode=OneWay}"
-                        MetadataType="GenreName"
-                        IsMultipleValueEnabled="True"/>
-                </Grid>
-                <Separator Margin="0,0,0,4"/>
-                <Grid Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="LabelCol"/>
-                        <ColumnDefinition Width="12"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Year:" VerticalAlignment="Top" FontSize="12" Margin="0,4,0,0"/>
-                    <Grid Grid.Column="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="auto"/>
-                            <ColumnDefinition Width="12"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <controls:AppInput Grid.Column="0"
-                                           Height="32"
-                                           Width="150"
-                                           VerticalAlignment="Top"
-                                           Text="{Binding Year.Value, Mode=TwoWay}"
-                                           PlaceholderText="{Binding Year.Placeholder, Mode=OneWay}"/>
-                        <StackPanel Grid.Column="2">
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Track:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:AppInput Grid.Column="2"
-                                                   Height="32"
-                                                   Text="{Binding TrackNumber.Value, Mode=TwoWay}"
-                                                   PlaceholderText="{Binding TrackNumber.Placeholder, Mode=OneWay}"/>
-                            </Grid>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="subgridlabel"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Disk:" VerticalAlignment="Center" FontSize="12"/>
-                                <controls:AppInput Grid.Column="2"
-                                                   Height="32"
-                                                   Text="{Binding DiskNumber.Value, Mode=TwoWay}"
-                                                   PlaceholderText="{Binding DiskNumber.Placeholder, Mode=OneWay}"/>
-                            </Grid>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
-            </StackPanel>
-        </Grid>
-    </Border>
+             d:DesignHeight="450" d:DesignWidth="800"
+             d:DataContext="{d:DesignInstance Type=vm:MetadataEditorViewmodel}"
+             >
+
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="TagChangedForeground" Color="#6CCB5F"/>
+
+        <Style x:Key="TagInputStyle"
+               TargetType="controls:AppInput"
+               BasedOn="{StaticResource {x:Type controls:AppInput}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasChanges}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource TagChangedForeground}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TagAutocompleteInputStyle" TargetType="controls:AutocompleteMetadataInput">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding HasChanges}" Value="True">
+                    <Setter Property="Foreground" Value="{StaticResource TagChangedForeground}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasChanges}" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+    </UserControl.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*">
+        <!-- Header -->
+        <Border 
+            Grid.Row="0"
+            Padding="8"
+            Background="{DynamicResource BackgroundFloating}"
+                >
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <ComboBox Margin="8,0,0,0"
+                              Width="180" Height="30"
+                              ItemsSource="{Binding AvailableTags}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedItem="{Binding SelectedTagToAdd, Mode=TwoWay}"
+                              IsEnabled="{Binding HasAvailableTags}"
+                              Text="{Binding TagSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              IsEditable="True"
+                              />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <controls:AppButton 
+                        Style="{StaticResource AccentButton}"
+                        Icon="&#xE74E;"
+                        Text="Save"
+                        Command="{Binding SaveChangesCommand}"
+                       />
+                    <controls:AppButton
+                        Style="{StaticResource DefaultButton}"
+                        Margin="8,0,0,0"
+                        Text="Cancel"
+                        Command="{Binding CancelChangesCommand}"
+                        />
+                </StackPanel>
+            </Grid>
+        </Border>
+        <ProgressBar Grid.Row="1"
+                     IsIndeterminate="True"
+                     Height="4"
+                     Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+        <ScrollViewer Grid.Row="2" Margin="16,4,16,0" Background="{DynamicResource BackgroundLayer}">
+            <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:TagRow">
+                        <Grid ColumnDefinitions="Auto,12,*" Margin="0,4">
+                            <TextBlock
+                                Grid.Column="0"
+                                Text="{Binding DisplayName}"
+                                MinWidth="150"
+                                VerticalAlignment="Center"
+                                />
+                            <!-- unique value -->
+                            <controls:AppInput Grid.Column="2"
+                                               Height="32"
+                                               Style="{StaticResource TagInputStyle}"
+                                               Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                               PlaceholderText="{Binding Placeholder}"
+                                               Visibility="{Binding IsMultiValue, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}"/>
+
+                            <!-- multiple value -->
+                            <controls:AutocompleteMetadataInput Grid.Column="2"
+                                                                Height="32"
+                                                                Style="{StaticResource TagAutocompleteInputStyle}"
+                                                                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                PlaceholderText="{Binding Placeholder}"
+                                                                MetadataType="{Binding AutocompleteType}"
+                                                                IsMultipleValueEnabled="True"
+                                                                MultipleValueSeparator=";"
+                                                                Visibility="{Binding IsMultiValue, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

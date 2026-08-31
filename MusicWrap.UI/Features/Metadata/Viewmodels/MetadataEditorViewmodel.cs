@@ -1,106 +1,329 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Metadata;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.ViewModels;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {
     public partial class MetadataEditorViewmodel : ObservableObject, IMetadataEditorTabViewmodel
     {
-        private readonly ILibraryService _library;
+        public static string MultipleValuesString = "Mixed Values";
         private readonly MetadataEditorWorkspace _workspace;
+        private readonly MetadataEditorService _metadataEditorService;
+        private readonly ILibraryService _libraryService;
+        private readonly ILogger _logger;
+        private int _loadVersion;
 
-        public EditableField Title { get; } = new();
-        public EditableField Artist { get; } = new();
-        public EditableField Album { get; } = new();
-        public EditableField AlbumArtist { get; } = new();
-        public EditableField Year { get; } = new();
-        public EditableField TrackNumber { get; } = new();
-        public EditableField DiskNumber { get; } = new();
-        public EditableField Genre { get; } = new();
-        public IEnumerable<EditableField> AllFields => [Title, Artist, Album, AlbumArtist, Year, TrackNumber, DiskNumber, Genre];
+        public ObservableCollection<TagRow> Rows { get; } = [];
+        public ObservableCollection<TagDefinition> AvailableTags { get; } = [];
 
-        public bool HasChanges => AllFields.Any(f => f.HasChanges);
-        public string? DetailTitle => _workspace.IsSingleTrack ? Title.Original : null;
-        public MetadataEditorWorkspace Workspace => _workspace;
+        [ObservableProperty]
+        public partial TagDefinition? SelectedTagToAdd { get; set; }
 
-        public MetadataEditorViewmodel(MetadataEditorWorkspace workspace, ILibraryService library)
+        [ObservableProperty]
+        public partial string TagSearchText { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SaveChangesCommand), nameof(CancelChangesCommand))]
+        private bool isSaving;
+
+        [ObservableProperty]
+        public partial bool IsLoading { get; set; }
+
+        public bool HasAvailableTags => AvailableTags.Count > 0;
+        public bool HasChanges => Rows.Any(r => r.HasChanges);
+        private bool CanSave => !IsSaving && HasChanges;
+        private bool CanCancel => !IsSaving && HasChanges;
+        public string? DetailTitle => DetermineTitle();
+
+        public MetadataEditorViewmodel(MetadataEditorWorkspace workspace, ILibraryService libraryService, ILogger<MetadataEditorViewmodel> logger, MetadataEditorService metadataEditorService)
         {
             _workspace = workspace;
-            _library = library;
-
-            foreach (var f in AllFields)
-                f.PropertyChanged += (_, e) =>
-                {
-                    if (e.PropertyName is nameof(EditableField.Value) or nameof(EditableField.Original))
-                        OnPropertyChanged(nameof(HasChanges));
-                };
+            _libraryService = libraryService;
+            _logger = logger;
+            _metadataEditorService = metadataEditorService;
         }
 
         public void Load()
         {
-            foreach (var f in AllFields) f.Clear();
+            int version = ++_loadVersion;
 
-            foreach (var trackId in _workspace.TrackIds)
+            foreach (var row in Rows)
+                row.PropertyChanged -= OnRowPropertyChanged;
+
+            Rows.Clear();
+            AvailableTags.Clear();
+
+            foreach (var definition in TagDefinitions.All)
+                AvailableTags.Add(definition);
+
+            IsLoading = true;
+            var trackIds = _workspace.TrackIds.ToList();
+
+            _ = LoadCoreAsync(trackIds, version);
+        }
+
+        private async Task LoadCoreAsync(IReadOnlyList<int> trackIds, int version)
+        {
+            try
             {
-                var track = _library.GetTrackById(trackId);
+                var rows = await Task.Run(() => BuildRows(trackIds));
+                if (version != _loadVersion)
+                    return;
 
-                if (track is not null && track.Id != 0)
+                foreach (var row in rows)
                 {
-                    // Track Properties
-                    Title.ApplyValue(track.Title);
-                    Artist.ApplyValue(_library.GetArtistNamesForTrack(trackId));
-                    TrackNumber.ApplyValue(track.TrackNumber.ToString());
-                    DiskNumber.ApplyValue(track.Disk.ToString());
-                    Genre.ApplyValue(string.Join(", ", _library.GetGenreById([.. track.GenreIds]).Select(g => g.Name)));
-
-                    // Album Properties
-                    var album = _library.GetAlbumById(track.AlbumId);
-                    if (album is null)
-                        continue;
-
-                    Album.ApplyValue(album.Title);
-                    AlbumArtist.ApplyValue(_library.GetArtistNamesForAlbum(album.Id));
-                    Year.ApplyValue(album.Year.ToString());
+                    Rows.Add(row);
+                    row.PropertyChanged += OnRowPropertyChanged;
+                    AvailableTags.Remove(row.Definition);
                 }
+                OnPropertyChanged(nameof(HasAvailableTags));
+                NotifyHasChangesChanged();
+                OnPropertyChanged(nameof(DetailTitle));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while loading tags.");
+            }
+            finally
+            {
+                if (version == _loadVersion)
+                    IsLoading = false;
+            }
+        }
+
+        private IReadOnlyList<TagRow> BuildRows(IReadOnlyList<int> trackIds)
+        {
+            var tracks = trackIds
+                .Select(_libraryService.GetTrackById)
+                .Where(t => t is not null && t.Origin == TrackOrigin.Local)
+                .Cast<Track>()
+                .ToList();
+            if (tracks.Count == 0)
+                return [];
+
+            var perTrack = new IReadOnlyDictionary<string, string>?[tracks.Count];
+            var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2) };
+            Parallel.ForEach(Enumerable.Range(0, tracks.Count), options, i =>
+            {
+                perTrack[i] = ReadTrack(tracks[i]);
+            });
+
+            var readable = perTrack.Where(d => d is not null).Select(d => d!).ToList();
+            if (readable.Count == 0)
+                return [];
+
+            var rows = new List<TagRow>();
+            foreach (var definition in TagDefinitions.All)
+            {
+                var values = readable
+                    .Select(d => d.TryGetValue(definition.Key, out var value) ? value : string.Empty)
+                    .ToList();
+                if (values.All(string.IsNullOrWhiteSpace))
+                    continue;
+
+                bool allEqual = values.All(v => string.Equals(v, values[0], StringComparison.Ordinal));
+                rows.Add(allEqual
+                    ? TagRow.FromValue(definition, values[0])
+                    : TagRow.FromMixed(definition, MultipleValuesString));
+            }
+            return rows;
+        }
+
+        private static IReadOnlyDictionary<string, string>? ReadTrack(Track track)
+        {
+            try
+            {
+                using var file = TagLib.File.Create(track.Path);
+                var result = new Dictionary<string, string>();
+                if (file.Tag is not { } tag)
+                    return result;
+
+                foreach (var definition in TagDefinitions.All)
+                {
+                    try
+                    {
+                        result[definition.Key] = definition.GetValue(tag) ?? string.Empty;
+                    }
+                    catch
+                    {
+                        result[definition.Key] = string.Empty;
+                    }
+
+                }
+                return result;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        partial void OnSelectedTagToAddChanged(TagDefinition? value)
+        {
+            if (value is not null)
+                AddTagCore(value);
+        }
+        private void AddTagCore(TagDefinition definition)
+        {
+            var row = TagRow.New(definition);
+            Rows.Add(row);
+            row.PropertyChanged += OnRowPropertyChanged;
+            AvailableTags.Remove(definition);
+
+            SelectedTagToAdd = null;   // handler re-entra con null → guard
+            TagSearchText = string.Empty;
+
+            OnPropertyChanged(nameof(HasAvailableTags));
+            NotifyHasChangesChanged();
+        }
+        [RelayCommand(CanExecute = nameof(CanCancel))]
+        private void CancelChanges()
+        {
+            var keptKeys = new HashSet<string>(StringComparer.Ordinal);
+
+            for (int i = Rows.Count - 1; i >= 0; i--)
+            {
+                var row = Rows[i];
+                if (row.IsNew)
+                {
+                    Rows.RemoveAt(i);
+                    row.PropertyChanged -= OnRowPropertyChanged;
+                    continue;
+                }
+
+                keptKeys.Add(row.Key);
+                row.Reset();
             }
 
+            AvailableTags.Clear();
+            foreach (var definition in TagDefinitions.All)
+                if (!keptKeys.Contains(definition.Key))
+                    AvailableTags.Add(definition);
+
+            SelectedTagToAdd = null;
+            OnPropertyChanged(nameof(HasAvailableTags));
+            NotifyHasChangesChanged();
+        }
+        [RelayCommand(CanExecute = nameof(CanSave))]
+        private async Task SaveChangesAsync(CancellationToken ct)
+        {
+            var changedRows = Rows.Where(r => r.HasChanges).ToList();
+            var trackIds = _workspace.TrackIds.ToList();
+            if (changedRows.Count == 0 || trackIds.Count == 0)
+                return;
+
+            IsSaving = true;
+
+            try
+            {
+                int ok = 0;
+                ok = await _metadataEditorService.EditTagsAsync(trackIds, tag =>
+                {
+                    foreach (var row in changedRows)
+                        row.Definition.SetValue(tag, row.Value);
+                }, ct);
+
+                if (ok == trackIds.Count)
+                {
+                    foreach (var row in changedRows)
+                        row.Commit();
+                    _logger.LogInformation("Saved {Tags} tags on {Ok}/{Total} tracks.", changedRows.Count, ok, trackIds.Count);
+                }
+                else
+                {
+                    _logger.LogWarning("Partial save: {Ok}/{Total} tracks updated.", ok, trackIds.Count);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while saving tags.");
+            }
+            finally
+            {
+                IsSaving = false;
+                NotifyHasChangesChanged();
+                OnPropertyChanged(nameof(HasAvailableTags));
+            }
+        }
+
+        private void OnRowPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(TagRow.Value) or nameof(TagRow.HasChanges))
+                NotifyHasChangesChanged();
+        }
+
+        private void NotifyHasChangesChanged()
+        {
+            OnPropertyChanged(nameof(HasChanges));
+            SaveChangesCommand.NotifyCanExecuteChanged();
+            CancelChangesCommand.NotifyCanExecuteChanged();
+        }
+
+        private string? DetermineTitle()
+        {
+            if (!_workspace.IsSingleTrack)
+                return null;
+            var title = Rows.FirstOrDefault(r => r.Definition.Key == "TITLE");
+            if (title is null || title.IsNew || string.IsNullOrWhiteSpace(title.Original))
+                return null;
+            return title.Original;
+        }
+    }
+
+    public partial class TagRow : ObservableObject
+    {
+        public TagDefinition Definition { get; }
+        public string Key => Definition.Key;
+        public string DisplayName => Definition.DisplayName;
+        public bool IsMultiValue => Definition.IsMultipleValue;
+        public MetadataType AutocompleteType => Definition.AutocompleteType;
+        public bool IsNew { get; private set; }
+        public string Placeholder { get; }
+
+        private string _original;
+        public string Original => _original;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasChanges))]
+        public partial string Value { get; set; } = string.Empty;
+
+        public bool HasChanges => IsNew || !string.Equals(Value, _original, StringComparison.Ordinal);
+
+        private TagRow(TagDefinition definition, string original, string placeholder, bool isNew)
+        {
+            Definition = definition;
+            _original = original;
+            Placeholder = placeholder;
+            IsNew = isNew;
+            Value = isNew ? string.Empty : original;
+        }
+
+        public static TagRow FromValue(TagDefinition definition, string value)
+            => new(definition, value, string.Empty, false);
+        public static TagRow FromMixed(TagDefinition definition, string mixedPlaceholder)
+            => new(definition, string.Empty, mixedPlaceholder, false);
+        public static TagRow New(TagDefinition definition)
+            => new(definition, string.Empty, string.Empty, true);
+        public void Reset()
+        {
+            if (IsNew)
+                return;
+            Value = _original;
+        }
+        public void Commit()
+        {
+            _original = Value;
+            IsNew = false;
             OnPropertyChanged(nameof(HasChanges));
         }
     }
-
-    public partial class EditableField : ObservableObject
-    {
-        public const string MixedPlaceholder = "--mixed--";
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(HasChanges))]
-        private string value = string.Empty;
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(HasChanges))]
-        private string original = string.Empty;
-        [ObservableProperty]
-        private string placeholder = string.Empty;
-        public bool IsMixed => Placeholder == MixedPlaceholder;
-        public bool HasChanges => !string.Equals(Value, Original);
-
-        public void ApplyValue(string newValue)
-        {
-            if (string.IsNullOrEmpty(Value) && !IsMixed)
-            {
-                Value = newValue;
-                Original = newValue;
-                Placeholder = string.Empty;
-            }
-            else if (!Value.Equals(newValue))
-            {
-                Original = string.Empty;
-                Value = string.Empty;
-                Placeholder = MixedPlaceholder;
-            }
-        }
-        public void Reset() => Value = Original;
-        public void Clear() { Value = string.Empty; Original = string.Empty; Placeholder = string.Empty; }
-    }
 }
+
