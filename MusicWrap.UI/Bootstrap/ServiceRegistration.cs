@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.DI;
 using MusicWrap.Core.Saving;
+using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Activity.Viewmodel;
 using MusicWrap.UI.Features.Library.Services;
@@ -123,7 +124,8 @@ public static class ServiceRegistration
 
         // Startup
         services.AddSingleton<IStartupInitializer>(sp => sp.GetRequiredService<ThemeService>());
-        services.AddSingleton<IStartupInitializer>(sp => sp.GetRequiredService<TrayService>());
+        services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(IMusicPlayerService)));
+        //services.AddSingleton<IStartupInitializer>(sp => sp.GetRequiredService<TrayService>());
         services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(ISaveCoordinator)));
         services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(PlayerViewModel)));
     }

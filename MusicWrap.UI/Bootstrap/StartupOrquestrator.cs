@@ -11,6 +11,7 @@ using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using Serilog;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 
 namespace MusicWrap.UI.Bootstrap;
@@ -61,6 +62,7 @@ public static class StartupOrquestrator
             foreach (var initializer in serviceProvider.GetServices<IStartupInitializer>())
             {
                 Log.Information("Initializing service {Initializer}...", initializer.GetType().Name);
+
                 initializer.Initialize();
             }
 
@@ -95,6 +97,11 @@ public static class StartupOrquestrator
                     Log.Error(ex, "Error showing main window");
                 }
             });
+
+            // Initialize the tray icon in the background
+            Application.Current.Dispatcher.Invoke(
+                () => serviceProvider.GetRequiredService<TrayService>().Initialize(),
+                System.Windows.Threading.DispatcherPriority.Background);
         }
     }
 }
