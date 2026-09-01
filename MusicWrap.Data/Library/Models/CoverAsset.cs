@@ -1,4 +1,5 @@
 ﻿using MessagePack;
+using MusicWrap.Data.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,9 +16,9 @@ namespace MusicWrap.Data.Library.Models
         [Key(1)] public required string FileName;
 
         [Key(2)] public string Fingerprint = string.Empty;
-        [Key(3)] public string DominantColorHex = "#262933";
-        [Key(4)] public string DominantForegroundHex = "#FFFFFF";
-        [Key(5)] public string HighlightColorHex = "#262933";
-        [Key(6)] public string HighlightForegroundHex = "#FFFFFF";
+        [Key(3)] public string DominantColorHex = CommonColors.DominantColorFallback;
+        [Key(4)] public string DominantForegroundHex = CommonColors.ForegroundOnFallback;
+        [Key(5)] public string HighlightColorHex = CommonColors.HighlightColorFallback;
+        [Key(6)] public string HighlightForegroundHex = CommonColors.ForegroundOnFallback;
     }
 }

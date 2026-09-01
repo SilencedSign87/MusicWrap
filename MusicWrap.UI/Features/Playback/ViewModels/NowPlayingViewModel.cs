@@ -1,40 +1,36 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Saving;
-using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Helpers;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Text;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {
     public partial class NowPlayingViewModel : ObservableObject, IDisposable
     {
         [ObservableProperty]
-        public partial string TrackTitle { get; set; } = "No track playing";
+        public partial string TrackTitle { get; set; } = CommonStrings.NoTrackPlaying;
         [ObservableProperty]
         public partial string TrackAlbum { get; set; } = "";
         [ObservableProperty]
-        public partial string? DominantColorHex { get; set; } = "#808080";
+        public partial string? DominantColorHex { get; set; } = CommonColors.DominantColorFallback;
 
         [ObservableProperty]
-        public partial string? ForegroundColorHex { get; set; } = "#FFFFFF";
+        public partial string? ForegroundColorHex { get; set; } = CommonColors.ForegroundOnFallback;
 
         [ObservableProperty]
-        public partial string? HighlightColorHex { get; set; } = "#808080";
+        public partial string? HighlightColorHex { get; set; } = CommonColors.HighlightColorFallback;
 
         [ObservableProperty]
-        public partial string? HighlightForegroundHex { get; set; } = "#FFFFFF";
+        public partial string? HighlightForegroundHex { get; set; } = CommonColors.ForegroundOnFallback;
 
         [ObservableProperty]
         public partial string? TrackImagePath { get; set; }
@@ -185,10 +181,12 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         {
             _currentArtistIds = [];
 
-            TrackTitle = "No track playing";
+            TrackTitle = CommonStrings.NoTrackPlaying;
             TrackAlbum = "";
-            DominantColorHex = "#808080";
-            ForegroundColorHex = "#FFFFFF";
+            DominantColorHex = CommonColors.DominantColorFallback;
+            ForegroundColorHex =CommonColors.ForegroundOnFallback;
+            HighlightColorHex = CommonColors.HighlightColorFallback;
+            HighlightForegroundHex = CommonColors.ForegroundOnFallback;
             TrackImagePath = null;
             TrackArtists.Clear();
             TrackAlbumArtists.Clear();

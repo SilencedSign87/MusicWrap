@@ -11,6 +11,7 @@ using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Search;
 using MusicWrap.Core.Threading;
+using MusicWrap.Data.Helpers;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
@@ -416,10 +417,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             public AlbumData? ExpandedAlbum => Albums.FirstOrDefault(a => a.Id == ExpandedAlbumId);
             public string? ExpandedImagePath => ExpandedAlbum?.ImagePath;
-            public string ExpandedDominantColor => ExpandedAlbum?.DominantColor ?? "#262933";
-            public string ExpandedForegroundColor => ExpandedAlbum?.ForegroundColor ?? "#FFFFFF";
-            public string ExpandedHighlightColor => ExpandedAlbum?.HighlightColor ?? "#262933";
-            public string ExpandedHighlightForeground => ExpandedAlbum?.HighlightForeground ?? "#FFFFFF";
+            public string ExpandedDominantColor => ExpandedAlbum?.DominantColor ?? CommonColors.DominantColorFallback;
+            public string ExpandedForegroundColor => ExpandedAlbum?.ForegroundColor ?? CommonColors.ForegroundOnFallback;
+            public string ExpandedHighlightColor => ExpandedAlbum?.HighlightColor ?? CommonColors.HighlightColorFallback;
+            public string ExpandedHighlightForeground => ExpandedAlbum?.HighlightForeground ?? CommonColors.ForegroundOnFallback;
 
 
             public event PropertyChangedEventHandler? PropertyChanged;
@@ -432,10 +433,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             public int Year { get; set; }
             public string ArtistNames { get; set; } = string.Empty;
             public string? ImagePath { get; set; }
-            public string DominantColor { get; set; } = "#262933";
-            public string ForegroundColor { get; set; } = "#FFFFFF";
-            public string HighlightColor { get; set; } = "#262933";
-            public string HighlightForeground { get; set; } = "#FFFFFF";
+            public string DominantColor { get; set; } = CommonColors.DominantColorFallback;
+            public string ForegroundColor { get; set; } = CommonColors.ForegroundOnFallback;
+            public string HighlightColor { get; set; } = CommonColors.HighlightColorFallback;
+            public string HighlightForeground { get; set; } = CommonColors.ForegroundOnFallback;
 
             private BitmapSource? _coverImage;
             public BitmapSource? CoverImage
@@ -457,8 +458,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             public int AlbumId { get; set; }
             public string? ImagePath { get; set; }
-            public string DominantColor { get; set; } = "#1a1a1a";
-            public string ForegroundColor { get; set; } = "#ffffff";
+            public string DominantColor { get; set; } = CommonColors.DominantColorFallback;
+            public string ForegroundColor { get; set; } = CommonColors.ForegroundOnFallback;
         }
     }
 }

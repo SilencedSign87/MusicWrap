@@ -1,4 +1,5 @@
 using MusicWrap.Core.Services.Contracts;
+using MusicWrap.Data.Helpers;
 using MusicWrap.Data.Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -283,10 +284,12 @@ namespace MusicWrap.UI.Services
         {
             size = NormalizeDecodeSize(size);
 
-            string key = $"default|{variant}|{size}";
+            string key = string.Join(CommonStrings.CacheKeyDelimiter,
+                CommonStrings.DefaultImageKeyPrefix, variant, size);
+
             string uri = variant == ImageVariant.Blur
-                ? "pack://application:,,,/Resources/BlurDefault.jpg"
-                : "pack://application:,,,/Resources/DefaultTrack.png";
+                ? CommonStrings.DefaultBlurImage
+                : CommonStrings.DefaultTrackImage;
 
             lock (_cacheLock)
             {
@@ -371,7 +374,7 @@ namespace MusicWrap.UI.Services
         }
         private static string BuildCacheKey(string path, int decodeSize)
         {
-            return $"{path}|{decodeSize}";
+            return string.Join(CommonStrings.CacheKeyDelimiter, path, decodeSize);
         }
 
         private static bool TryGetFromCache(string key, int size, out BitmapImage? image)

@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Search;
 using MusicWrap.UI.Features.Library.Services;
+using MusicWrap.Data.Helpers;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -18,13 +19,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         [ObservableProperty] private int albumYear;
 
-        [ObservableProperty] private string dominantColor = "#262933";
+        [ObservableProperty] private string dominantColor = CommonColors.DominantColorFallback;
 
-        [ObservableProperty] private string foregroundColor = "#ffffff";
+        [ObservableProperty] private string foregroundColor = CommonColors.ForegroundOnFallback;
 
-        [ObservableProperty] private string highlightColor = "#262933";
+        [ObservableProperty] private string highlightColor = CommonColors.HighlightColorFallback;
 
-        [ObservableProperty] private string highlightForeground = "#ffffff";
+        [ObservableProperty] private string highlightForeground = CommonColors.ForegroundOnFallback;
 
         [ObservableProperty] private string albumPlayTooltip = "Play Album";
 
@@ -64,7 +65,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private void LoadAlbumAndTracks()
         {
             var album = _libraryService.GetAlbumById(AlbumId);
-            AlbumTitle = album?.Title ?? "Unknown Album";
+            AlbumTitle = album?.Title ?? CommonStrings.UnknownAlbum;
             AlbumYear = album?.Year ?? 0;
             AlbumArtists = _libraryService.GetArtistNamesForAlbum(AlbumId);
 

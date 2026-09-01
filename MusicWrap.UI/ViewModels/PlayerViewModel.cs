@@ -38,7 +38,7 @@ namespace MusicWrap.UI.ViewModels
         private string shuffleTooltip = "Shuffle off";
 
         [ObservableProperty]
-        private string currentTrackTitle = "No track playing";
+        private string currentTrackTitle = CommonStrings.NoTrackPlaying;
         [ObservableProperty]
         private string currentTrackArtists = "";
         [ObservableProperty]
@@ -180,16 +180,16 @@ namespace MusicWrap.UI.ViewModels
             var currentIndex = _playerService.CurrentIndex;
             if (currentIndex < 0)
             {
-                CurrentTrackTitle = AppStringPool.Intern("No track playing") ?? "No track playing";
+                CurrentTrackTitle = CommonStrings.NoTrackPlaying;
                 return;
             }
 
             var trackId = _playerService.CurrentTrackId;
             if (trackId == 0)
             {
-                CurrentTrackTitle = AppStringPool.Intern("Unknown track") ?? "Unknown track";
-                CurrentTrackDominantColorHex = "#808080";
-                CurrentTrackHighlightColorHex = "#FFFFFF";
+                CurrentTrackTitle = CommonStrings.UnknownTrack;
+                CurrentTrackDominantColorHex = CommonColors.DominantColorFallback;
+                CurrentTrackHighlightColorHex = CommonColors.ForegroundOnFallback;
                 return;
             }
 
@@ -197,9 +197,9 @@ namespace MusicWrap.UI.ViewModels
 
             if (track == null)
             {
-                CurrentTrackTitle = AppStringPool.Intern("Unknown track") ?? "Unknown track";
-                CurrentTrackDominantColorHex = "#808080";
-                CurrentTrackHighlightColorHex = "#FFFFFF";
+                CurrentTrackTitle = CommonStrings.UnknownTrack;
+                CurrentTrackDominantColorHex = CommonColors.DominantColorFallback;
+                CurrentTrackHighlightColorHex = CommonColors.ForegroundOnFallback;
                 return;
             }
 
@@ -239,16 +239,16 @@ namespace MusicWrap.UI.ViewModels
                 {
                     CurrentTrackImagePath = string.Empty;
                     ArtworkPath = string.Empty;
-                    CurrentTrackDominantColorHex = "#808080";
-                    CurrentTrackHighlightColorHex = "#FFFFFF";
-                    CurrentTackDominantForegroundColorHex = "#FFFFFF";
+                    CurrentTrackDominantColorHex = CommonColors.DominantColorFallback;
+                    CurrentTrackHighlightColorHex = CommonColors.HighlightColorFallback;
+                    CurrentTackDominantForegroundColorHex = CommonColors.ForegroundOnFallback;
                 }
             }
             else
             {
-                CurrentTrackDominantColorHex = "#808080";
-                CurrentTrackHighlightColorHex = "#FFFFFF";
-                CurrentTackDominantForegroundColorHex = "#FFFFFF";
+                CurrentTrackDominantColorHex = CommonColors.DominantColorFallback;
+                CurrentTrackHighlightColorHex = CommonColors.HighlightColorFallback;
+                CurrentTackDominantForegroundColorHex = CommonColors.ForegroundOnFallback;
             }
         }
 
@@ -262,9 +262,9 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackTitle = string.Empty;
             CurrentTrackArtists = string.Empty;
             CurrentTrackImagePath = string.Empty;
-            CurrentTrackDominantColorHex = "#808080";
-            CurrentTrackHighlightColorHex = "#FFFFFF";
-            CurrentTackDominantForegroundColorHex = "#FFFFFF";
+            CurrentTrackDominantColorHex = CommonColors.DominantColorFallback;
+            CurrentTrackHighlightColorHex = CommonColors.HighlightColorFallback;
+            CurrentTackDominantForegroundColorHex = CommonColors.ForegroundOnFallback;
             ArtworkPath = string.Empty;
         }
 

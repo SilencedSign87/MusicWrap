@@ -45,15 +45,15 @@ namespace MusicWrap.Core.Services.Library
     }
     public class LibraryService : ILibraryService, IDisposable
     {
-        private static readonly string _libraryCachePath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.dat");
-        private static readonly string _libraryBakPath = Path.Combine(MusicWrapDirectories.CacheDirectory, "library.bak");
+        private static readonly string _libraryCachePath = Path.Combine(MusicWrapDirectories.CacheDirectory, CommonStrings.LibraryFile);
+        private static readonly string _libraryBakPath = Path.Combine(MusicWrapDirectories.CacheDirectory, CommonStrings.LibraryBackupFile);
 
-        private static readonly string _unknownArtist = AppStringPool.Intern("Unknown Artist") ?? "Unknown Artist";
-        private static readonly string _unknownAlbum = AppStringPool.Intern("Unknown Album") ?? "Unknown Album";
-        private static readonly string _unknownGenre = AppStringPool.Intern("Unknown Genre") ?? "Unknown Genre";
-        private static readonly string _hashGroup = AppStringPool.Intern("#") ?? "#";
-        private static string PluralTrack(int count) => count == 1 ? "1 track" : $"{count} tracks";
-        private static string PluralAlbum(int count) => count == 1 ? "1 album" : $"{count} albums";
+        private static readonly string _unknownArtist = CommonStrings.UnknownArtist;
+        private static readonly string _unknownAlbum = CommonStrings.UnknownAlbum;
+        private static readonly string _unknownGenre = CommonStrings.UnknownGenre;
+        private static readonly string _hashGroup = "#";
+        private static string PluralTrack(int count) => count == 1 ? AppStringPool.Intern("1 track") ?? "1 track" : $"{count} tracks";
+        private static string PluralAlbum(int count) => count == 1 ? AppStringPool.Intern("1 album") ?? "1 album" : $"{count} albums";
 
         private static readonly Lock _diskLock = new();
         private static readonly Lock _indexLock = new();
@@ -94,8 +94,7 @@ namespace MusicWrap.Core.Services.Library
             _searchQueryProvider = searchQueryProvider;
             _messenger = messenger;
             _serviceProvider = serviceProvider;
-            BuildIndexes();
-            //Initialize();
+            //BuildIndexes();
             LoadFromDisk();
             _messenger.Register<LibraryChangedMessage>(this, OnLibraryChanged);
         }
@@ -220,32 +219,6 @@ namespace MusicWrap.Core.Services.Library
                 AtomicFileStore.WriteAllBytes(_libraryCachePath, data, _libraryBakPath);
             }
         }
-
-        //public void Initialize()
-        //{
-        //    LoadFromDisk();
-        //    BuildCoverLookUp();
-
-        //    switch (_userSettings.Library.EntryType)
-        //    {
-        //        case LibraryEntryType.Album:
-        //            _albumCache ??= ConstructAlbumEntries();
-        //            break;
-        //        case LibraryEntryType.TrackArtist:
-        //            _trackArtistCache ??= ConstructTrackArtistEntries();
-        //            break;
-        //        case LibraryEntryType.AlbumArtist:
-        //        default:
-        //            _albumArtistCache ??= ConstructAlbumArtistEntries();
-        //            break;
-        //        case LibraryEntryType.Genre:
-        //            _genreCache ??= ConstructGenreEntries();
-        //            break;
-        //        case LibraryEntryType.Decade:
-        //            _decadeCache ??= ConstructDecadeEntries();
-        //            break;
-        //    }
-        //}
 
         public async Task<IReadOnlyList<LibraryEntry>> GetEntriesAsync(LibraryEntryType viewType, bool ascending, bool useSearchQuery = false)
         {
@@ -454,19 +427,19 @@ namespace MusicWrap.Core.Services.Library
 
                 string? imagePath = null;
                 string? bluredImagePath = null;
-                string DominantColorHex = "#262933";
-                string ForegroundColorHex = "#FFFFFF";
-                string HighlightColorHex = "#262933";
-                string HighlightForegroundHex = "#FFFFFF";
+                string DominantColorHex = CommonColors.DominantColorFallback;
+                string ForegroundColorHex = CommonColors.ForegroundOnFallback;
+                string HighlightColorHex = CommonColors.HighlightColorFallback;
+                string HighlightForegroundHex = CommonColors.ForegroundOnFallback;
 
                 if (album.CoverId > 0 && _coverLookUp.TryGetValue(album.CoverId, out var cover))
                 {
                     imagePath = cover.FileName;
                     bluredImagePath = cover.FileName;
-                    DominantColorHex = cover.DominantColorHex ?? "#262933";
-                    ForegroundColorHex = cover.DominantForegroundHex ?? "#FFFFFF";
-                    HighlightColorHex = cover.HighlightColorHex ?? "#262933";
-                    HighlightForegroundHex = cover.HighlightForegroundHex ?? "#FFFFFF";
+                    DominantColorHex = cover.DominantColorHex ?? CommonColors.DominantColorFallback;
+                    ForegroundColorHex = cover.DominantForegroundHex ?? CommonColors.ForegroundOnFallback;
+                    HighlightColorHex = cover.HighlightColorHex ?? CommonColors.HighlightColorFallback;
+                    HighlightForegroundHex = cover.HighlightForegroundHex ?? CommonColors.ForegroundOnFallback;
                 }
                 var artistName = _artistNamesByAlbumId.TryGetValue(albumId, out var name) ? name : _unknownArtist;
 
@@ -893,7 +866,7 @@ namespace MusicWrap.Core.Services.Library
                 var names = album.ArtistIds
                     .Where(id => _artistNameById.ContainsKey(id))
                     .Select(id => _artistNameById[id]);
-                _artistNamesByAlbumId[album.Id] = AppStringPool.Intern(string.Join("; ", names)) ?? string.Join("; ", names);
+                _artistNamesByAlbumId[album.Id] = AppStringPool.Intern(string.Join(CommonStrings.ArtistNameSeparator, names)) ?? string.Join(CommonStrings.ArtistNameSeparator, names);
             }
             _artistNamesByTrackId = _library.Tracks.ToDictionary(t => t.Id, t =>
             AppStringPool.Intern(
@@ -953,14 +926,6 @@ namespace MusicWrap.Core.Services.Library
             _queueManager.Remove(toRemove);
         }
 
-        //private void RebuildAllEntryCaches()
-        //{
-        //    _albumCache = ConstructAlbumEntries();
-        //    _trackArtistCache = ConstructTrackArtistEntries();
-        //    _albumArtistCache = ConstructAlbumArtistEntries();
-        //    _genreCache = ConstructGenreEntries();
-        //    _decadeCache = ConstructDecadeEntries();
-        //}
         private bool TryGetDecadeAlbumIds(string decadeTitle, out int[] albumIds)
         {
             albumIds = [];

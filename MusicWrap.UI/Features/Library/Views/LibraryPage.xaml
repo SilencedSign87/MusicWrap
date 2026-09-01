@@ -107,7 +107,7 @@
                     VirtualizingPanel.IsVirtualizingWhenGrouping="True"
                     VirtualizingPanel.VirtualizationMode="Recycling"
                     VirtualizingPanel.ScrollUnit="Item"
-                    VirtualizingPanel.CacheLength="2,2"
+                    VirtualizingPanel.CacheLength="2"
                     VirtualizingPanel.CacheLengthUnit="Page"
                     ScrollViewer.CanContentScroll="True"
                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
