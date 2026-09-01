@@ -72,18 +72,18 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-
             _viewModel.PropertyChanged += OnViewmodelPropertyChanged;
-
-            UpdateSpacers();
+            
+            if (!IsVisible) return;
 
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
-                new Action(UpdateLineOpacities));
-
-            Dispatcher.BeginInvoke(
-            DispatcherPriority.Loaded,
-            new Action(CenterActiveLine));
+                new Action(() =>
+                {
+                    UpdateSpacers();
+                    UpdateLineOpacities();
+                    CenterActiveLine();
+                }));
         }
 
 
@@ -195,30 +195,24 @@ namespace MusicWrap.UI.Features.Lyrics.View
             if (_viewModel == null)
                 return;
 
+            if (!IsVisible || !LyricsScrollViewer.IsVisible) return;
+
+            if (LyricsScrollViewer.ViewportHeight <= 0)
+                return;
+
             var index = _viewModel.ActiveIndex;
 
-            if (index < 0)
+            if (index < 0 || index >= LyricsItems.Items.Count)
                 return;
-
-            if (index >= LyricsItems.Items.Count)
-                return;
-
 
             if (LyricsItems.ItemContainerGenerator
                     .ContainerFromIndex(index) is not FrameworkElement container)
             {
-                Dispatcher.BeginInvoke(
-                    DispatcherPriority.Loaded,
-                    new Action(CenterActiveLine));
-
                 return;
             }
 
             if (container.ActualHeight <= 0)
             {
-                Dispatcher.BeginInvoke(
-                    DispatcherPriority.Loaded,
-                    new Action(CenterActiveLine));
 
                 return;
             }
@@ -311,5 +305,20 @@ namespace MusicWrap.UI.Features.Lyrics.View
                 (double)e.NewValue);
         }
         #endregion
+
+        private void LyricsViewRoot_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (IsVisible)
+            {
+                Dispatcher.BeginInvoke(
+                    DispatcherPriority.Loaded,
+                    new Action(() =>
+                    {
+                        UpdateSpacers();
+                        UpdateLineOpacities();
+                        CenterActiveLine();
+                    }));
+            }
+        }
     }
 }

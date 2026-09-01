@@ -31,6 +31,8 @@ namespace MusicWrap.UI.Features.Playback.Views
             }
         }
 
+        private double ActualLayoutWidth => NowPlayingLayout.ActualWidth;
+        private double ActualLayoutHeight => NowPlayingLayout.ActualHeight;
         private void OnNowPlayingLayoutSizeChanged(object sender, SizeChangedEventArgs e) => ApplyLayout();
         private void ApplyLayout()
         {
@@ -52,7 +54,7 @@ namespace MusicWrap.UI.Features.Playback.Views
             if (!showLyrics && !showVisualizer) return NowPlayingLayoutMode.Compact;
             // no sidebar
             if (!showLyrics) return NowPlayingLayoutMode.Portrait;
-            double ratio = ActualWidth / ActualHeight;
+            double ratio = ActualLayoutWidth / ActualLayoutHeight;
             if (double.IsNaN(ratio)) ratio = 1.0;
             // no visualizer
             if (!showVisualizer)
@@ -89,7 +91,7 @@ namespace MusicWrap.UI.Features.Playback.Views
         private void ApplyBalancedLayout()
         {
             double visualizer = _viewModel.IsVisualizerVisible ? VisualizerHeight : 0;
-            double side = Math.Max(0, ActualHeight - visualizer);
+            double side = Math.Max(0, ActualLayoutHeight - visualizer);
             ArtworkColumn.Width = new GridLength(side);
             LyricsColumn.Width = new GridLength(1, GridUnitType.Star);
             ArtworkRow.Height = new GridLength(1, GridUnitType.Star);
@@ -102,7 +104,7 @@ namespace MusicWrap.UI.Features.Playback.Views
         private void ApplyLandscapeLayout()
         {
             double visualizer = _viewModel.IsVisualizerVisible ? VisualizerHeight : 0;
-            double side = Math.Max(0, ActualHeight);
+            double side = Math.Max(0, ActualLayoutHeight);
             ArtworkColumn.Width = new GridLength(side);
             LyricsColumn.Width = new GridLength(1, GridUnitType.Star);
             ArtworkRow.Height = new GridLength(1, GridUnitType.Star);

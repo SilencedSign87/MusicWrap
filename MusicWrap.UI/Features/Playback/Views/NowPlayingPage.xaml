@@ -14,96 +14,113 @@
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="RootNowPlaying"
              >
-    <UserControl.Style>
-        <Style TargetType="UserControl">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <ImageBrush ImageSource="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}"
-                                RenderOptions.BitmapScalingMode="HighQuality"
-                                Opacity="1" 
-                                AlignmentX="Center"
-                                AlignmentY="Center"
-                                Stretch="UniformToFill"
-                                />
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding BlurEffect}" Value="False">
-                    <Setter Property="Background" Value="{Binding DominantColorHex}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-    </UserControl.Style>
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0">
+            <Menu>
+                <Menu.Resources>
+                    <Style TargetType="Menu" BasedOn="{StaticResource {x:Type Menu}}">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                    </Style>
+                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="MinHeight" Value="0"/>
+                        <Setter Property="FontSize" Value="13"/>
+                    </Style>
+                </Menu.Resources>
+                <MenuItem Icon="{ex:Icon Glyph=E8A7,FontSize=12}" Header="Properties" Command="{Binding OpenPropertiesCommand}" IsCheckable="False" />
+                <Separator/>
+                <MenuItem Header="Panels" Icon="{ex:Icon Glyph=ECA5,FontSize=12}">
+                    <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=EC4F}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
+                    <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=F61F,FontSize=12}">
+                        <MenuItem Header="Off" IsCheckable="True" 
+                            Command="{Binding SetVisualizerCommand}"
+                            CommandParameter="None"
+                            IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                        <MenuItem Header="Line" IsCheckable="True" 
+                            Command="{Binding SetVisualizerCommand}"
+                            CommandParameter="LineSpectrum"
+                            IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
+                        <MenuItem Header="Bars" IsCheckable="True" 
+                            Command="{Binding SetVisualizerCommand}"
+                            CommandParameter="BarSpectrum"
+                            IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
+                        <MenuItem Header="Wave" IsCheckable="True" 
+                            Command="{Binding SetVisualizerCommand}"
+                            CommandParameter="MirroredBarSpectrum"
+                            IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="Effects" Icon="{ex:Icon Glyph=E794}">
+                    <MenuItem  Header="Artwork blur" IsCheckable="True" IsChecked="{Binding BlurEffect}" />
+                </MenuItem>
+            </Menu>
+        </Border>
 
-    <UserControl.ContextMenu>
-        <ContextMenu Foreground="{DynamicResource TextPrimaryBrush}">
-            <MenuItem Icon="{ex:Icon Glyph=E90F}" Header="Properties" Command="{Binding OpenPropertiesCommand}" IsCheckable="False" />
-            <Separator/>
-            <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=&#xEC4F;}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
-            <MenuItem Header="Blur" Icon="{ex:Icon Glyph=&#xE794;}" IsCheckable="True" IsChecked="{Binding BlurEffect}" />
-            <Separator/>
-            <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=&#xF61F;}">
-                <MenuItem Header="Off" IsCheckable="True" 
-                          Command="{Binding SetVisualizerCommand}"
-                          CommandParameter="None"
-                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
-                <MenuItem Header="Line" IsCheckable="True" 
-                          Command="{Binding SetVisualizerCommand}"
-                          CommandParameter="LineSpectrum"
-                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
-                <MenuItem Header="Bars" IsCheckable="True" 
-                          Command="{Binding SetVisualizerCommand}"
-                          CommandParameter="BarSpectrum"
-                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
-                <MenuItem Header="Wave" IsCheckable="True" 
-                          Command="{Binding SetVisualizerCommand}"
-                          CommandParameter="MirroredBarSpectrum"
-                          IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
-            </MenuItem>
-        </ContextMenu>
-    </UserControl.ContextMenu>
-
-    <Grid x:Name="NowPlayingLayout" SizeChanged="OnNowPlayingLayoutSizeChanged" Background="{DynamicResource TintOnText}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="ArtworkColumn" Width="*"/>
-            <ColumnDefinition x:Name="LyricsColumn" Width="0"/>
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition x:Name="ArtworkRow" Height="*"/>
-            <RowDefinition x:Name="LyricsRow" Height="0"/>
-            <RowDefinition x:Name="VisualizerRow" Height="Auto"/>
-        </Grid.RowDefinitions>
-        <!-- Artwork -->
-        <controls:SquarePanel x:Name="ArtworkHost"
+        <Grid Grid.Row="1" x:Name="NowPlayingLayout" SizeChanged="OnNowPlayingLayoutSizeChanged">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Background">
+                        <Setter.Value>
+                            <ImageBrush ImageSource="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}"
+                        RenderOptions.BitmapScalingMode="HighQuality"
+                        Opacity="1" 
+                        AlignmentX="Center"
+                        AlignmentY="Center"
+                        Stretch="UniformToFill"
+                        />
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding BlurEffect}" Value="False">
+                            <Setter Property="Background" Value="{Binding DominantColorHex}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="ArtworkColumn" Width="*"/>
+                <ColumnDefinition x:Name="LyricsColumn" Width="0"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition x:Name="ArtworkRow" Height="*"/>
+                <RowDefinition x:Name="LyricsRow" Height="0"/>
+                <RowDefinition x:Name="VisualizerRow" Height="Auto"/>
+            </Grid.RowDefinitions>
+            <!-- Artwork -->
+            <controls:SquarePanel x:Name="ArtworkHost"
                       Grid.Row="0" Grid.Column="0">
-            <Image
+                <Image
                 Source="{Binding TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:1080}"
                 Stretch="UniformToFill"
                 
                 />
-        </controls:SquarePanel>
-        <!-- Lyrics -->
-        <Border x:Name="LyricsHost"
+            </controls:SquarePanel>
+            <!-- Lyrics -->
+            <Border x:Name="LyricsHost"
             Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
             Visibility="{Binding ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <lyrics:LyricsView
-                FontSize="18"
-                AllowSeek="True"
-                />
-        </Border>
+                <lyrics:LyricsView
+    x:Name="lyricsComponent"
+    AllowSeek="True"
+    FontSize="20"
+    />
+            </Border>
 
-        <!-- Visualizer -->
-        <Border x:Name="VisualizerHost"
+            <!-- Visualizer -->
+            <Border x:Name="VisualizerHost"
             Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
             Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <controls:SpectrumVisualizerControl
+                <controls:SpectrumVisualizerControl
                 HorizontalAlignment="Stretch"
                 Visualizer="{Binding PreferredVisualizer}"
                 Height="120" 
                 BarCount="120" 
                 Opacity="0.5"
                 />
-        </Border>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
 

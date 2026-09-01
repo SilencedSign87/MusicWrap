@@ -11,6 +11,7 @@
              x:Name="LyricsViewRoot"
              Loaded="OnLoaded"
              Unloaded="OnUnloaded"
+             IsVisibleChanged="LyricsViewRoot_IsVisibleChanged"
              FontSize="18"
              d:DataContext="{d:DesignInstance Type=vm:LyricsViewModel}"
              d:DesignHeight="450" d:DesignWidth="800"
