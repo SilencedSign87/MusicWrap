@@ -16,14 +16,15 @@ using System.Windows.Threading;
 
 namespace MusicWrap.UI.Shell.ViewModel
 {
-    public partial class MainWindowViewModel : ObservableObject, IDisposable
+    public partial class MainPlayerViewModel : ObservableObject, IDisposable
     {
         private readonly IMusicPlayerService _playerService;
         private readonly IServiceProvider _serviceProvider;
         private readonly WindowManagerService _windowManager;
         private readonly ILogger _logger;
         private readonly MusicWrapSettings _userSettings;
-        private readonly Dictionary<int, UserControl> _pages = new();
+        private LibraryPage? _cachedLibraryPage;
+        private int _currentLoadedIndex = -1;
 
         [ObservableProperty]
         private int selectedTabIndex;
@@ -52,7 +53,7 @@ namespace MusicWrap.UI.Shell.ViewModel
 
         private bool _disposed = false;
 
-        public MainWindowViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainWindowViewModel> logger, WindowManagerService manager, MusicWrapSettings userSettings)
+        public MainPlayerViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainPlayerViewModel> logger, WindowManagerService manager, MusicWrapSettings userSettings)
         {
             _playerService = playerService;
             _serviceProvider = serviceProvider;
@@ -77,10 +78,11 @@ namespace MusicWrap.UI.Shell.ViewModel
         [RelayCommand]
         private void PlayPause()
         {
-            if ( _playerService.IsPlaying)
+            if (_playerService.IsPlaying)
             {
                 _playerService.Pause();
-            }else
+            }
+            else
             {
                 _playerService.Play();
             }
@@ -125,21 +127,27 @@ namespace MusicWrap.UI.Shell.ViewModel
         private void Navigate(int index)
         {
             _userSettings.MainWindowTab = index;
-            if (!_pages.TryGetValue(index, out var page))
+            if (_currentLoadedIndex == index && CurrentControl != null)
+                return;
+
+            _currentLoadedIndex = index;
+            var previousControl = CurrentControl;
+            var nextControl = CreatePage(index);
+
+            CurrentControl = nextControl;
+
+            if (previousControl is IDisposable disposable && !ReferenceEquals(previousControl, _cachedLibraryPage))
             {
-                page = CreatePage(index);
-                _pages[index] = page;
+                disposable.Dispose();
             }
-            CurrentControl = page;
         }
 
         private UserControl CreatePage(int index) => index switch
         {
-            0 => _serviceProvider.GetRequiredService<LibraryPage>(),
             1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
             2 => _serviceProvider.GetRequiredService<ServicesPage>(),
             3 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
-            _ => _serviceProvider.GetRequiredService<LibraryPage>()
+            _ => _cachedLibraryPage ??= _serviceProvider.GetRequiredService<LibraryPage>()
         };
 
         private static BitmapImage LoadBitmapFromResource(string uri)
@@ -160,12 +168,14 @@ namespace MusicWrap.UI.Shell.ViewModel
                 return;
             _disposed = true;
 
-            foreach (var page in _pages.Values)
+            if (CurrentControl is IDisposable currentDisposable && !ReferenceEquals(CurrentControl, _cachedLibraryPage))
             {
-                if (page is IDisposable disposable)
-                    disposable.Dispose();
+                currentDisposable.Dispose();
             }
-            _pages.Clear();
+            
+            _cachedLibraryPage?.Dispose();
+            _cachedLibraryPage = null;
+            CurrentControl = null;
         }
     }
 }

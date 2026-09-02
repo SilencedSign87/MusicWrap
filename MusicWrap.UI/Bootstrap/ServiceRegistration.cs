@@ -59,7 +59,7 @@ public static class ServiceRegistration
         services.AddSingleton<LibraryWorkspace>();
 
         // View Models
-        services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<MainPlayerViewModel>();
         services.AddTransient<DirectoriesManagerViewModel>();
         services.AddTransient<SettingsGeneralViewModel>();
         services.AddTransient<LibraryViewModel>();

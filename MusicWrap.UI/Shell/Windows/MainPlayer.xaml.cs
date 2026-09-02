@@ -9,7 +9,7 @@ namespace MusicWrap.UI.Shell.Windows
     /// </summary>
     public partial class MainPlayer : UserControl
     {
-        public MainPlayer(PlayerPage playerPage, MainWindowViewModel viewmodel)
+        public MainPlayer(PlayerPage playerPage, MainPlayerViewModel viewmodel)
         {
             InitializeComponent();
             DataContext = viewmodel;
