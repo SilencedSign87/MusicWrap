@@ -127,7 +127,6 @@ namespace MusicWrap.UI.Controls
                 _samplerate = sr;
                 _currentFFTSize = ComputeFftSize(_samplerate);
                 _pipeline.OnConfigurationChanged(_samplerate, _currentFFTSize);
-                UpdateTimerInterval();
             }
 
             int capturedFloats = _musicService.GetCapturedPCMData(_pcmBuffer);
@@ -176,15 +175,6 @@ namespace MusicWrap.UI.Controls
             float[] displayBands = _pipeline.Process(_magnitudes);
             UpdateHeights(displayBands);
             Render();
-        }
-        private void UpdateTimerInterval()
-        {
-            if (_currentFFTSize >= 32768)
-                _timer.Interval = TimeSpan.FromMilliseconds(33); // 30 FPS
-            else if (_currentFFTSize >= 16384)
-                _timer.Interval = TimeSpan.FromMilliseconds(29); // 35 FPS
-            else
-                _timer.Interval = TimeSpan.FromMilliseconds(25); // 40 FPS
         }
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
