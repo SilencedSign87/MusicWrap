@@ -82,7 +82,6 @@ namespace MusicWrap.Core.Services.Playback
         int GetCapturedPCMData(float[] destination);
         (int Index, string Name)[] GetAvailableDevices();
         PlaybackQueueSnapshot BuildPlaybackSnapshot();
-        void LoadInitialState();
     }
     public class MusicPlayerService : IMusicPlayerService, IStartupInitializer, IDisposable
     {
@@ -100,6 +99,7 @@ namespace MusicWrap.Core.Services.Playback
 
         private const int MaxErrorCount = 5;
         private int _errorCount;
+        private bool _audioEngineInitialized = false;
 
         public int CurrentIndex => _queue.CurrentIndex;
 
@@ -254,18 +254,32 @@ namespace MusicWrap.Core.Services.Playback
 
             _audioEngine = new AudioEngine();
 
-            var result = _audioEngine.Initialize(CurrentDeviceIndex, 44100, CurrentOutputMode);
-            if (!result)
-            {
-                var err = _audioEngine.GetLastError();
-                _logger.LogCritical("Failed to initialize audio engine with device index {DeviceIndex}, error code: {ErrorCode}", CurrentDeviceIndex, err);
-            }
+            // initialize audioengine in warmup (LoadInitialState)
+            //var result = _audioEngine.Initialize(CurrentDeviceIndex, 44100, CurrentOutputMode);
+            //if (!result)
+            //{
+            //    var err = _audioEngine.GetLastError();
+            //    _logger.LogCritical("Failed to initialize audio engine with device index {DeviceIndex}, error code: {ErrorCode}", CurrentDeviceIndex, err);
+            //}
 
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
 
             _queue.QueueChanged += QueueOnQueueChanged;
             _queue.CurrentChanged += QueueOnCurrentChanged;
+        }
+
+        public void InitializeAudioEngine()
+        {
+            if (_audioEngineInitialized) return;
+
+            var result = _audioEngine.Initialize(CurrentDeviceIndex, 44100, CurrentOutputMode);
+            if (!result)
+            {
+                var err = _audioEngine.GetLastError();
+                _logger.LogCritical("Failed to initialize audio engine with device index {DeviceIndex}, error code: {ErrorCode}", CurrentDeviceIndex, err);
+            }
+            _audioEngineInitialized = true;
         }
 
         public void LoadInitialState()
@@ -318,6 +332,7 @@ namespace MusicWrap.Core.Services.Playback
                 if (queue.Length > 0)
                 {
                     LoadIndex(index, false);
+                    _audioEngine.EnsureMixerStarted();
                 }
 
 
@@ -332,9 +347,11 @@ namespace MusicWrap.Core.Services.Playback
                         break;
 
                     case StartupBehavior.RestorePosition:
+                        _audioEngine.EnsureMixerStarted();
                         Seek(snapshot.PositionInSeconds);
                         break;
                     case StartupBehavior.RestorePlayback:
+                        _audioEngine.EnsureMixerStarted();
                         Seek(snapshot.PositionInSeconds);
                         if ((ManagedBass.PlaybackState)snapshot.PlaybackStateValue == ManagedBass.PlaybackState.Playing)
                         {
@@ -501,7 +518,8 @@ namespace MusicWrap.Core.Services.Playback
             if (_currentStream == 0) return;
 
             var target = Math.Clamp(seconds, 0.0, Duration);
-            var seekOk = _audioEngine.SetPosition(_currentStream, seconds);
+            //var seekOk = _audioEngine.SetPosition(_currentStream, seconds);
+            var seekOk = _audioEngine.SetPosition(_currentStream, target);
 
             if (!seekOk && _audioEngine.GetLastError() == ManagedBass.Errors.Position)
             {
@@ -1146,6 +1164,7 @@ namespace MusicWrap.Core.Services.Playback
             }
             else
             {
+                _audioEngine.StartMixer(); // just in case
                 _audioEngine.PauseMixer();
                 SetPlaybackState(PlaybackState.Paused);
             }

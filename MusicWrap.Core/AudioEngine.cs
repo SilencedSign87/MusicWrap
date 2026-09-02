@@ -17,6 +17,7 @@ namespace MusicWrap.Core
         private bool _isInitialized;
 
 #if WINDOWS
+        private bool _wasapiInitialized;
         private bool _isWasapiInitialized;
         private WasapiProcedure? _wasapiProc;
 #endif
@@ -74,7 +75,6 @@ namespace MusicWrap.Core
             _lastSampleRate = sampleRate > 0 ? sampleRate : 44100;
             _lastRequestedSampleRate = _lastSampleRate;
             _lastRequestedChannels = 2;
-
             _currentOutputMode = outputmode;
 
             Bass.PlaybackBufferLength = 90;
@@ -108,6 +108,10 @@ namespace MusicWrap.Core
         public bool Reinitialize(int deviceIndex = -1, int sampleRate = 44100, OutputMode outputmode = OutputMode.WasapiShared)
         {
             Teardown();
+            _lastDeviceIndex = deviceIndex;
+            _lastSampleRate = sampleRate > 0 ? sampleRate : 44100;
+            _lastRequestedSampleRate = _lastSampleRate;
+            _lastRequestedChannels = 2;
             return Initialize(deviceIndex, sampleRate, outputmode);
         }
 
@@ -139,6 +143,8 @@ namespace MusicWrap.Core
 
             var flags = BassFlags.Float | BassFlags.MixerNonStop;
 
+            flags |= (BassFlags)0x100000; // BASS_MIXER_QUEUE
+
             if (IsWasapiMode())
                 flags |= BassFlags.Decode;
 
@@ -157,6 +163,12 @@ namespace MusicWrap.Core
             StartFFTCapture();
 
             return true;
+        }
+        public bool IsInitialized => _isInitialized;
+        public void EnsureMixerStarted()
+        {
+            if (_mixerStream != 0 && Bass.ChannelIsActive(_mixerStream) != PlaybackState.Playing)
+                StartMixer();
         }
 
         public bool PrepareTrack(int trackStream, int preferredSampleRate = 0)
@@ -451,10 +463,23 @@ namespace MusicWrap.Core
 
         public bool SetPosition(int stream, double seconds)
         {
+            if (_mixerStream != 0 && Bass.ChannelIsActive(_mixerStream) != PlaybackState.Playing)
+            {
+                StartMixer();
+                System.Threading.Thread.Sleep(5); // sleep a bit to allow the mixer to start
+            }
             long bytePos = Bass.ChannelSeconds2Bytes(stream, seconds);
-            if (BassMix.ChannelSetPosition(stream, bytePos))
-                return true;
-            return Bass.ChannelSetPosition(stream, bytePos);
+
+            bool ok = BassMix.ChannelSetPosition(stream, bytePos);
+            if (!ok)
+                ok = Bass.ChannelSetPosition(stream, bytePos);
+
+            if (_mixerStream != 0 && Bass.ChannelIsActive(_mixerStream) == PlaybackState.Playing)
+            {
+
+            }
+
+            return ok;
         }
 
         public OutputMode GetCurrentOutputMode() => _currentOutputMode;
@@ -574,7 +599,8 @@ namespace MusicWrap.Core
 
                 int start = _writePos - requested;
 
-                if (start < 0) { 
+                if (start < 0)
+                {
                     start += _fftCaptureBuffer.Length;
                 }
 
@@ -582,7 +608,8 @@ namespace MusicWrap.Core
                 {
                     // no wrap
                     Array.Copy(_fftCaptureBuffer, start, destination, 0, requested);
-                }else
+                }
+                else
                 {
                     int first = _fftCaptureBuffer.Length - start;
 

@@ -49,7 +49,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\MusicWrap.Core\MusicWrap.Core.csproj" />
+		<ProjectReference Include="..\MusicWrap.Core\MusicWrap.Core.csproj" SetTargetFramework="TargetFramework=net10.0-windows" />
 		<ProjectReference Include="..\MusicWrap.Data\MusicWrap.Data.csproj" />
 	</ItemGroup>
 
