@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
-using System.Diagnostics;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,41 +19,23 @@ namespace MusicWrap.UI.Controls
         private float[] _currentHeights = [];
         private bool _isActive;
 
-        private int _samplerate = 44100;
-
-        private const float ContrastGamma = 1.6f;   // >1 = more global contrast
-        private const float NoiseGateNorm = 0.2f; // noise gate threshold (0-1, 0 = off, 1 = full silence)
         private const float Amplification = 1.0f;
         private const float RiseSpeed = 0.6f; // how quickly the bars rise to the target value (0-1)
         private const float FallSpeed = 0.6f; // how quickly the bars fall to the target value (0-1)
         private const float HeightDecay = 0.03f; // how quickly the current height value falls (0-1)
 
-        private const float MinEqHz = 20f; // lowest frequency
-        private const float MaxEqHz = 20000f; // highest frequency
-        private const float NoiseFloorDb = -90f; // lowest dB value to consider (anything below this is treated as silence)
-        private const float CeilingDb = -18f; // highest dB value to consider (anything above this is treated as max volume)
-        private const float EqGamma = 1.0f; // 1 = linear, <1 = more energy on the low end, >1 = more energy on the high end
-
-        private const float HighShelfGain = 0.6f;     // 0 = off, 0.3 = subtle, 0.8 = agressive
-        private const float HighShelfCurve = 0.8f;     // <1 = more energy only on the high end
-        private const float GammaDelta = 0.3f;        // how much to reduce gamma for high frequencies (0 = off, 0.5 = strong)
-
-        //private const int FFTSize = 16384;
         private const int BaseFFTSize = 16384;      // at 48 kHz
         private const int MaxFFTSize = 16384;       // cap for 192+ kHz
-        private int _currentFFTSize = BaseFFTSize;
-
-        //private readonly float[] _pcmBuffer = new float[FFTSize * 2]; // stereo
         private readonly float[] _pcmBuffer = new float[MaxFFTSize * 2];
+
+        private readonly SpectrumPipeline _pipeline;
+        private int _samplerate = 44100;
+        private int _currentFFTSize = BaseFFTSize;
 
         private float[] _fftInput = [];
         private Complex[] _fftComplex = [];
         private float[] _magnitudes = [];
         private Point[] _points = [];
-        private BandMapping[] _bandMap = [];
-        private float[] _smoothedBands = [];
-        private const float BandSmoothingAlpha = 0.7f;  // EMA alpha (0 = ignore new data, 1 = no smoothing)
-        private const float BandChangeThreshold = 0.01f; // dead zone: ignore changes smaller than this (0-1)
 
         private readonly Brush _fadeMask;
 
@@ -63,6 +44,8 @@ namespace MusicWrap.UI.Controls
             InitializeComponent();
 
             _musicService = App.Services.GetRequiredService<IMusicPlayerService>();
+
+            _pipeline = new SpectrumPipeline(new SpectrumPipelineConfig { SampleRate = _samplerate, FftSize = _currentFFTSize });
 
             _timer = new DispatcherTimer(DispatcherPriority.Render)
             {
@@ -90,9 +73,11 @@ namespace MusicWrap.UI.Controls
         private static void OnBarCountChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is SpectrumVisualizerControl widget)
+            {
+                widget._pipeline?.SetBandCount((int)e.NewValue);
                 widget.ReinitArrays();
+            }
         }
-
         public static readonly DependencyProperty VisualizerProperty =
             DependencyProperty.Register(
                 nameof(Visualizer),
@@ -141,14 +126,12 @@ namespace MusicWrap.UI.Controls
             {
                 _samplerate = sr;
                 _currentFFTSize = ComputeFftSize(_samplerate);
-                RebuildBandMapping();
+                _pipeline.OnConfigurationChanged(_samplerate, _currentFFTSize);
                 UpdateTimerInterval();
-                Array.Clear(_smoothedBands);
             }
 
             int capturedFloats = _musicService.GetCapturedPCMData(_pcmBuffer);
 
-            Debug.WriteLine($"[wave] captured float gate: {_samplerate}hz {capturedFloats} {_currentFFTSize * 2} => {capturedFloats < _currentFFTSize * 2}");
             if (capturedFloats <= 0 || capturedFloats < _currentFFTSize * 2)
             {
                 DecayAll();
@@ -190,20 +173,18 @@ namespace MusicWrap.UI.Controls
                 _magnitudes[i] = (float)Math.Sqrt(power);
             }
 
-            float[] rawBands = MapFFTToBands(_magnitudes, BarCount);
-            SmoothBands(rawBands);
-            UpdateHeights(_smoothedBands);
+            float[] displayBands = _pipeline.Process(_magnitudes);
+            UpdateHeights(displayBands);
             Render();
         }
         private void UpdateTimerInterval()
         {
-            // At 192kHz with 65536 FFT, computation is heavier; cap at ~30 FPS
             if (_currentFFTSize >= 32768)
-                _timer.Interval = TimeSpan.FromMilliseconds(40); // 25 FPS
-            else if (_currentFFTSize >= 16384)
                 _timer.Interval = TimeSpan.FromMilliseconds(33); // 30 FPS
+            else if (_currentFFTSize >= 16384)
+                _timer.Interval = TimeSpan.FromMilliseconds(29); // 35 FPS
             else
-                _timer.Interval = TimeSpan.FromMilliseconds(30); // 33 FPS
+                _timer.Interval = TimeSpan.FromMilliseconds(25); // 40 FPS
         }
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
@@ -223,10 +204,8 @@ namespace MusicWrap.UI.Controls
         {
             int count = Math.Max(BarCount, 1);
             _currentHeights = new float[count];
-            _smoothedBands = new float[count];
             _points = new Point[count];
             RebuildPointCache();
-            RebuildBandMapping();
         }
         private void DecayAll()
         {
@@ -247,63 +226,6 @@ namespace MusicWrap.UI.Controls
                 _currentHeights[i] += (target - _currentHeights[i]) * speed;
             }
         }
-        private void SmoothBands(float[] rawBands)
-        {
-            if (_smoothedBands.Length != rawBands.Length)
-                _smoothedBands = new float[rawBands.Length];
-            for (int i = 0; i < rawBands.Length; i++)
-            {
-                float diff = rawBands[i] - _smoothedBands[i];
-                // Dead zone: ignore changes smaller than the threshold
-                if (Math.Abs(diff) < BandChangeThreshold)
-                    continue;
-                // EMA: exponential moving average
-                _smoothedBands[i] += diff * BandSmoothingAlpha;
-            }
-        }
-        private float[] MapFFTToBands(float[] spectrum, int bandCount)
-        {
-            var result = new float[bandCount];
-
-            for (int i = 0; i < bandCount; i++)
-            {
-                var map = _bandMap[i];
-
-                float mLeft = InterpolateSpectrum(spectrum, map.Left);
-                float mCenter = InterpolateSpectrum(spectrum, map.Center);
-                float mRight = InterpolateSpectrum(spectrum, map.Right);
-
-                float magnitude = (mLeft + 2f * mCenter + mRight) * 0.25f;
-
-                // high-shelf boost
-                float t = (float)i / (bandCount - 1);
-                float shelfGain = 1.0f + HighShelfGain * MathF.Pow(t, HighShelfCurve);
-                magnitude *= shelfGain;
-
-                // dB + normalization
-                float db = 20f * MathF.Log10(magnitude + 1e-8f);
-                float norm = (db - NoiseFloorDb) / (CeilingDb - NoiseFloorDb);
-                norm = Math.Clamp(norm, 0f, 1f);
-
-                if(norm < NoiseGateNorm)
-                {
-                    float ratio = norm / NoiseGateNorm;
-                    norm *= ratio;
-                }
-
-                // variable gamma
-                float bandGamma = Math.Max(EqGamma - GammaDelta * t, 0.4f) * ContrastGamma;
-                result[i] = MathF.Pow(norm, bandGamma);
-            }
-
-            return result;
-        }
-        private static float InterpolateSpectrum(float[] spectrum, InterpolatedSample sample)
-        {
-            return spectrum[sample.Bin0] * (1f - sample.Fraction) +
-                   spectrum[sample.Bin1] * sample.Fraction;
-        }
-        
         private void Render()
         {
             double width = BarContainer.ActualWidth;
@@ -492,43 +414,6 @@ namespace MusicWrap.UI.Controls
                         ? i * step
                         : width * 0.5;
         }
-        private void RebuildBandMapping()
-        {
-            int bandCount = Math.Max(BarCount, 1);
-            _bandMap = new BandMapping[bandCount];
-
-            //int usableBins = FFTSize / 2;
-            //float nyquist = _samplerate * 0.5f;
-            //float binHz = nyquist / usableBins;
-
-            int usableBins = _currentFFTSize / 2;
-            float nyquist = _samplerate * 0.5f;
-            float binHz = nyquist / usableBins;
-
-            if (binHz <= 0f)
-                return;
-
-            double minHz = Math.Max(MinEqHz, binHz);
-            double maxHz = Math.Min(MaxEqHz, nyquist * 0.98);
-            if (maxHz <= minHz)
-                maxHz = nyquist * 0.98;
-            double ratio = Math.Pow(maxHz / minHz, 1.0 / bandCount);
-            double lowHz = minHz;
-
-            for (int i = 0; i < bandCount; i++)
-            {
-                double highHz = lowHz * ratio;
-                double center = Math.Sqrt(lowHz * highHz);
-                double left = Math.Sqrt(lowHz * center);
-                double right = Math.Sqrt(center * highHz);
-                _bandMap[i] = new BandMapping(
-                    ComputeInterpolatedSample(left, binHz, usableBins),
-                    ComputeInterpolatedSample(center, binHz, usableBins),
-                    ComputeInterpolatedSample(right, binHz, usableBins)
-                );
-                lowHz = highHz;
-            }
-        }
         private static int ComputeFftSize(int sampleRate)
         {
             // Target ~2 Hz/bin resolution: binHz = (sampleRate/2) / (fftSize/2) = sampleRate / fftSize
@@ -540,39 +425,8 @@ namespace MusicWrap.UI.Controls
             while (pow2 < desired) pow2 <<= 1;
             return Math.Clamp(pow2, BaseFFTSize, MaxFFTSize);
         }
-        private static InterpolatedSample ComputeInterpolatedSample(double frequency, float binHz, int maxBin)
-        {
-            double bin = frequency / binHz;
-            int i0 = (int)Math.Floor(bin);
-            int i1 = i0 + 1;
-            i0 = Math.Clamp(i0, 0, maxBin - 1);
-            i1 = Math.Clamp(i1, 0, maxBin - 1);
-            float fraction = (float)(bin - i0);
-            return new InterpolatedSample(i0, i1, fraction);
-        }
 
         #endregion
-
-        private readonly struct InterpolatedSample
-        {
-            public readonly int Bin0;
-            public readonly int Bin1;
-            public readonly float Fraction;
-
-            public InterpolatedSample(int bin0, int bin1, float fraction)
-            {
-                Bin0 = bin0;
-                Bin1 = bin1;
-                Fraction = fraction;
-            }
-        }
-
-        private readonly struct BandMapping(InterpolatedSample left, InterpolatedSample center, InterpolatedSample right)
-        {
-            public readonly InterpolatedSample Left = left;
-            public readonly InterpolatedSample Center = center;
-            public readonly InterpolatedSample Right = right;
-        }
     }
 
 }
