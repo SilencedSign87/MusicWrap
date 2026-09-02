@@ -121,8 +121,8 @@ namespace MusicWrap.UI.Controls
                 return;
             }
 
-            int sr =_musicService.GetCurrentOutputSampleRate();
-            if(sr > 0 && sr != _samplerate)
+            int sr = _musicService.GetCurrentOutputSampleRate();
+            if (sr > 0 && sr != _samplerate)
             {
                 _samplerate = sr;
                 _currentFFTSize = ComputeFftSize(_samplerate);
@@ -226,7 +226,7 @@ namespace MusicWrap.UI.Controls
             switch (Visualizer)
             {
                 case PreferredVisualizer.LineSpectrum:
-                    {   
+                    {
                         DrawLines(width, height); break;
                     }
                 case PreferredVisualizer.BarSpectrum:
@@ -253,14 +253,38 @@ namespace MusicWrap.UI.Controls
                 _points[i].Y = y;
             }
 
+            void AppendSmoothCurve(StreamGeometryContext ctx)
+            {
+                if (_points.Length < 2)
+                    return;
+
+                for (int i = 0; i < _points.Length - 1; i++)
+                {
+                    Point p0 = i > 0 ? _points[i - 1] : _points[0];
+                    Point p1 = _points[i];
+                    Point p2 = _points[i + 1];
+                    Point p3 = i + 2 < _points.Length ? _points[i + 2] : p2;
+
+                    double c1X = p1.X + (p2.X - p0.X) / 6.0;
+                    double c1Y = Math.Clamp(p1.Y + (p2.Y - p0.Y) / 6.0, 0, height);
+
+                    double c2X = p2.X - (p3.X - p1.X) / 6.0;
+                    double c2Y = Math.Clamp(p2.Y - (p3.Y - p1.Y) / 6.0, 0, height);
+
+                    ctx.BezierTo(new Point(c1X, c1Y), new Point(c2X, c2Y), p2, true, false);
+                }
+            }
+
             var fillGeometry = new StreamGeometry();
             using (var ctx = fillGeometry.Open())
             {
                 ctx.BeginFigure(new Point(0, baseY), true, true);
                 ctx.LineTo(_points[0], true, false);
 
-                for (int i = 1; i < _points.Length; i++)
-                    ctx.LineTo(_points[i], true, false);
+                //for (int i = 1; i < _points.Length; i++)
+                //    ctx.LineTo(_points[i], true, false);
+
+                AppendSmoothCurve(ctx);
 
                 ctx.LineTo(new Point(width, baseY), true, false);
             }
@@ -270,8 +294,9 @@ namespace MusicWrap.UI.Controls
             using (var ctx = topGeometry.Open())
             {
                 ctx.BeginFigure(_points[0], false, false);
-                for (int i = 1; i < _points.Length; i++)
-                    ctx.LineTo(_points[i], true, false);
+                //for (int i = 1; i < _points.Length; i++)
+                //    ctx.LineTo(_points[i], true, false);
+                AppendSmoothCurve(ctx);
             }
             topGeometry.Freeze();
 
@@ -308,13 +333,49 @@ namespace MusicWrap.UI.Controls
                         yTop = height - barHeight;
                         yBottom = height;
                     }
+
+                    double maxRadius = barWidth / 2.0;
+                    double rx = Math.Min(maxRadius, barWidth / 2.0);
+                    double ry = Math.Min(rx, barHeight / 2.0);
+
+                    if (rx < 0.5 || ry < 0.5)
+                    {
+                        ctx.BeginFigure(new Point(x0, yTop), true, true);
+                        ctx.LineTo(new Point(x1, yTop), true, false);
+                        ctx.LineTo(new Point(x1, yBottom), true, false);
+                        ctx.LineTo(new Point(x0, yBottom), true, false);
+                    }
+                    else
+                    {
+                        var cornerSize = new Size(rx, ry);
+                        if (mirrored)
+                        {
+
+                            ctx.BeginFigure(new Point(x0 + rx, yTop), true, true);
+                            ctx.LineTo(new Point(x1 - rx, yTop), true, false);
+                            ctx.ArcTo(new Point(x1, yTop + ry), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
+                            ctx.LineTo(new Point(x1, yBottom - ry), true, false);
+                            ctx.ArcTo(new Point(x1 - rx, yBottom), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
+                            ctx.LineTo(new Point(x0 + rx, yBottom), true, false);
+                            ctx.ArcTo(new Point(x0, yBottom - ry), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
+                            ctx.LineTo(new Point(x0, yTop + ry), true, false);
+                            ctx.ArcTo(new Point(x0 + rx, yTop), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
+                        }
+                        else
+                        {
+                            ctx.BeginFigure(new Point(x0, yBottom), true, true);
+                            ctx.LineTo(new Point(x0, yTop + ry), true, false);
+                            ctx.ArcTo(new Point(x0 + rx, yTop), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
+                            ctx.LineTo(new Point(x1 - rx, yTop), true, false);
+                            ctx.ArcTo(new Point(x1, yTop + ry), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
+                            ctx.LineTo(new Point(x1, yBottom), true, false);
+                        }
+                    }
+
                     //ctx.BeginFigure(new Point(x0, yTop), true, true);
                     //ctx.LineTo(new Point(x1, yTop), true, false);
                     //ctx.LineTo(new Point(x1, yBottom), true, false);
-                    ctx.BeginFigure(new Point(x0, yTop), true, true);
-                    ctx.LineTo(new Point(x1, yTop), true, false);
-                    ctx.LineTo(new Point(x1, yBottom), true, false);
-                    ctx.LineTo(new Point(x0, yBottom), true, false);
+                    //ctx.LineTo(new Point(x0, yBottom), true, false);
                 }
             }
 
