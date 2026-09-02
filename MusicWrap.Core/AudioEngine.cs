@@ -17,7 +17,6 @@ namespace MusicWrap.Core
         private bool _isInitialized;
 
 #if WINDOWS
-        private bool _wasapiInitialized;
         private bool _isWasapiInitialized;
         private WasapiProcedure? _wasapiProc;
 #endif
@@ -46,7 +45,7 @@ namespace MusicWrap.Core
         public bool IsMixerActive => _mixerStream != 0;
 
         private int _writePos;
-        private const int CaptureSamples = 16384 * 2; // stereo
+        private const int CaptureSamples = 65536 * 2; // stereo
         private DSPProcedure? _fftDspCallback;
         private float[] _fftCaptureBuffer = Array.Empty<float>();
         private float[] _dspTempBuffer = Array.Empty<float>();
@@ -483,6 +482,15 @@ namespace MusicWrap.Core
         }
 
         public OutputMode GetCurrentOutputMode() => _currentOutputMode;
+        public int GetOutputSampleRate()
+        {
+            if (_mixerStream == 0) return 44100;
+
+            if (Bass.ChannelGetInfo(_mixerStream, out var info))
+                return info.Frequency;
+
+            return 44100;
+        }
 
         public bool SlideVolume(int stream, float volume, int timeMS)
         {
@@ -584,8 +592,6 @@ namespace MusicWrap.Core
                     Math.Min(
                         _fftCaptureFloats + floatsRead,
                         _fftCaptureBuffer.Length);
-
-                //Debug.WriteLine($"[AudioEngine] FFT Capture: {_fftCaptureFloats} floats captured. \n {floatsRead} floats read. \n {length} bytes length. \n Samplerate: {_currentOutputSampleRate} \n Channels: {_currentOutputChannels}");
             }
         }
         public int GetCapturedPCMData(float[] destination)

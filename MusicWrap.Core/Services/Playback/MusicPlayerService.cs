@@ -80,6 +80,7 @@ namespace MusicWrap.Core.Services.Playback
         void ChangeSampleRate(int sampleRate);
         void ChangeOutputMode(OutputMode mode);
         int GetCapturedPCMData(float[] destination);
+        int GetCurrentOutputSampleRate();
         (int Index, string Name)[] GetAvailableDevices();
         PlaybackQueueSnapshot BuildPlaybackSnapshot();
     }
@@ -231,6 +232,7 @@ namespace MusicWrap.Core.Services.Playback
         }
 
         public int GetCapturedPCMData(float[] destination) => _audioEngine.GetCapturedPCMData(destination);
+        public int GetCurrentOutputSampleRate() => _audioEngine.CurrentOutputSampleRate;
 
         public MusicPlayerService(
             MusicLibrary library,
