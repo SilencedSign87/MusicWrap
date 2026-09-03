@@ -11,6 +11,7 @@ using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {
@@ -45,6 +46,10 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         [NotifyCanExecuteChangedFor(nameof(SetVisualizerCommand))]
         public partial PreferredVisualizer PreferredVisualizer { get; set; } = PreferredVisualizer.LineSpectrum;
 
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(SetSpectrumTypeCommand))]
+        public partial SpectrumType PreferredSpectrumType { get; set; } = SpectrumType.Normal;
+
         public bool IsVisualizerVisible => PreferredVisualizer != PreferredVisualizer.None;
 
         private int[] _currentArtistIds = [];
@@ -75,6 +80,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             ShowLyrics = settings.NowPlaying.ShowLyrics;
             BlurEffect = settings.NowPlaying.BlurEffect;
             PreferredVisualizer = settings.NowPlaying.PreferredVisualizer;
+            PreferredSpectrumType = settings.NowPlaying.SpectrumType;
             _isInitializing = false;
 
             _musicPlayerService.TrackChanged += OnTrackChanged;
@@ -92,11 +98,29 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         }
         private bool CanSetVisualizer(string visualizer)
         {
-            if(!Enum.TryParse<PreferredVisualizer>(visualizer, out var parsed))
+            if (!Enum.TryParse<PreferredVisualizer>(visualizer, out var parsed))
             {
                 return false;
             }
             return PreferredVisualizer != parsed;
+        }
+        [RelayCommand(CanExecute = nameof(CanSetSpectrumType))]
+        private void SetSpectrumType(string spectrumType)
+        {
+            if (Enum.TryParse<SpectrumType>(spectrumType, out var parsed))
+            {
+                PreferredSpectrumType = parsed;
+                _settings.NowPlaying.SpectrumType = parsed;
+                _saveCoordinator.Enqueue(SaveKind.Settings);
+            }
+        }
+        private bool CanSetSpectrumType(string spectrumType)
+        {
+            if (!Enum.TryParse<SpectrumType>(spectrumType, out var parsed))
+            {
+                return false;
+            }
+            return PreferredSpectrumType != parsed;
         }
         [RelayCommand]
         private void OpenProperties()
@@ -184,7 +208,7 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             TrackTitle = CommonStrings.NoTrackPlaying;
             TrackAlbum = "";
             DominantColorHex = CommonColors.DominantColorFallback;
-            ForegroundColorHex =CommonColors.ForegroundOnFallback;
+            ForegroundColorHex = CommonColors.ForegroundOnFallback;
             HighlightColorHex = CommonColors.HighlightColorFallback;
             HighlightForegroundHex = CommonColors.ForegroundOnFallback;
             TrackImagePath = null;

@@ -33,11 +33,15 @@
                 <Separator/>
                 <MenuItem Header="Panels" Icon="{ex:Icon Glyph=ECA5,FontSize=12}">
                     <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=EC4F}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
-                    <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=F61F,FontSize=12}">
-                        <MenuItem Header="Off" IsCheckable="True" 
-                            Command="{Binding SetVisualizerCommand}"
-                            CommandParameter="None"
-                            IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                    <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=F61F,FontSize=12}" >
+                        <MenuItem 
+                            Header="Show"
+                             IsCheckable="True" 
+                             Command="{Binding SetVisualizerCommand}"
+                             CommandParameter="None"
+                             IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
+                            />
+                        <Separator/>
                         <MenuItem Header="Line" IsCheckable="True" 
                             Command="{Binding SetVisualizerCommand}"
                             CommandParameter="LineSpectrum"
@@ -50,6 +54,17 @@
                             Command="{Binding SetVisualizerCommand}"
                             CommandParameter="MirroredBarSpectrum"
                             IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                        <Separator/>
+                        <MenuItem Header="Spectrum" IsCheckable="True"
+                                  Command="{Binding SetSpectrumTypeCommand}"
+                                  CommandParameter="Normal"
+                                  IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}"
+                                  />
+                        <MenuItem Header="Centered" IsCheckable="True"
+                                  Command="{Binding SetSpectrumTypeCommand}"
+                                  CommandParameter="Centered"
+                                  IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
+                                  />
                     </MenuItem>
                 </MenuItem>
                 <MenuItem Header="Effects" Icon="{ex:Icon Glyph=E794}">
@@ -113,12 +128,13 @@
             Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
             Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <controls:SpectrumVisualizerControl
-                HorizontalAlignment="Stretch"
-                Visualizer="{Binding PreferredVisualizer}"
-                Height="120" 
-                BarCount="120" 
-                Opacity="0.5"
-                />
+                    HorizontalAlignment="Stretch"
+                    Visualizer="{Binding PreferredVisualizer}"
+                    SpectrumType="{Binding PreferredSpectrumType}"
+                    Height="120" 
+                    BarCount="120" 
+                    Opacity="0.5"
+                    />
             </Border>
         </Grid>
     </Grid>
