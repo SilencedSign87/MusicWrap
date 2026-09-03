@@ -38,7 +38,6 @@
                 HorizontalScrollBarVisibility="Disabled"
                 PanningMode="VerticalOnly"
                 PreviewMouseWheel="LyricsScrollViewer_PreviewMouseWheel"
-                PreviewMouseDown="LyricsScrollViewer_PreviewMouseDown"
                 ScrollChanged="LyricsScrollViewer_ScrollChanged"
                 >
                 <StackPanel Background="Transparent">

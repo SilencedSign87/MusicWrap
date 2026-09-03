@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Lyrics;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using System.ComponentModel;
@@ -17,6 +18,11 @@ namespace MusicWrap.UI.Features.Lyrics.View
         private bool _followLyrics = true;
         private readonly LyricsViewModel _viewModel;
         private BlurEffect _textBlurEffect = new() { Radius = 3 };
+
+        public bool HasLyrics => _viewModel?.HasLyrics ?? false;
+        public bool HasSyncedLyrics => _viewModel?.HasSyncedLyrics ?? false;
+        public event EventHandler<LyricsStateChangedEventArgs>? LyricsStateChanged;
+
         public LyricsView()
         {
             InitializeComponent();
@@ -70,10 +76,12 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
         #endregion
 
+
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             _viewModel.PropertyChanged += OnViewmodelPropertyChanged;
-            
+
             if (!IsVisible) return;
 
             Dispatcher.BeginInvoke(
@@ -101,8 +109,17 @@ namespace MusicWrap.UI.Features.Lyrics.View
                     break;
                 case nameof(LyricsViewModel.Lyrics):
                     OnLyricsChanged();
+                    RaiseLyricsStateChanged();
+                    break;
+                case nameof(LyricsViewModel.HasLyrics):
+                case nameof(LyricsViewModel.HasSyncedLyrics):
+                    RaiseLyricsStateChanged();
                     break;
             }
+        }
+        private void RaiseLyricsStateChanged()
+        {
+            LyricsStateChanged?.Invoke(this, new LyricsStateChangedEventArgs(HasLyrics, HasSyncedLyrics, _viewModel?.Lyrics));
         }
         private void OnActiveIndexChanged()
         {
@@ -147,11 +164,6 @@ namespace MusicWrap.UI.Features.Lyrics.View
                 return;
             }
             DisableFollow();
-        }
-
-        private void LyricsScrollViewer_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            //DisableFollow();
         }
 
         private void LyricsScrollViewer_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -319,6 +331,19 @@ namespace MusicWrap.UI.Features.Lyrics.View
                         CenterActiveLine();
                     }));
             }
+        }
+    }
+    public class LyricsStateChangedEventArgs : EventArgs
+    {
+        public bool HasLyrics { get; }
+        public bool HasSyncedLyrics { get; }
+        public ParsedLyrics? Lyrics { get; }
+
+        public LyricsStateChangedEventArgs(bool hasLyrics, bool hasSyncedLyrics, ParsedLyrics? lyrics)
+        {
+            HasLyrics = hasLyrics;
+            HasSyncedLyrics = hasSyncedLyrics;
+            Lyrics = lyrics;
         }
     }
 }

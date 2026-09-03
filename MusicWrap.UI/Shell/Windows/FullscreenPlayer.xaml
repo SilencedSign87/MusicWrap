@@ -140,6 +140,7 @@
                 Grid.Column="0"
                 x:Name="ArtworkPanel"
                 Orientation="Vertical"
+                HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Margin="16"
                 >
@@ -171,17 +172,20 @@
                     />
             </StackPanel>
             <Border 
+                x:Name="LyricsContainer"
                 Grid.Column="1" 
-                Visibility="{Binding NowPlayingViewModel.ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}" 
                 Padding="52"
+                ClipToBounds="True"
                 >
                 <lyrics:LyricsView 
-                        FontSize="36"
-                        AllowScroll="False"
-                        AllowSeek="False"
-                        ShowToolbar="False"
-                        LyricsAligment="Left"
-                        />
+                    x:Name="LyricsControl"
+                    FontSize="36"
+                    AllowScroll="False"
+                    AllowSeek="False"
+                    ShowToolbar="False"
+                    LyricsAligment="Left"
+                    LyricsStateChanged="LyricsControl_LyricsStateChanged"
+                    />
             </Border>
         </Grid>
         <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">

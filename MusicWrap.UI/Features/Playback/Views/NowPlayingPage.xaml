@@ -99,13 +99,13 @@
             </controls:SquarePanel>
             <!-- Lyrics -->
             <Border x:Name="LyricsHost"
-            Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-            Visibility="{Binding ShowLyrics, Converter={StaticResource BooleanToVisibilityConverter}}">
+            Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
                 <lyrics:LyricsView
-    x:Name="lyricsComponent"
-    AllowSeek="True"
-    FontSize="20"
-    />
+                    x:Name="lyricsComponent"
+                    AllowSeek="True"
+                    FontSize="20"
+                    LyricsStateChanged="lyricsComponent_LyricsStateChanged"
+                    />
             </Border>
 
             <!-- Visualizer -->

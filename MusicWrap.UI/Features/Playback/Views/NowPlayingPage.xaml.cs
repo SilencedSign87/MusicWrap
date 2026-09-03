@@ -36,6 +36,12 @@ namespace MusicWrap.UI.Features.Playback.Views
         private void OnNowPlayingLayoutSizeChanged(object sender, SizeChangedEventArgs e) => ApplyLayout();
         private void ApplyLayout()
         {
+            bool showLyrics = _viewModel.ShowLyrics && lyricsComponent.HasLyrics;
+            bool showVisualizer = _viewModel.IsVisualizerVisible;
+            
+            LyricsHost.Visibility = showLyrics ? Visibility.Visible : Visibility.Collapsed;
+            VisualizerHost.Visibility = showVisualizer ? Visibility.Visible : Visibility.Collapsed;
+
             var mode = ResolveLayoutMode();
 
             switch (mode)
@@ -48,7 +54,7 @@ namespace MusicWrap.UI.Features.Playback.Views
         }
         private NowPlayingLayoutMode ResolveLayoutMode()
         {
-            bool showLyrics = _viewModel.ShowLyrics;
+            bool showLyrics = _viewModel.ShowLyrics && lyricsComponent.HasLyrics;
             bool showVisualizer = _viewModel.IsVisualizerVisible;
             // no panels
             if (!showLyrics && !showVisualizer) return NowPlayingLayoutMode.Compact;
@@ -77,8 +83,9 @@ namespace MusicWrap.UI.Features.Playback.Views
         }
         private void ApplyPortraitLayout()
         {
+            bool showLyrics = _viewModel.ShowLyrics && lyricsComponent.HasLyrics;
             double visualizer = _viewModel.IsVisualizerVisible ? VisualizerHeight : 0;
-            double lyrics = _viewModel.ShowLyrics ? LyricsBandHeight : 0;
+            double lyrics = showLyrics ? LyricsBandHeight : 0;
             ArtworkColumn.Width = new GridLength(1, GridUnitType.Star);
             LyricsColumn.Width = new GridLength(0);
             ArtworkRow.Height = new GridLength(1, GridUnitType.Star);
@@ -127,6 +134,11 @@ namespace MusicWrap.UI.Features.Playback.Views
             Portrait,
             Balanced,
             Landscape,
+        }
+
+        private void lyricsComponent_LyricsStateChanged(object sender, LyricsStateChangedEventArgs e)
+        {
+            ApplyLayout();
         }
     }
 }
