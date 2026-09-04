@@ -25,7 +25,7 @@ namespace MusicWrap.UI.Controls
 
         // ---- Stage: Smoothing ----
         public float SmoothingAlpha { get; set; } = 0.65f;  // EMA (0 = ignore new , 1 = no smoothing)
-        public float ChangeThreshold { get; set; } = 0.01f;// dead zone 0..1 (0 = off)
+        public float ChangeThreshold { get; set; } = 0.0f;// dead zone 0..1 (0 = off)
 
         // ---- Stage: Gamma and Contrast ----
         public float ContrastGamma { get; set; } = 1.7f;

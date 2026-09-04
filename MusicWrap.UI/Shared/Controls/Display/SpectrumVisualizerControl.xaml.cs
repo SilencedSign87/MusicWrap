@@ -16,9 +16,11 @@ namespace MusicWrap.UI.Controls
         private float[] _currentHeights = [];
         private bool _isActive;
 
-        private const float RiseSpeed = 0.7f;
-        private const float FallSpeed = 0.9f;
-        private const float HeightDecay = 0.9f;
+        private const float RiseSpeed = 1.0f;
+        private const float FallSpeed = 0.5f;
+        private const float HeightDecay = 0.1f;
+
+        private float _valleyGamma = 1.2f;
 
         private readonly SpectrumPipeline _spectrumPipeline;
         private readonly CenteredSpectrumPipeline _centeredPipeline;
@@ -203,6 +205,9 @@ namespace MusicWrap.UI.Controls
             for (int i = 0; i < _currentHeights.Length && i < bands.Length; i++)
             {
                 float target = Math.Clamp(bands[i], 0f, 1f);
+                if (_valleyGamma != 1.0f)
+                    target = MathF.Pow(Math.Max(target, 0f), _valleyGamma);
+
                 float speed = target > _currentHeights[i] ? RiseSpeed : FallSpeed;
                 _currentHeights[i] += (target - _currentHeights[i]) * speed;
             }
@@ -387,7 +392,7 @@ namespace MusicWrap.UI.Controls
         #endregion
 
         #region Computation
-       
+
         private void RebuildPointCache()
         {
             int count = Math.Max(BarCount, 1);

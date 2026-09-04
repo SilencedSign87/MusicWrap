@@ -25,7 +25,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// that sits at the center of the graph. From CenterHz to MaxHz the
     /// spectrum expands normally toward the outer edges.
     /// </summary>
-    public float CenterHz { get; set; } = 400f;
+    public float CenterHz { get; set; } = 500f;
 
     //  Dynamic range (dB)
 
@@ -38,14 +38,14 @@ public sealed class CenteredSpectrumPipelineConfig
 
     //  Smoothing
 
-    public float SmoothingAlpha { get; set; } = 0.5f;
-    public float ChangeThreshold { get; set; } = 0.01f;
+    public float SmoothingAlpha { get; set; } = 0.2f;
+    public float ChangeThreshold { get; set; } = 0.0f;
 
     //  Per-zone boosts (bass / mid / treble)
 
-    public float BassBoost { get; set; } = 1.0f;
-    public float MidBoost { get; set; } = 1.5f;
-    public float TrebleBoost { get; set; } = 1.2f;
+    public float BassBoost { get; set; } = 1.2f;
+    public float MidBoost { get; set; } = 1.4f;
+    public float TrebleBoost { get; set; } = 1.6f;
 
     //  Mirroring
 
