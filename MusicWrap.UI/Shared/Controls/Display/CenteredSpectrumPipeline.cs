@@ -1,4 +1,6 @@
-﻿namespace MusicWrap.UI.Controls;
+﻿using System.Windows.Media.Media3D;
+
+namespace MusicWrap.UI.Controls;
 
 public sealed class CenteredSpectrumPipelineConfig
 {
@@ -7,106 +9,65 @@ public sealed class CenteredSpectrumPipelineConfig
     public int FftSize { get; set; } = 16384;
     public int SampleRate { get; set; } = 44100;
 
-    /// <summary>
-    /// Number of output points/bands.
-    ///
-    /// The returned array is ordered from low frequency
-    /// at the center toward high frequencies at the edges.
-    ///
-    /// The renderer decides how these points are drawn.
-    /// </summary>
     public int BarCount { get; set; } = 80;
 
     public float MinHz { get; set; } = 20f;
     public float MaxHz { get; set; } = 20000f;
 
+    // Nyquist bias
     public float NyquistBias { get; set; } = 0.98f;
 
 
     //  Dynamic range (dB) 
 
-    public float NoiseFloorDb { get; set; } = -70f;
-    public float CeilingDb { get; set; } = -10f;
-
-
-    //  Noise gate 
-
-    public float NoiseGateNorm { get; set; } = 0.08f;
-
-
-    //  Spectral aggregation 
+    public float NoiseFloorDb { get; set; } = -90f;
+    public float CeilingDb { get; set; } = -30f;
 
     /// <summary>
-    /// How FFT bins inside each visual frequency range
-    /// are combined.
+    /// The normalized magnitude below which the visual is fully suppressed.
+    /// 
+    /// 0.0 = no noise gate
     /// </summary>
-    public CenteredAggregation Aggregation { get; set; }
-        = CenteredAggregation.Rms;
+    public float NoiseGateNorm { get; set; } = 0.09f;
 
-
-    //  Temporal smoothing 
 
     /// <summary>
-    /// Smoothing applied to rising values.
+    /// How the low-frequency region is compressed to allocate more visual resolution.
+    /// </summary>
+    public CenteredAggregation Aggregation { get; set; } = CenteredAggregation.Rms;
+
+
+    /// <summary>
+    /// How aggressively the visual contrast is applied to the normalized magnitude.
+    /// 
+    /// 1.0 = no change
+    /// 2.0 = twice as much contrast
+    /// 
+    /// </summary>
+    public float Gamma { get; set; } = 1.0f;
+
+
+    /// <summary>
+    /// How the radial distance from the center expands toward
+    /// the edges.
     ///
-    /// 0 = completely frozen.
-    /// 1 = immediate response.
+    /// 1.0 = linear octave span (edges could reach far into
+    ///       inactive ultra-low / ultra-high frequencies).
+    /// lower = more radial resolution is concentrated near the
+    ///         active center, so the edges stay visually alive.
     /// </summary>
-    public float Attack { get; set; } = 0.4f;
+    public float EdgeSpreadPower { get; set; } = 0.9f;
+
 
     /// <summary>
-    /// Smoothing applied to falling values.
+    /// How aggressively the center jumps toward the most active
+    /// frequency.
     ///
-    /// Lower values produce longer decay.
+    /// 0 = very sticky, only moves for a much stronger signal and
+    ///     a long hold.
+    /// 1 = very responsive, reacts to nearby bands quickly.
     /// </summary>
-    public float Release { get; set; } = 0.8f;
-
-
-    //  Contrast 
-
-    public float Gamma { get; set; } = 1.15f;
-
-
-    //  Frequency distribution 
-
-    /// <summary>
-    /// Frequency around which the low-frequency region
-    /// transitions into the more expanded high-frequency
-    /// region.
-    ///
-    /// Around 400 Hz gives a compact center similar to
-    /// the MusicBee centered spectrum.
-    /// </summary>
-    public float LowFrequencyCompressionHz { get; set; } = 400f;
-
-    /// <summary>
-    /// Controls the amount of additional compression
-    /// toward the center.
-    ///
-    /// 1.0 = standard compression curve.
-    /// >1.0 = stronger concentration toward the center.
-    /// <1.0 = wider low-frequency region.
-    /// </summary>
-    public float LowFrequencyCompressionPower { get; set; } = 1.0f;
-
-    /// <summary>
-    /// Additional merge strength toward the center
-    /// (low frequencies).
-    ///
-    /// 0 = no extra merge (uniform smoothing).
-    /// 1 = center bands fully merged into one curve.
-    /// </summary>
-    public float LowFrequencyMerge { get; set; } = 0.8f;
-
-
-    // frequency weighting
-
-    /// <summary>
-    /// Optional additional boost for low frequencies.
-    ///
-    /// 0 = disabled.
-    /// </summary>
-    public float LowFrequencyBoost { get; set; } = 0.15f;
+    public float CenterSensitivity { get; set; } = 0.70f;
 }
 
 
@@ -117,579 +78,879 @@ public enum CenteredAggregation
     Rms
 }
 
-
 public sealed class CenteredSpectrumPipeline
 {
-    private readonly CenteredSpectrumPipelineConfig _cfg;
+    private const int MinimumAnalysisBands = 128;
 
-    private FrequencyBand[] _bandMap = [];
+    // Temporal behavior of the center selector.
+    // These are intentionally independent from the visual Attack/Release.
+    private const double PeakMemorySeconds = 0.90;
+    private const double ActivityMemorySeconds = 0.35;
+    private const double CenterHoldSeconds = 0.65;
 
-    private float[] _smoothed = [];
+    // Avoid constantly selecting a neighboring band.
+    private const float MinimumCenterDistanceOctaves = 0.20f;
 
+    private CenteredSpectrumPipelineConfig _config;
 
-    public CenteredSpectrumPipeline(
-        CenteredSpectrumPipelineConfig config)
+    private int _sampleRate;
+    private int _fftSize;
+    private int _bandCount;
+
+    private float[] _analysisValues = Array.Empty<float>();
+    private float[] _previousValues = Array.Empty<float>();
+    private float[] _peakAverage = Array.Empty<float>();
+    private float[] _activityAverage = Array.Empty<float>();
+
+    private float[] _bandFrequencies = Array.Empty<float>();
+
+    private float[] _radialValues = Array.Empty<float>();
+    private float[] _output = Array.Empty<float>();
+
+    private int _centerBandIndex = -1;
+    private int _candidateCenterBandIndex = -1;
+
+    private double _candidateTime;
+    private long _lastTimestamp;
+
+    private float _centerFrequency;
+    private bool _initialized;
+
+    public CenteredSpectrumPipeline(CenteredSpectrumPipelineConfig config)
     {
-        _cfg = config;
+        _config = config ?? throw new ArgumentNullException(nameof(config));
 
-        _smoothed =
-            new float[Math.Max(1, config.BarCount)];
+        _sampleRate = Math.Max(1, config.SampleRate);
+        _fftSize = Math.Max(2, config.FftSize);
+        _bandCount = Math.Max(3, config.BarCount);
 
-        RebuildBandMapping();
+        EnsureOddBandCount();
+        RebuildAnalysisBuffers();
     }
 
-
-    public int BarCount =>
-        _cfg.BarCount;
-
-
-    public void OnConfigurationChanged(
-        int sampleRate,
-        int fftSize)
+    /// <summary>
+    /// Changes the number of output points/bars.
+    ///
+    /// For a true center point the count is forced to odd.
+    /// Example: 80 -> 81.
+    /// </summary>
+    public void SetBandCount(int bandCount)
     {
-        _cfg.SampleRate = sampleRate;
-        _cfg.FftSize = fftSize;
+        _bandCount = Math.Max(3, bandCount);
+        EnsureOddBandCount();
 
-        RebuildBandMapping();
-        ResetSmoothing();
+        _radialValues = new float[(_bandCount + 1) / 2];
+        _output = new float[_bandCount];
     }
 
-
-    public void ResetSmoothing()
+    /// <summary>
+    /// Called whenever the audio configuration changes.
+    /// </summary>
+    public void OnConfigurationChanged(int sampleRate, int fftSize)
     {
-        Array.Clear(_smoothed);
+        _sampleRate = Math.Max(1, sampleRate);
+        _fftSize = Math.Max(2, fftSize);
+
+        _config.SampleRate = _sampleRate;
+        _config.FftSize = _fftSize;
+
+        _centerBandIndex = -1;
+        _candidateCenterBandIndex = -1;
+        _candidateTime = 0;
+        _centerFrequency = 0;
+        _initialized = false;
+
+        RebuildAnalysisBuffers();
     }
 
-
-    public void SetBarCount(int barCount)
-    {
-        _cfg.BarCount =
-            Math.Max(1, barCount);
-
-        _smoothed =
-            new float[_cfg.BarCount];
-
-        RebuildBandMapping();
-    }
-
+    /// <summary>
+    /// Processes FFT magnitudes and returns the complete mirrored graph.
+    ///
+    /// The returned array has exactly BarCount points:
+    ///
+    ///     [outer ... inner ... CENTER ... inner ... outer]
+    ///
+    /// The caller can pass this directly to UpdateHeights().
+    /// </summary>
     public float[] Process(float[] magnitudes)
     {
-        if (magnitudes == null ||
-            magnitudes.Length == 0)
-        {
-            return _smoothed;
-        }
+        if (magnitudes == null || magnitudes.Length == 0)
+            return _output;
 
-        int count =
-            Math.Min(
-                _cfg.BarCount,
-                _bandMap.Length);
+        if (_analysisValues.Length == 0)
+            RebuildAnalysisBuffers();
 
-        if (_smoothed.Length != _cfg.BarCount)
-        {
-            _smoothed =
-                new float[_cfg.BarCount];
-        }
+        double dt = GetDeltaTime();
 
+        BuildLogAnalysisBands(magnitudes);
+
+        UpdateTemporalStatistics(dt);
+
+        SelectCenter(dt);
+
+        BuildMirroredSpectrum();
+
+        return _output;
+    }
+
+    // --------------------------------------------------------------------
+    // Configuration / buffers
+    // --------------------------------------------------------------------
+
+    private void EnsureOddBandCount()
+    {
+        if ((_bandCount & 1) == 0)
+            _bandCount++;
+    }
+
+    private void RebuildAnalysisBuffers()
+    {
+        int count = Math.Max(MinimumAnalysisBands, _bandCount * 3);
+
+        _analysisValues = new float[count];
+        _previousValues = new float[count];
+        _peakAverage = new float[count];
+        _activityAverage = new float[count];
+
+        _bandFrequencies = new float[count];
+
+        _radialValues = new float[(_bandCount + 1) / 2];
+        _output = new float[_bandCount];
+
+        BuildFrequencyTable();
+
+        _centerBandIndex = -1;
+        _candidateCenterBandIndex = -1;
+        _candidateTime = 0;
+        _centerFrequency = 0;
+        _initialized = false;
+    }
+
+    private void BuildFrequencyTable()
+    {
+        int count = _bandFrequencies.Length;
+
+        float minHz = Math.Max(1f, _config.MinHz);
+
+        float nyquist = _sampleRate * 0.5f;
+
+        float maxHz = _config.MaxHz > 0
+            ? Math.Min(_config.MaxHz, nyquist)
+            : nyquist;
+
+        if (maxHz <= minHz)
+            maxHz = Math.Max(minHz + 1f, nyquist);
+
+        double minLog = Math.Log(minHz);
+        double maxLog = Math.Log(maxHz);
 
         for (int i = 0; i < count; i++)
         {
-            FrequencyBand band =
-                _bandMap[i];
+            double t = count == 1
+                ? 0
+                : (double)i / (count - 1);
 
+            double logFrequency =
+                minLog + (maxLog - minLog) * t;
 
-            // -----------------------------------------
-            // 1. Aggregate FFT bins belonging to this band
-            // -------------------------------------------------
-
-            float magnitude =
-                Aggregate(
-                    magnitudes,
-                    band.StartBin,
-                    band.EndBin);
-
-
-            // -------------------------------------------------
-            // 2. Convert magnitude to dB
-            // -------------------------------------------------
-
-            float db =
-                20f *
-                MathF.Log10(
-                    magnitude + 1e-8f);
-
-
-            // -------------------------------------------------
-            // 3. Normalize dynamic range
-            // -------------------------------------------------
-
-            float value =
-                (db - _cfg.NoiseFloorDb) /
-                (_cfg.CeilingDb -
-                 _cfg.NoiseFloorDb);
-
-            value =
-                Math.Clamp(
-                    value,
-                    0f,
-                    1f);
-
-
-            // -------------------------------------------------
-            // 4. Noise gate
-            // -------------------------------------------------
-
-            value =
-                ApplyGate(value);
-
-
-            // -------------------------------------------------
-            // 5. Optional frequency weighting
-            // -------------------------------------------------
-
-            value =
-                ApplyFrequencyWeight(
-                    value,
-                    band.Position);
-
-
-            // -------------------------------------------------
-            // 6. Contrast
-            // -------------------------------------------------
-
-            value =
-                MathF.Pow(
-                    Math.Clamp(value, 0f, 1f),
-                    _cfg.Gamma);
-
-
-            // -------------------------------------------------
-            // 7. Temporal smoothing
-            // -------------------------------------------------
-
-            SmoothValue(
-                i,
-                value);
+            _bandFrequencies[i] =
+                (float)Math.Exp(logFrequency);
         }
-
-
-        return _smoothed;
     }
 
-
-    #region Processing stages
-
-
-    private float ApplyGate(float value)
+    private void BuildLogAnalysisBands(float[] magnitudes)
     {
-        float gate =
-            _cfg.NoiseGateNorm;
+        int count = _analysisValues.Length;
 
-        if (gate <= 0f)
-            return value;
+        float minHz = Math.Max(1f, _config.MinHz);
 
-        if (value >= gate)
-            return value;
+        float nyquist = _sampleRate * 0.5f;
 
-        float ratio =
-            value / gate;
+        float maxHz = _config.MaxHz > 0
+            ? Math.Min(_config.MaxHz, nyquist)
+            : nyquist;
 
-        /*
-         * Soft gate.
-         *
-         * At value == gate:
-         *
-         *     result == gate
-         *
-         * At value == 0:
-         *
-         *     result == 0
-         */
+        if (maxHz <= minHz)
+            maxHz = Math.Max(minHz + 1f, nyquist);
 
-        return value * ratio;
+        double minLog = Math.Log(minHz);
+        double maxLog = Math.Log(maxHz);
+
+        for (int i = 0; i < count; i++)
+        {
+            float centerHz = _bandFrequencies[i];
+
+            float lowHz;
+            float highHz;
+
+            if (i == 0)
+            {
+                lowHz = minHz;
+            }
+            else
+            {
+                lowHz =
+                    GeometricMean(
+                        _bandFrequencies[i - 1],
+                        centerHz);
+            }
+
+            if (i == count - 1)
+            {
+                highHz = maxHz;
+            }
+            else
+            {
+                highHz =
+                    GeometricMean(
+                        centerHz,
+                        _bandFrequencies[i + 1]);
+            }
+
+            lowHz = Math.Max(minHz, lowHz);
+            highHz = Math.Min(maxHz, highHz);
+
+            _analysisValues[i] =
+                AggregateFrequencyRange(
+                    magnitudes,
+                    lowHz,
+                    highHz,
+                    minLog,
+                    maxLog);
+        }
     }
 
-
-    private float ApplyFrequencyWeight(
-        float value,
-        float position)
+    private float AggregateFrequencyRange(
+        float[] magnitudes,
+        float lowHz,
+        float highHz,
+        double minLog,
+        double maxLog)
     {
-        float boost =
-            _cfg.LowFrequencyBoost;
+        int fftBinCount = Math.Min(
+            magnitudes.Length,
+            Math.Max(1, _fftSize / 2));
 
-        if (boost <= 0f)
-            return value;
+        double lowT =
+            (Math.Log(Math.Max(lowHz, 1f)) - minLog) /
+            Math.Max(1e-12, maxLog - minLog);
 
+        double highT =
+            (Math.Log(Math.Max(highHz, 1f)) - minLog) /
+            Math.Max(1e-12, maxLog - minLog);
 
-        /*
-         * position:
-         *
-         * 0 = lowest frequency
-         * 1 = highest frequency
-         */
+        int lowBin = (int)Math.Floor(
+            lowT * (fftBinCount - 1));
 
-        float factor =
-            1f +
-            boost *
-            (1f - position);
+        int highBin = (int)Math.Ceiling(
+            highT * (fftBinCount - 1));
 
-        return value * factor;
-    }
+        lowBin = Clamp(lowBin, 0, fftBinCount - 1);
+        highBin = Clamp(highBin, lowBin, fftBinCount - 1);
 
+        if (highBin == lowBin)
+            return Math.Max(0f, magnitudes[lowBin]);
 
-    private void SmoothValue(
-        int index,
-        float target)
-    {
-        float current =
-            _smoothed[index];
-
-
-        float alpha =
-            target > current
-                ? _cfg.Attack
-                : _cfg.Release;
-
-
-        alpha =
-            Math.Clamp(
-                alpha,
-                0f,
-                1f);
-
-
-        _smoothed[index] =
-            current +
-            (target - current) *
-            alpha;
-    }
-
-
-    #endregion
-
-
-    #region FFT aggregation
-
-
-    private float Aggregate(
-        float[] spectrum,
-        int startBin,
-        int endBin)
-    {
-        if (spectrum.Length == 0)
-            return 0f;
-
-
-        startBin =
-            Math.Clamp(
-                startBin,
-                0,
-                spectrum.Length - 1);
-
-
-        endBin =
-            Math.Clamp(
-                endBin,
-                startBin,
-                spectrum.Length - 1);
-
-
-        switch (_cfg.Aggregation)
+        switch (_config.Aggregation)
         {
             case CenteredAggregation.Max:
                 {
                     float max = 0f;
 
-                    for (int i = startBin;
-                         i <= endBin;
-                         i++)
+                    for (int i = lowBin; i <= highBin; i++)
                     {
-                        if (spectrum[i] > max)
-                            max = spectrum[i];
+                        float value = Math.Max(0f, magnitudes[i]);
+
+                        if (value > max)
+                            max = value;
                     }
 
                     return max;
                 }
 
-
-            case CenteredAggregation.Average:
-                {
-                    float sum = 0f;
-
-                    int count =
-                        endBin -
-                        startBin +
-                        1;
-
-                    for (int i = startBin;
-                         i <= endBin;
-                         i++)
-                    {
-                        sum += spectrum[i];
-                    }
-
-                    return sum / count;
-                }
-
-
             case CenteredAggregation.Rms:
                 {
-                    double sum = 0.0;
+                    double sum = 0;
+                    int n = 0;
 
-                    int count =
-                        endBin -
-                        startBin +
-                        1;
-
-                    for (int i = startBin;
-                         i <= endBin;
-                         i++)
+                    for (int i = lowBin; i <= highBin; i++)
                     {
-                        double value =
-                            spectrum[i];
+                        double value = Math.Max(0f, magnitudes[i]);
 
-                        sum +=
-                            value * value;
+                        sum += value * value;
+                        n++;
                     }
 
-                    return (float)Math.Sqrt(
-                        sum / count);
+                    return n > 0
+                        ? (float)Math.Sqrt(sum / n)
+                        : 0f;
                 }
 
-
             default:
-                return 0f;
+                {
+                    double sum = 0;
+                    int n = 0;
+
+                    for (int i = lowBin; i <= highBin; i++)
+                    {
+                        sum += Math.Max(0f, magnitudes[i]);
+                        n++;
+                    }
+
+                    return n > 0
+                        ? (float)(sum / n)
+                        : 0f;
+                }
         }
     }
 
+    // --------------------------------------------------------------------
+    // Peak + activity tracking
+    // --------------------------------------------------------------------
 
-    #endregion
-
-
-    #region Frequency mapping
-
-
-    private void RebuildBandMapping()
+    private void UpdateTemporalStatistics(double dt)
     {
-        int count =
-            Math.Max(
-                1,
-                _cfg.BarCount);
+        float peakAlpha = TimeAlpha(
+            dt,
+            PeakMemorySeconds);
 
+        float activityAlpha = TimeAlpha(
+            dt,
+            ActivityMemorySeconds);
 
-        _bandMap =
-            new FrequencyBand[count];
+        for (int i = 0; i < _analysisValues.Length; i++)
+        {
+            float current = _analysisValues[i];
 
+            if (!_initialized)
+            {
+                _previousValues[i] = current;
+                _peakAverage[i] = current;
+                _activityAverage[i] = 0f;
+                continue;
+            }
 
-        int usableBins =
-            _cfg.FftSize / 2;
+            float delta =
+                Math.Abs(current - _previousValues[i]);
 
+            _peakAverage[i] +=
+                (current - _peakAverage[i]) * peakAlpha;
 
-        if (usableBins <= 0)
+            _activityAverage[i] +=
+                (delta - _activityAverage[i]) * activityAlpha;
+
+            _previousValues[i] = current;
+        }
+    }
+
+    // --------------------------------------------------------------------
+    // Dynamic center selection
+    // --------------------------------------------------------------------
+
+    private void SelectCenter(double dt)
+    {
+        if (_analysisValues.Length == 0)
             return;
 
+        int candidate = FindBestCenterCandidate();
 
-        float nyquist =
-            _cfg.SampleRate * 0.5f;
+        if (!_initialized || _centerBandIndex < 0)
+        {
+            _centerBandIndex = candidate;
+            _centerFrequency =
+                _bandFrequencies[_centerBandIndex];
 
+            _candidateCenterBandIndex = -1;
+            _candidateTime = 0;
+            _initialized = true;
 
-        float binHz =
-            nyquist / usableBins;
-
-
-        if (binHz <= 0f)
             return;
+        }
 
+        if (candidate == _centerBandIndex)
+        {
+            _candidateCenterBandIndex = -1;
+            _candidateTime = 0;
+
+            _centerFrequency =
+                _bandFrequencies[_centerBandIndex];
+
+            return;
+        }
+
+        float currentScore =
+            GetCenterScore(_centerBandIndex);
+
+        float candidateScore =
+            GetCenterScore(candidate);
+
+        float distanceOctaves =
+            FrequencyDistanceOctaves(
+                _bandFrequencies[_centerBandIndex],
+                _bandFrequencies[candidate]);
+
+        bool sufficientlyDifferent =
+            distanceOctaves >=
+            MinimumCenterDistanceOctaves;
+
+        float centerHysteresis =
+            1.0f + (1.0f - Clamp01(_config.CenterSensitivity)) * 0.40f;
+
+        bool clearlyBetter =
+            candidateScore >
+            currentScore * centerHysteresis;
+
+        if (!sufficientlyDifferent || !clearlyBetter)
+        {
+            _candidateCenterBandIndex = -1;
+            _candidateTime = 0;
+
+            return;
+        }
+
+        if (_candidateCenterBandIndex != candidate)
+        {
+            _candidateCenterBandIndex = candidate;
+            _candidateTime = 0;
+        }
+
+        _candidateTime += dt;
+
+        if (_candidateTime >= CenterHoldSeconds)
+        {
+            _centerBandIndex =
+                _candidateCenterBandIndex;
+
+            _centerFrequency =
+                _bandFrequencies[_centerBandIndex];
+
+            _candidateCenterBandIndex = -1;
+            _candidateTime = 0;
+        }
+    }
+
+    private int FindBestCenterCandidate()
+    {
+        int bestIndex = 0;
+        float bestScore = float.MinValue;
+
+        for (int i = 0; i < _analysisValues.Length; i++)
+        {
+            float score = GetCenterScore(i);
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    private float GetCenterScore(int index)
+    {
+        float peak = Math.Max(0f, _peakAverage[index]);
+        float activity = Math.Max(0f, _activityAverage[index]);
+
+        return peak * 0.70f + activity * 0.30f;
+    }
+
+    private void BuildMirroredSpectrum()
+    {
+        int halfCount = (_bandCount + 1) / 2;
+
+        if (_centerBandIndex < 0)
+        {
+            Array.Clear(_output, 0, _output.Length);
+            return;
+        }
+
+        float centerHz =
+            _bandFrequencies[_centerBandIndex];
 
         float minHz =
-            Math.Max(
-                _cfg.MinHz,
-                binHz);
-
+            Math.Max(1f, _config.MinHz);
 
         float maxHz =
-            Math.Min(
-                _cfg.MaxHz,
-                nyquist *
-                _cfg.NyquistBias);
+            _config.MaxHz > 0
+                ? Math.Min(
+                    _config.MaxHz,
+                    _sampleRate * 0.5f)
+                : _sampleRate * 0.5f;
 
+        double lowerDistance =
+            Math.Log(centerHz / minHz, 2.0);
 
-        if (maxHz <= minHz)
+        double upperDistance =
+            Math.Log(maxHz / centerHz, 2.0);
+
+        double maximumDistance =
+            Math.Max(
+                Math.Max(0.001, lowerDistance),
+                Math.Max(0.001, upperDistance));
+
+        double spreadPower =
+            Math.Max(0.05, _config.EdgeSpreadPower);
+
+        for (int radial = 0; radial < halfCount; radial++)
         {
-            maxHz =
-                nyquist *
-                _cfg.NyquistBias;
+            if (radial == 0)
+            {
+                _radialValues[radial] =
+                    GetCenterValue();
+
+                continue;
+            }
+
+            double t =
+                halfCount <= 1
+                    ? 1.0
+                    : (double)radial / (halfCount - 1);
+            
+            double distanceOctaves =
+                 Math.Pow(t, spreadPower) * maximumDistance;
+
+            _radialValues[radial] =
+                SampleAtRadialDistance(
+                    centerHz,
+                    distanceOctaves,
+                    minHz,
+                    maxHz);
         }
 
-        // Centered visual frequency mapping
+        int centerOutput =
+            _bandCount / 2;
 
-        double compressionHz =
+        for (int i = 0; i < _bandCount; i++)
+        {
+            int distance =
+                Math.Abs(i - centerOutput);
+
+            int radialIndex =
+                Math.Min(
+                    distance,
+                    _radialValues.Length - 1);
+
+            float value =
+                _radialValues[radialIndex];
+
+            _output[i] =
+                ApplyDisplayTransform(value);
+        }
+    }
+
+    private float GetCenterValue()
+    {
+        float value =
             Math.Max(
-                1.0,
-                _cfg.LowFrequencyCompressionHz);
+                0f,
+                _analysisValues[_centerBandIndex]);
 
+        return value;
+    }
 
-        double compressionPower =
-            Math.Max(
-                0.01,
-                _cfg.LowFrequencyCompressionPower);
+    private float SampleAtRadialDistance(
+        float centerHz,
+        double distanceOctaves,
+        float minHz,
+        float maxHz)
+    {
+        double lowerHz =
+            centerHz *
+            Math.Pow(2.0, -distanceOctaves);
 
+        double upperHz =
+            centerHz *
+            Math.Pow(2.0, distanceOctaves);
+
+        bool hasLower =
+            lowerHz >= minHz;
+
+        bool hasUpper =
+            upperHz <= maxHz;
+
+        float lowerValue = 0f;
+        float upperValue = 0f;
+
+        if (hasLower)
+        {
+            lowerValue =
+                SampleFrequency(
+                    (float)lowerHz);
+        }
+
+        if (hasUpper)
+        {
+            upperValue =
+                SampleFrequency(
+                    (float)upperHz);
+        }
+
+        /*
+         * Both sides of the frequency spectrum contribute to the
+         * same radial point.
+         *
+         * This is what makes the resulting graph genuinely mirrored.
+         */
+        if (hasLower && hasUpper)
+        {
+            return CombineMirroredValues(
+                lowerValue,
+                upperValue);
+        }
+
+        if (hasLower)
+            return lowerValue;
+
+        if (hasUpper)
+            return upperValue;
+
+        /*
+         * Once one physical side has run out of spectrum,
+         * continue using the available side.
+         */
+        if (lowerHz < minHz && upperHz <= maxHz)
+            return upperValue;
+
+        if (upperHz > maxHz && lowerHz >= minHz)
+            return lowerValue;
+
+        return 0f;
+    }
+
+    private float CombineMirroredValues(
+        float lower,
+        float upper)
+    {
+        switch (_config.Aggregation)
+        {
+            case CenteredAggregation.Max:
+                return Math.Max(lower, upper);
+
+            case CenteredAggregation.Rms:
+                return (float)Math.Sqrt(
+                    (lower * lower +
+                     upper * upper) * 0.5);
+
+            default:
+                return (lower + upper) * 0.5f;
+        }
+    }
+
+    private float SampleFrequency(float frequency)
+    {
+        if (frequency <= 0)
+            return 0f;
+
+        int count = _bandFrequencies.Length;
+
+        if (count == 0)
+            return 0f;
+
+        if (frequency <= _bandFrequencies[0])
+            return _analysisValues[0];
+
+        if (frequency >= _bandFrequencies[count - 1])
+            return _analysisValues[count - 1];
+
+        int lo = 0;
+        int hi = count - 1;
+
+        while (hi - lo > 1)
+        {
+            int mid = lo + ((hi - lo) >> 1);
+
+            if (_bandFrequencies[mid] < frequency)
+                lo = mid;
+            else
+                hi = mid;
+        }
+
+        float f1 = _bandFrequencies[lo];
+        float f2 = _bandFrequencies[hi];
+
+        float v1 = _analysisValues[lo];
+        float v2 = _analysisValues[hi];
+
+        double logF =
+            Math.Log(frequency);
+
+        double logF1 =
+            Math.Log(Math.Max(1f, f1));
+
+        double logF2 =
+            Math.Log(Math.Max(1f, f2));
 
         double denominator =
-            Math.Log(
-                1.0 +
-                maxHz /
-                compressionHz);
+            logF2 - logF1;
 
+        if (Math.Abs(denominator) < 1e-12)
+            return v1;
 
-        for (int i = 0;
-             i < count;
-             i++)
-        {
-            /*
-             * Uniform visual position.
-             *
-             * Each output point represents an equal amount
-             * of screen space.
-             */
+        float t =
+            (float)((logF - logF1) / denominator);
 
-            double p0 =
-                (double)i / count;
-
-            double p1 =
-                (double)(i + 1) / count;
-
-
-            /*
-             * Additional control over how quickly the
-             * low-frequency region expands.
-             */
-
-            p0 =
-                Math.Pow(
-                    p0,
-                    compressionPower);
-
-            p1 =
-                Math.Pow(
-                    p1,
-                    compressionPower);
-
-
-            /*
-             * Inverse mapping.
-             *
-             * Math.Expm1(x) would be ideal numerically for
-             * very small x, but System.Math does not expose it,
-             * so use:
-             *
-             *     Math.Exp(x) - 1
-             */
-
-            double lowHz =
-                compressionHz *
-                (Math.Exp(
-                    p0 * denominator) - 1.0);
-
-
-            double highHz =
-                compressionHz *
-                (Math.Exp(
-                    p1 * denominator) - 1.0);
-
-
-            lowHz =
-                Math.Clamp(
-                    lowHz,
-                    minHz,
-                    maxHz);
-
-
-            highHz =
-                Math.Clamp(
-                    highHz,
-                    minHz,
-                    maxHz);
-
-
-            if (highHz < lowHz)
-                highHz = lowHz;
-
-
-            int startBin =
-                FrequencyToBin(
-                    lowHz,
-                    binHz,
-                    usableBins);
-
-
-            int endBin =
-                FrequencyToBin(
-                    highHz,
-                    binHz,
-                    usableBins);
-
-
-            if (endBin < startBin)
-                endBin = startBin;
-
-
-            float position =
-                count > 1
-                    ? (float)i /
-                      (count - 1)
-                    : 0f;
-
-
-            _bandMap[i] =
-                new FrequencyBand(
-                    startBin,
-                    endBin,
-                    position);
-        }
+        return v1 + (v2 - v1) * t;
     }
 
+    // --------------------------------------------------------------------
+    // Display processing
+    // --------------------------------------------------------------------
 
-    private static int FrequencyToBin(
-        double frequency,
-        float binHz,
-        int maxBins)
+    private float ApplyDisplayTransform(float value)
     {
-        int bin =
-            (int)Math.Floor(
-                frequency / binHz);
+        value = Math.Max(0f, value);
 
+        /*
+         * The input magnitude is assumed to already be normalized
+         * by the FFT stage in the same way as the original pipeline.
+         *
+         * Convert to dB.
+         */
+        const float epsilon = 1e-12f;
 
-        return Math.Clamp(
-            bin,
-            0,
-            maxBins - 1);
+        float db =
+            20f *
+            (float)Math.Log10(
+                Math.Max(epsilon, value));
+
+        float floor =
+            _config.NoiseFloorDb;
+
+        float ceiling =
+            _config.CeilingDb;
+
+        if (ceiling <= floor)
+            ceiling = floor + 1f;
+
+        float normalized =
+            (db - floor) /
+            (ceiling - floor);
+
+        normalized =
+            Clamp01(normalized);
+
+        // Soft noise gate.
+        float gate =
+            Clamp01(_config.NoiseGateNorm);
+
+        if (gate > 0f)
+        {
+            if (normalized <= gate)
+            {
+                normalized = 0f;
+            }
+            else
+            {
+                normalized =
+                    (normalized - gate) /
+                    Math.Max(
+                        1e-6f,
+                        1f - gate);
+            }
+        }
+
+        // Gamma / contrast.
+        float gamma =
+            Math.Max(0.01f, _config.Gamma);
+
+        normalized =
+            (float)Math.Pow(
+                normalized,
+                gamma);
+
+        return Clamp01(normalized);
     }
 
+    // --------------------------------------------------------------------
+    // Helpers
+    // --------------------------------------------------------------------
 
-    #endregion
-
-
-    private readonly struct FrequencyBand
+    private static float TimeAlpha(
+        double dt,
+        double timeConstant)
     {
-        public readonly int StartBin;
-        public readonly int EndBin;
+        if (dt <= 0)
+            return 0f;
 
-        /// <summary>
-        /// 0 = lowest frequency / center.
-        /// 1 = highest frequency / edge.
-        /// </summary>
-        public readonly float Position;
+        if (timeConstant <= 0)
+            return 1f;
 
+        return (float)(
+            1.0 -
+            Math.Exp(-dt / timeConstant));
+    }
 
-        public FrequencyBand(
-            int startBin,
-            int endBin,
-            float position)
+    private double GetDeltaTime()
+    {
+        long now =
+            System.Diagnostics.Stopwatch.GetTimestamp();
+
+        if (_lastTimestamp == 0)
         {
-            StartBin = startBin;
-            EndBin = endBin;
-            Position = position;
+            _lastTimestamp = now;
+            return 1.0 / 60.0;
         }
+
+        long elapsed =
+            now - _lastTimestamp;
+
+        _lastTimestamp = now;
+
+        double dt =
+            elapsed /
+            (double)System.Diagnostics.Stopwatch.Frequency;
+
+        // Protect the temporal filters against stalls.
+        return Math.Min(0.25, Math.Max(0.0001, dt));
+    }
+
+    private static float GeometricMean(
+        float a,
+        float b)
+    {
+        a = Math.Max(0.0001f, a);
+        b = Math.Max(0.0001f, b);
+
+        return (float)Math.Sqrt(a * b);
+    }
+
+    private static float FrequencyDistanceOctaves(
+        float a,
+        float b)
+    {
+        if (a <= 0 || b <= 0)
+            return float.MaxValue;
+
+        return Math.Abs(
+            (float)Math.Log(
+                a / b,
+                2.0));
+    }
+
+    private static int Clamp(
+        int value,
+        int min,
+        int max)
+    {
+        if (value < min)
+            return min;
+
+        if (value > max)
+            return max;
+
+        return value;
+    }
+
+    private static float Clamp01(float value)
+    {
+        if (value <= 0f)
+            return 0f;
+
+        if (value >= 1f)
+            return 1f;
+
+        return value;
     }
 }

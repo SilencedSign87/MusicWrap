@@ -112,6 +112,17 @@
                                       Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
                                       CommandParameter="MirroredBarSpectrum"
                                       IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                            <Separator/>
+                            <MenuItem Header="Spectrum" IsCheckable="True"
+                                      Command="{Binding NowPlayingViewModel.SetSpectrumTypeCommand}"
+                                      CommandParameter="Normal"
+                                      IsChecked="{Binding NowPlayingViewModel.PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}"
+                                      />
+                            <MenuItem Header="Centered" IsCheckable="True"
+                                      Command="{Binding NowPlayingViewModel.SetSpectrumTypeCommand}"
+                                      CommandParameter="Centered"
+                                      IsChecked="{Binding NowPlayingViewModel.PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
+                                      />
                         </MenuItem>
                         <MenuItem Icon="{ex:Icon Glyph=&#xEC4F;}"  Header="Lyrics">
                             <MenuItem Header="Show" 
@@ -193,8 +204,9 @@
                         Height="120"
                         BarCount="120"
                         Margin="0,-16,0,0"
-                         Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
+                        SpectrumType="{Binding NowPlayingViewModel.PreferredSpectrumType}"
                     />
         </StackPanel>
     </Grid>

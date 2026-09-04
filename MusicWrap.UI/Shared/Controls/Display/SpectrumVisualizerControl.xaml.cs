@@ -20,8 +20,8 @@ namespace MusicWrap.UI.Controls
         private bool _isActive;
 
         private const float Amplification = 1.0f;
-        private const float RiseSpeed = 0.6f; // how quickly the bars rise to the target value (0-1)
-        private const float FallSpeed = 0.6f; // how quickly the bars fall to the target value (0-1)
+        private const float RiseSpeed = 0.7f; // how quickly the bars rise to the target value (0-1)
+        private const float FallSpeed = 0.7f; // how quickly the bars fall to the target value (0-1)
         private const float HeightDecay = 0.03f; // how quickly the current height value falls (0-1)
 
         private const int BaseFFTSize = 16384;      // at 48 kHz
@@ -77,7 +77,7 @@ namespace MusicWrap.UI.Controls
             if (d is SpectrumVisualizerControl widget)
             {
                 widget._spectrumPipeline?.SetBandCount((int)e.NewValue);
-                widget._centeredPipeline?.SetBarCount((int)e.NewValue);
+                widget._centeredPipeline?.SetBandCount((int)e.NewValue);
                 widget.ReinitArrays();
             }
         }
@@ -196,6 +196,13 @@ namespace MusicWrap.UI.Controls
                 ? _centeredPipeline.Process(_magnitudes)
                 : _spectrumPipeline.Process(_magnitudes);
 
+            if (_currentHeights.Length != displayBands.Length)
+            {
+                _currentHeights = new float[displayBands.Length];
+                _points = new Point[displayBands.Length];
+                RebuildPointCache();
+            }
+
             UpdateHeights(displayBands);
             Render();
         }
@@ -216,9 +223,8 @@ namespace MusicWrap.UI.Controls
         private void ReinitArrays()
         {
             int count = Math.Max(BarCount, 1);
-            int totalVisualPoints = SpectrumType == SpectrumType.Centered ? count * 2 : count;
             _currentHeights = new float[count];
-            _points = new Point[totalVisualPoints];
+            _points = new Point[count];
             RebuildPointCache();
         }
         private void DecayAll()
@@ -269,31 +275,12 @@ namespace MusicWrap.UI.Controls
             int bandCount = _currentHeights.Length;
             double baseY = height;
 
-            //for (int i = 0; i < bandCount; i++)
-            //{
-            //    double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
-            //    double y = height - Math.Max(normalized * height, 1.0);
-
-            //    _points[i].Y = y;
-            //}
-
-            if (SpectrumType == SpectrumType.Centered)
+            for (int i = 0; i < bandCount; i++)
             {
-                int totalPoints = bandCount * 2;
-                for (int i = 0; i < totalPoints; i++)
-                {
-                    int bandIndex = i < bandCount ? (bandCount - 1 - i) : (i - bandCount);
-                    double normalized = Math.Clamp(_currentHeights[bandIndex], 0f, 1f);
-                    _points[i].Y = height - Math.Max(normalized * height, 1.0);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < bandCount; i++)
-                {
-                    double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
-                    _points[i].Y = height - Math.Max(normalized * height, 1.0);
-                }
+                double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
+                double y = height - Math.Max(normalized * height, 1.0);
+
+                _points[i].Y = y;
             }
 
             void AppendSmoothCurve(StreamGeometryContext ctx)
@@ -351,23 +338,24 @@ namespace MusicWrap.UI.Controls
         private void DrawBars(double width, double height, bool mirrored)
         {
             int bandCount = _currentHeights.Length;
-            //double slot = width / bandCount;
-            int totalBars = SpectrumType == SpectrumType.Centered ? bandCount * 2 : bandCount;
-            double slot = width / totalBars;
+            double slot = width / bandCount;
+            //int totalBars = SpectrumType == SpectrumType.Centered ? bandCount * 2 : bandCount;
+            //double slot = width / totalBars;
             // separation
             double barWidth = slot * 0.8;
             double centerY = height / 2;
             var geometry = new StreamGeometry();
             using (var ctx = geometry.Open())
             {
-                for (int i = 0; i < totalBars; i++)
+                //for (int i = 0; i < totalBars; i++)
+                for (int i = 0; i < bandCount; i++)
                 {
-                    //double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
-                    int bandIndex = SpectrumType == SpectrumType.Centered
-                        ? (i < bandCount ? (bandCount - 1 - i) : (i - bandCount))
-                        : i;
+                    double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
+                    //int bandIndex = SpectrumType == SpectrumType.Centered
+                    //    ? (i < bandCount ? (bandCount - 1 - i) : (i - bandCount))
+                    //    : i;
 
-                    double normalized = Math.Clamp(_currentHeights[bandIndex], 0f, 1f);
+                    //double normalized = Math.Clamp(_currentHeights[bandIndex], 0f, 1f);
                     double barHeight = Math.Max(normalized * height, 1.0);
                     double x0 = slot * i + (slot - barWidth) / 2;
                     double x1 = x0 + barWidth;
@@ -499,26 +487,13 @@ namespace MusicWrap.UI.Controls
         }
         private void RebuildPointCache()
         {
-            //int count = Math.Max(BarCount, 1);
-
-            //_points = new Point[count];
             int count = Math.Max(BarCount, 1);
-            int totalPoints = SpectrumType == SpectrumType.Centered ? count * 2 : count;
+            int totalPoints = Math.Max(_points.Length, 1);
 
             _points = new Point[totalPoints];
 
             double width = BarContainer.ActualWidth;
 
-            //double step =
-            //    count > 1
-            //        ? width / (count - 1)
-            //        : width;
-
-            //for (int i = 0; i < count; i++)
-            //    _points[i].X =
-            //        count > 1
-            //            ? i * step
-            //            : width * 0.5;
             double step =
                 totalPoints > 1
                     ? width / (totalPoints - 1)

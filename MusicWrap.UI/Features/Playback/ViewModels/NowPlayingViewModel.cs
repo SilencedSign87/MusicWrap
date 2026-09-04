@@ -110,8 +110,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
             if (Enum.TryParse<SpectrumType>(spectrumType, out var parsed))
             {
                 PreferredSpectrumType = parsed;
-                _settings.NowPlaying.SpectrumType = parsed;
-                _saveCoordinator.Enqueue(SaveKind.Settings);
             }
         }
         private bool CanSetSpectrumType(string spectrumType)
@@ -132,12 +130,14 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         partial void OnShowLyricsChanged(bool value) => SyncNowPlayingSettings();
         partial void OnBlurEffectChanged(bool value) => SyncNowPlayingSettings();
         partial void OnPreferredVisualizerChanged(PreferredVisualizer value) => SyncNowPlayingSettings();
+        partial void OnPreferredSpectrumTypeChanged(SpectrumType value) => SyncNowPlayingSettings();
         private void SyncNowPlayingSettings()
         {
             if (_isInitializing) return;
             _settings.NowPlaying.ShowLyrics = ShowLyrics;
             _settings.NowPlaying.BlurEffect = BlurEffect;
             _settings.NowPlaying.PreferredVisualizer = PreferredVisualizer;
+            _settings.NowPlaying.SpectrumType = PreferredSpectrumType;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion
