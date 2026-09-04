@@ -16,11 +16,11 @@ namespace MusicWrap.UI.Controls
         private float[] _currentHeights = [];
         private bool _isActive;
 
-        private const float RiseSpeed = 1.0f;
-        private const float FallSpeed = 0.5f;
+        private const float RiseSpeed = 0.8f;
+        private const float FallSpeed = 0.8f;
         private const float HeightDecay = 0.1f;
 
-        private float _valleyGamma = 1.2f;
+        private float _valleyGamma = 1.5f;
 
         private readonly SpectrumPipeline _spectrumPipeline;
         private readonly CenteredSpectrumPipeline _centeredPipeline;
@@ -42,7 +42,7 @@ namespace MusicWrap.UI.Controls
 
             _timer = new DispatcherTimer(DispatcherPriority.Render)
             {
-                Interval = TimeSpan.FromMilliseconds(16) // ~60 FPS
+                Interval = TimeSpan.FromMilliseconds(20)
             };
             _timer.Tick += OnTick;
 
@@ -301,60 +301,46 @@ namespace MusicWrap.UI.Controls
             SpectrumFillPath.OpacityMask = _fadeMask;
         }
 
+        private const double SegmentGap = 1.0;
         private void DrawBars(double width, double height, bool mirrored)
         {
             int bandCount = _currentHeights.Length;
             double slot = width / bandCount;
-            //int totalBars = SpectrumType == SpectrumType.Centered ? bandCount * 2 : bandCount;
-            //double slot = width / totalBars;
-            // separation
             double barWidth = slot * 0.8;
             double centerY = height / 2;
+
             var geometry = new StreamGeometry();
             using (var ctx = geometry.Open())
             {
-                //for (int i = 0; i < totalBars; i++)
                 for (int i = 0; i < bandCount; i++)
                 {
                     double normalized = Math.Clamp(_currentHeights[i], 0f, 1f);
-                    //int bandIndex = SpectrumType == SpectrumType.Centered
-                    //    ? (i < bandCount ? (bandCount - 1 - i) : (i - bandCount))
-                    //    : i;
 
-                    //double normalized = Math.Clamp(_currentHeights[bandIndex], 0f, 1f);
                     double barHeight = Math.Max(normalized * height, 1.0);
                     double x0 = slot * i + (slot - barWidth) / 2;
                     double x1 = x0 + barWidth;
                     double yTop, yBottom;
+
                     if (mirrored)
                     {
                         double half = barHeight / 2;
                         yTop = centerY - half;
                         yBottom = centerY + half;
-                    }
-                    else
-                    {
-                        yTop = height - barHeight;
-                        yBottom = height;
-                    }
 
-                    double maxRadius = barWidth / 2.0;
-                    double rx = Math.Min(maxRadius, barWidth / 2.0);
-                    double ry = Math.Min(rx, barHeight / 2.0);
+                        double maxRadius = barWidth / 2.0;
+                        double rx = Math.Min(maxRadius, barWidth / 2.0);
+                        double ry = Math.Min(rx, barHeight / 2.0);
 
-                    if (rx < 0.5 || ry < 0.5)
-                    {
-                        ctx.BeginFigure(new Point(x0, yTop), true, true);
-                        ctx.LineTo(new Point(x1, yTop), true, false);
-                        ctx.LineTo(new Point(x1, yBottom), true, false);
-                        ctx.LineTo(new Point(x0, yBottom), true, false);
-                    }
-                    else
-                    {
-                        var cornerSize = new Size(rx, ry);
-                        if (mirrored)
+                        if (rx < 0.5 || ry < 0.5)
                         {
-
+                            ctx.BeginFigure(new Point(x0, yTop), true, true);
+                            ctx.LineTo(new Point(x1, yTop), true, false);
+                            ctx.LineTo(new Point(x1, yBottom), true, false);
+                            ctx.LineTo(new Point(x0, yBottom), true, false);
+                        }
+                        else
+                        {
+                            var cornerSize = new Size(rx, ry);
                             ctx.BeginFigure(new Point(x0 + rx, yTop), true, true);
                             ctx.LineTo(new Point(x1 - rx, yTop), true, false);
                             ctx.ArcTo(new Point(x1, yTop + ry), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
@@ -365,21 +351,24 @@ namespace MusicWrap.UI.Controls
                             ctx.LineTo(new Point(x0, yTop + ry), true, false);
                             ctx.ArcTo(new Point(x0 + rx, yTop), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
                         }
-                        else
+                    }
+                    else
+                    {
+                        double segmentHeight = Math.Max(barWidth * 0.45, 3.0);
+                        double stride = segmentHeight + SegmentGap;
+                        int segmentCount = (int)((barHeight + SegmentGap) / stride);
+
+                        for (int s = 0; s < segmentCount; s++)
                         {
-                            ctx.BeginFigure(new Point(x0, yBottom), true, true);
-                            ctx.LineTo(new Point(x0, yTop + ry), true, false);
-                            ctx.ArcTo(new Point(x0 + rx, yTop), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
-                            ctx.LineTo(new Point(x1 - rx, yTop), true, false);
-                            ctx.ArcTo(new Point(x1, yTop + ry), cornerSize, 0, false, SweepDirection.Clockwise, true, false);
-                            ctx.LineTo(new Point(x1, yBottom), true, false);
+                            double segBottom = height - s * stride;
+                            double segTop = segBottom - segmentHeight;
+
+                            ctx.BeginFigure(new Point(x0, segTop), true, true);
+                            ctx.LineTo(new Point(x1, segTop), true, false);
+                            ctx.LineTo(new Point(x1, segBottom), true, false);
+                            ctx.LineTo(new Point(x0, segBottom), true, false);
                         }
                     }
-
-                    //ctx.BeginFigure(new Point(x0, yTop), true, true);
-                    //ctx.LineTo(new Point(x1, yTop), true, false);
-                    //ctx.LineTo(new Point(x1, yBottom), true, false);
-                    //ctx.LineTo(new Point(x0, yBottom), true, false);
                 }
             }
 

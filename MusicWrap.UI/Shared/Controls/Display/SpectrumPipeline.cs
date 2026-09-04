@@ -14,7 +14,7 @@ namespace MusicWrap.UI.Controls
 
         // ---- Stage: Dynamic range (dB) ----
         public float NoiseFloorDb { get; set; } = -90f;
-        public float CeilingDb { get; set; } = -10f;
+        public float CeilingDb { get; set; } = -15f;
 
         // ---- Stage: Noise gate ----
         public float NoiseGateNorm { get; set; } = 0.2f;   //  0..1 (0 = off) 
@@ -24,7 +24,7 @@ namespace MusicWrap.UI.Controls
         public float HighShelfCurve { get; set; } = 0.8f;
 
         // ---- Stage: Smoothing ----
-        public float SmoothingAlpha { get; set; } = 0.65f;  // EMA (0 = ignore new , 1 = no smoothing)
+        public float SmoothingAlpha { get; set; } = 0.9f;  // EMA (0 = ignore new , 1 = no smoothing)
         public float ChangeThreshold { get; set; } = 0.0f;// dead zone 0..1 (0 = off)
 
         // ---- Stage: Gamma and Contrast ----

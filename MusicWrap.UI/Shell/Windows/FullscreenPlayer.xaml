@@ -201,9 +201,8 @@
         </Grid>
         <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
             <controls:SpectrumVisualizerControl
-                        Height="120"
+                        Height="200"
                         BarCount="120"
-                        Margin="0,-16,0,0"
                         Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
                         SpectrumType="{Binding NowPlayingViewModel.PreferredSpectrumType}"
