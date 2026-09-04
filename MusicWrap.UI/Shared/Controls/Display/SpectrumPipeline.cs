@@ -171,7 +171,7 @@ namespace MusicWrap.UI.Controls
             int count = _cfg.BandCount;
             _bandMap = new BandMapping[count];
 
-            int usableBins = _cfg.FftSize / 2;
+            int usableBins = Math.Max(1, _cfg.FftSize / 2);
             float nyquist = _cfg.SampleRate * 0.5f;
             float binHz = nyquist / usableBins;
 

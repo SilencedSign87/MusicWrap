@@ -82,6 +82,7 @@ namespace MusicWrap.Core.Services.Playback
         int GetCapturedPCMData(float[] destination);
         int GetCurrentOutputSampleRate();
         (int Index, string Name)[] GetAvailableDevices();
+        (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes();
         PlaybackQueueSnapshot BuildPlaybackSnapshot();
     }
     public class MusicPlayerService : IMusicPlayerService, IStartupInitializer, IDisposable
@@ -998,7 +999,8 @@ namespace MusicWrap.Core.Services.Playback
                 .GetOutputDevices()
                 .Select(d => (d.Index, d.Info.Name))];
         }
-
+        public (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes()
+            => _audioEngine.GetSpectrumMagnitudes();
         public PlaybackQueueSnapshot BuildPlaybackSnapshot()
         {
             return new PlaybackQueueSnapshot

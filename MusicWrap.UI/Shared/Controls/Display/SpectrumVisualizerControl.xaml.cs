@@ -1,12 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
-using System.Numerics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace MusicWrap.UI.Controls
@@ -19,23 +16,15 @@ namespace MusicWrap.UI.Controls
         private float[] _currentHeights = [];
         private bool _isActive;
 
-        private const float Amplification = 1.0f;
-        private const float RiseSpeed = 0.7f; // how quickly the bars rise to the target value (0-1)
-        private const float FallSpeed = 0.7f; // how quickly the bars fall to the target value (0-1)
-        private const float HeightDecay = 0.03f; // how quickly the current height value falls (0-1)
-
-        private const int BaseFFTSize = 16384;      // at 48 kHz
-        private const int MaxFFTSize = 16384;       // cap for 192+ kHz
-        private readonly float[] _pcmBuffer = new float[MaxFFTSize * 2];
+        private const float RiseSpeed = 0.7f;
+        private const float FallSpeed = 0.9f;
+        private const float HeightDecay = 0.9f;
 
         private readonly SpectrumPipeline _spectrumPipeline;
         private readonly CenteredSpectrumPipeline _centeredPipeline;
         private int _samplerate = 44100;
-        private int _currentFFTSize = BaseFFTSize;
+        private int _currentFFTSize = 16384;
 
-        private float[] _fftInput = [];
-        private Complex[] _fftComplex = [];
-        private float[] _magnitudes = [];
         private Point[] _points = [];
 
         private readonly Brush _fadeMask;
@@ -51,7 +40,7 @@ namespace MusicWrap.UI.Controls
 
             _timer = new DispatcherTimer(DispatcherPriority.Render)
             {
-                Interval = TimeSpan.FromMilliseconds(30)
+                Interval = TimeSpan.FromMilliseconds(16) // ~60 FPS
             };
             _timer.Tick += OnTick;
 
@@ -140,61 +129,33 @@ namespace MusicWrap.UI.Controls
                 return;
             }
 
+            var (magnitudes, fftSize) = _musicService.GetSpectrumMagnitudes();
+
+            if (magnitudes == null || magnitudes.Length == 0 || fftSize == 0)
+            {
+                DecayAll();
+                return;
+            }
+
             int sr = _musicService.GetCurrentOutputSampleRate();
+
             if (sr > 0 && sr != _samplerate)
             {
                 _samplerate = sr;
-                _currentFFTSize = ComputeFftSize(_samplerate);
+                _currentFFTSize = fftSize;
+                _spectrumPipeline.OnConfigurationChanged(_samplerate, _currentFFTSize);
+                _centeredPipeline.OnConfigurationChanged(_samplerate, _currentFFTSize);
+            }
+            else if (fftSize != _currentFFTSize)
+            {
+                _currentFFTSize = fftSize;
                 _spectrumPipeline.OnConfigurationChanged(_samplerate, _currentFFTSize);
                 _centeredPipeline.OnConfigurationChanged(_samplerate, _currentFFTSize);
             }
 
-            int capturedFloats = _musicService.GetCapturedPCMData(_pcmBuffer);
-
-            if (capturedFloats <= 0 || capturedFloats < _currentFFTSize * 2)
-            {
-                DecayAll();
-                return;
-            }
-
-            int monoAvailable = capturedFloats / 2;
-
-            int fftSize = Math.Min(_currentFFTSize, PrevPow2(monoAvailable));
-
-            if (fftSize < 1024)
-            {
-                DecayAll();
-                return;
-            }
-
-            if (_fftInput.Length != fftSize)
-            {
-                _fftInput = new float[fftSize];
-                _fftComplex = new Complex[fftSize];
-                _magnitudes = new float[fftSize / 2];
-            }
-
-            for (int i = 0; i < fftSize; i++)
-            {
-                _fftInput[i] = (_pcmBuffer[i * 2] + _pcmBuffer[i * 2 + 1]) * 0.5f;
-            }
-
-            ApplyHanningWindow(_fftInput, fftSize);
-
-            ComputeFFT(_fftInput, _fftComplex, fftSize);
-
-            for (int i = 0; i < _magnitudes.Length; i++)
-            {
-                double re = _fftComplex[i].Real;
-                double im = _fftComplex[i].Imaginary;
-                double power = (re * re + im * im) / (fftSize * fftSize);
-
-                _magnitudes[i] = (float)Math.Sqrt(power);
-            }
-
             float[] displayBands = SpectrumType == SpectrumType.Centered
-                ? _centeredPipeline.Process(_magnitudes)
-                : _spectrumPipeline.Process(_magnitudes);
+                ? _centeredPipeline.Process(magnitudes)
+                : _spectrumPipeline.Process(magnitudes);
 
             if (_currentHeights.Length != displayBands.Length)
             {
@@ -241,7 +202,7 @@ namespace MusicWrap.UI.Controls
         {
             for (int i = 0; i < _currentHeights.Length && i < bands.Length; i++)
             {
-                float target = Math.Clamp(bands[i] * Amplification, 0f, 1f);
+                float target = Math.Clamp(bands[i], 0f, 1f);
                 float speed = target > _currentHeights[i] ? RiseSpeed : FallSpeed;
                 _currentHeights[i] += (target - _currentHeights[i]) * speed;
             }
@@ -426,65 +387,7 @@ namespace MusicWrap.UI.Controls
         #endregion
 
         #region Computation
-        private static void ApplyHanningWindow(float[] data, int length)
-        {
-            for (int i = 0; i < length; i++)
-            {
-                double window = 0.5 * (1.0 - Math.Cos(2.0 * Math.PI * i / (length - 1)));
-                data[i] *= (float)window;
-            }
-        }
-        private static void ComputeFFT(float[] input, Complex[] output, int length)
-        {
-            // Copy input to output as complex numbers
-            for (int i = 0; i < length; i++)
-                output[i] = new Complex(input[i], 0);
-            // Bit-reversal permutation
-            int bits = (int)Math.Log2(length);
-            for (int i = 0; i < length; i++)
-            {
-                int j = BitReverse(i, bits);
-                if (i < j)
-                    (output[i], output[j]) = (output[j], output[i]);
-            }
-            // Butterfly stages
-            for (int stage = 1; stage <= bits; stage++)
-            {
-                int halfSize = 1 << (stage - 1);
-                int fullSize = 1 << stage;
-                double angle = -2.0 * Math.PI / fullSize;
-                var wn = new Complex(Math.Cos(angle), Math.Sin(angle));
-                for (int k = 0; k < length; k += fullSize)
-                {
-                    var w = Complex.One;
-                    for (int j = 0; j < halfSize; j++)
-                    {
-                        var t = w * output[k + j + halfSize];
-                        var u = output[k + j];
-                        output[k + j] = u + t;
-                        output[k + j + halfSize] = u - t;
-                        w *= wn;
-                    }
-                }
-            }
-        }
-        private static int BitReverse(int value, int bits)
-        {
-            int result = 0;
-            for (int i = 0; i < bits; i++)
-            {
-                result = (result << 1) | (value & 1);
-                value >>= 1;
-            }
-            return result;
-        }
-
-        private static int PrevPow2(int v)
-        {
-            int p = 1;
-            while ((p << 1) <= v) p <<= 1;
-            return p;
-        }
+       
         private void RebuildPointCache()
         {
             int count = Math.Max(BarCount, 1);
@@ -505,18 +408,6 @@ namespace MusicWrap.UI.Controls
                         ? i * step
                         : width * 0.5;
         }
-        private static int ComputeFftSize(int sampleRate)
-        {
-            // Target ~2 Hz/bin resolution: binHz = (sampleRate/2) / (fftSize/2) = sampleRate / fftSize
-            // So fftSize = sampleRate / targetBinHz
-            const int targetBinHz = 2;
-            int desired = (int)Math.Ceiling((double)sampleRate / targetBinHz);
-            // Round up to next power of 2
-            int pow2 = 1;
-            while (pow2 < desired) pow2 <<= 1;
-            return Math.Clamp(pow2, BaseFFTSize, MaxFFTSize);
-        }
-
         #endregion
     }
 

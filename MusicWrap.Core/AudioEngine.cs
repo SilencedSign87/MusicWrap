@@ -45,7 +45,7 @@ namespace MusicWrap.Core
         public bool IsMixerActive => _mixerStream != 0;
 
         private int _writePos;
-        private const int CaptureSamples = 65536 * 2; // stereo
+        private const int CaptureSamples = 262144 * 2; // 320khz at stereo
         private DSPProcedure? _fftDspCallback;
         private float[] _fftCaptureBuffer = Array.Empty<float>();
         private float[] _dspTempBuffer = Array.Empty<float>();
@@ -53,6 +53,13 @@ namespace MusicWrap.Core
         private readonly object _fftLock = new();
         private bool _fftCaptureActive;
         private int _fftDspHandle;
+
+        // FFT buffers for spectrum analysis
+        private const int _spectrumFftSize = 32768;
+        private float[] _spectrumWorkBuffer = Array.Empty<float>();
+        private float[] _spectrumWindowBuffer = Array.Empty<float>();
+        private System.Numerics.Complex[] _spectrumComplexBuffer = Array.Empty<System.Numerics.Complex>();
+        private float[] _spectrumMagnitudes = Array.Empty<float>();
 
         private static string GetNativeLibExtension()
         {
@@ -159,6 +166,7 @@ namespace MusicWrap.Core
             _mixerSampleRate = mixRate;
             _mixerChannels = mixChannels;
 
+            RebuildSpectrumBuffers();
             StartFFTCapture();
 
             return true;
@@ -197,6 +205,7 @@ namespace MusicWrap.Core
         public bool StartMixer()
         {
             if (_mixerStream == 0) return false;
+            RebuildSpectrumBuffers();
             StartFFTCapture();
 #if WINDOWS
             if (IsWasapiMode())
@@ -567,6 +576,21 @@ namespace MusicWrap.Core
             _fftDspCallback = null;
             _fftCaptureFloats = 0;
         }
+        private void RebuildSpectrumBuffers()
+        {
+            //_spectrumFftSize = ComputeFftSize(_mixerSampleRate > 0 ? _mixerSampleRate : 44100);
+            int halfSize = _spectrumFftSize / 2;
+            int captureFloats = _spectrumFftSize * 2; // stereo
+
+            if (_spectrumWorkBuffer.Length < captureFloats)
+                _spectrumWorkBuffer = new float[captureFloats];
+            if (_spectrumWindowBuffer.Length < _spectrumFftSize)
+                _spectrumWindowBuffer = new float[_spectrumFftSize];
+            if (_spectrumComplexBuffer.Length < _spectrumFftSize)
+                _spectrumComplexBuffer = new System.Numerics.Complex[_spectrumFftSize];
+            if (_spectrumMagnitudes.Length < halfSize)
+                _spectrumMagnitudes = new float[halfSize];
+        }
         private void OnFFTDspCapture(int handle, int channel, IntPtr buffer, int length, IntPtr user)
         {
             if (length <= 0) return;
@@ -593,6 +617,60 @@ namespace MusicWrap.Core
                         _fftCaptureFloats + floatsRead,
                         _fftCaptureBuffer.Length);
             }
+        }
+        public (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes()
+        {
+            if (_mixerStream == 0 || _spectrumFftSize == 0)
+                return (Array.Empty<float>(), 0);
+
+            int captureFloats = _spectrumFftSize * 2;
+            int available;
+
+            // 1. Copy the last fftSize stereo frames from the ring under lock.
+            lock (_fftLock)
+            {
+                available = Math.Min(_fftCaptureFloats, _fftCaptureBuffer.Length);
+                if (available < captureFloats)
+                    return (Array.Empty<float>(), 0);
+
+                int start = _writePos - captureFloats;
+                if (start < 0) start += _fftCaptureBuffer.Length;
+
+                if (start + captureFloats <= _fftCaptureBuffer.Length)
+                {
+                    Array.Copy(_fftCaptureBuffer, start, _spectrumWorkBuffer, 0, captureFloats);
+                }
+                else
+                {
+                    int first = _fftCaptureBuffer.Length - start;
+                    Array.Copy(_fftCaptureBuffer, start, _spectrumWorkBuffer, 0, first);
+                    Array.Copy(_fftCaptureBuffer, 0, _spectrumWorkBuffer, first, captureFloats - first);
+                }
+            }
+
+            // 2. Mix to mono + Hanning window (outside lock).
+            for (int i = 0; i < _spectrumFftSize; i++)
+            {
+                float l = _spectrumWorkBuffer[i * 2];
+                float r = _spectrumWorkBuffer[i * 2 + 1];
+                double w = 0.5 * (1.0 - Math.Cos(2.0 * Math.PI * i / (_spectrumFftSize - 1)));
+                _spectrumWindowBuffer[i] = (float)((l + r) * 0.5 * w);
+            }
+
+            // 3. FFT.
+            ComputeSpectrumFFT(_spectrumWindowBuffer, _spectrumComplexBuffer, _spectrumFftSize);
+
+            // 4. Magnitudes.
+            int half = _spectrumFftSize / 2;
+            for (int i = 0; i < half; i++)
+            {
+                double re = _spectrumComplexBuffer[i].Real;
+                double im = _spectrumComplexBuffer[i].Imaginary;
+                double power = (re * re + im * im) / (_spectrumFftSize * (double)_spectrumFftSize);
+                _spectrumMagnitudes[i] = (float)Math.Sqrt(power);
+            }
+
+            return (_spectrumMagnitudes, _spectrumFftSize);
         }
         public int GetCapturedPCMData(float[] destination)
         {
@@ -635,6 +713,63 @@ namespace MusicWrap.Core
                 }
                 return requested;
             }
+        }
+
+        //internal static int ComputeFftSize(int sampleRate)
+        //{
+        //    //const double targetBinHz = 2.5;
+        //    //int desired = (int)Math.Ceiling(sampleRate / targetBinHz);
+        //    //int pow2 = 1;
+        //    //while (pow2 < desired) pow2 <<= 1;
+        //    //return Math.Clamp(pow2, 16384, 131072);
+        //    return 32768;
+        //}
+        private static void ComputeSpectrumFFT(
+        float[] input,
+        System.Numerics.Complex[] output,
+        int length)
+        {
+            for (int i = 0; i < length; i++)
+                output[i] = new System.Numerics.Complex(input[i], 0);
+
+            int bits = (int)Math.Log2(length);
+            for (int i = 0; i < length; i++)
+            {
+                int j = BitReverse(i, bits);
+                if (i < j)
+                    (output[i], output[j]) = (output[j], output[i]);
+            }
+
+            for (int stage = 1; stage <= bits; stage++)
+            {
+                int halfSize = 1 << (stage - 1);
+                int fullSize = 1 << stage;
+                double angle = -2.0 * Math.PI / fullSize;
+                var wn = new System.Numerics.Complex(Math.Cos(angle), Math.Sin(angle));
+                for (int k = 0; k < length; k += fullSize)
+                {
+                    var w = System.Numerics.Complex.One;
+                    for (int j = 0; j < halfSize; j++)
+                    {
+                        var t = w * output[k + j + halfSize];
+                        var u = output[k + j];
+                        output[k + j] = u + t;
+                        output[k + j + halfSize] = u - t;
+                        w *= wn;
+                    }
+                }
+            }
+        }
+
+        private static int BitReverse(int value, int bits)
+        {
+            int result = 0;
+            for (int i = 0; i < bits; i++)
+            {
+                result = (result << 1) | (value & 1);
+                value >>= 1;
+            }
+            return result;
         }
 
         #endregion
