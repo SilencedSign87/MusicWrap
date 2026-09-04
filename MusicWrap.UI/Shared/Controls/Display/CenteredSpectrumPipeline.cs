@@ -17,7 +17,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// <summary>
     /// Upper bound of the analyzed spectrum (the outer edges).
     /// </summary>
-    public float MaxHz { get; set; } = 20000f;
+    public float MaxHz { get; set; } = 16000f;
 
     /// <summary>
     /// Split point between the central bass band and the outer spectrum.
@@ -25,7 +25,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// that sits at the center of the graph. From CenterHz to MaxHz the
     /// spectrum expands normally toward the outer edges.
     /// </summary>
-    public float CenterHz { get; set; } = 400f;
+    public float CenterHz { get; set; } = 300f;
 
     //  Dynamic range (dB)
 
@@ -45,7 +45,7 @@ public sealed class CenteredSpectrumPipelineConfig
 
     public float BassBoost { get; set; } = 1.0f;
     public float MidBoost { get; set; } = 1.4f;
-    public float TrebleBoost { get; set; } = 1.8f;
+    public float TrebleBoost { get; set; } = 1.9f;
 
     //  Mirroring
 

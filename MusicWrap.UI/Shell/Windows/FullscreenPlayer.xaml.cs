@@ -39,6 +39,14 @@ namespace MusicWrap.UI.Shell.Windows
             double targetWidth = shouldShow ? (ActualWidth > 0 ? ActualWidth / 2.0 : 500) : 0;
             double targetOpacity = shouldShow ? 1.0 : 0.0;
 
+            if (shouldShow)
+            {
+                ArtworkPanel.HorizontalAlignment = HorizontalAlignment.Right;
+            }
+            else
+            {
+                ArtworkPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            }
 
             if (!animate || ActualWidth <= 0)
             {

@@ -42,7 +42,7 @@ namespace MusicWrap.UI.Controls
 
             _timer = new DispatcherTimer(DispatcherPriority.Render)
             {
-                Interval = TimeSpan.FromMilliseconds(20)
+                Interval = TimeSpan.FromMilliseconds(33)
             };
             _timer.Tick += OnTick;
 

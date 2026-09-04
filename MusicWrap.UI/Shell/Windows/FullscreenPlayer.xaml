@@ -154,17 +154,14 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Margin="16"
+                MaxWidth="700"
                 >
-                <Border CornerRadius="2" Width="500" Height="500" Margin="0,0,0,16" SnapsToDevicePixels="True">
-                    <Border.Background>
-                        <ImageBrush
-                            ImageSource="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:600}"
-                            RenderOptions.BitmapScalingMode="HighQuality"
-                            AlignmentX="Center"
-                            AlignmentY="Center"
-                            Stretch="UniformToFill"
-                            />
-                    </Border.Background>
+                <Border CornerRadius="2" Width="500" Margin="0,0,0,16" SnapsToDevicePixels="True">
+                    <Image 
+                        Source="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:600}"
+                        RenderOptions.BitmapScalingMode="HighQuality"
+                        Stretch="Uniform"
+                        />
                 </Border>
                 <TextBlock 
                     Text="{Binding NowPlayingViewModel.TrackTitle}" 
@@ -201,8 +198,8 @@
         </Grid>
         <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
             <controls:SpectrumVisualizerControl
-                        Height="200"
-                        BarCount="120"
+                        Height="150"
+                        BarCount="100"
                         Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
                         SpectrumType="{Binding NowPlayingViewModel.PreferredSpectrumType}"
