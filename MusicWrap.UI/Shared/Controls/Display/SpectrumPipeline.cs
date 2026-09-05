@@ -1,4 +1,3 @@
-using System.Numerics;
 
 namespace MusicWrap.UI.Controls
 {
@@ -13,8 +12,8 @@ namespace MusicWrap.UI.Controls
         public float NyquistBias { get; set; } = 0.98f;    // % de Nyquist as ceiling
 
         // ---- Stage: Dynamic range (dB) ----
-        public float NoiseFloorDb { get; set; } = -90f;
-        public float CeilingDb { get; set; } = -15f;
+        public float NoiseFloorDb { get; set; } = -70f;
+        public float CeilingDb { get; set; } = -0f;
 
         // ---- Stage: Noise gate ----
         public float NoiseGateNorm { get; set; } = 0.2f;   //  0..1 (0 = off) 
@@ -24,11 +23,11 @@ namespace MusicWrap.UI.Controls
         public float HighShelfCurve { get; set; } = 0.8f;
 
         // ---- Stage: Smoothing ----
-        public float SmoothingAlpha { get; set; } = 0.9f;  // EMA (0 = ignore new , 1 = no smoothing)
-        public float ChangeThreshold { get; set; } = 0.0f;// dead zone 0..1 (0 = off)
+        public float SmoothingAlpha { get; set; } = 0.8f;  // EMA (0 = ignore new , 1 = no smoothing)
+        public float ChangeThreshold { get; set; } = 0.01f;// dead zone 0..1 (0 = off)
 
         // ---- Stage: Gamma and Contrast ----
-        public float ContrastGamma { get; set; } = 1.7f;
+        public float ContrastGamma { get; set; } = 1.3f;
         public float EqGamma { get; set; } = 1.0f;
         public float GammaDelta { get; set; } = 0.3f;
         public float GammaFloor { get; set; } = 0.4f;      // minimun

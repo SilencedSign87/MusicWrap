@@ -2,7 +2,8 @@
 using System.Diagnostics;
 using ManagedBass;
 using ManagedBass.Mix;
-using System.Runtime.InteropServices;
+using NetVips;
+
 
 #if WINDOWS
 using ManagedBass.Wasapi;
@@ -44,21 +45,9 @@ namespace MusicWrap.Core
         public int CurrentMixerSampleRate => _mixerSampleRate;
         public bool IsMixerActive => _mixerStream != 0;
 
-        private int _writePos;
-        private const int CaptureSamples = 262144 * 2; // 320khz at stereo
-        private DSPProcedure? _fftDspCallback;
-        private float[] _fftCaptureBuffer = Array.Empty<float>();
-        private float[] _dspTempBuffer = Array.Empty<float>();
-        private int _fftCaptureFloats;
-        private readonly object _fftLock = new();
-        private bool _fftCaptureActive;
-        private int _fftDspHandle;
 
         // FFT buffers for spectrum analysis
-        private const int _spectrumFftSize = 32768;
-        private float[] _spectrumWorkBuffer = Array.Empty<float>();
-        private float[] _spectrumWindowBuffer = Array.Empty<float>();
-        private System.Numerics.Complex[] _spectrumComplexBuffer = Array.Empty<System.Numerics.Complex>();
+        private const int _spectrumFftSize = 8192;
         private float[] _spectrumMagnitudes = Array.Empty<float>();
 
         private static string GetNativeLibExtension()
@@ -166,9 +155,6 @@ namespace MusicWrap.Core
             _mixerSampleRate = mixRate;
             _mixerChannels = mixChannels;
 
-            RebuildSpectrumBuffers();
-            StartFFTCapture();
-
             return true;
         }
         public bool IsInitialized => _isInitialized;
@@ -205,13 +191,21 @@ namespace MusicWrap.Core
         public bool StartMixer()
         {
             if (_mixerStream == 0) return false;
-            RebuildSpectrumBuffers();
-            StartFFTCapture();
+
 #if WINDOWS
             if (IsWasapiMode())
                 return _isWasapiInitialized && BassWasapi.Start();
 #endif
             return Bass.ChannelPlay(_mixerStream, false);
+        }
+
+        public void FlushOutputBuffer()
+        {
+#if WINDOWS
+            if (!IsWasapiMode() || !_isWasapiInitialized || !BassWasapi.IsStarted) return;
+            BassWasapi.Stop(true);
+            BassWasapi.Start();
+#endif
         }
 
         public bool PauseMixer()
@@ -284,7 +278,6 @@ namespace MusicWrap.Core
 
         private void DestroyMixer()
         {
-            StopFFTCapture();
             if (_mixerStream != 0)
             {
                 Bass.StreamFree(_mixerStream);
@@ -471,21 +464,29 @@ namespace MusicWrap.Core
 
         public bool SetPosition(int stream, double seconds)
         {
+            long bytePos = Bass.ChannelSeconds2Bytes(stream, seconds);
+            bool ok = false;
+#if WINDOWS
+            if (IsWasapiMode() && _isWasapiInitialized && BassWasapi.IsStarted)
+            {
+                BassWasapi.Stop(true);
+                ok = BassMix.ChannelSetPosition(stream, bytePos);
+                if (!ok)
+                    ok = Bass.ChannelSetPosition(stream, bytePos);
+                BassWasapi.Start();
+                return ok;
+            }
+#endif
             if (_mixerStream != 0 && Bass.ChannelIsActive(_mixerStream) != PlaybackState.Playing)
             {
                 StartMixer();
-                System.Threading.Thread.Sleep(5); // sleep a bit to allow the mixer to start
+                Thread.Sleep(1); // sleep a bit to allow the mixer to start
             }
-            long bytePos = Bass.ChannelSeconds2Bytes(stream, seconds);
 
-            bool ok = BassMix.ChannelSetPosition(stream, bytePos);
+            ok = BassMix.ChannelSetPosition(stream, bytePos);
+
             if (!ok)
                 ok = Bass.ChannelSetPosition(stream, bytePos);
-
-            if (_mixerStream != 0 && Bass.ChannelIsActive(_mixerStream) == PlaybackState.Playing)
-            {
-
-            }
 
             return ok;
         }
@@ -546,230 +547,48 @@ namespace MusicWrap.Core
 
         public Errors GetLastError() => Bass.LastError;
 
-        public void StartFFTCapture()
-        {
-            if (_mixerStream == 0 || _fftCaptureActive) return;
-
-            _fftCaptureBuffer = new float[CaptureSamples];
-            _writePos = 0;
-            _fftCaptureFloats = 0;
-            _fftDspCallback = OnFFTDspCapture;
-            _fftDspHandle = Bass.ChannelSetDSP(_mixerStream, _fftDspCallback, IntPtr.Zero, 0);
-            if (_fftDspHandle == 0)
-            {
-                Debug.WriteLine($"[AudioEngine] Failed to set FFT DSP: {Bass.LastError}");
-                _fftDspCallback = null;
-                _fftCaptureBuffer = Array.Empty<float>();
-                return;
-            }
-            _fftCaptureActive = true;
-        }
-        public void StopFFTCapture()
-        {
-            if (!_fftCaptureActive) return;
-            if (_fftDspHandle != 0)
-            {
-                Bass.ChannelRemoveDSP(_mixerStream, _fftDspHandle);
-                _fftDspHandle = 0;
-            }
-            _fftCaptureActive = false;
-            _fftDspCallback = null;
-            _fftCaptureFloats = 0;
-        }
-        private void RebuildSpectrumBuffers()
-        {
-            //_spectrumFftSize = ComputeFftSize(_mixerSampleRate > 0 ? _mixerSampleRate : 44100);
-            int halfSize = _spectrumFftSize / 2;
-            int captureFloats = _spectrumFftSize * 2; // stereo
-
-            if (_spectrumWorkBuffer.Length < captureFloats)
-                _spectrumWorkBuffer = new float[captureFloats];
-            if (_spectrumWindowBuffer.Length < _spectrumFftSize)
-                _spectrumWindowBuffer = new float[_spectrumFftSize];
-            if (_spectrumComplexBuffer.Length < _spectrumFftSize)
-                _spectrumComplexBuffer = new System.Numerics.Complex[_spectrumFftSize];
-            if (_spectrumMagnitudes.Length < halfSize)
-                _spectrumMagnitudes = new float[halfSize];
-        }
-        private void OnFFTDspCapture(int handle, int channel, IntPtr buffer, int length, IntPtr user)
-        {
-            if (length <= 0) return;
-            int floatsRead = length / sizeof(float);
-            if (floatsRead <= 0) return;
-
-            if (_dspTempBuffer.Length < floatsRead)
-                _dspTempBuffer = new float[floatsRead];
-
-            Marshal.Copy(buffer, _dspTempBuffer, 0, floatsRead);
-
-            lock (_fftLock)
-            {
-                for (int i = 0; i < floatsRead; i++)
-                {
-                    _fftCaptureBuffer[_writePos++] = _dspTempBuffer[i];
-
-                    if (_writePos >= _fftCaptureBuffer.Length)
-                        _writePos = 0;
-                }
-
-                _fftCaptureFloats =
-                    Math.Min(
-                        _fftCaptureFloats + floatsRead,
-                        _fftCaptureBuffer.Length);
-            }
-        }
         public (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes()
         {
-            if (_mixerStream == 0 || _spectrumFftSize == 0)
+            if (_mixerStream == 0) return (Array.Empty<float>(), 0);
+
+#if WINDOWS
+            if (_isWasapiInitialized && IsWasapiMode())
+                return GetWasapiSpectrum();
+#endif
+
+            return GetMixerSpectrum();
+        }
+
+        private static int GetFFTFlag(int fftSize) => (int) DataFlags.FFT256 | (int) Math.Log2(fftSize / 256);
+
+#if WINDOWS
+        private (float[] Magnitudes, int FftSize) GetWasapiSpectrum()
+        {
+            if (_spectrumMagnitudes.Length < _spectrumFftSize / 2)
+                _spectrumMagnitudes = new float[_spectrumFftSize / 2];
+
+            int flags = GetFFTFlag(_spectrumFftSize) | (int)DataFlags.Float;
+
+            if (BassWasapi.GetData(_spectrumMagnitudes, flags) < 0)
+            {
+                Debug.WriteLine($"[AudioEngine] GetData FFT failed: {Bass.LastError}");
                 return (Array.Empty<float>(), 0);
-
-            int captureFloats = _spectrumFftSize * 2;
-            int available;
-
-            // 1. Copy the last fftSize stereo frames from the ring under lock.
-            lock (_fftLock)
-            {
-                available = Math.Min(_fftCaptureFloats, _fftCaptureBuffer.Length);
-                if (available < captureFloats)
-                    return (Array.Empty<float>(), 0);
-
-                int start = _writePos - captureFloats;
-                if (start < 0) start += _fftCaptureBuffer.Length;
-
-                if (start + captureFloats <= _fftCaptureBuffer.Length)
-                {
-                    Array.Copy(_fftCaptureBuffer, start, _spectrumWorkBuffer, 0, captureFloats);
-                }
-                else
-                {
-                    int first = _fftCaptureBuffer.Length - start;
-                    Array.Copy(_fftCaptureBuffer, start, _spectrumWorkBuffer, 0, first);
-                    Array.Copy(_fftCaptureBuffer, 0, _spectrumWorkBuffer, first, captureFloats - first);
-                }
-            }
-
-            // 2. Mix to mono + Hanning window (outside lock).
-            for (int i = 0; i < _spectrumFftSize; i++)
-            {
-                float l = _spectrumWorkBuffer[i * 2];
-                float r = _spectrumWorkBuffer[i * 2 + 1];
-                double w = 0.5 * (1.0 - Math.Cos(2.0 * Math.PI * i / (_spectrumFftSize - 1)));
-                _spectrumWindowBuffer[i] = (float)((l + r) * 0.5 * w);
-            }
-
-            // 3. FFT.
-            ComputeSpectrumFFT(_spectrumWindowBuffer, _spectrumComplexBuffer, _spectrumFftSize);
-
-            // 4. Magnitudes.
-            int half = _spectrumFftSize / 2;
-            for (int i = 0; i < half; i++)
-            {
-                double re = _spectrumComplexBuffer[i].Real;
-                double im = _spectrumComplexBuffer[i].Imaginary;
-                double power = (re * re + im * im) / (_spectrumFftSize * (double)_spectrumFftSize);
-                _spectrumMagnitudes[i] = (float)Math.Sqrt(power);
             }
 
             return (_spectrumMagnitudes, _spectrumFftSize);
         }
-        public int GetCapturedPCMData(float[] destination)
+#endif
+        private (float[] Magnitudes, int FftSize) GetMixerSpectrum()
         {
-            lock (_fftLock)
-            {
-                if (_fftCaptureFloats == 0) return 0;
+            if (_spectrumMagnitudes.Length < _spectrumFftSize / 2)
+                _spectrumMagnitudes = new float[_spectrumFftSize / 2];
 
-                int available = Math.Min(_fftCaptureFloats, _fftCaptureBuffer.Length);
-                int requested = Math.Min(destination.Length, available);
+            int flags = GetFFTFlag(_spectrumFftSize) | (int)DataFlags.Float;
 
-                int start = _writePos - requested;
+            if (Bass.ChannelGetData(_mixerStream, _spectrumMagnitudes, flags) <= 0)
+                return (Array.Empty<float>(), 0);
 
-                if (start < 0)
-                {
-                    start += _fftCaptureBuffer.Length;
-                }
-
-                if (start + requested <= _fftCaptureBuffer.Length)
-                {
-                    // no wrap
-                    Array.Copy(_fftCaptureBuffer, start, destination, 0, requested);
-                }
-                else
-                {
-                    int first = _fftCaptureBuffer.Length - start;
-
-                    Array.Copy(
-                        _fftCaptureBuffer,
-                        start,
-                        destination,
-                        0,
-                        first);
-
-                    Array.Copy(
-                        _fftCaptureBuffer,
-                        0,
-                        destination,
-                        first,
-                        requested - first);
-                }
-                return requested;
-            }
-        }
-
-        //internal static int ComputeFftSize(int sampleRate)
-        //{
-        //    //const double targetBinHz = 2.5;
-        //    //int desired = (int)Math.Ceiling(sampleRate / targetBinHz);
-        //    //int pow2 = 1;
-        //    //while (pow2 < desired) pow2 <<= 1;
-        //    //return Math.Clamp(pow2, 16384, 131072);
-        //    return 32768;
-        //}
-        private static void ComputeSpectrumFFT(
-        float[] input,
-        System.Numerics.Complex[] output,
-        int length)
-        {
-            for (int i = 0; i < length; i++)
-                output[i] = new System.Numerics.Complex(input[i], 0);
-
-            int bits = (int)Math.Log2(length);
-            for (int i = 0; i < length; i++)
-            {
-                int j = BitReverse(i, bits);
-                if (i < j)
-                    (output[i], output[j]) = (output[j], output[i]);
-            }
-
-            for (int stage = 1; stage <= bits; stage++)
-            {
-                int halfSize = 1 << (stage - 1);
-                int fullSize = 1 << stage;
-                double angle = -2.0 * Math.PI / fullSize;
-                var wn = new System.Numerics.Complex(Math.Cos(angle), Math.Sin(angle));
-                for (int k = 0; k < length; k += fullSize)
-                {
-                    var w = System.Numerics.Complex.One;
-                    for (int j = 0; j < halfSize; j++)
-                    {
-                        var t = w * output[k + j + halfSize];
-                        var u = output[k + j];
-                        output[k + j] = u + t;
-                        output[k + j + halfSize] = u - t;
-                        w *= wn;
-                    }
-                }
-            }
-        }
-
-        private static int BitReverse(int value, int bits)
-        {
-            int result = 0;
-            for (int i = 0; i < bits; i++)
-            {
-                result = (result << 1) | (value & 1);
-                value >>= 1;
-            }
-            return result;
+            return (_spectrumMagnitudes, _spectrumFftSize);
         }
 
         #endregion
@@ -788,22 +607,33 @@ namespace MusicWrap.Core
             _wasapiProc = WasapiDataProc;
 
             bool exclusive = _currentOutputMode == OutputMode.WasapiExclusive;
-            var initFlags = exclusive ? WasapiInitFlags.Exclusive : WasapiInitFlags.Shared;
+            var initFlags = exclusive ? (WasapiInitFlags.Exclusive | WasapiInitFlags.Buffer) : (WasapiInitFlags.Shared | WasapiInitFlags.Buffer);
+
+            float fftBufferSeconds = (float)_spectrumFftSize / sampleRate + 0.03f;
+            const float periodSeconds = 0.02f;
 
             _isWasapiInitialized = BassWasapi.Init(
-                -1, sampleRate, 2,
-                initFlags,
-                0.05f, 0.01f,
-                _wasapiProc, IntPtr.Zero
+                Device: -1,
+                Frequency: sampleRate,
+                Channels: 2,
+                Flags: initFlags,
+                Buffer: fftBufferSeconds,
+                Period: periodSeconds,
+                Procedure: _wasapiProc,
+                User: IntPtr.Zero
             );
 
             if (!_isWasapiInitialized && !exclusive)
             {
                 _isWasapiInitialized = BassWasapi.Init(
-                    -1, sampleRate, 2,
-                    WasapiInitFlags.AutoFormat,
-                    0.05f, 0.01f,
-                    _wasapiProc, IntPtr.Zero
+                    -1,
+                    sampleRate,
+                    2,
+                    WasapiInitFlags.AutoFormat | WasapiInitFlags.Buffer,
+                    fftBufferSeconds,
+                    periodSeconds,
+                    _wasapiProc,
+                    IntPtr.Zero
                 );
             }
 
@@ -813,10 +643,14 @@ namespace MusicWrap.Core
                 _currentOutputMode = OutputMode.WasapiShared;
 
                 _isWasapiInitialized = BassWasapi.Init(
-                    -1, sampleRate, 2,
-                    WasapiInitFlags.AutoFormat,
-                    0.05f, 0.01f,
-                    _wasapiProc, IntPtr.Zero
+                    -1,
+                    sampleRate,
+                    2,
+                    WasapiInitFlags.AutoFormat | WasapiInitFlags.Buffer,
+                    fftBufferSeconds,
+                    periodSeconds,
+                    _wasapiProc,
+                    IntPtr.Zero
                 );
             }
 
@@ -873,7 +707,6 @@ namespace MusicWrap.Core
 
         private void Teardown()
         {
-            StopFFTCapture();
 #if WINDOWS
             if (_isWasapiInitialized)
             {

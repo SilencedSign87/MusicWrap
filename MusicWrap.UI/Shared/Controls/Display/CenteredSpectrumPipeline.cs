@@ -17,7 +17,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// <summary>
     /// Upper bound of the analyzed spectrum (the outer edges).
     /// </summary>
-    public float MaxHz { get; set; } = 16000f;
+    public float MaxHz { get; set; } = 20000f;
 
     /// <summary>
     /// Split point between the central bass band and the outer spectrum.
@@ -25,12 +25,12 @@ public sealed class CenteredSpectrumPipelineConfig
     /// that sits at the center of the graph. From CenterHz to MaxHz the
     /// spectrum expands normally toward the outer edges.
     /// </summary>
-    public float CenterHz { get; set; } = 300f;
+    public float CenterHz { get; set; } = 150f;
 
     //  Dynamic range (dB)
 
-    public float NoiseFloorDb { get; set; } = -85f;
-    public float CeilingDb { get; set; } = -20f;
+    public float NoiseFloorDb { get; set; } = -80f;
+    public float CeilingDb { get; set; } = -0f;
 
     //  Noise gate
 
@@ -44,8 +44,8 @@ public sealed class CenteredSpectrumPipelineConfig
     //  Per-zone boosts (bass / mid / treble)
 
     public float BassBoost { get; set; } = 1.0f;
-    public float MidBoost { get; set; } = 1.4f;
-    public float TrebleBoost { get; set; } = 1.9f;
+    public float MidBoost { get; set; } = 1.2f;
+    public float TrebleBoost { get; set; } = 1.4f;
 
     //  Mirroring
 
@@ -55,7 +55,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// How the whole central band (MinHz to CenterHz) is merged into the
     /// single center value of the graph. Only affects the center point.
     /// </summary>
-    public CenteredAggregation Aggregation { get; set; } = CenteredAggregation.Max;
+    public CenteredAggregation Aggregation { get; set; } = CenteredAggregation.Rms;
 }
 
 
@@ -105,9 +105,7 @@ public sealed class CenteredSpectrumPipeline
         _bandCount = Math.Max(3, bandCount);
         EnsureOddBandCount();
 
-        _smoothed = new float[(_bandCount + 1) * 3];
-        _radialValues = new float[(_bandCount + 1) / 2];
-        _output = new float[_bandCount];
+        RebuildAnalysisBuffers();
     }
 
     public void OnConfigurationChanged(int sampleRate, int fftSize)
@@ -157,15 +155,18 @@ public sealed class CenteredSpectrumPipeline
     {
         int count = Math.Max(MinimumAnalysisBands, _bandCount * 3);
 
-        _analysisValues = new float[count];
-        _smoothed = new float[count];
+        if (_analysisValues.Length != count)
+        {
+            _analysisValues = new float[count];
+            _smoothed = new float[count];
+            _bandFrequencies = new float[count];
+        }
 
-        _bandFrequencies = new float[count];
+        if (_radialValues.Length != (_bandCount + 1) / 2)
+            _radialValues = new float[(_bandCount + 1) / 2];
 
-        _radialValues = new float[(_bandCount + 1) / 2];
-        _output = new float[_bandCount];
-
-        _centerValue = 0f;
+        if (_output.Length != _bandCount)
+            _output = new float[_bandCount];
 
         BuildFrequencyTable();
     }

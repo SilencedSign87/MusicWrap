@@ -79,7 +79,6 @@ namespace MusicWrap.Core.Services.Playback
         void ChangeOutputDevice(int deviceIndex);
         void ChangeSampleRate(int sampleRate);
         void ChangeOutputMode(OutputMode mode);
-        int GetCapturedPCMData(float[] destination);
         int GetCurrentOutputSampleRate();
         (int Index, string Name)[] GetAvailableDevices();
         (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes();
@@ -232,7 +231,6 @@ namespace MusicWrap.Core.Services.Playback
             }
         }
 
-        public int GetCapturedPCMData(float[] destination) => _audioEngine.GetCapturedPCMData(destination);
         public int GetCurrentOutputSampleRate() => _audioEngine.CurrentOutputSampleRate;
 
         public MusicPlayerService(
@@ -494,6 +492,7 @@ namespace MusicWrap.Core.Services.Playback
                     return;
                 }
                 StartPlaybackOfCurrent();
+                _audioEngine.FlushOutputBuffer();
             }
             finally
             {
@@ -509,6 +508,7 @@ namespace MusicWrap.Core.Services.Playback
                 var prev = _queue.Previous();
                 if (prev == null) return;
                 StartPlaybackOfCurrent();
+                _audioEngine.FlushOutputBuffer();
             }
             finally
             {
