@@ -132,7 +132,7 @@
                     Visualizer="{Binding PreferredVisualizer}"
                     SpectrumType="{Binding PreferredSpectrumType}"
                     Height="120" 
-                    BarCount="80" 
+                    BarCount="128" 
                     Opacity="0.5"
                     />
             </Border>

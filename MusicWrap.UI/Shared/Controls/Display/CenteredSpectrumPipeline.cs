@@ -12,7 +12,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// <summary>
     /// Lower bound of the analyzed spectrum.
     /// </summary>
-    public float MinHz { get; set; } = 20f;
+    public float MinHz { get; set; } = 40f;
 
     /// <summary>
     /// Upper bound of the analyzed spectrum (the outer edges).
@@ -44,8 +44,8 @@ public sealed class CenteredSpectrumPipelineConfig
     //  Per-zone boosts (bass / mid / treble)
 
     public float BassBoost { get; set; } = 1.0f;
-    public float MidBoost { get; set; } = 1.2f;
-    public float TrebleBoost { get; set; } = 1.4f;
+    public float MidBoost { get; set; } = 1.3f;
+    public float TrebleBoost { get; set; } = 1.6f;
 
     //  Mirroring
 
