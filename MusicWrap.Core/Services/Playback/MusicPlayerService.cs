@@ -1,16 +1,16 @@
 using ManagedBass;
-using MusicWrap.Data.Library.Models;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Queue;
+using MusicWrap.Core.Saving;
 using MusicWrap.Core.Sources.Contracts;
+using MusicWrap.Core.Sources.Providers.Queue;
+using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Player.Models;
 using MusicWrap.Data.User.Models;
-using Microsoft.Extensions.Logging;
-using MusicWrap.Core.Threading;
-using MusicWrap.Core.Queue;
-using MusicWrap.Core.Sources.Providers.Queue;
-using MusicWrap.Core.Saving;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MusicWrap.Core.Services.Playback
 {
@@ -151,6 +151,7 @@ namespace MusicWrap.Core.Services.Playback
 
         private bool _isTransitioningTrack = false;
         private bool _disposed;
+        private readonly Lock _audioStateLock = new();
 
 
         // Waveform
@@ -253,14 +254,6 @@ namespace MusicWrap.Core.Services.Playback
             _userSettings = userSettings;
 
             _audioEngine = new AudioEngine();
-
-            // initialize audioengine in warmup (LoadInitialState)
-            //var result = _audioEngine.Initialize(CurrentDeviceIndex, 44100, CurrentOutputMode);
-            //if (!result)
-            //{
-            //    var err = _audioEngine.GetLastError();
-            //    _logger.LogCritical("Failed to initialize audio engine with device index {DeviceIndex}, error code: {ErrorCode}", CurrentDeviceIndex, err);
-            //}
 
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
@@ -466,13 +459,21 @@ namespace MusicWrap.Core.Services.Playback
                 _trackedPositon = 0.0;
                 _trackedPositionUtc = DateTime.MinValue;
 
-                if (_currentStream != 0) _audioEngine.DetachTrack(_currentStream);
-                FreeStream(_currentStream);
-                _currentStream = 0;
+                int currentStream;
+                int preloadedStream;
+                lock (_audioStateLock)
+                {
+                    currentStream = _currentStream;
+                    _currentStream = 0;
+                    preloadedStream = _preloadedStream;
+                    _preloadedStream = 0;
+                    _preloadedQueueItem = null;
+                }
+                if (currentStream != 0) _audioEngine.DetachTrack(_currentStream);
+                FreeStream(currentStream);
                 _currentTrackDuration = 0.0;
-                if (_preloadedStream != 0) FreeStream(_preloadedStream);
-                _preloadedStream = 0;
-                _preloadedQueueItem = null;
+                FreeStream(preloadedStream);
+
                 _audioEngine.StopMixer();
             }
 
@@ -641,7 +642,6 @@ namespace MusicWrap.Core.Services.Playback
             var item = CreateQueueItemFromTrackId(TrackId);
             if (item == null) return;
             _queue.AddLast([item]);
-            //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
 
@@ -653,7 +653,6 @@ namespace MusicWrap.Core.Services.Playback
                 .ToList();
             if (items.Count == 0) return;
             _queue.AddLast(items!);
-            //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
         public void AddToNextInQueue(IEnumerable<int> TrackIds)
@@ -664,7 +663,6 @@ namespace MusicWrap.Core.Services.Playback
                 .ToList();
             if (items.Count == 0) return;
             _queue.AddNext(items!);
-            //NotifyQueueChanged();
             EnqueueSave(SaveKind.Playback);
         }
         public void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false)
@@ -1098,61 +1096,40 @@ namespace MusicWrap.Core.Services.Playback
                 ? _library.Tracks.FirstOrDefault(t => t.Id == item.LibraryId.Value)
                 : null;
 
-            int requestedSampleRate = CurrentSampleRate > 0
-                ? (int)CurrentSampleRate
-                : (track?.SamplingRate ?? 44100);
+            int newStream = AcquireNextStream(item);
+            if (newStream == 0)
+            {
+                var err = _audioEngine.GetLastError();
+                _logger.LogWarning("Failed to acquire stream for track {TrackId}, error code: {ErrorCode}", item.LibraryId, err);
+                _errorCount++;
+                if (_errorCount >= MaxErrorCount)
+                {
+                    _logger.LogError("Max error count reached, stopping playback");
+                    Stop();
+                    return;
+                }
+                Next();
+                return;
+            }
 
-            // Preparar output para el sample rate deseado
+            int actualStreamRate = _audioEngine.GetStreamFormat(newStream).SampleRate;
+            int requestedSampleRate = GetTargetSampleRate(item.LibraryId, actualStreamRate);
+
             _audioEngine.PrepareOutputForTrack(requestedSampleRate);
 
-            int previousStream = _currentStream;
-
-            if (_preloadedStream != 0 && _preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, item))
+            int previousStream;
+            lock (_audioStateLock)
             {
-                _currentStream = _preloadedStream;
-                _preloadedStream = 0;
-                _preloadedQueueItem = null;
-            }
-            else
-            {
-                if (!_queueItemResolver.TryResolve(item, out var resolved))
-                {
-                    _errorCount++;
-                    if (_errorCount >= MaxErrorCount) Stop();
-                    else Next();
-                    return;
-                }
-
-                int createdStream = resolved.Kind switch
-                {
-                    PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolved.Input),
-                    PlaybackSourceKind.RemoteUrl => _audioEngine.CreateDecodeStreamFromUrl(resolved.Input),
-                    _ => 0
-                };
-
-                _currentStream = createdStream;
-                if (_currentStream == 0)
-                {
-                    var err = _audioEngine.GetLastError();
-                    _logger.LogWarning("Failed to create decode stream for queue item, error code: {ErrorCode}", err);
-                    _errorCount++;
-                    if (_errorCount >= MaxErrorCount)
-                    {
-                        _logger.LogError("Exceeded maximum error count of {MaxErrorCount}, stopping playback", MaxErrorCount);
-                        Stop();
-                        return;
-                    }
-                    Next();
-                    return;
-                }
+                previousStream = _currentStream;
+                _currentStream = newStream;
             }
 
-            // Remove previous stream if it exists
             if (previousStream != 0)
             {
                 _audioEngine.DetachTrack(previousStream);
                 FreeStream(previousStream);
             }
+
 
             if (!_audioEngine.PrepareTrack(_currentStream, requestedSampleRate))
             {
@@ -1167,14 +1144,8 @@ namespace MusicWrap.Core.Services.Playback
             _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
 
             // Setup preload for next track
-            double duration = _audioEngine.GetDuration(_currentStream);
-            _currentTrackDuration = duration;
             int effectiveSampleRate = _audioEngine.CurrentMixerSampleRate;
-            const double preloadLeadSeconds = 0.75;
-            if (duration > preloadLeadSeconds)
-            {
-                _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
-            }
+            ArmPreloadSync();
 
             if (autoplay)
             {
@@ -1215,6 +1186,27 @@ namespace MusicWrap.Core.Services.Playback
             EnqueueSave(SaveKind.Playback);
         }
 
+        private int GetTargetSampleRate(int? trackId, int actualStreamRate = 0)
+        {
+            // explicit preference from user settings
+            if (CurrentSampleRate > 0)
+                return (int)CurrentSampleRate;
+
+            // real sample rate of the stream, if available
+            if (actualStreamRate > 0)
+                return actualStreamRate;
+
+            // metadata fallback
+            if (trackId.HasValue)
+            {
+                var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId.Value);
+                if (track != null && track.SamplingRate > 0)
+                    return track.SamplingRate;
+            }
+
+            return 44100;
+        }
+
         private void SetPlaybackState(PlaybackState state)
         {
             if (_playbackState == state)
@@ -1229,132 +1221,230 @@ namespace MusicWrap.Core.Services.Playback
         {
             if (channel != _currentStream) return;
 
-            _dispatcher.Invoke(() => TrackEnded?.Invoke(this, EventArgs.Empty));
+            _ = _dispatcher.InvokeAsync(() => TrackEnded?.Invoke(this, EventArgs.Empty));
 
-            // Handle RepeatOne mode
-            if (RepeatMode == Data.Library.Models.RepeatMode.RepeatOne)
+            if (RepeatMode == RepeatMode.RepeatOne)
             {
-                _audioEngine.SetPosition(_currentStream, 0.0);
-
-                double duration = _audioEngine.GetDuration(_currentStream);
-                _currentTrackDuration = duration;
-                const double preloadLeadSeconds = 0.75;
-                if (duration > preloadLeadSeconds)
-                {
-                    _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
-                }
-
+                _ = Task.Run(RewindCurrentTrackForRepeatOne);
                 return;
             }
 
-            _isTransitioningTrack = true;
-            try
+            _ = Task.Run(() => AdvanceOnTrackEnded(channel));
+
+        }
+        private void AdvanceOnTrackEnded(int channel)
+        {
+            lock (_audioStateLock)
             {
-                var nextItem = _queue.Next();
-                if (nextItem == null)
+                try
                 {
-                    Stop();
-                    return;
-                }
+                    // check if the current stream is still the same as the one that ended
+                    if (_currentStream != channel) return;
+                    if (_playbackState == PlaybackState.Stopped) return;
 
-                if (_preloadedStream != 0 && _preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, nextItem))
-                {
-                    int previousStream = _currentStream;
-                    _currentStream = _preloadedStream;
-                    _preloadedStream = 0;
-                    _preloadedQueueItem = null;
-
-                    _audioEngine.DetachTrack(previousStream);
-                    FreeStream(previousStream);
-
-                    _audioEngine.SetVolume(_currentStream, _userSettings.Playback.PreferredVolume);
-                    _audioEngine.AttachTrackToMixer(_currentStream);
-                    _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
-
-                    double duration = _audioEngine.GetDuration(_currentStream);
-                    _currentTrackDuration = duration;
-                    const double preloadLeadSeconds = 0.75;
-
-                    if (duration > preloadLeadSeconds)
+                    var nextItem = _queue.Next();
+                    if (nextItem is null)
                     {
-                        _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
+                        Stop();
+                        return;
+                    }
+                    int adoptedSteam = AcquireNextStream(nextItem);
+                    if (adoptedSteam == 0)
+                    {
+                        StartPlaybackOfCurrent();
+                        return;
                     }
 
-                    _trackedPositon = 0.0;
-                    _trackedPositionUtc = DateTime.UtcNow;
+                    int endedStream = _currentStream;
+                    _currentStream = adoptedSteam;
 
-                    var snapshot = CreateQueueSnapshot();
-                    _dispatcher.Invoke(() =>
+                    if (endedStream != 0)
                     {
-                        var trackRef = nextItem.Source;
-                        TrackChanged?.Invoke(this, trackRef);
-                        QueueChanged?.Invoke(this, snapshot);
-                        PositionChanged?.Invoke(this, 0.0);
-                    });
+                        _audioEngine.DetachTrack(endedStream);
+                        FreeStream(endedStream);
+                    }
 
-                    UpdateSelectedTrackState();
-                    return;
+                    InstallStreamOnMixer(nextItem, _currentStream);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during automated track transition");
+                }
+            }
+        }
+
+        private void RewindCurrentTrackForRepeatOne()
+        {
+            lock (_audioStateLock)
+            {
+                if (_currentStream == 0) return;
+                _audioEngine.SetPosition(_currentStream, 0.0);
+                ArmPreloadSync();
+            }
+        }
+        private int AcquireNextStream(PlaybackQueueItem item)
+        {
+            lock (_audioStateLock)
+            {
+                if (_preloadedStream != 0 && _preloadedQueueItem is not null && ReferenceEquals(_preloadedQueueItem, item))
+                {
+                    int adopted = _preloadedStream;
+                    _preloadedStream = 0;
+                    _preloadedQueueItem = null;
+                    return adopted;
+                }
+            }
+            if (!_queueItemResolver.TryResolve(item, out var resolved))
+            {
+                _logger.LogWarning("Failed to resolve playback source for next queue item");
+                return 0;
+            }
+
+            return resolved.Kind switch
+            {
+                PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolved.Input),
+                PlaybackSourceKind.RemoteUrl => _audioEngine.CreateDecodeStreamFromUrl(resolved.Input),
+                _ => 0
+            };
+        }
+
+        private void InstallStreamOnMixer(PlaybackQueueItem item, int stream)
+        {
+            // real sample rate of the stream, if available
+            int actualStreamRate = _audioEngine.GetStreamFormat(stream).SampleRate;
+            int requestedSampleRate = GetTargetSampleRate(item.LibraryId, actualStreamRate);
+
+            int previousMixerRate = _audioEngine.CurrentMixerSampleRate;
+
+            if (_audioEngine.PrepareTrack(stream, requestedSampleRate))
+            {
+                bool mixerRecreated = _audioEngine.CurrentMixerSampleRate != previousMixerRate;
+
+                bool okStart = _audioEngine.StartMixer();
+                if (!okStart)
+                {
+                    _logger.LogWarning("Failed to start mixer after installing new stream, error code: {ErrorCode}", _audioEngine.GetLastError());
                 }
 
-                StartPlaybackOfCurrent();
-            }
-            finally
-            {
-                _isTransitioningTrack = false;
-            }
+                if (mixerRecreated)
+                {
+                    _audioEngine.FlushOutputBuffer();
+                }
 
+                _audioEngine.SetVolume(stream, _userSettings.Playback.PreferredVolume);
+                _audioEngine.SetEndCallback(stream, _endCallback, false);
+                ArmPreloadSync(stream);
+
+                _trackedPositon = 0;
+                _trackedPositionUtc = DateTime.UtcNow;
+
+                int effectiveSampleRate = _audioEngine.CurrentMixerSampleRate;
+                _dispatcher.Invoke(() =>
+                {
+                    SampleRateChanged?.Invoke(this, new SampleRateChangedEventArgs
+                    {
+                        PreferedSampleRate = CurrentSampleRate,
+                        EffectiveSampleRate = effectiveSampleRate
+                    });
+                    TrackChanged?.Invoke(this, item.Source);
+                    QueueChanged?.Invoke(this, CreateQueueSnapshot());
+                    PositionChanged?.Invoke(this, 0.0);
+                });
+
+                UpdateSelectedTrackState();
+                EnqueueSave(SaveKind.Playback);
+                return;
+            }
+            _logger.LogWarning("Failed to prepare preloaded stream for playback, rebuilding...");
+            FreeStream(stream);
+            _currentStream = 0;
+            StartPlaybackOfCurrent();
+        }
+
+        private void ArmPreloadSync(int? stream = null)
+        {
+            int target = stream ?? _currentStream;
+            if (target == 0) return;
+
+            double duration = _audioEngine.GetDuration(target);
+            _currentTrackDuration = duration;
+            const double preloadLeadSeconds = 0.75;
+            if (duration > preloadLeadSeconds)
+            {
+                _audioEngine.SetPositionSync(target, duration - preloadLeadSeconds, _preloadSync);
+            }
         }
 
         private void OnPreloadSync(int handle, int channel, int data, IntPtr user)
         {
-            // Don't preload if we're in RepeatOne mode
-            if (RepeatMode == Data.Library.Models.RepeatMode.RepeatOne) return;
+            if (RepeatMode == RepeatMode.RepeatOne) return;
+            if (channel != _currentStream) return;
 
-            Task.Run(() =>
+            _ = Task.Run(PreloadNextTrack);
+        }
+
+        private async Task PreloadNextTrack()
+        {
+            try
             {
-                var nextItem = _queue.PeekNext();
-                if (nextItem == null) return;
-                if (_preloadedQueueItem != null && ReferenceEquals(_preloadedQueueItem, nextItem)) return;
-
-                if (_preloadedStream != 0)
+                PlaybackQueueItem? nextItem;
+                lock (_audioStateLock)
                 {
-                    FreeStream(_preloadedStream);
-                    _preloadedStream = 0;
-                    _preloadedQueueItem = null;
+                    nextItem = _queue.PeekNext();
+                    if (nextItem is null) return;
+                    if (_preloadedQueueItem is not null && ReferenceEquals(_preloadedQueueItem, nextItem)) return;
                 }
 
                 if (!_queueItemResolver.TryResolve(nextItem, out var resolvedNext))
                 {
-                    _logger.LogWarning("Failed to resolve playback source for preload of queue item");
+                    _logger.LogWarning("Failed to resolve playback source for next queue item during preload");
                     return;
                 }
-
                 int nextStream = resolvedNext.Kind switch
                 {
                     PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolvedNext.Input),
                     PlaybackSourceKind.RemoteUrl => _audioEngine.CreateDecodeStreamFromUrl(resolvedNext.Input),
                     _ => 0
                 };
-
                 if (nextStream == 0)
                 {
                     var err = _audioEngine.GetLastError();
-                    _logger.LogWarning("Failed to create decode stream for preload of queue item, error code: {ErrorCode}", err);
+                    _logger.LogWarning("Failed to create decode stream for next queue item during preload, error code: {ErrorCode}", err);
                     return;
                 }
 
-                _preloadedStream = nextStream;
-                _preloadedQueueItem = nextItem;
+                // revalidate
+                lock (_audioStateLock)
+                {
+                    var currentNext = _queue.PeekNext();
+                    if (currentNext is null || !ReferenceEquals(currentNext, nextItem))
+                    {
+                        FreeStream(nextStream);
+                        return;
+                    }
+                    if (_preloadedStream != 0)
+                    {
+                        FreeStream(_preloadedStream);
+                        _preloadedStream = 0;
+                        _preloadedQueueItem = null;
+                    }
+                    _preloadedStream = nextStream;
+                    _preloadedQueueItem = nextItem;
+                }
 
                 if (nextItem.LibraryId.HasValue)
                 {
                     var track = _library.Tracks.FirstOrDefault(t => t.Id == nextItem.LibraryId.Value);
                     if (track != null)
                     {
-                        _ = PreloadWaveformCacheAsync(track);
+                        await PreloadWaveformCacheAsync(track);
                     }
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Preload of next track failed");
+            }
         }
 
         private void FreeStream(int streamHandle)
@@ -1517,12 +1607,19 @@ namespace MusicWrap.Core.Services.Playback
             if (!_queueItemResolver.TryResolve(item, out var resolved))
                 return false;
             bool wasPlaying = IsPlaying;
-            if (_currentStream != 0)
+
+            int oldStream;
+            lock (_audioStateLock)
             {
-                _audioEngine.DetachTrack(_currentStream);
-                FreeStream(_currentStream);
+                oldStream = _currentStream;
                 _currentStream = 0;
             }
+            if (oldStream != 0)
+            {
+                _audioEngine.DetachTrack(oldStream);
+                FreeStream(oldStream);
+            }
+
             int newStream = resolved.Kind switch
             {
                 PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolved.Input),
@@ -1531,17 +1628,16 @@ namespace MusicWrap.Core.Services.Playback
             };
             if (newStream == 0) return false;
 
-            _currentStream = newStream;
-            _audioEngine.SetVolume(_currentStream, _userSettings.Playback.PreferredVolume);
-            _audioEngine.AttachTrackToMixer(_currentStream);
-            _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
-            double duration = _audioEngine.GetDuration(_currentStream);
-            _currentTrackDuration = duration;
-            const double preloadLeadSeconds = 0.75;
-            if (duration > preloadLeadSeconds)
+            lock (_audioStateLock)
             {
-                _audioEngine.SetPositionSync(_currentStream, duration - preloadLeadSeconds, _preloadSync);
+                _currentStream = newStream;
             }
+
+            _audioEngine.SetVolume(_currentStream, _userSettings.Playback.PreferredVolume);
+            var (actualRate, _) = _audioEngine.GetStreamFormat(_currentStream);
+            _audioEngine.PrepareTrack(_currentStream, GetTargetSampleRate(item.LibraryId, actualRate));
+            _audioEngine.SetEndCallback(_currentStream, _endCallback, false);
+            ArmPreloadSync();
             var target = Math.Clamp(targetSeconds, 0.0, Duration);
             bool seekOk = _audioEngine.SetPosition(_currentStream, target);
             if (wasPlaying)

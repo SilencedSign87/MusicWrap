@@ -16,7 +16,7 @@
              >
     <Grid RowDefinitions="Auto,*">
         <Border Grid.Row="0">
-            <Menu>
+            <Menu HorizontalAlignment="Right">
                 <Menu.Resources>
                     <Style TargetType="Menu" BasedOn="{StaticResource {x:Type Menu}}">
                         <Setter Property="Padding" Value="0"/>

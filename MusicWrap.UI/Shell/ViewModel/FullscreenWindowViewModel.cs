@@ -32,6 +32,11 @@ namespace MusicWrap.UI.Shell.ViewModel
         {
             _windowManager.SwitchToMainPlayer();
         }
+        [RelayCommand]
+        private void ExitApp()
+        {
+            _windowManager.ShellWindow?.Close();
+        }
 
         private bool _disposed;
         public void Dispose()

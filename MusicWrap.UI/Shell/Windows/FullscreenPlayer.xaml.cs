@@ -36,17 +36,8 @@ namespace MusicWrap.UI.Shell.Windows
             bool hasValidLyrics = LyricsControl.HasLyrics;
             bool shouldShow = userWantsLyrics && hasValidLyrics;
 
-            double targetWidth = shouldShow ? (ActualWidth > 0 ? ActualWidth / 2.0 : 500) : 0;
+            double targetWidth = shouldShow ? (ActualWidth > 0 ? (ActualWidth / 2.0) : 500) : 0;
             double targetOpacity = shouldShow ? 1.0 : 0.0;
-
-            if (shouldShow)
-            {
-                ArtworkPanel.HorizontalAlignment = HorizontalAlignment.Right;
-            }
-            else
-            {
-                ArtworkPanel.HorizontalAlignment = HorizontalAlignment.Center;
-            }
 
             if (!animate || ActualWidth <= 0)
             {
@@ -57,8 +48,8 @@ namespace MusicWrap.UI.Shell.Windows
                 return;
             }
 
-            var duration = TimeSpan.FromMilliseconds(350);
-            var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+            var duration = TimeSpan.FromMilliseconds(500);
+            var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
 
             var widthAnimation = new DoubleAnimation(targetWidth, duration) { EasingFunction = ease };
             var opacityAnimation = new DoubleAnimation(targetOpacity, TimeSpan.FromMilliseconds(250));

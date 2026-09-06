@@ -124,20 +124,35 @@
                                       IsChecked="{Binding NowPlayingViewModel.PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
                                       />
                         </MenuItem>
-                        <MenuItem Icon="{ex:Icon Glyph=&#xEC4F;}"  Header="Lyrics">
-                            <MenuItem Header="Show" 
-                                      IsCheckable="True" 
-                                      IsChecked="{Binding NowPlayingViewModel.ShowLyrics}"
-                                      />
+                        <MenuItem Icon="{ex:Icon Glyph=E90D}"  Header="Panel">
+                            <MenuItem 
+                                Icon="{ex:Icon Glyph=EC4F}"
+                                Header="Lyrics" 
+                                IsCheckable="True" 
+                                IsChecked="{Binding NowPlayingViewModel.ShowLyrics}"
+                                />
+                            <MenuItem
+                                Icon="{ex:Icon Glyph=E90B}"
+                                Header="Queue"
+                                IsCheckable="True"
+                                />
                         </MenuItem>
                     </Menu>
                     <Border Margin="4" Width="1" Background="{StaticResource StrokeSurface}"/>
-                    <Button 
+                    <controls:AppButton 
                         Style="{StaticResource PlayerButton}"
                         Command="{Binding ExitFullScreenCommand}"
-                    >
-                        <TextBlock Text="&#xE73F;" FontSize="20" FontWeight="Light" FontFamily="Segoe Fluent Icons" />
-                    </Button>
+                        ToolTip="Exit fullscreen"
+                        Icon="&#xE73F;"
+                        IconFontSize="20"
+                        />
+                    <controls:AppButton
+                        Style="{StaticResource PlayerButton}"
+                        Command="{Binding ExitAppCommand}"
+                        Icon="&#xE711;"
+                        ToolTip="Close window"
+                        IconFontSize="20"
+                        />
                 </StackPanel>
             </Grid>
         </controls:HiddenPanel>
@@ -199,7 +214,7 @@
         <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
             <controls:SpectrumVisualizerControl
                         Height="150"
-                        BarCount="256"
+                        BarCount="128"
                         Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
                         SpectrumType="{Binding NowPlayingViewModel.PreferredSpectrumType}"
