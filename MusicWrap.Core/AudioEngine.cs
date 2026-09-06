@@ -78,7 +78,13 @@ namespace MusicWrap.Core
             Bass.NetReadTimeOut = 7000;
             Bass.NetPreBuffer = 0;
 
-            _isInitialized = Bass.Init(deviceIndex, sampleRate, DeviceInitFlags.Default);
+#if WINDOWS
+            int bassDevice = IsWasapiMode() ? 0 : deviceIndex;
+#else
+            int bassDevice = deviceIndex;
+#endif
+            _isInitialized = Bass.Init(bassDevice, _lastSampleRate, DeviceInitFlags.Default, IntPtr.Zero);
+
             if (!_isInitialized) return false;
 
             _flacPluginHandle = Bass.PluginLoad("bassflac" + GetNativeLibExtension());
@@ -518,9 +524,27 @@ namespace MusicWrap.Core
             Bass.ChannelSetSync(stream, SyncFlags.Slided | SyncFlags.Mixtime, 0, callback, IntPtr.Zero);
         }
 
-        public (int Index, DeviceInfo Info)[] GetOutputDevices()
+        public (int Index, string Name)[] GetOutputDevices()
         {
-            var devices = new List<(int, DeviceInfo)>();
+#if WINDOWS
+            if (IsWasapiMode())
+            {
+                var wasapiDevices = new List<(int, string)>();
+                for (int i = 0; i < BassWasapi.DeviceCount; i++)
+                {
+                    var info = BassWasapi.GetDeviceInfo(i);
+                    if (info.IsEnabled && !info.IsInput && !info.IsLoopback)
+                    {
+                        wasapiDevices.Add((i, info.Name));
+                    }
+                }
+                wasapiDevices.Add((-1, "Default Device"));
+                // sort by index
+                wasapiDevices.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+                return wasapiDevices.ToArray();
+            }
+#endif
+            var devices = new List<(int, string)>();
             int index = 1;
             while (true)
             {
@@ -528,7 +552,7 @@ namespace MusicWrap.Core
                 {
                     var info = Bass.GetDeviceInfo(index);
                     if (info.IsEnabled)
-                        devices.Add((index, info));
+                        devices.Add((index, info.Name));
                     index++;
                 }
                 catch
@@ -559,7 +583,7 @@ namespace MusicWrap.Core
             return GetMixerSpectrum();
         }
 
-        private static int GetFFTFlag(int fftSize) => (int) DataFlags.FFT256 | (int) Math.Log2(fftSize / 256);
+        private static int GetFFTFlag(int fftSize) => (int)DataFlags.FFT256 | (int)Math.Log2(fftSize / 256);
 
 #if WINDOWS
         private (float[] Magnitudes, int FftSize) GetWasapiSpectrum()
@@ -609,11 +633,13 @@ namespace MusicWrap.Core
             bool exclusive = _currentOutputMode == OutputMode.WasapiExclusive;
             var initFlags = exclusive ? (WasapiInitFlags.Exclusive | WasapiInitFlags.Buffer) : (WasapiInitFlags.Shared | WasapiInitFlags.Buffer);
 
+            int wasapiDevice = _lastDeviceIndex;
+
             float fftBufferSeconds = (float)_spectrumFftSize / sampleRate + 0.03f;
             const float periodSeconds = 0.02f;
 
             _isWasapiInitialized = BassWasapi.Init(
-                Device: -1,
+                Device: wasapiDevice,
                 Frequency: sampleRate,
                 Channels: 2,
                 Flags: initFlags,
@@ -626,7 +652,7 @@ namespace MusicWrap.Core
             if (!_isWasapiInitialized && !exclusive)
             {
                 _isWasapiInitialized = BassWasapi.Init(
-                    -1,
+                    wasapiDevice,
                     sampleRate,
                     2,
                     WasapiInitFlags.AutoFormat | WasapiInitFlags.Buffer,
@@ -643,7 +669,7 @@ namespace MusicWrap.Core
                 _currentOutputMode = OutputMode.WasapiShared;
 
                 _isWasapiInitialized = BassWasapi.Init(
-                    -1,
+                    wasapiDevice,
                     sampleRate,
                     2,
                     WasapiInitFlags.AutoFormat | WasapiInitFlags.Buffer,

@@ -12,7 +12,7 @@
              d:DesignHeight="500" d:DesignWidth="300">
     <StackPanel Margin="16">
         <!-- Current Info -->
-        <controls:SectionTitleSeparator Title="Current Device Information" IconGlyph="&#xe946;" Margin="0,0,0,12"/>
+        <controls:SectionTitleSeparator Title="Output Information" IconGlyph="&#xEC4E;" Margin="0,0,0,12"/>
 
         <StackPanel Margin="0,0,0,16">
 
@@ -21,45 +21,50 @@
 
             <TextBlock  Text="Current Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" TextTrimming="WordEllipsis"/>
             <TextBlock  FontSize="12" Margin="0,0,0,8" TextTrimming="WordEllipsis" TextAlignment="Right">
-                <Run Text="{Binding CurrentSampleRate}" />
+                <Run Text="{Binding CurrentDeviceSampleRateName}" />
                 <Run Text=" hz" />
             </TextBlock>
 
         </StackPanel>
 
-        <controls:SectionTitleSeparator Title="Device Settings" IconGlyph="&#xe713;" Margin="0,8"/>
+        <controls:SectionTitleSeparator Title="Player Settings" IconGlyph="&#xe713;" Margin="0,8"/>
         <!-- Settings -->
         <StackPanel Margin="0,0,0,16">
 
-            <TextBlock Text="Device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <TextBlock Text="Output device" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
             <ComboBox
                       Margin="0,0,0,8" 
-                      SelectedIndex="{Binding CurrentDeviceIndex}"
                       ItemsSource="{Binding AvailableDevices}"
-                      SelectionChanged="DeviceChanged"
+                      SelectedItem="{Binding PreferredDevice}"
                       >
                 <ComboBox.ItemTemplate>
                     <DataTemplate DataType="vm:DeviceDefinition">
-                        <TextBlock Tag="{Binding Index}" Text="{Binding Name}" TextTrimming="WordEllipsis" />
+                        <TextBlock Text="{Binding Name}" TextTrimming="WordEllipsis" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
 
-            <TextBlock Text="Sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
-            <ComboBox  SelectedIndex="{Binding CurrentSampleRateIndex}" SelectionChanged="SampleRateChanged" Margin="0,0,0,8" >
-                <ComboBoxItem Tag="auto" Content="Match track sample rate" />
-                <ComboBoxItem Tag="44100" Content="44100 hz" />
-                <ComboBoxItem Tag="48000" Content="48000 hz" />
-                <ComboBoxItem Tag="88200" Content="88200 hz" />
-                <ComboBoxItem Tag="96000" Content="96000 hz" />
-                <ComboBoxItem Tag="176400" Content="176400 hz" />
-                <ComboBoxItem Tag="192000" Content="192000 hz" />
+            <TextBlock Text="Output sample rate" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
+            <ComboBox  SelectedIndex="{Binding PreferredSampleRateIndex}" Margin="0,0,0,8" >
+                <ComboBoxItem Tag="Auto" Content="Match track sample rate" />
+                <ComboBoxItem Tag="Hz44100" Content="44100 hz" />
+                <ComboBoxItem Tag="Hz48000" Content="48000 hz" />
+                <ComboBoxItem Tag="Hz88200" Content="88200 hz" />
+                <ComboBoxItem Tag="Hz96000" Content="96000 hz" />
+                <ComboBoxItem Tag="Hz176400" Content="176400 hz" />
+                <ComboBoxItem Tag="Hz192000" Content="192000 hz" />
             </ComboBox>
 
             <TextBlock Text="Output mode" FontSize="12" Margin="0,0,0,8" FontWeight="Medium" VerticalAlignment="Center" />
-            <ComboBox SelectedIndex="{Binding CurrentOutputModeIndex}" SelectionChanged="OutputModeChanged" Margin="0,0,0,8">
-                <ComboBoxItem Tag="wasapi-shared" Content="WASAPI Shared" />
-                <ComboBoxItem Tag="wasapi-exclusive" Content="WASAPI Exclusive" />
+            <ComboBox 
+                SelectedItem="{Binding PreferredOutputMode}"
+                ItemsSource="{Binding Outputmodes}" 
+                Margin="0,0,0,8">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Converter={StaticResource EnumToDisplayNameConverter}}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
             </ComboBox>
         </StackPanel>
 

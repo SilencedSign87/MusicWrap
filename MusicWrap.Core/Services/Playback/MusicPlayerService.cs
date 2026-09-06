@@ -30,14 +30,13 @@ namespace MusicWrap.Core.Services.Playback
         string CurrentTrackPath { get; }
         int QueueCount { get; }
         int CurrentDeviceIndex { get; }
-        int CurrentSampleRate { get; }
+        SampleRatePreference CurrentSampleRate { get; }
         OutputMode CurrentOutputMode { get; }
         float[] CurrentWaveformData { get; }
         RepeatMode RepeatMode { get; set; }
         ContinueMode ContinueMode { get; set; }
         bool IsShuffleEnabled { get; }
         event EventHandler<bool>? ShuffleStateChanged;
-
         event EventHandler<string>? TrackChanged;
         event EventHandler? TrackEnded;
         event EventHandler<PlaybackState>? PlaybackStateChanged;
@@ -77,7 +76,7 @@ namespace MusicWrap.Core.Services.Playback
         void PlayTrack(int TrackId);
         void SetPlaybackOrder(int[] playbackOrderIndices);
         void ChangeOutputDevice(int deviceIndex);
-        void ChangeSampleRate(int sampleRate);
+        void ChangeSampleRate(SampleRatePreference sampleRate);
         void ChangeOutputMode(OutputMode mode);
         int GetCurrentOutputSampleRate();
         (int Index, string Name)[] GetAvailableDevices();
@@ -124,8 +123,8 @@ namespace MusicWrap.Core.Services.Playback
                 _currentDeviceIndex = value;
             }
         }
-        private int _currentSampleRate = -1; // Auto
-        public int CurrentSampleRate
+        private SampleRatePreference _currentSampleRate = SampleRatePreference.Auto; // Auto
+        public SampleRatePreference CurrentSampleRate
         {
             get => _currentSampleRate;
             private set
@@ -898,7 +897,7 @@ namespace MusicWrap.Core.Services.Playback
 
             Stop(true);
 
-            int sr = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
+            int sr = CurrentSampleRate > 0 ? (int)CurrentSampleRate : _audioEngine.CurrentOutputSampleRate;
             bool appliedPreferred = TryReinitializeOutput(deviceIndex, sr, CurrentOutputMode);
             if (!appliedPreferred && !TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
             {
@@ -907,6 +906,12 @@ namespace MusicWrap.Core.Services.Playback
 
             CurrentDeviceIndex = appliedPreferred ? deviceIndex : -1;
             CurrentOutputMode = _audioEngine.GetCurrentOutputMode();
+            if (!appliedPreferred)
+            {
+                CurrentSampleRate = SampleRatePreference.Auto;
+            }
+
+            FlushPlaybackSettings();
 
             if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
@@ -921,7 +926,7 @@ namespace MusicWrap.Core.Services.Playback
             EnqueueSave(SaveKind.Playback);
         }
 
-        public void ChangeSampleRate(int sampleRate)
+        public void ChangeSampleRate(SampleRatePreference sampleRate)
         {
             if (sampleRate == _currentSampleRate) return;
 
@@ -929,20 +934,22 @@ namespace MusicWrap.Core.Services.Playback
             var position = CurrentPosition;
 
             Stop(true);
-            int currentSampleRate = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
-            int targetSampleRate = sampleRate > 0 ? sampleRate : currentSampleRate;
+            int currentSampleRate = CurrentSampleRate > 0 ? (int)CurrentSampleRate : _audioEngine.CurrentOutputSampleRate;
+            int targetSampleRate = sampleRate > 0 ? (int)sampleRate : currentSampleRate;
             bool appliedPreferred = TryReinitializeOutput(CurrentDeviceIndex, targetSampleRate, CurrentOutputMode);
             if (!appliedPreferred && !TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
             {
                 return;
             }
 
-            CurrentSampleRate = appliedPreferred ? sampleRate : -1;
+            CurrentSampleRate = appliedPreferred ? sampleRate : SampleRatePreference.Auto;
             CurrentOutputMode = _audioEngine.GetCurrentOutputMode();
             if (!appliedPreferred)
             {
                 CurrentDeviceIndex = -1;
             }
+
+            FlushPlaybackSettings();
 
             if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
@@ -966,7 +973,7 @@ namespace MusicWrap.Core.Services.Playback
             bool shouldResume = IsPlaying;
             double position = CurrentPosition;
             Stop(true);
-            int sr = CurrentSampleRate > 0 ? CurrentSampleRate : 44100;
+            int sr = CurrentSampleRate > 0 ? (int)CurrentSampleRate : _audioEngine.CurrentOutputSampleRate;
             bool appliedPreferred = TryReinitializeOutput(CurrentDeviceIndex, sr, outputMode);
             if (!appliedPreferred && !TryReinitializeOutput(-1, 44100, OutputMode.WasapiShared))
             {
@@ -977,8 +984,11 @@ namespace MusicWrap.Core.Services.Playback
             if (!appliedPreferred)
             {
                 CurrentDeviceIndex = -1;
-                CurrentSampleRate = -1;
+                CurrentSampleRate = SampleRatePreference.Auto;
             }
+
+            FlushPlaybackSettings();
+
             if (_queue.Items.Count > 0 && _queue.CurrentIndex >= 0 && _queue.CurrentIndex < _queue.Items.Count)
             {
                 StartPlaybackOfCurrent(shouldResume);
@@ -993,11 +1003,16 @@ namespace MusicWrap.Core.Services.Playback
             EnqueueSave(SaveKind.Playback);
         }
 
+        private void FlushPlaybackSettings()
+        {
+            _userSettings.Playback.PreferredDeviceIndex = CurrentDeviceIndex;
+            _userSettings.Playback.PreferredSampleRate = CurrentSampleRate;
+            _userSettings.Playback.PreferredOutputMode = CurrentOutputMode;
+        }
+
         public (int Index, string Name)[] GetAvailableDevices()
         {
-            return [.. _audioEngine
-                .GetOutputDevices()
-                .Select(d => (d.Index, d.Info.Name))];
+            return _audioEngine.GetOutputDevices();
         }
         public (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes()
             => _audioEngine.GetSpectrumMagnitudes();
@@ -1021,8 +1036,8 @@ namespace MusicWrap.Core.Services.Playback
             int safeDevice = requestedDeviceExists ? requestedDevice : -1;
 
             var preferredMode = settings.Playback.PreferredOutputMode;
-            int preferredSampleRate = (int)settings.Playback.PreferredSampleRate;
-            int safeSampleRate = preferredSampleRate > 0 ? preferredSampleRate : 44100;
+            var preferredSampleRate = settings.Playback.PreferredSampleRate;
+            int safeSampleRate = preferredSampleRate > 0 ? (int)preferredSampleRate : 44100;
 
             bool appliedPreferred = TryReinitializeOutput(safeDevice, safeSampleRate, preferredMode);
             if (!appliedPreferred)
@@ -1084,7 +1099,7 @@ namespace MusicWrap.Core.Services.Playback
                 : null;
 
             int requestedSampleRate = CurrentSampleRate > 0
-                ? CurrentSampleRate
+                ? (int)CurrentSampleRate
                 : (track?.SamplingRate ?? 44100);
 
             // Preparar output para el sample rate deseado
@@ -1595,7 +1610,7 @@ namespace MusicWrap.Core.Services.Playback
     }
     public class SampleRateChangedEventArgs
     {
-        public int PreferedSampleRate { get; set; }
+        public SampleRatePreference PreferedSampleRate { get; set; }
         public int EffectiveSampleRate { get; set; }
     }
 

@@ -78,6 +78,6 @@ namespace MusicWrap.Data.User.Models
         Hz88200 = 88200,
         Hz96000 = 96000,
         Hz176400 = 176400,
-        Hz192000 = 192000
+        Hz192000 = 192000,
     }
 }

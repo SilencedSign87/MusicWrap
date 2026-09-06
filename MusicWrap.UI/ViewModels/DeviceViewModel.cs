@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Infrastructure.Saving;
@@ -7,142 +8,145 @@ using MusicWrap.Data.User.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace MusicWrap.UI.ViewModels
 {
     public partial class DeviceViewModel : ObservableObject
     {
+        // Player state properties
         [ObservableProperty]
-        private List<DeviceDefinition> availableDevices = [];
+        public partial string CurrentDeviceName { get; set; } = "Default Device";
         [ObservableProperty]
-        private string currentDeviceName = "Default Device";
-        [ObservableProperty]
-        private string currentSampleRate = "44100";
-        [ObservableProperty]
-        private int currentOutputModeIndex = 0;
-        [ObservableProperty]
-        private string currentOutputModeName = "WASAPI Shared";
-        [ObservableProperty]
-        private int currentDeviceIndex = 0;
-        [ObservableProperty]
-        private int currentSampleRateIndex = 0;
+        public partial string CurrentDeviceSampleRateName { get; set; } = "Loading information...";
 
-        public bool IsInitialized { get; private set; } = false;
+        // Settings
+        [ObservableProperty]
+        public partial List<DeviceDefinition> AvailableDevices { get; set; } = [];
+        [ObservableProperty]
+        public partial DeviceDefinition? PreferredDevice { get; set; }
+        [ObservableProperty]
+        public partial OutputMode PreferredOutputMode { get; set; } = OutputMode.WasapiShared;
+        [ObservableProperty]
+        public partial int PreferredSampleRateIndex { get; set; } = 0;
 
+
+        private bool _hasInitialize = false;
         private readonly IMusicPlayerService _player;
-        private readonly IUserSettingsRepository _userSettingsRepository;
-        private readonly ISaveCoordinator _saveCoordinator;
         private readonly MusicWrapSettings _userSettings;
-        private readonly int[] SampleRates = [-1, 44100, 48000, 88200, 96000, 176400, 192000];
-        private readonly OutputMode[] Outputmodes = [OutputMode.WasapiShared, OutputMode.WasapiExclusive];
-        public DeviceViewModel(IMusicPlayerService player, IUserSettingsRepository userSettingsRepository, ISaveCoordinator saveCoordinator, MusicWrapSettings userSettings)
+
+        private readonly SampleRatePreference[] SampleRates = [
+            SampleRatePreference.Auto,
+            SampleRatePreference.Hz44100,
+            SampleRatePreference.Hz48000,
+            SampleRatePreference.Hz88200,
+            SampleRatePreference.Hz96000,
+            SampleRatePreference.Hz176400,
+            SampleRatePreference.Hz192000
+            ];
+        public List<OutputMode> Outputmodes { get; } = [OutputMode.WasapiShared, OutputMode.WasapiExclusive];
+
+        public DeviceViewModel(IMusicPlayerService player, MusicWrapSettings userSettings)
         {
             _player = player;
-            _userSettingsRepository = userSettingsRepository;
             _userSettings = userSettings;
-            _saveCoordinator = saveCoordinator;
+        }
 
+        public void LoadData()
+        {
             LoadDevices();
+            LoadCurrentPlayerState();
+            LoadUserSettings();
 
-            // Initialize states
-            var devIdx = _player.CurrentDeviceIndex;
-            if (devIdx >= 0)
+            _player.TrackChanged += OnPlayerTrackChanged;
+            _player.DeviceIndexChanged += OnPlayerDeviceChanged;
+            _player.SampleRateChanged += OnPlayerSampleRateChanged;
+            _player.OutputModeChanged += OnPlayerOutputModeChanged;
+            _hasInitialize = true;
+        }
+        public void UnloadData()
+        {
+            _player.TrackChanged -= OnPlayerTrackChanged;
+            _player.DeviceIndexChanged -= OnPlayerDeviceChanged;
+            _player.SampleRateChanged -= OnPlayerSampleRateChanged;
+            _player.OutputModeChanged -= OnPlayerOutputModeChanged;
+        }
+        #region Event handlers
+        private void OnPlayerTrackChanged(object? sender, string e) => LoadCurrentPlayerState();
+        private void OnPlayerDeviceChanged(object? sender, int e) => LoadCurrentPlayerState();
+        private void OnPlayerSampleRateChanged(object? sender, SampleRateChangedEventArgs e) => LoadCurrentPlayerState();
+        private void OnPlayerOutputModeChanged(object? sender, OutputMode e) => LoadCurrentPlayerState();
+        #endregion
+        #region Partial methods
+        partial void OnPreferredSampleRateIndexChanged(int value)
+        {
+            if (!_hasInitialize) return;
+            var samplerate = SampleRates[value];
+            if (_player.CurrentSampleRate != samplerate)
             {
-                var idx = AvailableDevices.FindIndex(d => d.Index == devIdx);
-                CurrentDeviceIndex = idx >= 0 ? idx : 0;
-            }
-            CurrentDeviceName = AvailableDevices.Count > 0 ? AvailableDevices[CurrentDeviceIndex].Name : "Default Device";
-
-            var sr = _player.CurrentSampleRate;
-            var srIdx = Array.IndexOf(SampleRates, sr);
-            CurrentSampleRateIndex = srIdx >= 0 ? srIdx : 0;
-            CurrentSampleRate = sr > 0 ? sr.ToString() : "Auto";
-
-            var outputMode = _player.CurrentOutputMode;
-            var outIdx = Array.IndexOf(Outputmodes, outputMode);
-            CurrentOutputModeIndex = outIdx >= 0 ? outIdx : 0;
-            CurrentOutputModeName = outputMode == OutputMode.WasapiShared ? "WASAPI Shared" : "WASAPI Exclusive";
-
-
-            _player.DeviceIndexChanged += _player_DeviceIndexChanged;
-            _player.SampleRateChanged += _player_SampleRateChanged;
-            _player.OutputModeChanged += _player_OutputModeChanged;
-            IsInitialized = true;
-        }
-        public void SetCurrentOutputMode(int index)
-        {
-            if (index < 0 || index >= Outputmodes.Length) return;
-            var target = Outputmodes[index];
-            if (target == _player.CurrentOutputMode) return;
-
-            _player.ChangeOutputMode(target);
-            _userSettings.Playback.PreferredOutputMode = target;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-
-        public void SetCurrentSampleRate(int index)
-        {
-            if (index < 0 || index >= SampleRates.Length) return;
-
-            int target = SampleRates[index];
-            if (target == _player.CurrentSampleRate) return;
-
-            _player.ChangeSampleRate(target);
-            _userSettings.Playback.PreferredSampleRate = (SampleRatePreference)target;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-        public void SetCurrentDevice(int index)
-        {
-            if (index < 0 && index >= AvailableDevices.Count) return;
-
-            int target = AvailableDevices[index].Index;
-            if (target == _player.CurrentDeviceIndex) return;
-
-            _player.ChangeOutputDevice(target);
-            _userSettings.Playback.PreferredDeviceIndex = target;
-            _saveCoordinator.Enqueue(SaveKind.Settings);
-        }
-
-        private void _player_SampleRateChanged(object? sender, SampleRateChangedEventArgs e)
-        {
-            var prefered = e.PreferedSampleRate;
-            var effective = e.EffectiveSampleRate;
-            CurrentSampleRate = effective > 0 ? effective.ToString() : "Auto";
-
-            var idx = Array.IndexOf(SampleRates, prefered);
-            if (idx < 0)
-            {
-                idx = Array.IndexOf(SampleRates, effective);
-            }
-            CurrentSampleRateIndex = idx >= 0 ? idx : 0;
-        }
-
-        private void _player_DeviceIndexChanged(object? sender, int e)
-        {
-            var idx = AvailableDevices.FindIndex(d => d.Index == e);
-            if (idx >= 0)
-            {
-                CurrentDeviceIndex = idx;
-                CurrentDeviceName = AvailableDevices[CurrentDeviceIndex].Name;
+                _player.ChangeSampleRate(samplerate);
             }
         }
-        private void _player_OutputModeChanged(object? sender, OutputMode e)
+        partial void OnPreferredOutputModeChanged(OutputMode value)
         {
-            var idx = Array.IndexOf(Outputmodes, e);
-            CurrentOutputModeIndex = idx >= 0 ? idx : 0;
-            CurrentOutputModeName = e == OutputMode.WasapiShared ? "WASAPI Shared" : "WASAPI Exclusive";
+            if (!_hasInitialize) return;
+            if (_player.CurrentOutputMode != value)
+            {
+                _player.ChangeOutputMode(value);
+            }
         }
+        partial void OnPreferredDeviceChanged(DeviceDefinition? value)
+        {
+            if (!_hasInitialize) return;
+            if(value is not null && _player.CurrentDeviceIndex != value.Index)
+            {
+                _player.ChangeOutputDevice(value.Index);
+            }
+        }
+        #endregion
+        #region Internal
 
         private void LoadDevices()
         {
+            AvailableDevices.Clear();
             var devices = _player.GetAvailableDevices();
-            List<DeviceDefinition> deviceDefinitions = [];
             foreach (var device in devices)
             {
-                deviceDefinitions.Add(new DeviceDefinition() { Index = device.Index, Name = device.Name });
+                AvailableDevices.Add(new DeviceDefinition { Index = device.Index, Name = device.Name });
             }
-            AvailableDevices = deviceDefinitions;
         }
+        private void LoadCurrentPlayerState()
+        {
+            CurrentDeviceSampleRateName = _player.GetCurrentOutputSampleRate().ToString();
+            var deviceIndex = _player.CurrentDeviceIndex;
+
+            var device = AvailableDevices.Find(d => d.Index == deviceIndex);
+            if (device != null)
+            {
+                CurrentDeviceName = device.Name;
+            }
+            else
+            {
+                CurrentDeviceName = "Unknown Device";
+            }
+        }
+
+        private void LoadUserSettings()
+        {
+            var storedSR = _userSettings.Playback.PreferredSampleRate;
+            var storedOutputMode = _userSettings.Playback.PreferredOutputMode;
+            var storedDeviceIndex = _userSettings.Playback.PreferredDeviceIndex;
+
+            var device = AvailableDevices.Find(d => d.Index == storedDeviceIndex);
+            if (device != null)
+            {
+                PreferredDevice = device;
+            }
+
+            PreferredOutputMode = storedOutputMode;
+            PreferredSampleRateIndex = Array.IndexOf(SampleRates, storedSR);
+        }
+        #endregion
     }
 
     public class DeviceDefinition

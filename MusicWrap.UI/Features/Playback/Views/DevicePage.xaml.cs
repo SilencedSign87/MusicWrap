@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Data.User.Models;
 using MusicWrap.UI.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -22,52 +23,22 @@ namespace MusicWrap.UI.Features.Playback.Views
     public partial class DevicePage : UserControl
     {
         private readonly DeviceViewModel _viewModel;
-        private bool _isLoaded = false;
         public DevicePage()
         {
             InitializeComponent();
             _viewModel = App.Services.GetRequiredService<DeviceViewModel>();
             DataContext = _viewModel;
-            Loaded += (_, _) => _isLoaded = true;
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
         }
 
-        private void SampleRateChanged(object sender, SelectionChangedEventArgs e)
+        private void OnLoaded(object sender, RoutedEventArgs e)
         {
-
-            if (!_isLoaded || !_viewModel.IsInitialized) return;
-            if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
-
-            // get index
-            if (sender is ComboBox comboBox)
-            {
-                int index = comboBox.SelectedIndex;
-                _viewModel.SetCurrentSampleRate(index);
-            }
+            _viewModel.LoadData();
         }
-
-        private void DeviceChanged(object sender, SelectionChangedEventArgs e)
+        private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            if (!_isLoaded || !_viewModel.IsInitialized) return;
-            if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
-
-            if (sender is ComboBox combobox)
-            {
-                int index = combobox.SelectedIndex;
-
-                _viewModel.SetCurrentDevice(index);
-
-            }
-        }
-        private void OutputModeChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!_isLoaded || !_viewModel.IsInitialized) return;
-            if (e.RemovedItems.Count == 0 && e.AddedItems.Count == 0) return;
-
-            if (sender is ComboBox comboBox)
-            {
-                int index = comboBox.SelectedIndex;
-                _viewModel.SetCurrentOutputMode(index);
-            }
+            _viewModel.UnloadData();
         }
     }
 }
