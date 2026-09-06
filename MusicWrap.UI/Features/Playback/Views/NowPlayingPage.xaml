@@ -35,11 +35,11 @@
                     <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=EC4F}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
                     <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=F61F,FontSize=12}" >
                         <MenuItem 
-                            Header="Show"
-                             IsCheckable="True" 
-                             Command="{Binding SetVisualizerCommand}"
-                             CommandParameter="None"
-                             IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
+                            Header="Hide"
+                            IsCheckable="True" 
+                            Command="{Binding SetVisualizerCommand}"
+                            CommandParameter="None"
+                            IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
                             />
                         <Separator/>
                         <MenuItem Header="Line" IsCheckable="True" 

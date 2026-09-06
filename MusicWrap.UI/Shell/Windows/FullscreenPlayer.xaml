@@ -11,14 +11,14 @@
              mc:Ignorable="d"
              x:Name="RootFullScreenWindow"
              d:DataContext="{d:DesignInstance Type=vm:FullscreenWindowViewModel}"
-             Foreground="{Binding NowPlayingViewModel.HighlightColorHex, Converter={StaticResource HexToBrushConverter}}"
+             Foreground="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}"
              Loaded="RootFullScreenWindow_Loaded"
              d:Width="1920"
              d:Height="1080"
              >
     <UserControl.Background>
         <ImageBrush 
-            ImageSource="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}" 
+            ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur}" 
             RenderOptions.BitmapScalingMode="HighQuality"
             Stretch="UniformToFill"/>
     </UserControl.Background>
@@ -85,7 +85,7 @@
                             Margin="4,0"
                             />
                 </Grid>
-                <Grid Grid.Column="1" Margin="24,0">
+                <Grid Grid.Column="1" Margin="24,0,8,0">
                     <controls:WaveformPlayerControl
                         Foreground="{StaticResource TextPrimaryBrush}"
                         Height="32"
@@ -94,47 +94,60 @@
 
                 <StackPanel Orientation="Horizontal" Grid.Column="2" Margin="0,0,4,0">
                     <Menu Foreground="{DynamicResource TextPrimaryBrush}" >
-                        <MenuItem Icon="{ex:Icon Glyph=&#xE90F;}" Header="Properties" Command="{Binding NowPlayingViewModel.OpenPropertiesCommand}"/>
+                        <MenuItem Icon="{ex:Icon Glyph=&#xE90F;}" Header="Properties" Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"/>
                         <MenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
                             <MenuItem Header="Off" IsCheckable="True" 
-                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      Command="{Binding SetVisualizerCommand}"
                                       CommandParameter="None"
-                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
                             <MenuItem Header="Line" IsCheckable="True" 
-                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      Command="{Binding SetVisualizerCommand}"
                                       CommandParameter="LineSpectrum"
-                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
+                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
                             <MenuItem Header="Bars" IsCheckable="True" 
-                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      Command="{Binding SetVisualizerCommand}"
                                       CommandParameter="BarSpectrum"
-                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
+                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
                             <MenuItem Header="Wave" IsCheckable="True"
-                                      Command="{Binding NowPlayingViewModel.SetVisualizerCommand}"
+                                      Command="{Binding SetVisualizerCommand}"
                                       CommandParameter="MirroredBarSpectrum"
-                                      IsChecked="{Binding NowPlayingViewModel.PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
                             <Separator/>
                             <MenuItem Header="Spectrum" IsCheckable="True"
-                                      Command="{Binding NowPlayingViewModel.SetSpectrumTypeCommand}"
+                                      Command="{Binding SetSpectrumTypeCommand}"
                                       CommandParameter="Normal"
-                                      IsChecked="{Binding NowPlayingViewModel.PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}"
+                                      IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}"
                                       />
                             <MenuItem Header="Centered" IsCheckable="True"
-                                      Command="{Binding NowPlayingViewModel.SetSpectrumTypeCommand}"
+                                      Command="{Binding SetSpectrumTypeCommand}"
                                       CommandParameter="Centered"
-                                      IsChecked="{Binding NowPlayingViewModel.PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
+                                      IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
                                       />
                         </MenuItem>
                         <MenuItem Icon="{ex:Icon Glyph=E90D}"  Header="Panel">
                             <MenuItem 
+                                Icon="{ex:Icon Glyph=F5A6}"
+                                Header="None" 
+                                IsCheckable="True" 
+                                Command="{Binding SetPanelCommand}"
+                                CommandParameter="None"
+                                IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
+                                />
+                            <MenuItem 
                                 Icon="{ex:Icon Glyph=EC4F}"
                                 Header="Lyrics" 
                                 IsCheckable="True" 
-                                IsChecked="{Binding NowPlayingViewModel.ShowLyrics}"
+                                Command="{Binding SetPanelCommand}"
+                                CommandParameter="Lyrics"
+                                IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Lyrics}"
                                 />
                             <MenuItem
                                 Icon="{ex:Icon Glyph=E90B}"
                                 Header="Queue"
                                 IsCheckable="True"
+                                Command="{Binding SetPanelCommand}"
+                                CommandParameter="Queue"
+                                IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Queue}"
                                 />
                         </MenuItem>
                     </Menu>
@@ -146,13 +159,6 @@
                         Icon="&#xE73F;"
                         IconFontSize="20"
                         />
-                    <controls:AppButton
-                        Style="{StaticResource PlayerButton}"
-                        Command="{Binding ExitAppCommand}"
-                        Icon="&#xE711;"
-                        ToolTip="Close window"
-                        IconFontSize="20"
-                        />
                 </StackPanel>
             </Grid>
         </controls:HiddenPanel>
@@ -160,65 +166,72 @@
         <Grid x:Name="MainContentGrid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="ArtworkColumn" Width="*" />
-                <ColumnDefinition x:Name="LyricsColumn" Width="Auto" />
+                <ColumnDefinition x:Name="PanelColumn" Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel 
-                Grid.Column="0"
-                x:Name="ArtworkPanel"
-                Orientation="Vertical"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Margin="16"
-                MaxWidth="700"
-                >
-                <Border CornerRadius="2" Width="500" Margin="0,0,0,16" SnapsToDevicePixels="True">
-                    <Image 
-                        Source="{Binding NowPlayingViewModel.TrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:600}"
-                        RenderOptions.BitmapScalingMode="HighQuality"
-                        Stretch="Uniform"
+            <Grid Grid.Column="0" RowDefinitions="*" ColumnDefinitions="*">
+                <StackPanel 
+                    Grid.Column="0"
+                    Grid.Row="0"
+                    x:Name="ArtworkPanel"
+                    Orientation="Vertical"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="16"
+                    MaxWidth="700"
+                    >
+                    <Border CornerRadius="8" Width="500" Height="500" Margin="0,0,0,16" SnapsToDevicePixels="True">
+                        <Border.Background>
+                            <ImageBrush
+                                ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:600}"
+                                RenderOptions.BitmapScalingMode="HighQuality"
+                                Stretch="Uniform"
+                                AlignmentX="Center"
+                                AlignmentY="Center"
+                                />
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect
+                                BlurRadius="16"
+                                Opacity="0.24"
+                                Direction="275"
+                                />
+                        </Border.Effect>
+                    </Border>
+                    <TextBlock 
+                        Text="{Binding PlayerViewModel.CurrentTrackTitle}" 
+                        TextAlignment="Center" 
+                        FontSize="30" 
+                        FontWeight="Bold" 
+                        TextWrapping="Wrap"
                         />
-                </Border>
-                <TextBlock 
-                    Text="{Binding NowPlayingViewModel.TrackTitle}" 
-                    TextAlignment="Center" 
-                    FontSize="30" 
-                    FontWeight="Bold" 
-                    TextWrapping="Wrap"
-                    />
-                <TextBlock 
-                    Text="{Binding NowPlayingViewModel.TrackAlbum}" 
-                    TextAlignment="Center" 
-                    FontSize="20" 
-                    FontWeight="Medium" 
-                    Opacity="0.8"
-                    TextWrapping="Wrap"
-                    />
-            </StackPanel>
+                    <TextBlock 
+                        Text="{Binding PlayerViewModel.CurrentTrackAlbum}" 
+                        TextAlignment="Center" 
+                        FontSize="24" 
+                        FontWeight="SemiBold" 
+                        TextWrapping="Wrap"
+                        Opacity="0.5"
+                        />
+                </StackPanel>
+
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
+                    <controls:SpectrumVisualizerControl
+                        Height="150"
+                        BarCount="128"
+                        Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Visualizer="{Binding PreferredVisualizer}"
+                        SpectrumType="{Binding PreferredSpectrumType}"
+                        />
+                </StackPanel>
+            </Grid>
             <Border 
-                x:Name="LyricsContainer"
+                x:Name="PanelContainer"
                 Grid.Column="1" 
                 Padding="52"
                 ClipToBounds="True"
                 >
-                <lyrics:LyricsView 
-                    x:Name="LyricsControl"
-                    FontSize="36"
-                    AllowScroll="False"
-                    AllowSeek="False"
-                    ShowToolbar="False"
-                    LyricsAligment="Left"
-                    LyricsStateChanged="LyricsControl_LyricsStateChanged"
-                    />
+
             </Border>
         </Grid>
-        <StackPanel Grid.ColumnSpan="2" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
-            <controls:SpectrumVisualizerControl
-                        Height="150"
-                        BarCount="128"
-                        Visibility="{Binding NowPlayingViewModel.IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
-                        Visualizer="{Binding NowPlayingViewModel.PreferredVisualizer}"
-                        SpectrumType="{Binding NowPlayingViewModel.PreferredSpectrumType}"
-                    />
-        </StackPanel>
     </Grid>
 </UserControl>

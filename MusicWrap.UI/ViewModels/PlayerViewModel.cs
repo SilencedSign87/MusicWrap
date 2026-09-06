@@ -8,6 +8,7 @@ using MusicWrap.Data.Library.Models;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Data.Helpers;
 using MusicWrap.Core.Services.Contracts;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -16,6 +17,7 @@ namespace MusicWrap.UI.ViewModels
         private bool _disposed = false;
         private readonly IMusicPlayerService _playerService;
         private readonly ILibraryService _libraryService;
+        private readonly WindowManagerService _windowManagerService;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PlayPauseIcon))]
@@ -40,6 +42,8 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string currentTrackTitle = CommonStrings.NoTrackPlaying;
         [ObservableProperty]
+        private string currentTrackAlbum = CommonStrings.UnknownAlbum;
+        [ObservableProperty]
         private string currentTrackArtists = "";
         [ObservableProperty]
         private string currentTrackImagePath = "";
@@ -58,11 +62,12 @@ namespace MusicWrap.UI.ViewModels
 
         private readonly IwindowsImageService _imageService;
 
-        public PlayerViewModel(IMusicPlayerService service, ILibraryService libraryService, IwindowsImageService imageService)
+        public PlayerViewModel(IMusicPlayerService service, ILibraryService libraryService, IwindowsImageService imageService, WindowManagerService windowManagerService)
         {
             _playerService = service;
             _libraryService = libraryService;
             _imageService = imageService;
+            _windowManagerService = windowManagerService;
 
 
             // Subscribe to player events
@@ -130,6 +135,15 @@ namespace MusicWrap.UI.ViewModels
         private void ToggleShuffle()
         {
             _playerService.ToggleShuffle();
+        }
+
+        [RelayCommand]
+        private void OpenPropertiesOfCurrentTrack()
+        {
+            if (_playerService.CurrentTrackId > 0)
+            {
+                _windowManagerService.LaunchInformationWindow([_playerService.CurrentTrackId]);
+            }
         }
 
         private void UpdateRepeatModeIcon()
@@ -207,9 +221,12 @@ namespace MusicWrap.UI.ViewModels
 
             // Get Album
             var album = _libraryService.GetAlbumById(track.AlbumId);
+            if (album is not null)
+            {
+                CurrentTrackAlbum = album.Title;
+            }
 
             // Get artists
-
             CurrentTrackArtists = AppStringPool.Intern(string.Join(", ", _libraryService.GetArtistNamesByIds(track.ArtistIds)))
                       ?? string.Join(", ", _libraryService.GetArtistNamesByIds(track.ArtistIds));
 

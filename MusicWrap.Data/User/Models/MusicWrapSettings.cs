@@ -11,20 +11,21 @@ namespace MusicWrap.Data.User.Models
         [Key(2)] public FFMpegSettings FFMpeg { get; set; } = new FFMpegSettings();
         [Key(3)] public YoutubeSettings Youtube { get; set; } = new YoutubeSettings();
         [Key(4)] public NowPlayingSettings NowPlaying { get; set; } = new NowPlayingSettings();
-        [Key(5)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestorePosition;
-        [Key(6)] public PlayerMode LastWindowMode { get; set; } = PlayerMode.MainPlayer;
+        [Key(5)] public FullScreenSettings FullScreen { get; set; } = new FullScreenSettings();
+        [Key(6)] public StartupBehavior StartupBehavior { get; set; } = StartupBehavior.RestorePosition;
+        [Key(7)] public PlayerMode LastWindowMode { get; set; } = PlayerMode.MainPlayer;
 
-        [Key(7)] public bool KeepAppInTray
+        [Key(8)] public bool KeepAppInTray
         {
             get => _keepAppInTray;
             set => SetProperty(ref _keepAppInTray, value);
         }
-        [Key(8)] public bool IsSidebarOpen { get; set; } = true;
-        [Key(9)] public int MainWindowTab{ get; set; } = 0;
-        [Key(10)] public TrayPopupPosition TrayPopupPosition { get; set; } = TrayPopupPosition.BottomRight;
-        [Key(11)] public ThemePreference AppThemePreference { get; set; } = ThemePreference.System;
-        [Key(12)] public WindowBoundsState MainPlayerBounds { get; set; } = new WindowBoundsState();
-        [Key(13)] public WindowBoundsState CompactPlayerBounds { get; set; } = new WindowBoundsState();
+        [Key(9)] public bool IsSidebarOpen { get; set; } = true;
+        [Key(10)] public int MainWindowTab{ get; set; } = 0;
+        [Key(11)] public TrayPopupPosition TrayPopupPosition { get; set; } = TrayPopupPosition.BottomRight;
+        [Key(12)] public ThemePreference AppThemePreference { get; set; } = ThemePreference.System;
+        [Key(13)] public WindowBoundsState MainPlayerBounds { get; set; } = new WindowBoundsState();
+        [Key(14)] public WindowBoundsState CompactPlayerBounds { get; set; } = new WindowBoundsState();
 
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
     }

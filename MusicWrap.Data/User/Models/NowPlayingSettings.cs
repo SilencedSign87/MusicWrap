@@ -10,8 +10,8 @@ namespace MusicWrap.Data.User.Models
     {
         [Key(0)] public bool ShowLyrics { get; set; } = false;
         [Key(1)] public PreferredVisualizer PreferredVisualizer { get; set; } = PreferredVisualizer.LineSpectrum;
-        [Key(2)] public bool BlurEffect { get; set; } = true;
         [Key(3)] public SpectrumType SpectrumType { get; set; } = SpectrumType.Normal;
+        [Key(2)] public bool BlurEffect { get; set; } = true;   
     }
 
     public enum PreferredVisualizer

@@ -14,7 +14,7 @@
              d:DesignHeight="700" d:DesignWidth="500">
 
     <UserControl.Resources>
-        <Style TargetType="Button" BasedOn="{StaticResource DefaultButton}" x:Key="queueButtonStyle">
+        <Style TargetType="Button" BasedOn="{StaticResource SubtleButton}" x:Key="queueButtonStyle">
             <Setter Property="Foreground" Value="{Binding Foreground, ElementName=QueueRoot}"/>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -34,9 +34,10 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Padding="0,4,0,8" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}">
+        <Border Grid.Row="0" Padding="0,4,0,8">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <controls:AppButton
                     Style="{StaticResource queueButtonStyle}" 
@@ -53,9 +54,10 @@
                     />
             </StackPanel>
         </Border>
+        <Border Grid.Row="1" Height="1" Background="{Binding Foreground, ElementName=QueueRoot}" Margin="0,0,0,8" Opacity="0.3"/>
         <controlsM:TracksView
             x:Name="QueueTracksView"
-            Grid.Row="1"
+            Grid.Row="2"
             ItemsSource="{Binding QueueTrackRows}"
             SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
             ContextMenu="{StaticResource QueueTracksContextMenu}"
@@ -66,8 +68,7 @@
             AutoScrollToCurrentTrack="True"
             IsReorderEnabled="True"
             ReorderRequestedCommand="{Binding ReorderTrackCommand}"
-            TrackActivatedCommand="{Binding ActivateTrackCommand}"
-            RemoveRequestedCommand="{Binding RemoveSelectedTracksFromQueueCommand}"/>
+            TrackActivatedCommand="{Binding ActivateTrackCommand}"/>
     </Grid>
 </UserControl>
 
