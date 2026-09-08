@@ -14,6 +14,24 @@ namespace MusicWrap.UI.Shell.Windows
     /// </summary>
     public partial class ShellWindow : Window
     {
+        private readonly WindowChrome mainPlayerChrome = new()
+        {
+            CaptionHeight = 32,
+            CornerRadius = new CornerRadius(12),
+            GlassFrameThickness = new Thickness(-1),
+            ResizeBorderThickness = new Thickness(4),
+            UseAeroCaptionButtons = true,
+            NonClientFrameEdges = NonClientFrameEdges.None
+        };
+        private readonly WindowChrome compactPlayerChrome = new()
+        {
+            CaptionHeight = 250,
+            CornerRadius = new CornerRadius(12),
+            GlassFrameThickness = new Thickness(1),
+            ResizeBorderThickness = new Thickness(4),
+            UseAeroCaptionButtons = true,
+            NonClientFrameEdges = NonClientFrameEdges.None
+        };
         private bool _isInitializing = true;
         private readonly WindowManagerService _windowManager;
         private readonly MusicWrapSettings _settings;
@@ -36,7 +54,8 @@ namespace MusicWrap.UI.Shell.Windows
             {
                 case PlayerMode.MainPlayer:
                     ConfigureMainPlayer();
-                    RestoreStateBounds(_settings.MainPlayerBounds, true);
+                    if (!RestoreStateBounds(_settings.MainPlayerBounds, true))
+                        WindowState = WindowState.Normal;
                     break;
                 case PlayerMode.CompactPlayer:
                     ConfigureCompactPlayer();
@@ -57,10 +76,10 @@ namespace MusicWrap.UI.Shell.Windows
         #region PlayerModes
         private void ConfigureMainPlayer()
         {
-            if (WindowState != WindowState.Normal)
-                WindowState = WindowState.Normal;
-
             WindowStyle = WindowStyle.SingleBorderWindow;
+
+            WindowChrome.SetWindowChrome(this, mainPlayerChrome);
+
             ResizeMode = ResizeMode.CanResize;
             Topmost = false;
 
@@ -72,28 +91,15 @@ namespace MusicWrap.UI.Shell.Windows
             Width = 1200;
             Height = 800;
 
-            WindowChrome.SetWindowChrome(this, new WindowChrome
-            {
-                CaptionHeight = 32,
-                CornerRadius = new CornerRadius(12),
-                GlassFrameThickness = new Thickness(-1),
-                ResizeBorderThickness = new Thickness(4),
-                UseAeroCaptionButtons = true,
-                NonClientFrameEdges = NonClientFrameEdges.None
-            });
-
             UpdateContentLayout();
             UpdateLayout();
         }
 
         private void ConfigureCompactPlayer()
         {
-            if (WindowState != WindowState.Normal)
-                WindowState = WindowState.Normal;
-
             WindowStyle = WindowStyle.SingleBorderWindow;
+
             ResizeMode = ResizeMode.CanMinimize;
-            WindowState = WindowState.Normal;
             Topmost = false;
 
             MinWidth = 0;
@@ -104,15 +110,7 @@ namespace MusicWrap.UI.Shell.Windows
             Width = 250;
             Height = 320;
 
-            WindowChrome.SetWindowChrome(this, new WindowChrome
-            {
-                CaptionHeight = 250,
-                CornerRadius = new CornerRadius(12),
-                GlassFrameThickness = new Thickness(1),
-                ResizeBorderThickness = new Thickness(4),
-                UseAeroCaptionButtons = true,
-                NonClientFrameEdges = NonClientFrameEdges.None
-            });
+            WindowChrome.SetWindowChrome(this, compactPlayerChrome);
 
             ContentHost.Margin = new Thickness(0);
 
@@ -121,15 +119,15 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void ConfigureFullScreenPlayer()
         {
-            if (WindowState != WindowState.Normal)
+            if (WindowState == WindowState.Maximized)
                 WindowState = WindowState.Normal;
-
-            WindowChrome.SetWindowChrome(this, null);
-
-            WindowStyle = WindowStyle.None;
+            
             ResizeMode = ResizeMode.NoResize;
             SizeToContent = SizeToContent.Manual;
             Topmost = false;
+
+            WindowChrome.SetWindowChrome(this, null);
+            WindowStyle = WindowStyle.None;
 
             MinWidth = 0;
             MinHeight = 0;
@@ -162,11 +160,11 @@ namespace MusicWrap.UI.Shell.Windows
             target.Height = bounds.Height;
             target.IsMaximized = CurrentMode == PlayerMode.MainPlayer && WindowState == WindowState.Maximized;
         }
-        private void RestoreStateBounds(WindowBoundsState state, bool allowMaximize)
+        private bool RestoreStateBounds(WindowBoundsState state, bool allowMaximize)
         {
             if (double.IsNaN(state.Left) || double.IsNaN(state.Top) ||
                 double.IsNaN(state.Width) || double.IsNaN(state.Height))
-                return;
+                return false;
 
             Left = state.Left;
             Top = state.Top;
@@ -176,8 +174,10 @@ namespace MusicWrap.UI.Shell.Windows
                 Height = state.Height;
             }
 
-            if (allowMaximize && state.IsMaximized)
-                WindowState = WindowState.Maximized;
+            WindowState = allowMaximize && state.IsMaximized
+                ? WindowState.Maximized
+                : WindowState.Normal;
+            return true;
         }
         #endregion
 

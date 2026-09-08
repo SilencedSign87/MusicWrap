@@ -7,6 +7,7 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Windows;
 using System.Windows;
+using System.Windows.Media.Animation;
 
 namespace MusicWrap.UI.Shared.Services
 {
@@ -33,7 +34,7 @@ namespace MusicWrap.UI.Shared.Services
         private readonly TaskbarController _taskbarController;
         private readonly IUIDispatcher _dispatcher;
 
-        public WindowManagerService(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory,MusicWrapSettings userSettings, TaskbarController taskbarController, IUIDispatcher dispatcher)
+        public WindowManagerService(IServiceProvider serviceProvider, IServiceScopeFactory scopeFactory, MusicWrapSettings userSettings, TaskbarController taskbarController, IUIDispatcher dispatcher)
         {
             _serviceProvider = serviceProvider;
             _scopeFactory = scopeFactory;
@@ -47,8 +48,8 @@ namespace MusicWrap.UI.Shared.Services
         {
             // restore window if tray is disabled to prevent the app from being stuck in tray
             if (e.PropertyName == nameof(MusicWrapSettings.KeepAppInTray))
-            {   
-                if(!_userSettings.KeepAppInTray && ShellWindow is not null && !ShellWindow.IsVisible)
+            {
+                if (!_userSettings.KeepAppInTray && ShellWindow is not null && !ShellWindow.IsVisible)
                 {
                     _dispatcher.Invoke(() =>
                     {
@@ -81,9 +82,9 @@ namespace MusicWrap.UI.Shared.Services
         }
         public void LaunchInformationWindow(List<int> trackIds)
         {
-            if(trackIds is null || trackIds.Count == 0 || IsShuttingDown || CurrentWindow is null) return;
+            if (trackIds is null || trackIds.Count == 0 || IsShuttingDown || CurrentWindow is null) return;
 
-            if(metadataEditorWindow is { IsLoaded: true} w)
+            if (metadataEditorWindow is { IsLoaded: true } w)
             {
                 w.Initialize(trackIds);
                 w.Activate();
@@ -184,26 +185,30 @@ namespace MusicWrap.UI.Shared.Services
             PlayerMode.FullScreenPlayer => _serviceProvider.GetRequiredService<FullScreenWindow>(),
             _ => _serviceProvider.GetRequiredService<MainPlayer>(),
         };
-        private void ShowMode(PlayerMode mode)
+        private async void ShowMode(PlayerMode mode)
         {
             if (IsShuttingDown) return;
-           
+
             EnsureShellWindow();
 
+            var shell = ShellWindow!;
+
+            ApplyShellMode(shell, mode);
+        }
+        private void ApplyShellMode(ShellWindow shell, PlayerMode mode)
+        {
             var content = GetContent(mode);
+            shell.ApplyMode(mode);
+            shell.SetContent(content);
 
-            ShellWindow!.ApplyMode(mode);
-            ShellWindow.SetContent(content);
+            if (!shell.IsVisible) shell.Show();
 
-            if (!ShellWindow.IsVisible)
-                ShellWindow.Show();
-
-            ShellWindow.Activate();
-            ShellWindow.Focus();
+            shell.Activate();
+            shell.Focus();
 
             _userSettings.LastWindowMode = mode;
-
         }
+
         private void EnsureShellWindow()
         {
             if (ShellWindow is not null)
