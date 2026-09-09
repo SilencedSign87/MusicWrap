@@ -37,6 +37,11 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
+        <!-- indicator on artwork -->
+        <Style x:Key="TrackPlayingCoverIconStyle" TargetType="TextBlock" BasedOn="{StaticResource TrackPlayingIconBaseStyle}">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
         <!-- Index number -->
         <Style x:Key="TrackIndexNumberStyle" TargetType="TextBlock">
             <Setter Property="Text" Value=""/>
@@ -270,13 +275,21 @@
                     <ColumnDefinition Width="Auto" MinWidth="50"/>
                 </Grid.ColumnDefinitions>
 
-                <Image
-                        Grid.Column="0"
-                        Width="42"
-                        Height="42"
-                        Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}" />
+                <Grid Grid.Column="0" Width="42" Height="42">
+                    <Image Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}" />
+                    <Border IsHitTestVisible="False" Background="#B3000000">
+                        <Border.Visibility>
+                            <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
+                                <Binding ElementName="Root" Path="CurrentTrackId"/>
+                                <Binding Path="Id"/>
+                                <Binding ElementName="Root" Path="IsPlaybackActive"/>
+                            </MultiBinding>
+                        </Border.Visibility>
+                        <TextBlock Style="{StaticResource TrackPlayingCoverIconStyle}"/>
+                    </Border>
+                </Grid>
 
-               <ContentPresenter Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource TrackIndexSlotTemplate}" />
+                <ContentPresenter Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource TrackIndexSlotTemplate}" />
 
                 <Grid Grid.Column="2" HorizontalAlignment="Stretch" Margin="8,0" VerticalAlignment="Center">
                     <Grid.RowDefinitions>
@@ -288,7 +301,12 @@
                     <TextBlock Grid.Row="1" Text="{Binding ArtistNames}" FontSize="12" Opacity="0.65" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                 </Grid>
 
-                <ContentPresenter Grid.Column="3" Content="{Binding}" ContentTemplate="{StaticResource TrackDurationSlotTemplate}" Margin="8,0" />
+                <TextBlock Grid.Column="3"
+                           Text="{Binding DurationText}"
+                           Style="{StaticResource TrackDurationStyle}"
+                           Margin="24,0,0,0"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"/>
             </Grid>
         </DataTemplate>
 
@@ -303,15 +321,15 @@
                     <ColumnDefinition Width="60"/>
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" Width="20" Height="20" CornerRadius="2" VerticalAlignment="Center" ClipToBounds="True">
+                <Grid Grid.Column="0" Width="20" Height="20" VerticalAlignment="Center">
                     <Image Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=20}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="LowQuality"/>
-                </Border>
+                </Grid>
                 <ContentPresenter Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource TrackIndexSlotTemplate}" />
 
                 <TextBlock Grid.Column="2" Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>
                 <TextBlock Grid.Column="3" Text="{Binding ArtistNames}" VerticalAlignment="Center" FontSize="12" Opacity="0.8" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
                 <TextBlock Grid.Column="4" Text="{Binding AlbumName}" VerticalAlignment="Center" FontSize="12" Opacity="0.75" TextTrimming="CharacterEllipsis" Margin="8,0,0,0"/>
-                
+
                 <ContentPresenter Grid.Column="5" Content="{Binding}" ContentTemplate="{StaticResource TrackDurationSlotTemplate}" Margin="8,0" />
             </Grid>
         </DataTemplate>
