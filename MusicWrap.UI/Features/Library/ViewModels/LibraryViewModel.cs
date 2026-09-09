@@ -393,6 +393,20 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             public List<AlbumData> Albums { get; set; } = [];
 
+            private AlbumTracksViewModel? _tracksViewModel;
+            public AlbumTracksViewModel? TracksViewModel
+            {
+                get => _tracksViewModel;
+                set
+                {
+                    if (_tracksViewModel != value)
+                    {
+                        _tracksViewModel = value;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TracksViewModel)));
+                    }
+                }
+            }
+
             private int? _expandedAlbumId;
             public int? ExpandedAlbumId
             {

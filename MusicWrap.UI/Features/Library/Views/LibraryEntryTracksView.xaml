@@ -37,6 +37,7 @@
                              VisualMode="ListImage"
                              IndexMode="ListIndex"
                              SelectionMode="Extended"
-                             IsMouseWheelScrollEnabled="True"/>
+                             IsMouseWheelScrollEnabled="True"
+                             />
     </Grid>
 </UserControl>

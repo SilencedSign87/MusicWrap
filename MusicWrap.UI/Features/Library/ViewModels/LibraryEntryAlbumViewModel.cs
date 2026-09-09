@@ -16,19 +16,20 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly IwindowsImageService _imageService;
         private readonly SearchService _searchService;
         private readonly LibraryWorkspace _workspace;
+        private readonly TrackActionService _tracksContextMenuService;
 
         // Props
         [ObservableProperty] private int layoutColumns = 1;
 
         // View State
         [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
-        [ObservableProperty] private int? expandedAlbumId = 0;
+        private int? _expandedAlbumId;
 
         // internal state
         private bool _isHibernating = true;
         private List<AlbumData> _rawAlbums = [];
         private List<AlbumData> _sortedAlbums = [];
-        
+
         private CancellationTokenSource? _imageCTS;
 
         private const int IMAGE_BATCH = 5;
@@ -40,13 +41,15 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             ILibraryService cacheService,
             IwindowsImageService imageService,
             SearchService searchService,
-            LibraryWorkspace workspace
+            LibraryWorkspace workspace,
+            TrackActionService tracksContextMenuService
             )
         {
             _libraryService = cacheService;
             _imageService = imageService;
             _searchService = searchService;
             _workspace = workspace;
+            _tracksContextMenuService = tracksContextMenuService;
 
             _searchService.SearchSubmitted += OnSearchSubmitted;
             _workspace.PropertyChanged += OnWorkspaceChanged;
@@ -68,38 +71,28 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
 
         #region Public
-        public void SetLayoutColumns(int columns)
-        {
-            columns = Math.Max(1, columns);
-            if (columns != LayoutColumns)
-            {
-                LayoutColumns = columns;
-            }
-        }
         public void ExpandAlbum(int albumId)
         {
             var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
-            if (row == null) return;
+            if (row is null) return;
             if (row.ExpandedAlbumId == albumId)
             {
-                row.ExpandedAlbumId = null;
-                ExpandedAlbumId = null;
+                CollapseAlbum();
                 return;
             }
-            foreach (var r in GridRows)
-            {
-                r.ExpandedAlbumId = null;
-            }
+            CollapseAlbum();
             row.ExpandedAlbumId = albumId;
-            ExpandedAlbumId = albumId;
+            row.TracksViewModel = CreateTracksViewModel(row, albumId);
+            _expandedAlbumId = albumId;
         }
         public void CollapseAlbum()
         {
             foreach (var row in GridRows)
             {
                 row.ExpandedAlbumId = null;
+                row.TracksViewModel = null;
             }
-            ExpandedAlbumId = null;
+            _expandedAlbumId = null;
         }
         #endregion
         #region Partial functions
@@ -108,6 +101,20 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         #endregion
 
         #region Internal
+        private AlbumTracksViewModel CreateTracksViewModel(AlbumGridRowModel row, int albumId)
+        {
+            int[]? filteredTracks = null;
+            var entry = _workspace.SelectedEntry;
+            if (entry is not null)
+            {
+                filteredTracks = _libraryService.GetTrackIdsForEntryAlbum(entry, albumId, useSearchQuery: true);
+            }
+            return new AlbumTracksViewModel(
+                _libraryService,
+                _tracksContextMenuService,
+                albumId,
+                filteredTracks);
+        }
         private void SyncWithWorkspace()
         {
             bool isActive = _workspace.SelectedTab?.Key == LibraryDetailTabKey.Albums && _workspace.SelectedEntry is not null;
@@ -115,7 +122,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             {
                 _isHibernating = false;
                 ReloadFromEntry();
-            }else
+            }
+            else
             {
                 Hibernate();
             }
@@ -166,12 +174,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
         private void RestoreExpandedIfPresent()
         {
-            if (ExpandedAlbumId is not { } id) return;
+            if (_expandedAlbumId is not { } id) return;
 
             var album = GridRows.SelectMany(r => r.Albums).FirstOrDefault(a => a.Id == id);
             if (album is null)
             {
-                ExpandedAlbumId = null;
+                _expandedAlbumId = null;
                 return;
             }
 
@@ -314,7 +322,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             _rawAlbums.Clear();
             _sortedAlbums.Clear();
             GridRows.Clear();
-            ExpandedAlbumId = null;
+            _expandedAlbumId = null;
         }
         public void Dispose()
         {

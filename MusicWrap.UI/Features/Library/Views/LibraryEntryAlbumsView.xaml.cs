@@ -24,11 +24,11 @@ namespace MusicWrap.UI.Features.Library.Views
         {
             if (DataContext is not LibraryEntryAlbumViewModel viewModel)
                 return;
-            
+
 
             if (sender is Button button && button.DataContext is LibraryViewModel.AlbumData albumData)
                 viewModel.ExpandAlbum(albumData.Id);
-            
+
         }
 
         private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
@@ -39,69 +39,12 @@ namespace MusicWrap.UI.Features.Library.Views
             viewModel.CollapseAlbum();
         }
 
-        private void TracksContentPlaceholder_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is ContentControl contentControl && contentControl.DataContext is LibraryViewModel.AlbumGridRowModel row)
-            {
-                void RefreshTracksContent()
-                {
-                    if (row.ExpandedAlbumId == null)
-                    {
-                        contentControl.Content = null;
-                        return;
-                    }
-
-                    if (DataContext is not LibraryEntryAlbumViewModel viewModel)
-                    {
-                        contentControl.Content = null;
-                        return;
-                    }
-
-                    var workspace = viewModel.Workspace;
-                    var libraryCacheService = viewModel.LibraryService;
-                    var tracksContextMenuService = App.Services.GetRequiredService<TrackActionService>();
-
-                    int[]? filteredTrackIds = null;
-                    var entry = workspace.SelectedEntry;
-                    if (entry is not null)
-                    {
-                        filteredTrackIds = libraryCacheService.GetTrackIdsForEntryAlbum(
-                            entry, row.ExpandedAlbumId.Value, useSearchQuery: true);
-                    }
-
-                    var tracksViewModel = new AlbumTracksViewModel(
-                        libraryCacheService,
-                        tracksContextMenuService,
-                        row.ExpandedAlbumId.Value,
-                        filteredTrackIds
-                    );
-                    var tracksPage = new AlbumTracksPage { DataContext = tracksViewModel };
-                    contentControl.Content = tracksPage;
-                }
-
-                RefreshTracksContent();
-
-                PropertyChangedEventHandler onRowChanged = (_, args) =>
-                {
-                    if (args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedAlbumId) ||
-                        args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedDominantColor) ||
-                        args.PropertyName == nameof(LibraryViewModel.AlbumGridRowModel.ExpandedForegroundColor))
-                    {
-                        RefreshTracksContent();
-                    }
-                };
-
-                row.PropertyChanged += onRowChanged;
-                contentControl.Unloaded += (_, __) => row.PropertyChanged -= onRowChanged;
-            }
-        }
-
         private void AlbumsViewport_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (e.NewSize.Width > 0)
-            {
-                UpdateColumnsForViewportWidth();
-            }
+            if (DataContext is not LibraryEntryAlbumViewModel viewModel || e.NewSize.Width <= 0)
+                return;
+
+            viewModel.LayoutColumns = CalculateColumns(Math.Max(1, (int)AlbumsViewport.ActualWidth));
         }
 
         private void AlbumsViewport_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -112,23 +55,7 @@ namespace MusicWrap.UI.Features.Library.Views
             }
         }
 
-        private int GetCurrentViewportWidth() => Math.Max(1, (int)AlbumsViewport.ActualWidth);
+        private static int CalculateColumns(int width) => Math.Max(MinColumns, Math.Max(1, width) / (MinTileWidth + Gutter));
 
-        private int CalculateColumns(int width) => Math.Max(MinColumns, Math.Max(1, width)/(MinTileWidth + Gutter));
-
-        private void UpdateColumnsForViewportWidth(bool force = false)
-        {
-            if (DataContext is not LibraryEntryAlbumViewModel viewModel)
-                return;
-            
-            int width = GetCurrentViewportWidth();
-
-            if (width <= 0)
-                return;
-
-            int columns = CalculateColumns(width);
-            
-            viewModel.LayoutColumns = columns;
-        }
     }
 }
