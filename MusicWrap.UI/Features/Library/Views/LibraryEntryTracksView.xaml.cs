@@ -21,6 +21,9 @@ namespace MusicWrap.UI.Features.Library.Views
             _windowManager = App.Services.GetRequiredService<WindowManagerService>();
             _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
 
+            var menuFactory = App.Services.GetRequiredService<ContextMenuFactory>();
+            EntryTracksView.ContextMenu = menuFactory.Create(EntryTracksView, ContextMenuType.Standard);
+
             Loaded += LibraryEntryTracksView_Loaded;
             Unloaded += LibraryEntryTracksView_Unloaded;
         }
@@ -41,17 +44,6 @@ namespace MusicWrap.UI.Features.Library.Views
                 return;
             }
             _isCommandPaletteSubscribed = false;
-        }
-
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ContextMenu contextMenu)
-                return;
-            if (DataContext is not LibraryEntryTracksViewModel vm)
-                return;
-
-            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
-            TrackToPlaylistMenu.Shared.TrackIds = vm.SelectedTrackIds.ToList();
         }
     }
 }

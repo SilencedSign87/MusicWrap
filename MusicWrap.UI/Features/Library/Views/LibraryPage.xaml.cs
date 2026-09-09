@@ -4,6 +4,8 @@ using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -15,16 +17,24 @@ namespace MusicWrap.UI.Features.Library.Views
     {
         public LibraryViewModel vm;
         private readonly ILibraryService _libraryService;
+        private readonly ContextMenuFactory _menuFactory;
+        private readonly TrackActionService _trackActions;
+
+        private MenuItem? _playlistMenu;
+
         private  bool _disposed;
 
-        public LibraryPage(LibraryViewModel viewmodel, ILibraryService libraryService)
+        public LibraryPage(LibraryViewModel viewmodel, ILibraryService libraryService, ContextMenuFactory menuFactory, TrackActionService trackActions)
         {
             InitializeComponent();
 
-            vm = viewmodel;
             _libraryService = libraryService;
-            DataContext = vm;
+            _menuFactory = menuFactory;
+            _trackActions = trackActions;
 
+
+            vm = viewmodel;
+            DataContext = vm;
         }
 
         private void EntriesListView_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -82,8 +92,13 @@ namespace MusicWrap.UI.Features.Library.Views
 
             var trackIds = _libraryService.GetTrackIdsForEntry(entry).ToList();
 
-            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
-            TrackToPlaylistMenu.Shared.TrackIds = trackIds;
+            _playlistMenu ??= _menuFactory.CreateAddToPlaylistMenuItem(() => [.. trackIds]);
+
+            if (_playlistMenu.Parent is ItemsControl parent)
+                parent.Items.Remove(_playlistMenu);
+
+            contextMenu.Items.Add(_playlistMenu);
+
         }
         private void EntriesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

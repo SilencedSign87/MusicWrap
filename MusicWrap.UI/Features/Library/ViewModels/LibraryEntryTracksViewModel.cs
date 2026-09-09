@@ -1,13 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
-using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Services.Search;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Library.Models;
-using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Library.Services;
 using System.Collections.ObjectModel;
 
@@ -16,7 +12,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     public partial class LibraryEntryTracksViewModel : ObservableObject, IDisposable
     {
         private readonly ILibraryService _libraryCache;
-        private readonly TrackActionService _tracksContextMenuService;
         private readonly SearchService _searchService;
         private readonly IUIDispatcher _uiDispatcher;
         private readonly LibraryWorkspace _workspace;
@@ -32,14 +27,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public LibraryWorkspace Workspace => _workspace;
         public LibraryEntryTracksViewModel(
             ILibraryService libraryCache,
-            TrackActionService tracksContextMenuService,
             SearchService searchService,
             IUIDispatcher uiDispatcher,
             LibraryWorkspace workspace
            )
         {
             _libraryCache = libraryCache;
-            _tracksContextMenuService = tracksContextMenuService;
             _searchService = searchService;
             _uiDispatcher = uiDispatcher;
             _workspace = workspace;
@@ -64,31 +57,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         }
 
         #region Relay Commands
-        [RelayCommand]
-        private void PlayNowSelectedTracks()
-        {
-            _tracksContextMenuService.PlayNow(SelectedTrackIds, AllTrackIds);
-        }
-        [RelayCommand]
-        private void PlayNextSelectedTracks()
-        {
-            _tracksContextMenuService.PlayNext(SelectedTrackIds, AllTrackIds);
-        }
-        [RelayCommand]
-        private void AddSelectedTracksToQueue()
-        {
-            _tracksContextMenuService.AddToQueue(SelectedTrackIds);
-        }
-        [RelayCommand]
-        private void ShowSelectedTracksInFileExplorer()
-        {
-            _tracksContextMenuService.ShowInFileExplorer(SelectedTrackIds);
-        }
-        [RelayCommand]
-        private void EditSelectedTracksMetadata()
-        {
-            _tracksContextMenuService.ShowTrackInformationDialog(SelectedTrackIds);
-        }
+
         #endregion
         #region Public methods
 

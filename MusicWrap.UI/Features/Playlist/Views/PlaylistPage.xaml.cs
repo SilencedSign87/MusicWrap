@@ -4,68 +4,29 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Playlist.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
+using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Playlist.Views
 {
     public partial class PlaylistPage : UserControl, IDisposable
     {
-        private readonly TrackActionService _tracksContextMenuService;
         private PlaylistViewModel _vm;
 
         private bool _isDisposed = false;
 
-        public PlaylistPage(PlaylistViewModel playlistViewModel, TrackActionService tracksContextMenuService)
+        public PlaylistPage(PlaylistViewModel playlistViewModel, ContextMenuFactory menuFactory)
         {
             InitializeComponent();
-            _tracksContextMenuService = tracksContextMenuService;
+            
             _vm = playlistViewModel;
             DataContext = _vm;
-        }
 
-        private void PlaylistPlayNow_Click(object sender, RoutedEventArgs e)
-        {
-            var tracksView = ResolveTracksViewFromMenuSender(sender);
-            if (tracksView == null)
-            {
-                return;
-            }
-
-            var selected = tracksView.GetSelectedTrackIds();
-            _tracksContextMenuService.PlayNow(selected, tracksView.AllTrackIds?.ToList());
-        }
-
-        private void PlaylistPlayNext_Click(object sender, RoutedEventArgs e)
-        {
-            var tracksView = ResolveTracksViewFromMenuSender(sender);
-            if (tracksView == null)
-            {
-                return;
-            }
-
-            var selected = tracksView.GetSelectedTrackIds();
-            _tracksContextMenuService.PlayNext(selected, tracksView.AllTrackIds?.ToList());
-        }
-
-        private void PlaylistAddToQueue_Click(object sender, RoutedEventArgs e)
-        {
-            var tracksView = ResolveTracksViewFromMenuSender(sender);
-            if (tracksView == null)
-            {
-                return;
-            }
-
-            var selected = tracksView.GetSelectedTrackIds();
-            _tracksContextMenuService.AddToQueue(selected);
-        }
-
-        private static TracksView? ResolveTracksViewFromMenuSender(object sender)
-        {
-            if (sender is not FrameworkElement element)
-            {
-                return null;
-            }
-
-            return (element.Parent as ContextMenu)?.PlacementTarget as TracksView;
+            PlaylistTracksView.ContextMenu = menuFactory.Create(
+                PlaylistTracksView, 
+                ContextMenuType.Standard, 
+                extras: [
+                    new ExtraMenuItem("Remove from playlist", "\uE74D",_vm.RemoveSelectedTracksCommand)
+                ]);
         }
 
         private void PlaySelectedPlaylist_click(object sender, RoutedEventArgs e)
@@ -77,7 +38,6 @@ namespace MusicWrap.UI.Features.Playlist.Views
             {
                 _vm.PlayPlaylistCommand.Execute(entry.id);
             }
-
 
         }
 
@@ -112,17 +72,6 @@ namespace MusicWrap.UI.Features.Playlist.Views
             if (_isDisposed) return;
 
             _vm.Dispose();
-        }
-
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ContextMenu contextMenu)
-                return;
-            if (DataContext is not PlaylistViewModel vm)
-                return;
-
-            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
-            TrackToPlaylistMenu.Shared.TrackIds = vm.SelectedTrackIds?.ToList();
         }
     }
 }

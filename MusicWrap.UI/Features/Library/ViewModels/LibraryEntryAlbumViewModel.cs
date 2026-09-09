@@ -16,7 +16,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly IwindowsImageService _imageService;
         private readonly SearchService _searchService;
         private readonly LibraryWorkspace _workspace;
-        private readonly TrackActionService _tracksContextMenuService;
 
         // Props
         [ObservableProperty] private int layoutColumns = 1;
@@ -41,15 +40,13 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             ILibraryService cacheService,
             IwindowsImageService imageService,
             SearchService searchService,
-            LibraryWorkspace workspace,
-            TrackActionService tracksContextMenuService
+            LibraryWorkspace workspace
             )
         {
             _libraryService = cacheService;
             _imageService = imageService;
             _searchService = searchService;
             _workspace = workspace;
-            _tracksContextMenuService = tracksContextMenuService;
 
             _searchService.SearchSubmitted += OnSearchSubmitted;
             _workspace.PropertyChanged += OnWorkspaceChanged;
@@ -111,7 +108,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             }
             return new AlbumTracksViewModel(
                 _libraryService,
-                _tracksContextMenuService,
                 albumId,
                 filteredTracks);
         }

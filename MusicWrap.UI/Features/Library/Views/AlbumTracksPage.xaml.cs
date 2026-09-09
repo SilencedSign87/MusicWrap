@@ -19,16 +19,15 @@ namespace MusicWrap.UI.Features.Library.Views
     public partial class AlbumTracksPage : UserControl
     {
         private readonly IMusicPlayerService _musicPlayerService;
-        private readonly ILibraryService _libraryCacheService;
-        private readonly WindowManagerService _windowManager;
         private bool _playerEventsAttached;
 
         public AlbumTracksPage()
         {
             InitializeComponent();
             _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
-            _libraryCacheService = App.Services.GetRequiredService<ILibraryService>();
-            _windowManager = App.Services.GetRequiredService<WindowManagerService>();
+            var menuFactory = App.Services.GetRequiredService<ContextMenuFactory>();
+
+            AlbumTracksView.ContextMenu = menuFactory.Create(AlbumTracksView, ContextMenuType.Standard);
 
             Loaded += AlbumTracksPage_Loaded;
             Unloaded += AlbumTracksPage_Unloaded;
@@ -127,51 +126,6 @@ namespace MusicWrap.UI.Features.Library.Views
             {
                 vm.UpdatePlaybackState(_musicPlayerService.CurrentTrackId, _musicPlayerService.IsPlaying);
             }
-        }
-
-        private void AlbumTracksContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is not ContextMenu contextMenu)
-                return;
-            if (DataContext is not AlbumTracksViewModel vm)
-                return;
-
-            TrackToPlaylistMenu.AttachTo(contextMenu, index: 4);
-            TrackToPlaylistMenu.Shared.TrackIds = vm.SelectedTrackIds.ToList();
-        }
-
-        private void EditMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (DataContext is not AlbumTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            _windowManager.LaunchInformationWindow(vm.SelectedTrackIds);
-        }
-
-        private void ShowInFileExplorerMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (DataContext is not AlbumTracksViewModel vm || vm.SelectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            var track = _libraryCacheService.GetTrackById(vm.SelectedTrackIds[0]);
-            if (track is null || string.IsNullOrWhiteSpace(track.Path))
-            {
-                return;
-            }
-
-            if (!File.Exists(track.Path))
-            {
-                return;
-            }
-
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{track.Path}\"")
-            {
-                UseShellExecute = true
-            });
         }
 
         private void ShuffleButton_Click(object sender, RoutedEventArgs e)

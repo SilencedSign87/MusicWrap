@@ -16,20 +16,6 @@
          Background="Transparent">
     <UserControl.Resources>
         <converters:ItemCountToColumnsConverter x:Key="ItemCountToColumnsConverter"/>
-        <ContextMenu x:Key="AlbumTracksContextMenu"
-                 Opened="AlbumTracksContextMenu_Opened"
-                     DataContext="{Binding Source={x:Reference RootAlbumTracksPage}, Path=DataContext}">
-            <MenuItem Header="Play" Icon="{helpers:Icon Glyph=E768}" Command="{Binding PlayNowSelectedTracksCommand}"/>
-            <Separator/>
-            <MenuItem Header="Play next" Icon="{helpers:Icon Glyph=E893}" Command="{Binding PlayNextSelectedTracksCommand}"/>
-            <MenuItem Header="Add to queue" Icon="{helpers:Icon Glyph=E710}" Command="{Binding AddSelectedTracksToQueueCommand}"/>
-            <!--<uimodels:TrackToPlaylistMenu x:Name="AlbumTracksTrackToPlaylistMenu"
-                                          TrackIds="{Binding SelectedTrackIds, Mode=OneWay}"/>-->
-            <Separator/>
-            <MenuItem Header="Properties" Icon="{helpers:Icon Glyph=E90F}" Click="EditMenuItem_Click"/>
-            <MenuItem Header="Remove" Icon="{helpers:Icon Glyph=E738}" IsEnabled="False"/>
-            <MenuItem Header="Show in file explorer" Icon="{helpers:Icon Glyph=EC50}" Click="ShowInFileExplorerMenuItem_Click"/>
-        </ContextMenu>
     </UserControl.Resources>
     <Grid Margin="0">
         <Grid.RowDefinitions>
@@ -77,19 +63,20 @@
         </StackPanel>
 
         <Grid Grid.Row="1" x:Name="AlbumTracksTracksHost">
-            <uimodels:TracksView ItemsSource="{Binding Tracks}"
-                                 AllTrackIds="{Binding AllTrackIds}"
-                                 SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
-                                 GroupByDisk="True"
-                                 UseColumnFlowPanel="True"
-                                 ContextMenu="{StaticResource AlbumTracksContextMenu}"
-                                 VisualMode="CompactNoCover"
-                                 Foreground="{Binding Foreground , ElementName=RootAlbumTracksPage}"
-                                 SelectedForeground="{Binding HighlightForeground, Converter={StaticResource HexToBrushConverter}}"
-                                 Background="Transparent"
-                                 SelectedBackground="{Binding HighlightColor, Converter={StaticResource HexToBrushConverter}}"
-                                 IndexMode="TrackNumber"
-                                 SelectionMode="Extended">
+            <uimodels:TracksView 
+                x:Name="AlbumTracksView"
+                ItemsSource="{Binding Tracks}"
+                AllTrackIds="{Binding AllTrackIds}"
+                SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
+                GroupByDisk="True"
+                UseColumnFlowPanel="True"
+                VisualMode="CompactNoCover"
+                Foreground="{Binding Foreground , ElementName=RootAlbumTracksPage}"
+                SelectedForeground="{Binding HighlightForeground, Converter={StaticResource HexToBrushConverter}}"
+                Background="Transparent"
+                SelectedBackground="{Binding HighlightColor, Converter={StaticResource HexToBrushConverter}}"
+                IndexMode="TrackNumber"
+                SelectionMode="Extended">
                 <uimodels:TracksView.ColumnFlowColumns>
                     <MultiBinding Converter="{StaticResource ItemCountToColumnsConverter}" ConverterParameter="10,500">
                         <Binding Path="Tracks.Count"/>

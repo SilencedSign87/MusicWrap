@@ -40,7 +40,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private List<int> selectedTrackIds = [];
 
         private readonly ILibraryService _libraryService;
-        private readonly TrackActionService _tracksContextMenuService;
         private HashSet<int> _albumTrackIds = [];
 
         private readonly int[]? _filteredTrackIds;
@@ -49,13 +48,11 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         public AlbumTracksViewModel(
             ILibraryService libraryCache,
-            TrackActionService tracksContextMenuService,
             int albumId,
             int[]? filteredTrackIds = null
             )
         {
             _libraryService = libraryCache;
-            _tracksContextMenuService = tracksContextMenuService;
             _filteredTrackIds = filteredTrackIds;
             this.albumId = albumId;
             selectedTrackIds = [];
@@ -112,24 +109,6 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             AlbumPlayGlyph = IsAlbumPlaying ? "\uE769" : "\uE768";
         }
         public int[] GetPlayableTrackIds() => _orderedTrackIds;
-
-        [RelayCommand]
-        private void PlayNowSelectedTracks()
-        {
-            _tracksContextMenuService.PlayNow(SelectedTrackIds, AllTrackIds);
-        }
-
-        [RelayCommand]
-        private void PlayNextSelectedTracks()
-        {
-            _tracksContextMenuService.PlayNext(SelectedTrackIds, AllTrackIds);
-        }
-
-        [RelayCommand]
-        private void AddSelectedTracksToQueue()
-        {
-            _tracksContextMenuService.AddToQueue(SelectedTrackIds);
-        }
 
         public void Dispose()
         {

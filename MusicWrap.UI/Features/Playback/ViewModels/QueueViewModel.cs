@@ -112,18 +112,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        private void PlayTracks()
-        {
-            var indices = _player.GetPlaybackIndices(SelectedTrackIds);
-            _player.PlayIndex(indices);
-        }
-        [RelayCommand]
-        private void MoveToNext()
-        {
-            var indices = _player.GetPlaybackIndices(SelectedTrackIds);
-            _player.AddIndicesToNext(indices);
-        }
-        [RelayCommand]
         private void RemoveFromQueue()
         {
             if (SelectedTrackIds is null || SelectedTrackIds.Count == 0) return;
@@ -145,78 +133,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         {
             _player.PlayTrack(trackID);
         }
-
-        public void PlayTracks(List<int> trackIds)
-        {
-            if (trackIds is null || trackIds.Count == 0) return;
-
-            var queue = _player.GetPlaybackOrder();
-            if (queue.Length == 0) return;
-
-            var selectedCounts = new Dictionary<int, int>();
-            foreach (var id in trackIds)
-            {
-                if (selectedCounts.TryGetValue(id, out var count))
-                    selectedCounts[id] = count + 1;
-                else
-                    selectedCounts[id] = 1;
-            }
-            var selectedInQueueOrder = new List<int>(trackIds.Count);
-            int firstSelectedIndex = -1;
-            var baseQueue = _player.GetQueue();
-            for (int i = 0; i < queue.Length; i++)
-            {
-                var id = baseQueue[queue[i]];
-                if (!selectedCounts.TryGetValue(id, out var count) || count == 0)
-                    continue;
-
-                if (firstSelectedIndex < 0)
-                    firstSelectedIndex = i;
-
-                selectedInQueueOrder.Add(id);
-                if (count == 1) selectedCounts.Remove(id);
-                else selectedCounts[id] = count - 1;
-            }
-
-            if (selectedInQueueOrder.Count == 0) return;
-
-            int anchorTrackId = firstSelectedIndex > 0 ? baseQueue[queue[firstSelectedIndex - 1]] : int.MinValue;
-
-            var removeCounts = new Dictionary<int, int>();
-            foreach (var id in selectedInQueueOrder)
-            {
-                if (removeCounts.TryGetValue(id, out var count))
-                    removeCounts[id] = count + 1;
-                else
-                    removeCounts[id] = 1;
-            }
-            var filtered = new List<int>(queue.Length - selectedInQueueOrder.Count);
-            foreach (var idx in queue)
-            {
-                var id = baseQueue[idx];
-                if (removeCounts.TryGetValue(id, out var count) && count > 0)
-                {
-                    if (count == 1) removeCounts.Remove(id);
-                    else removeCounts[id] = count - 1;
-                    continue;
-                }
-
-                filtered.Add(id);
-
-            }
-
-            int insertionIndex = 0;
-            if (firstSelectedIndex > 0)
-            {
-                int anchorIndex = filtered.IndexOf(anchorTrackId);
-                insertionIndex = anchorIndex >= 0 ? anchorIndex + 1 : 0;
-            }
-
-            filtered.InsertRange(insertionIndex, selectedInQueueOrder);
-            _player.SetQueue(filtered, false);
-            _player.PlayIndex(insertionIndex);
-        }
-
         private BitmapImage? GetAlbumArt(int coverId, string? coverPath)
         {
             if (coverId == 0) return _imageService.GetDefaultImage(42);

@@ -4,6 +4,7 @@ using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -17,6 +18,8 @@ namespace MusicWrap.UI.Features.Library.Components
         private readonly IMusicPlayerService _playerService;
         private readonly ILibraryService _libraryService;
         private readonly TrackActionService _trackActions;
+        private readonly ContextMenuFactory _menuFactory;
+        private MenuItem? _playlistMenu;
         private int[] TracksId = [];
         public AlbumPage()
         {
@@ -25,6 +28,7 @@ namespace MusicWrap.UI.Features.Library.Components
             _playerService = App.Services.GetRequiredService<IMusicPlayerService>();
             _trackActions = App.Services.GetRequiredService<TrackActionService>();
             _libraryService = App.Services.GetRequiredService<ILibraryService>();
+            _menuFactory = App.Services.GetRequiredService<ContextMenuFactory>();
 
             Loaded += AlbumPage_Loaded;
         }
@@ -80,11 +84,15 @@ namespace MusicWrap.UI.Features.Library.Components
 
         private void AlbumContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu)
-            {
-                TrackToPlaylistMenu.AttachTo(contextMenu, index: 3);
-                TrackToPlaylistMenu.Shared.TrackIds = [.. TracksId];
-            }
+            if (sender is not ContextMenu contextMenu)
+                return;
+
+            _playlistMenu ??= _menuFactory.CreateAddToPlaylistMenuItem(() => [.. TracksId]);
+
+            if (_playlistMenu.Parent is ItemsControl parent)
+                parent.Items.Remove(_playlistMenu);
+
+            contextMenu.Items.Insert(3, _playlistMenu);
         }
 
         private int[] GetAllAlbumTracksId(int albumId)

@@ -100,6 +100,7 @@ public static class ServiceRegistration
         services.AddTransient<CompactPlayer>();
         services.AddTransient<FullScreenWindow>();
         services.AddTransient<TrayFlyoutWindow>();
+        services.AddSingleton<ContextMenuFactory>();
 
         services.AddTransient<SettingsWindow>();
         services.AddTransient<SettingsGeneralPage>();
