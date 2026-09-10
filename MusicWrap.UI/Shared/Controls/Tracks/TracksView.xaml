@@ -304,7 +304,7 @@
                 <TextBlock Grid.Column="3"
                            Text="{Binding DurationText}"
                            Style="{StaticResource TrackDurationStyle}"
-                           Margin="24,0,0,0"
+                           Margin="24,0,8,0"
                            HorizontalAlignment="Right"
                            VerticalAlignment="Center"/>
             </Grid>

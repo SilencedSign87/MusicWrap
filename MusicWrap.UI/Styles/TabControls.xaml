@@ -52,6 +52,7 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="8,6"/>
         <Setter Property="Margin" Value="2,0"/>
+        <Setter Property="FontWeight" Value="Light"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Template">
@@ -65,13 +66,14 @@
                         <Grid ClipToBounds="True">
 
                             <Border x:Name="SelectionIndicator"
-                                    Height="2"
+                                    Height="1"
                                     Width="24"
-                                    CornerRadius="1.5"
+                                    CornerRadius="1"
                                     Background="{DynamicResource AccentBrush100}"
                                     Opacity="0"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Bottom"
+                                    SnapsToDevicePixels="True"
                                     />
 
                             <ContentPresenter x:Name="ContentSite"

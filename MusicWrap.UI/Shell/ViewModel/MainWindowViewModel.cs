@@ -38,10 +38,6 @@ namespace MusicWrap.UI.Shell.ViewModel
 
         [ObservableProperty] public UserControl? currentControl;
 
-        public BitmapImage PlayPauseIcon => _playerService.IsPlaying
-            ? LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PauseIcon.png")
-            : LoadBitmapFromResource("pack://application:,,,/Resources/Icons/PlayIcon.png");
-
         public string SidebarToggleIcon
             => IsSidePanelVisible ? "\xE89F" : "\xE8A0";
         public GridLength SidebarWidth
@@ -61,17 +57,10 @@ namespace MusicWrap.UI.Shell.ViewModel
             _logger = logger;
             _userSettings = userSettings;
 
-            _playerService.PlaybackStateChanged += _playerService_PlaybackStateChanged;
-
             IsSidePanelVisible = _userSettings.IsSidebarOpen;
 
             SelectedTabIndex = _userSettings.MainWindowTab;
             Navigate(_userSettings.MainWindowTab);
-        }
-
-        private void _playerService_PlaybackStateChanged(object? sender, ManagedBass.PlaybackState e)
-        {
-            OnPropertyChanged(nameof(PlayPauseIcon));
         }
 
         #region Relay Commands
