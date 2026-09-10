@@ -14,8 +14,18 @@ namespace MusicWrap.UI.Shared.Services
 {
     public enum ContextMenuType
     {
-        Standard,
-        Queue
+        None = 0,
+        Playback = 1 << 0,   // Play now / Play next
+        QueuePlayback = 1 << 1,   // Play now / Play next with queue index
+        AddToQueue = 1 << 2,
+        AddToPlaylist = 1 << 3,
+        TrackProperties = 1 << 4,
+        ShowInExplorer = 1 << 5,
+        RemoveFromQueue = 1 << 6,
+        MoveToLast = 1 << 7,
+
+        Standard = Playback | AddToQueue | AddToPlaylist | TrackProperties | ShowInExplorer,
+        Queue = QueuePlayback | AddToPlaylist | RemoveFromQueue | MoveToLast,
     }
     public sealed record ExtraMenuItem(string Header, string IconGlyph, ICommand Command);
     public sealed class ContextMenuFactory
@@ -31,40 +41,42 @@ namespace MusicWrap.UI.Shared.Services
             _windowManager = windowManager;
         }
 
-        public ContextMenu Create(TracksView view, ContextMenuType type, IReadOnlyList<ExtraMenuItem>? extras = null)
+        public ContextMenu Create(TracksView view, ContextMenuType type, IReadOnlyList<ExtraMenuItem>? extras = null) => Create(view.GetSelectedTrackIds, type, view.AllTrackIds?.ToList(), extras);
+
+        public ContextMenu Create(Func<List<int>> getSelectedIds, ContextMenuType type, IReadOnlyList<int>? contextIds = null, IReadOnlyList<ExtraMenuItem>? extras = null)
         {
             var menu = new ContextMenu();
-            bool isQueue = type == ContextMenuType.Queue;
-            var queue = () => view.AllTrackIds?.ToList();
+            bool inQueue = type.HasFlag(ContextMenuType.QueuePlayback);
 
-            Add(menu.Items, "Play now", "\uE768", () => WithSelection(view, ids =>
+            if (type.HasFlag(ContextMenuType.Playback) || inQueue)
             {
-                if (isQueue)
-                    _actions.PlayNowInQueue(ids);
-                else
-                    _actions.PlayNow(ids, queue());
-            }));
+                Add(menu.Items, "Play now", "\uE768", () => WithSelection(getSelectedIds, ids =>
+               {
+                   if (inQueue) _actions.PlayNowInQueue(ids);
+                   else _actions.PlayNow(ids, contextIds);
+               }));
 
-            Add(menu.Items, "Play next", "\uE893", () => WithSelection(view, ids =>
+                Add(menu.Items, inQueue ? "Move to next" : "Add to next", "\xE97A", () => WithSelection(getSelectedIds, ids =>
+                {
+                    if (inQueue) _actions.PlayNextInQueue(ids);
+                    else _actions.PlayNext(ids, contextIds);
+                }));
+            }
+
+            if (type.HasFlag(ContextMenuType.AddToQueue))
+                Add(menu.Items, "Add to queue", "\uE710", () => WithSelection(getSelectedIds, _actions.AddToQueue));
+
+            if (type.HasFlag(ContextMenuType.MoveToLast))
+                Add(menu.Items, "Move to last", "\xEE35", () => WithSelection(getSelectedIds, _actions.MoveToLastInQueue));
+
+            if (type.HasFlag(ContextMenuType.RemoveFromQueue))
+                Add(menu.Items, "Remove", "\uE738", () => WithSelection(getSelectedIds, _actions.RemoveFromQueue));
+
+            if (type.HasFlag(ContextMenuType.AddToPlaylist))
             {
-                if (isQueue)
-                    _actions.PlayNextInQueue(ids);
-                else
-                    _actions.PlayNext(ids, queue());
-            }));
-
-            if (!isQueue)
-                Add(menu.Items, "Add to queue", "\uE710", () => WithSelection(view, _actions.AddToQueue));
-
-            menu.Items.Add(new Separator());
-
-            menu.Items.Add(CreateAddToPlaylistMenuItem(view.GetSelectedTrackIds));
-
-            if (!isQueue)
-            {
-                menu.Items.Add(new Separator());
-                Add(menu.Items, "Properties", "\uE90F", () => WithSelection(view, _actions.ShowTrackInformationDialog));
-                Add(menu.Items, "Show in file explorer", "\uEC50", () => WithSelection(view, _actions.ShowInFileExplorer));
+                if (menu.Items.Count > 0)
+                    menu.Items.Add(new Separator());
+                menu.Items.Add(CreateAddToPlaylistMenuItem(getSelectedIds));
             }
 
             if (extras is { Count: > 0 })
@@ -74,6 +86,19 @@ namespace MusicWrap.UI.Shared.Services
                     menu.Items.Add(new MenuItem { Header = extra.Header, Icon = Icon(extra.IconGlyph), Command = extra.Command });
             }
 
+            if (type.HasFlag(ContextMenuType.TrackProperties))
+            {
+                if (menu.Items.Count > 0)
+                    menu.Items.Add(new Separator());
+                Add(menu.Items, "Properties", "\uE90F", () => WithSelection(getSelectedIds, _actions.ShowTrackInformationDialog));
+            }
+
+            if (type.HasFlag(ContextMenuType.ShowInExplorer))
+            {
+                if (menu.Items.Count > 0)
+                    menu.Items.Add(new Separator());
+                Add(menu.Items, "Show in file explorer", "\uEC50", () => WithSelection(getSelectedIds, _actions.ShowInFileExplorer));
+            }
             return menu;
         }
 
@@ -127,9 +152,9 @@ namespace MusicWrap.UI.Shared.Services
             }
 
         }
-        private static void WithSelection(TracksView view, Action<List<int>> action)
+        private static void WithSelection(Func<List<int>> getSelectedIds, Action<List<int>> action)
         {
-            var ids = view.GetSelectedTrackIds();
+            var ids = getSelectedIds();
 
             if (ids.Count > 0)
                 action(ids);

@@ -162,20 +162,13 @@
                             Padding="4"
                             >
                             <Grid 
-                            Margin="0"
-                            ToolTipService.ToolTip="{Binding Title}"
-                            HorizontalAlignment="Stretch"
-                            ColumnDefinitions="42,8,*,2"
-                            >
-                                <Grid.ContextMenu>
-                                    <ContextMenu Opened="LibraryContextMenu_Opened" MinWidth="175">
-                                        <MenuItem Header="Play" Icon="{ex:Icon Glyph=E768}"/>
-                                        <MenuItem Header="Play next" Icon="{ex:Icon Glyph=E893}"/>
-                                        <Separator/>
-                                        <MenuItem Header="Add to queue" Icon="{ex:Icon Glyph=E710}"/>
-                                        <!-- track to playlist in code behind -->
-                                    </ContextMenu>
-                                </Grid.ContextMenu>
+                                x:Name="RootGrid"
+                                Margin="0"
+                                ToolTipService.ToolTip="{Binding Title}"
+                                HorizontalAlignment="Stretch"
+                                ColumnDefinitions="42,8,*,2"
+                                ContextMenuOpening="RootGrid_ContextMenuOpening"
+                                >
                                 <Image
                                 Grid.Column="0"
                                 Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"

@@ -19,10 +19,7 @@ namespace MusicWrap.UI.Features.Playback.Views
 
             QueueTracksView.ContextMenu = menuFactory.Create(
                 QueueTracksView,
-                ContextMenuType.Queue,
-                extras: [
-                    new ExtraMenuItem("Remove from queue", "\uE738", queueViewModel.RemoveFromQueueCommand)
-                    ]
+                ContextMenuType.Queue
                 );
         }
     }

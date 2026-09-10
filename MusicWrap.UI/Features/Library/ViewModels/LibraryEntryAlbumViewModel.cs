@@ -181,6 +181,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             var row = GridRows.First(r => r.Albums.Contains(album));
             row.ExpandedAlbumId = album.Id;
+            row.TracksViewModel = CreateTracksViewModel(row, album.Id);
         }
         private void CancelImageLoading()
         {

@@ -17,7 +17,7 @@ namespace MusicWrap.UI.Controls
         private bool _isActive;
 
         private const float RiseSpeed = 0.7f;
-        private const float FallSpeed = 0.7f;
+        private const float FallSpeed = 0.35f;
         private const float HeightDecay = 0.1f;
 
         private float _valleyGamma = 1.5f;

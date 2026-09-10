@@ -82,11 +82,11 @@ namespace MusicWrap.UI.Shell.Windows
                 return;
             }
 
-            var duration = TimeSpan.FromMilliseconds(500);
-            var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
+            var duration = TimeSpan.FromMilliseconds(250);
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
             var widthAnimation = new DoubleAnimation(targetWidth, duration) { EasingFunction = ease };
-            var opacityAnimation = new DoubleAnimation(targetOpacity, TimeSpan.FromMilliseconds(250));
+            var opacityAnimation = new DoubleAnimation(targetOpacity, TimeSpan.FromMilliseconds(200));
 
             PanelContainer.BeginAnimation(FrameworkElement.WidthProperty, widthAnimation);
             PanelContainer.BeginAnimation(UIElement.OpacityProperty, opacityAnimation);

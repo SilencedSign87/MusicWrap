@@ -16,24 +16,15 @@
         <converters:PathToImageConverter x:Key="PathToImageConverter"/>
     </UserControl.Resources>
     <!-- Renders an album -->
-    <Border Background="Transparent" 
-            ToolTip="{Binding Title}"
-            BorderThickness="0"
-            CornerRadius="4"
-            Margin="4"
-            Padding="0"
-            >
-        <Border.ContextMenu>
-            <ContextMenu Placement="Right" Opened="AlbumContextMenu_Opened" MinWidth="175">
-                <MenuItem Header="Play album now" Click="PlayAlbum" Icon="{ex:Icon Glyph=E768}"/>
-                <MenuItem Header="Play album next" Click="AddAlbumToNext" Icon="{ex:Icon Glyph=E893}"/>
-                <Separator/>
-                <MenuItem Header="Add to queue" Click="AddToQueue" Icon="{ex:Icon Glyph=E710}"/>
-                <!--<controlsM:TrackToPlaylistMenu x:Name="AlbumTrackToPlaylistMenu"/>-->
-                <Separator/>
-                <MenuItem Header="Album properties" Icon="{ex:Icon Glyph=E90F}" Click="EditTracks_Click"/>
-            </ContextMenu>
-        </Border.ContextMenu>
+    <Border 
+        x:Name="RootBorder"
+        Background="Transparent" 
+        ToolTip="{Binding Title}"
+        BorderThickness="0"
+        CornerRadius="4"
+        Margin="4"
+        Padding="0"
+        >
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="152"/>

@@ -18,19 +18,17 @@ namespace MusicWrap.UI.Features.Library.Views
         public LibraryViewModel vm;
         private readonly ILibraryService _libraryService;
         private readonly ContextMenuFactory _menuFactory;
-        private readonly TrackActionService _trackActions;
 
         private MenuItem? _playlistMenu;
 
-        private  bool _disposed;
+        private bool _disposed;
 
-        public LibraryPage(LibraryViewModel viewmodel, ILibraryService libraryService, ContextMenuFactory menuFactory, TrackActionService trackActions)
+        public LibraryPage(LibraryViewModel viewmodel, ILibraryService libraryService, ContextMenuFactory menuFactory)
         {
             InitializeComponent();
 
             _libraryService = libraryService;
             _menuFactory = menuFactory;
-            _trackActions = trackActions;
 
 
             vm = viewmodel;
@@ -82,23 +80,19 @@ namespace MusicWrap.UI.Features.Library.Views
             }
         }
 
-        private void LibraryContextMenu_Opened(object sender, RoutedEventArgs e)
+        private void RootGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (sender is not ContextMenu contextMenu) return;
-
-            var grid = contextMenu.PlacementTarget as Grid;
-            
-            if (grid?.DataContext is not LibraryEntry entry) return;
+            if (sender is not FrameworkElement { DataContext: LibraryEntry entry } target) return;
 
             var trackIds = _libraryService.GetTrackIdsForEntry(entry).ToList();
+            var menu = _menuFactory.Create(
+                () => [.. trackIds],
+                ContextMenuType.Playback | ContextMenuType.AddToQueue | ContextMenuType.AddToPlaylist,
+                trackIds);
 
-            _playlistMenu ??= _menuFactory.CreateAddToPlaylistMenuItem(() => [.. trackIds]);
-
-            if (_playlistMenu.Parent is ItemsControl parent)
-                parent.Items.Remove(_playlistMenu);
-
-            contextMenu.Items.Add(_playlistMenu);
-
+            e.Handled = true;    // ignore automatic opening
+            target.ContextMenu = menu;
+            menu.IsOpen = true;  // manual opening
         }
         private void EntriesListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -116,6 +110,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
             vm.Dispose();
         }
+
     }
 }
 

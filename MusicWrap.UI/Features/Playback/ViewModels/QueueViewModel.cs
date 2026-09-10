@@ -112,17 +112,6 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         }
 
         [RelayCommand]
-        private void RemoveFromQueue()
-        {
-            if (SelectedTrackIds is null || SelectedTrackIds.Count == 0) return;
-
-            var indices = _player.GetPlaybackIndices(SelectedTrackIds);
-            if (indices.Length == 0) return;
-
-            _player.RemoveFromQueue(indices);
-        }
-
-        [RelayCommand]
         private void ReorderTrack(TrackReorderRequest request)
         {
             _player.ReorderTrackById(request.SourceTrackId, request.TargetTrackId, request.PlaceAfterTarget);

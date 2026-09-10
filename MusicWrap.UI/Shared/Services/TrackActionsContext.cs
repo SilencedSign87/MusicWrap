@@ -53,6 +53,22 @@ namespace MusicWrap.UI.Services
 
         }
 
+        public void RemoveFromQueue(IReadOnlyList<int> selectedTrackIds)
+        {
+            if (selectedTrackIds.Count == 0) return;
+            var indices = _musicPlayerService.GetPlaybackIndices(selectedTrackIds);
+            if (indices.Length == 0) return;
+            _musicPlayerService.RemoveFromQueue(indices);
+        }
+
+        public void MoveToLastInQueue(IReadOnlyList<int> selectedIds)
+        {
+            if (selectedIds.Count == 0) return;
+            var indices = _musicPlayerService.GetPlaybackIndices(selectedIds);
+            if (indices.Length == 0) return;
+            _musicPlayerService.ReorderQueue(indices, _musicPlayerService.QueueCount);
+        }
+
         // Queue-specific behavior: move selected items to play right after current track.
         public void PlayNextInQueue(IReadOnlyList<int> selectedTrackIds)
         {
