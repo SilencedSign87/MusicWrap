@@ -9,7 +9,9 @@
              d:DataContext="{d:DesignInstance Type=vm:VolumeControlViewModel}"
              Loaded="UserControl_Loaded"
              SizeChanged="UserControl_SizeChanged"
-             d:DesignHeight="32" d:DesignWidth="200">
+             d:DesignHeight="32" 
+             d:DesignWidth="200"
+             >
 
     <Grid x:Name="RootLayout">
         <Grid.ColumnDefinitions>
@@ -50,6 +52,7 @@
                 VerticalAlignment="Center"
                 Focusable="True"
                 PreviewKeyDown="VolumeHost_PreviewKeyDown"
+                SnapsToDevicePixels="True"
                 >
             <Grid x:Name="VolumeContainer" Background="Transparent">
 
@@ -75,6 +78,7 @@
                            MouseDown="InteractiveLayer_MouseDown"
                            MouseUp="InteractiveLayer_MouseUp"
                            MouseMove="InteractiveLayer_MouseMove"
+                           MouseEnter="InteractiveLayer_MouseEnter"
                            MouseLeave="InteractiveLayer_MouseLeave"/>
 
                 <!-- Volume Popup (visible only during drag) -->

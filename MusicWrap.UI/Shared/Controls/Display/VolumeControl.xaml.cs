@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using System.Windows.Media.Animation;
 
 namespace MusicWrap.UI.Controls
 {
@@ -19,7 +20,10 @@ namespace MusicWrap.UI.Controls
 
         private const double TrackThickness = 4d;
         private const double ThumbWidth = 4d;
-        private const double ThumbLength = 16d;
+        private const double ThumbLength = 4d;
+        private const double ThumbHoverLength = 10d;
+
+        private static readonly TimeSpan ThumbGrowDuration = TimeSpan.FromMilliseconds(150);
 
         public VolumeControl()
         {
@@ -45,7 +49,7 @@ namespace MusicWrap.UI.Controls
 
         private void VolumeControl_Unloaded(object sender, RoutedEventArgs e)
         {
-           Dispose();
+            Dispose();
         }
         public void Dispose()
         {
@@ -73,9 +77,9 @@ namespace MusicWrap.UI.Controls
 
         public static readonly DependencyProperty DominantColorHexProperty =
             DependencyProperty.Register(
-                nameof(DominantColorHex), 
-                typeof(string), 
-                typeof(VolumeControl), 
+                nameof(DominantColorHex),
+                typeof(string),
+                typeof(VolumeControl),
                 new FrameworkPropertyMetadata("#FFFFFF",
                     FrameworkPropertyMetadataOptions.AffectsRender,
                     OnDominantColorHexChanged)
@@ -290,7 +294,7 @@ namespace MusicWrap.UI.Controls
                 TrackForeground.Height = fillHeight;
 
                 double thumbTop = (totalHeight - fillHeight) - ThumbLength / 2.0;
-                thumbTop = Math.Clamp(thumbTop, 0, Math.Max(0, totalHeight - ThumbWidth));
+                thumbTop = Math.Clamp(thumbTop, 0, Math.Max(0, totalHeight - Thumb.Height));
                 Thumb.Margin = new Thickness(0, thumbTop, 0, 0);
             }
         }
@@ -350,10 +354,28 @@ namespace MusicWrap.UI.Controls
             UpdateVolumePopup(e);
             SetVolumeFromMouse(e);
         }
+        
+        private void InteractiveLayer_MouseEnter(object sender, MouseEventArgs e)
+        {
+            AnimateThumbLength(ThumbHoverLength);
+        }
 
         private void InteractiveLayer_MouseLeave(object sender, MouseEventArgs e)
         {
+            AnimateThumbLength(ThumbLength);
             if (!isDragging) HideVolumePopup();
+        }
+
+        private void AnimateThumbLength(double length)
+        {
+            DependencyProperty property = Orientation == Orientation.Horizontal
+                ? FrameworkElement.HeightProperty
+                : FrameworkElement.WidthProperty;
+
+            double current = (double)Thumb.GetValue(property);
+            Thumb.SetValue(property, length);
+            Thumb.BeginAnimation(property,
+                new DoubleAnimation(current, length, ThumbGrowDuration) { FillBehavior = FillBehavior.Stop });
         }
 
         #endregion

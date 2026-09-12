@@ -110,10 +110,10 @@ namespace MusicWrap.UI.Controls
                 _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
                 _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
             }
-            else
-            {
-                _waveformData = Enumerable.Repeat(1f, 1000).ToArray();
-            }
+            //else
+            //{
+            //    _waveformData = Enumerable.Repeat(1f, 1000).ToArray();
+            //}
 
             _duration = _musicService.Duration;
             _isPlaying = _musicService.IsPlaying;
@@ -218,9 +218,13 @@ namespace MusicWrap.UI.Controls
 
         #region Rendering
 
-
         private void DrawWaveform()
         {
+            if (UsePlaceholderWaveform)
+            {
+                DrawPlaceholderTrack();
+                return;
+            }
             double width = WaveformContainer.ActualWidth;
             double height = WaveformContainer.ActualHeight;
 
@@ -285,6 +289,27 @@ namespace MusicWrap.UI.Controls
             PositionThumb.Y1 = 0;
             PositionThumb.Y2 = height;
             PositionThumb.Visibility = Visibility.Visible;
+        }
+
+        private void DrawPlaceholderTrack()
+        {
+            double width = WaveformContainer.ActualWidth;
+            double height = WaveformContainer.ActualHeight;
+            if (width <= 0 || height <= 0) return;
+
+            double midY = height / 2;
+            var track = new RectangleGeometry(
+                new Rect(
+                    0,
+                    midY - (height / 2),
+                    width,
+                    height),
+                height/2,
+                height / 2);
+            PathBackground.Data = track;
+            PathForeground.Data = track;
+            UpdateProgressVisual(_position);
+
         }
         #endregion
 

@@ -11,9 +11,9 @@
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         Topmost="True"
-        Height="108" 
         x:Name="RootWindow"
-        Width="350"
+        Height="148" 
+        Width="300"
         WindowStyle="SingleBorderWindow"
         Foreground="{Binding CurrentTackDominantForegroundColorHex}"
         d:Background="#2c2c2c"
@@ -45,123 +45,158 @@
                       CornerRadius="8" 
                       ResizeBorderThickness="4"/>
     </WindowChrome.WindowChrome>
-    <Grid x:Name="RootPanel" Opacity="1" Background="{DynamicResource TintOnText}">
+
+    <Grid 
+        x:Name="RootPanel" 
+        Opacity="1" 
+        Background="{DynamicResource TintOnText}"
+        RowDefinitions="*,Auto,Auto"
+        >
         <Grid.RenderTransform>
             <TranslateTransform x:Name="RootTranslate"/>
         </Grid.RenderTransform>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100" />
-            <ColumnDefinition Width="4"/>
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition Height="8"/>
-        </Grid.RowDefinitions>
-        <Image
-                Grid.Row="0"
-                Grid.Column="0"
-                Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:100}"
-                RenderOptions.BitmapScalingMode="LowQuality"
-                />
 
 
-        <Grid  Grid.Row="0" Grid.Column="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="auto"/>
-            </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="auto" />
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Padding="8,8,8,0">
-                    <StackPanel>
-                        <TextBlock FontSize="13" TextTrimming="CharacterEllipsis">
-                            <Run Text="{Binding CurrentTrackTitle}" />
-                        </TextBlock>
-                        <TextBlock FontSize="11" Text="{Binding CurrentTrackArtists}" />
-                        <TextBlock FontSize="10" HorizontalAlignment="Left">
-                            <Run Text="{Binding FormattedPosition, ElementName=TrayWaveForm, Mode=OneWay}" />
-                            <Run Text=" / " />
-                            <Run Text="{Binding FormattedDuration, ElementName=TrayWaveForm, Mode=OneWay}" />
-                        </TextBlock>
-                    </StackPanel>
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+            <controls:SquarePanel Grid.Column="0">
+                <Border Margin="8" CornerRadius="4">
+                    <Border.Background>
+                        <ImageBrush
+                            ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:150}"
+                            RenderOptions.BitmapScalingMode="LowQuality"
+                            Stretch="UniformToFill"
+                            />
+                    </Border.Background>
                 </Border>
-                <StackPanel Grid.Column="1">
-                    <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Close" Click="ExitApp">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE711;"/>
-                    </Button>
-                    <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Open MusicWrap" Click="OpenMainWindow">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8A7;"/>
-                    </Button>
-                </StackPanel>
-            </Grid>
-            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button x:Name="RepeadButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
-                </Button>
-                <Button x:Name="PrevButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Previous track" Command="{Binding PreviousCommand}"
-        >
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
-                </Button>
-                <Button x:Name="PlayButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" Command="{Binding PlayPauseCommand}"
-        >
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="14"/>
-                </Button>
-                <Button x:Name="NextButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Next track" Command="{Binding NextCommand}"
-        >
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
-                </Button>
-                <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Volume">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE767;" FontSize="14"/>
-                </Button>
+            </controls:SquarePanel>
+
+            <StackPanel Grid.Column="1" Margin="0,8,8,0">
+                <TextBlock 
+                    FontSize="13" 
+                    TextTrimming="CharacterEllipsis"
+                    Text="{Binding CurrentTrackTitle}"
+                    FontWeight="Medium"
+                    />
+                <TextBlock 
+                    FontSize="11" 
+                    Text="{Binding CurrentTrackAlbum}" 
+                    Margin="0,2"
+                    />
+                <TextBlock 
+                    FontSize="10"
+                    Text="{Binding CurrentTrackArtists}" 
+                    />
             </StackPanel>
-            <Popup
-                        x:Name="VolumePopup"
-                        PlacementTarget="{Binding ElementName=VolumeButton}"
-                        Placement="Center"
-                        PopupAnimation="None"
-                        AllowsTransparency="True"
-                        StaysOpen="False">
-                <Border>
-                    <Border 
-                                Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}" 
-                                BorderBrush="{DynamicResource StrokeFloating}" 
-                                CornerRadius="8" 
-                                Margin="8,16"
-                                Padding="8,4"
-                                BorderThickness="1">
-                        <Border.Effect>
-                            <DropShadowEffect Color="#000000"
-                                        BlurRadius="16"
-                                        ShadowDepth="4"
-                                        Direction="270"
-                                        Opacity="0.5"/>
-                        </Border.Effect>
-                        <StackPanel>
-                            <controls:VolumeControl
-                                                        Orientation="Horizontal"
-                                                        Width="120"
-                                                        ShowMuteButton="True"
-                                                        Height="32"
-                                                        />
-                        </StackPanel>
-                    </Border>
-                </Border>
-            </Popup>
         </Grid>
-
-        <controls:WaveformPlayerControl
+        <Border Padding="16,4,16,8" Grid.Row="1">
+            <Grid ColumnDefinitions="Auto,8,*,8,Auto">
+                <TextBlock 
+                    Grid.Column="0" 
+                    FontSize="10"
+                    FontWeight="Normal"
+                    VerticalAlignment="Center"
+                    Text="{Binding FormattedPosition ,ElementName=TrayWaveForm, Mode=OneWay}"
+                    />
+                <controls:WaveformPlayerControl
                     x:Name="TrayWaveForm"
-                    Grid.Row="1"
-                    Grid.ColumnSpan="3"
+                    Grid.Column="2"
                     UsePlaceholderWaveform="True"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Stretch"
-                    Height="8"
+                    Height="4"
                     />
+                <TextBlock 
+                    Grid.Column="4"
+                    FontSize="10"
+                    FontWeight="Normal"
+                    VerticalAlignment="Center"
+                    Text="{Binding FormattedDuration ,ElementName=TrayWaveForm, Mode=OneWay}"
+                    />
+            </Grid>
+        </Border>
+        <Grid Grid.Row="2">
+            <Border 
+                Background="{DynamicResource BackgroundCard2}"
+                Padding="4" 
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource StrokeSurface}"
+                HorizontalAlignment="Stretch"
+                >
+                <Grid ColumnDefinitions="*,Auto,*">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <Button 
+                            x:Name="VolumeButton" 
+                            Click="VolumeButton_Click" 
+                            Style="{StaticResource FlyoutTrayButton}" 
+                            Padding="0" 
+                            ToolTip="Volume"
+                            HorizontalAlignment="Left"
+                            >
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE767;" FontSize="14"/>
+                        </Button>
+                        <Popup
+                            x:Name="VolumePopup"
+                            PlacementTarget="{Binding ElementName=VolumeButton}"
+                            Placement="Center"
+                            PopupAnimation="None"
+                            AllowsTransparency="True"
+                            StaysOpen="False">
+                            <Border>
+                                <Border 
+                                    Background="{Binding CurrentTrackDominantColorHex, Converter={StaticResource HexToBrushConverter}}" 
+                                    BorderBrush="{DynamicResource StrokeFloating}" 
+                                    CornerRadius="8" 
+                                    Margin="8,16"
+                                    Padding="8,4"
+                                    BorderThickness="1">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#000000"
+                                                          BlurRadius="16"
+                                                          ShadowDepth="4"
+                                                          Direction="270"
+                                                          Opacity="0.5"/>
+                                    </Border.Effect>
+                                    <StackPanel>
+                                        <controls:VolumeControl
+                                            Orientation="Horizontal"
+                                            Width="120"
+                                            ShowMuteButton="True"
+                                            Height="32"
+                                            />
+                                    </StackPanel>
+                                </Border>
+                            </Border>
+                        </Popup>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button x:Name="RepeadButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="{Binding RepeatModeTooltip}" Command="{Binding CicleRepeatModeCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding RepeatModeIcon}" FontSize="14"/>
+                        </Button>
+                        <Button x:Name="PrevButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Previous track" Command="{Binding PreviousCommand}"
+>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
+                        </Button>
+                        <Button x:Name="PlayButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" Command="{Binding PlayPauseCommand}"
+>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayPauseIcon}" FontSize="14"/>
+                        </Button>
+                        <Button x:Name="NextButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="Next track" Command="{Binding NextCommand}"
+>
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
+                        </Button>
+                        <Button x:Name="ShuffleButton" Style="{StaticResource FlyoutTrayButton}" Padding="0" ToolTip="{Binding ShuffleTooltip}" Command="{Binding ToggleShuffleCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding ShuffleIcon}" FontSize="12"/>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                        <Button Style="{StaticResource FlyoutTrayButton}" ToolTip="Open MusicWrap" Click="OpenMainWindow" HorizontalAlignment="Right">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8A7;"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
 
