@@ -14,76 +14,7 @@ using MusicWrap.Data.User.Models;
 
 namespace MusicWrap.Core.Services.Playback
 {
-    public interface IMusicPlayerService
-    {
-        int CurrentIndex { get; }
-        int[] GetPlaybackOrder();
-        int[] GetPlaybackOrderTracks();
-        int[] GetPlaybackIndices(IEnumerable<int> trackIds);
-        int CurrentplaybackIndex { get; }
-        bool IsPlaying { get; }
-        bool IsPaused { get; }
-        double CurrentPosition { get; }
-        double Duration { get; }
-        float Volume { get; set; }
-        int CurrentTrackId { get; }
-        string CurrentTrackPath { get; }
-        int QueueCount { get; }
-        int CurrentDeviceIndex { get; }
-        SampleRatePreference CurrentSampleRate { get; }
-        OutputMode CurrentOutputMode { get; }
-        float[] CurrentWaveformData { get; }
-        RepeatMode RepeatMode { get; set; }
-        ContinueMode ContinueMode { get; set; }
-        bool IsShuffleEnabled { get; }
-        event EventHandler<bool>? ShuffleStateChanged;
-        event EventHandler<string>? TrackChanged;
-        event EventHandler? TrackEnded;
-        event EventHandler<PlaybackState>? PlaybackStateChanged;
-        event EventHandler<double>? PositionChanged;
-        event EventHandler<int[]>? QueueChanged;
-        event EventHandler<int>? DeviceIndexChanged;
-        event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
-        event EventHandler<OutputMode>? OutputModeChanged;
-        event EventHandler<float[]>? WaveformDataChanged;
-        event EventHandler<float>? VolumeChanged;
-        void LoadIndex(int index, bool autoPlay);
-        void Play();
-        void Pause();
-        void TogglePlayPause();
-        void Stop(bool hardStop = false);
-        void Next();
-        void Previous();
-        void Seek(double seconds);
-        void FlushPlaybackState();
-        void SetVolume(float volume);
-        void PlayIndex(int index);
-        void PlayIndex(IEnumerable<int> indices);
-        void ToggleShuffle();
-        void SetShuffle(bool enabled);
-        void SetSilentIndex(int index);
-        void AddToQueue(int TrackId);
-        void AddToQueue(IEnumerable<int> TrackIds);
-        void AddToNextInQueue(IEnumerable<int> TrackIds);
-        void AddIndicesToNext(IEnumerable<int> indices);
-        void SetQueue(IEnumerable<int> TrackIds, bool CalculateNewIndex = false);
-        void RemoveFromQueue(int index);
-        void RemoveFromQueue(IEnumerable<int> indices);
-        void ReorderQueue(IEnumerable<int> fromIndices, int toIndex);
-        void ReorderTrackById(int sourceTrackId, int targetTrackId, bool placeAfterTarget);
-        void ClearQueue();
-        int[] GetQueue();
-        void PlayTrack(int TrackId);
-        void SetPlaybackOrder(int[] playbackOrderIndices);
-        void ChangeOutputDevice(int deviceIndex);
-        void ChangeSampleRate(SampleRatePreference sampleRate);
-        void ChangeOutputMode(OutputMode mode);
-        int GetCurrentOutputSampleRate();
-        (int Index, string Name)[] GetAvailableDevices();
-        (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes();
-        PlaybackQueueSnapshot BuildPlaybackSnapshot();
-    }
-    public class MusicPlayerService : IMusicPlayerService, IStartupInitializer, IDisposable
+    public class MusicPlayerService : IStartupInitializer, IDisposable
     {
         // Providers
         private readonly IQueueManager _queue;

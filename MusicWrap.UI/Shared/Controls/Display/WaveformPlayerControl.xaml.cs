@@ -25,7 +25,7 @@ namespace MusicWrap.UI.Controls
     public partial class WaveformPlayerControl : UserControl
     {
         // Services
-        private readonly IMusicPlayerService _musicService;
+        private readonly MusicPlayerService _musicService;
         private readonly DispatcherTimer _positionTimer;
         // Data
         private float[] _waveformData = Array.Empty<float>();
@@ -47,7 +47,7 @@ namespace MusicWrap.UI.Controls
         public WaveformPlayerControl()
         {
             InitializeComponent();
-            _musicService = App.Services.GetRequiredService<IMusicPlayerService>();
+            _musicService = App.Services.GetRequiredService<MusicPlayerService>();
             _positionTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(33)

@@ -9,7 +9,7 @@ namespace MusicWrap.UI.Shared.Controls.ViewModel
 {
     internal partial class VolumeControlViewModel : ObservableObject, IDisposable
     {
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         private bool _disposed;
         private float _previousVolume = 1.0f;
 
@@ -17,7 +17,7 @@ namespace MusicWrap.UI.Shared.Controls.ViewModel
         [ObservableProperty] private string muteButtonIcon = "\xE767";
         [ObservableProperty] private bool isMuted = false;
 
-        public VolumeControlViewModel(IMusicPlayerService musicPlayerService)
+        public VolumeControlViewModel(MusicPlayerService musicPlayerService)
         {
             _musicPlayerService = musicPlayerService;
             Volume = _musicPlayerService.Volume;

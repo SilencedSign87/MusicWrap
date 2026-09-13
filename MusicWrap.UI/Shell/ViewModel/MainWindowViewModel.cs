@@ -18,7 +18,7 @@ namespace MusicWrap.UI.Shell.ViewModel
 {
     public partial class MainPlayerViewModel : ObservableObject, IDisposable
     {
-        private readonly IMusicPlayerService _playerService;
+        private readonly MusicPlayerService _playerService;
         private readonly IServiceProvider _serviceProvider;
         private readonly WindowManagerService _windowManager;
         private readonly ILogger _logger;
@@ -49,7 +49,7 @@ namespace MusicWrap.UI.Shell.ViewModel
 
         private bool _disposed = false;
 
-        public MainPlayerViewModel(IMusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainPlayerViewModel> logger, WindowManagerService manager, MusicWrapSettings userSettings)
+        public MainPlayerViewModel(MusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainPlayerViewModel> logger, WindowManagerService manager, MusicWrapSettings userSettings)
         {
             _playerService = playerService;
             _serviceProvider = serviceProvider;

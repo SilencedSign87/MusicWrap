@@ -9,7 +9,7 @@ namespace MusicWrap.Core.Services.Lyrics
 {
     public class LyricsProviderService : IDisposable
     {
-        private readonly IMusicPlayerService _player;
+        private readonly MusicPlayerService _player;
         private readonly ILibraryService _library;
         private readonly MetadataEditorService _metadataEditorService;
         private readonly ILogger<LyricsProviderService> _logger;
@@ -22,7 +22,7 @@ namespace MusicWrap.Core.Services.Lyrics
 
         public ParsedLyrics Current => _current;
         public event EventHandler<ParsedLyrics>? LyricsChanged;
-        public LyricsProviderService(IMusicPlayerService player, ILibraryService library, ILogger<LyricsProviderService> logger, MetadataEditorService metadataEditorService)
+        public LyricsProviderService(MusicPlayerService player, ILibraryService library, ILogger<LyricsProviderService> logger, MetadataEditorService metadataEditorService)
         {
             _player = player;
             _library = library;

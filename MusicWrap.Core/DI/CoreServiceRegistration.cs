@@ -75,12 +75,12 @@ namespace MusicWrap.Core.DI
             services.AddSingleton<IPlaylistService, PlaylistService>();
 
             // Player
-            services.AddSingleton<IMusicPlayerService, MusicPlayerService>();
+            services.AddSingleton<MusicPlayerService>();
 
 
             // Startup Initializers
             services.AddSingleton<IStartupInitializer>(sp =>
-                (IStartupInitializer)sp.GetRequiredService<IMusicPlayerService>()
+                (IStartupInitializer)sp.GetRequiredService<MusicPlayerService>()
                 );
             services.AddSingleton<IStartupInitializer>(sp =>
                 (IStartupInitializer)sp.GetRequiredService<ILibraryIntegrityService>()

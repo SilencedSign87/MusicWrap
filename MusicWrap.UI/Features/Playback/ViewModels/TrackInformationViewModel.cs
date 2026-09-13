@@ -21,7 +21,7 @@ namespace MusicWrap.UI.ViewModels
     public sealed record LinkItem(string Name, int Id, LinkType Type);
     public partial class TrackInformationViewModel : ObservableObject
     {
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         private readonly ILibraryService _libraryService;
         private readonly IwindowsImageService _imageService;
         private readonly IUIDispatcher _uiDispatcher;
@@ -97,7 +97,7 @@ namespace MusicWrap.UI.ViewModels
 
 
         public TrackInformationViewModel(
-             IMusicPlayerService playerService,
+             MusicPlayerService playerService,
             ILibraryService libraryService,
             IUIDispatcher uiDispatcher,
             IwindowsImageService imageService,

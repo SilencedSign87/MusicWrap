@@ -32,7 +32,7 @@ namespace MusicWrap.UI.ViewModels
 
 
         private bool _hasInitialize = false;
-        private readonly IMusicPlayerService _player;
+        private readonly MusicPlayerService _player;
         private readonly MusicWrapSettings _userSettings;
 
         private readonly SampleRatePreference[] SampleRates = [
@@ -46,7 +46,7 @@ namespace MusicWrap.UI.ViewModels
             ];
         public List<OutputMode> Outputmodes { get; } = [OutputMode.WasapiShared, OutputMode.WasapiExclusive];
 
-        public DeviceViewModel(IMusicPlayerService player, MusicWrapSettings userSettings)
+        public DeviceViewModel(MusicPlayerService player, MusicWrapSettings userSettings)
         {
             _player = player;
             _userSettings = userSettings;

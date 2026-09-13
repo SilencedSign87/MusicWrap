@@ -19,10 +19,10 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty] private string playPauseStatus = "Play";
         [ObservableProperty] private string playPauseIcon = playIcon;
 
-        private readonly IMusicPlayerService _playerService;
+        private readonly MusicPlayerService _playerService;
         private readonly TrayService _trayService;
         private readonly WindowManagerService _windowManager;
-        public TaskbarIconViewModel(IMusicPlayerService musicPlayerService, TrayService trayService, WindowManagerService windowManager)
+        public TaskbarIconViewModel(MusicPlayerService musicPlayerService, TrayService trayService, WindowManagerService windowManager)
         {
             _playerService = musicPlayerService;
             _trayService = trayService;

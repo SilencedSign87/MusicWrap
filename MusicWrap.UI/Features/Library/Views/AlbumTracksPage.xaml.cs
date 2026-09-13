@@ -18,13 +18,13 @@ namespace MusicWrap.UI.Features.Library.Views
     /// </summary>
     public partial class AlbumTracksPage : UserControl
     {
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         private bool _playerEventsAttached;
 
         public AlbumTracksPage()
         {
             InitializeComponent();
-            _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
+            _musicPlayerService = App.Services.GetRequiredService<MusicPlayerService>();
             var menuFactory = App.Services.GetRequiredService<ContextMenuFactory>();
 
             AlbumTracksView.ContextMenu = menuFactory.Create(AlbumTracksView, ContextMenuType.Standard);

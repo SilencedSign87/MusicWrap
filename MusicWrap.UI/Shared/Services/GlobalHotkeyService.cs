@@ -82,7 +82,7 @@ namespace MusicWrap.UI.Shared.Services
         public GlobalHotkeyService(
             ILogger<GlobalHotkeyService> logger,
             WindowManagerService windowManager,
-            IMusicPlayerService player,
+            MusicPlayerService player,
             IUIDispatcher dispatcher
             )
         {

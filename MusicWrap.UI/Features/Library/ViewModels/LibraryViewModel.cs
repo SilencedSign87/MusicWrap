@@ -38,7 +38,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         // Services
         private readonly ILibraryScanner _scanner;
         private readonly ILibraryService _LibraryCache;
-        private readonly IMusicPlayerService _player;
+        private readonly MusicPlayerService _player;
         private readonly ILogger _logger;
         private readonly SearchService _searchService;
         private readonly ActivityService _activityService;
@@ -51,7 +51,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public LibraryViewModel(
             ILibraryScanner scanner,
             ILibraryService libraryCache,
-            IMusicPlayerService player,
+            MusicPlayerService player,
             IMessenger messenger,
             SearchService searchService,
             ActivityService activityService,

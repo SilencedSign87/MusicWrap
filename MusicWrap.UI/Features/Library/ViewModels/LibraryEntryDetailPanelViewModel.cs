@@ -19,7 +19,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly LibraryWorkspace _workspace;
         private readonly IServiceProvider _serviceProvider;
         private readonly ILibraryService _libraryCache;
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         private readonly IwindowsImageService _imageService;
         private int _headerStatsRequestId;
         private bool _disposed;
@@ -38,7 +38,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public LibraryEntryDetailPanelViewModel(
              LibraryWorkspace workspace,
             ILibraryService libraryCache,
-            IMusicPlayerService musicPlayerService,
+            MusicPlayerService musicPlayerService,
             IwindowsImageService imageService,
             IServiceProvider serviceProvider
             )

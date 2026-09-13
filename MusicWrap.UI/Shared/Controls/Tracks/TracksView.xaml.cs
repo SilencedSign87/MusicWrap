@@ -18,7 +18,7 @@ namespace MusicWrap.UI.Controls.Models
     /// </summary>
     public partial class TracksView : UserControl
     {
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         private Point _dragStartPoint;
         private TrackRowItem? _draggedItem;
         private IEnumerable<TrackRowItem>? _itemsSource;
@@ -31,7 +31,7 @@ namespace MusicWrap.UI.Controls.Models
         public TracksView()
         {
             InitializeComponent();
-            _musicPlayerService = App.Services.GetRequiredService<IMusicPlayerService>();
+            _musicPlayerService = App.Services.GetRequiredService<MusicPlayerService>();
 
             Loaded += TracksView_Loaded;
             Unloaded += TracksView_Unloaded;

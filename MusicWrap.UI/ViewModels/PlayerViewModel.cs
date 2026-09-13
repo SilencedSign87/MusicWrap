@@ -15,7 +15,7 @@ namespace MusicWrap.UI.ViewModels
     public partial class PlayerViewModel : ObservableObject, IDisposable
     {
         private bool _disposed = false;
-        private readonly IMusicPlayerService _playerService;
+        private readonly MusicPlayerService _playerService;
         private readonly ILibraryService _libraryService;
         private readonly WindowManagerService _windowManagerService;
 
@@ -62,7 +62,7 @@ namespace MusicWrap.UI.ViewModels
 
         private readonly IwindowsImageService _imageService;
 
-        public PlayerViewModel(IMusicPlayerService service, ILibraryService libraryService, IwindowsImageService imageService, WindowManagerService windowManagerService)
+        public PlayerViewModel(MusicPlayerService service, ILibraryService libraryService, IwindowsImageService imageService, WindowManagerService windowManagerService)
         {
             _playerService = service;
             _libraryService = libraryService;

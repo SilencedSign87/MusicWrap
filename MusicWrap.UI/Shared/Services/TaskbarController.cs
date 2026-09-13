@@ -29,13 +29,13 @@ namespace MusicWrap.UI.Shared.Services
         private const uint ButtonStop = 4;
         private const int IconSize = 32;
 
-        private readonly IMusicPlayerService _playerService;
+        private readonly MusicPlayerService _playerService;
         private readonly IUIDispatcher _dispatcher;
         private readonly ILogger _logger;
         private List<IntPtr> _createdIcons = new();
 
         public TaskbarController(
-            IMusicPlayerService playerService,
+            MusicPlayerService playerService,
             ILogger<TaskbarController> logger,
             IUIDispatcher dispatcher
             )

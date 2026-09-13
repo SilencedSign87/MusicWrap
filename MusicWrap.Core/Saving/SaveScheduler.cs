@@ -40,7 +40,7 @@ namespace MusicWrap.Core.Saving
         private readonly MusicWrapSettings _userSettings;
         private readonly PlaylistData _playlistData;
 
-        private readonly IMusicPlayerService _player;
+        private readonly MusicPlayerService _player;
 
         // debounce
         private SaveKind _pending;
@@ -59,7 +59,7 @@ namespace MusicWrap.Core.Saving
         MusicLibrary library,
         MusicWrapSettings userSettings,
         PlaylistData playlistData,
-        IMusicPlayerService player)
+        MusicPlayerService player)
         {
             _libraryRepo = libraryRepo;
             _playbackRepo = playbackRepo;

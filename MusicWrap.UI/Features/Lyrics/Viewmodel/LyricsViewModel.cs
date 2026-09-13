@@ -10,7 +10,7 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
     public partial class LyricsViewModel : ObservableObject, IDisposable
     {
         private readonly LyricsProviderService _provider;
-        private readonly IMusicPlayerService _player;
+        private readonly MusicPlayerService _player;
         private readonly IUIDispatcher _dispatcher;
         // lyrics sync state
         private readonly DispatcherTimer _scheduler;
@@ -36,7 +36,7 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
 
         public IReadOnlyList<LyricLine> Lines => Lyrics?.Lines ?? Array.Empty<LyricLine>();
 
-        public LyricsViewModel(LyricsProviderService provider, IMusicPlayerService player, IUIDispatcher dispatcher)
+        public LyricsViewModel(LyricsProviderService provider, MusicPlayerService player, IUIDispatcher dispatcher)
         {
             _provider = provider;
             _player = player;

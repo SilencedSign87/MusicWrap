@@ -35,9 +35,9 @@ namespace MusicWrap.UI.Shell.Windows
         private bool _isInitializing = true;
         private readonly WindowManagerService _windowManager;
         private readonly MusicWrapSettings _settings;
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         public PlayerMode CurrentMode { get; private set; }
-        public ShellWindow(WindowManagerService windowManager, MusicWrapSettings settings, IMusicPlayerService musicPlayerService)
+        public ShellWindow(WindowManagerService windowManager, MusicWrapSettings settings, MusicPlayerService musicPlayerService)
         {
             InitializeComponent();
             _windowManager = windowManager;

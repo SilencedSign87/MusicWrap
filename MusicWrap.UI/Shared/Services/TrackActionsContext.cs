@@ -9,11 +9,11 @@ namespace MusicWrap.UI.Services
 {
     public sealed class TrackActionService
     {
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         private readonly ILibraryService _libraryService;
         private readonly WindowManagerService _windowManager;
 
-        public TrackActionService(IMusicPlayerService musicPlayerService, WindowManagerService windowManager, ILibraryService libraryService)
+        public TrackActionService(MusicPlayerService musicPlayerService, WindowManagerService windowManager, ILibraryService libraryService)
         {
             _musicPlayerService = musicPlayerService;
             _windowManager = windowManager;

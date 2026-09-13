@@ -62,12 +62,12 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         public ObservableCollection<LinkItem> TrackAlbumArtists { get; } = [];
 
         private readonly ILibraryService _libraryService;
-        private readonly IMusicPlayerService _musicPlayerService;
+        private readonly MusicPlayerService _musicPlayerService;
         private readonly MusicWrapSettings _settings;
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly WindowManagerService _windowManagerService;
         public LyricsViewModel LyricsViewModel { get; }
-        public NowPlayingViewModel(ILibraryService libraryService, IMusicPlayerService musicPlayerService, MusicWrapSettings settings, ISaveCoordinator saveCoordinator, WindowManagerService windowManagerService, LyricsViewModel lyricsViewModel)
+        public NowPlayingViewModel(ILibraryService libraryService, MusicPlayerService musicPlayerService, MusicWrapSettings settings, ISaveCoordinator saveCoordinator, WindowManagerService windowManagerService, LyricsViewModel lyricsViewModel)
         {
             _libraryService = libraryService;
             _musicPlayerService = musicPlayerService;

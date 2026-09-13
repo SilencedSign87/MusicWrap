@@ -10,7 +10,7 @@ namespace MusicWrap.UI.Controls
 {
     public partial class SpectrumVisualizerControl : UserControl
     {
-        private readonly IMusicPlayerService _musicService;
+        private readonly MusicPlayerService _musicService;
         private readonly DispatcherTimer _timer;
 
         private float[] _currentHeights = [];
@@ -35,7 +35,7 @@ namespace MusicWrap.UI.Controls
         {
             InitializeComponent();
 
-            _musicService = App.Services.GetRequiredService<IMusicPlayerService>();
+            _musicService = App.Services.GetRequiredService<MusicPlayerService>();
 
             _spectrumPipeline = new SpectrumPipeline(new SpectrumPipelineConfig { SampleRate = _samplerate, FftSize = _currentFFTSize });
             _centeredPipeline = new CenteredSpectrumPipeline(new CenteredSpectrumPipelineConfig { SampleRate = _samplerate, FftSize = _currentFFTSize });

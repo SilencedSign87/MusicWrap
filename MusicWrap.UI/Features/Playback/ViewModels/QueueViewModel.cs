@@ -29,13 +29,13 @@ namespace MusicWrap.UI.Features.Playback.ViewModels
         private readonly Dictionary<int, LinkedListNode<int>> _albumArtNodeByCoverId = [];
 
         // Services
-        private readonly IMusicPlayerService _player;
+        private readonly MusicPlayerService _player;
         private readonly ILibraryService _libraryCache;
         private readonly IwindowsImageService _imageService;
         private readonly WindowManagerService _windowManager;
 
 
-        public QueueViewModel(IMusicPlayerService player, ILibraryService libraryCache, IwindowsImageService imageService, WindowManagerService windowmanager)
+        public QueueViewModel(MusicPlayerService player, ILibraryService libraryCache, IwindowsImageService imageService, WindowManagerService windowmanager)
         {
             _libraryCache = libraryCache;
             _player = player;
