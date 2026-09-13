@@ -84,9 +84,8 @@
                 </Button>
             </WrapPanel>
         </StackPanel>
-        
+
         <ContentControl Content="{Binding CurrentControl}" Visibility="{Binding CurrentControl, Converter={StaticResource NullToCollapseConverter}}" />
-        
     </Grid>
 </UserControl>
 

@@ -37,7 +37,7 @@ namespace MusicWrap.UI.Features.Providers.ViewModels
                     _ => null
                 };
 
-                CurrentControl = control;
+                SetCurrentControl(control);
             }
         }
 
@@ -53,6 +53,24 @@ namespace MusicWrap.UI.Features.Providers.ViewModels
                 return false;
             }
             return CurrentPageType != result;
+        }
+        private void SetCurrentControl(UserControl? control)
+        {
+            if (CurrentControl != null)
+            {
+                if (CurrentControl is YoutubeProviderPage youtubePage)
+                {
+                    youtubePage.HomeRequested -= Page_HomeRequested;
+                }
+            }
+            CurrentControl = control;
+            if (CurrentControl != null)
+            {
+                if (CurrentControl is YoutubeProviderPage youtubePage)
+                {
+                    youtubePage.HomeRequested += Page_HomeRequested;
+                }
+            }
         }
         #endregion
 

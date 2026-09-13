@@ -16,6 +16,9 @@
              d:Background="#000000"
              d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
              >
+    <UserControl.CommandBindings>
+        <CommandBinding  Command="Find" Executed="CommandBinding_Executed"/>
+    </UserControl.CommandBindings>
     <!--Window-->
     <Border
         x:Name="BorderWindow"
@@ -49,7 +52,7 @@
                     </nav:ShellTabControl>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
-                    <controls:CommandPaletteInput VerticalAlignment="Center" Width="200" Height="32" PlaceholderText="Search..."/>
+                    <controls:CommandPaletteInput x:Name="SearchInput" VerticalAlignment="Center" Width="200" Height="32" PlaceholderText="Search..."/>
                     <Border Margin="2,4,0,4" Width="1" Background="{DynamicResource StrokeDivider}"/>
 
                     <controls:ActivityButton/>

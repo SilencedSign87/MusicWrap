@@ -26,6 +26,7 @@ namespace MusicWrap.UI.Shared.Services
         private const uint ButtonPrevious = 1;
         private const uint ButtonPlayPause = 2;
         private const uint ButtonNext = 3;
+        private const uint ButtonStop = 4;
         private const int IconSize = 32;
 
         private readonly IMusicPlayerService _playerService;
@@ -197,6 +198,14 @@ namespace MusicWrap.UI.Shared.Services
                     hIcon = CreateIcon("next"),
                     szTip = "Next",
                     dwFlags = TaskbarNative.THBF_ENABLED
+                },
+                new TaskbarNative.THUMBBUTTON
+                {
+                    dwMask = TaskbarNative.THB_ICON | TaskbarNative.THB_TOOLTIP | TaskbarNative.THB_FLAGS,
+                    iId = ButtonStop,
+                    hIcon = CreateIcon("stop"),
+                    szTip = "Stop",
+                    dwFlags = TaskbarNative.THBF_ENABLED
                 }
             ];
 
@@ -248,14 +257,13 @@ namespace MusicWrap.UI.Shared.Services
                     _dispatcher.Invoke(() => _playerService.Previous());
                     break;
                 case ButtonPlayPause:
-                    _dispatcher.Invoke(() =>
-                            {
-                                if (_playerService.IsPlaying) _playerService.Pause();
-                                else _playerService.Play();
-                            });
+                    _dispatcher.Invoke(() => _playerService.TogglePlayPause());
                     break;
                 case ButtonNext:
                     _dispatcher.Invoke(() => _playerService.Next());
+                    break;
+                case ButtonStop:
+                    _dispatcher.Invoke(() => _playerService.Stop());
                     break;
             }
         }

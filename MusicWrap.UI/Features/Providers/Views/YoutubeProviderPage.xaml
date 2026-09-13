@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Providers.Views"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Providers.ViewModels"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=vm:YoutubeProviderViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
@@ -13,6 +14,7 @@
             <RowDefinition Height="48" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
+
         <Border Grid.Row="0" Padding="8">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -30,142 +32,161 @@
                           MinWidth="140"
                           HorizontalAlignment="Left"
                           VerticalAlignment="Center"
-                          ItemsSource="{Binding SearchKinds}"
-                          SelectedValuePath="Value"
-                          DisplayMemberPath="Label"
-                          SelectedValue="{Binding SelectedKind, Mode=TwoWay}" />
-
-                <Button Grid.Column="2" Padding="6,2" Command="{Binding ClearResultsCommand}" ToolTip="Clear current results">
-                    <TextBlock Text="&#xE894;" FontFamily="Segoe Fluent Icons"/>
-                </Button>
+                          ItemsSource="{Binding AvailableSearchKinds}"
+                          SelectedItem="{Binding SelectedKind}"
+                          >
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Converter={StaticResource EnumToDisplayNameConverter}}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
             </Grid>
         </Border>
 
         <Grid Grid.Row="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="4" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" MaxWidth="500" MinWidth="100" />
+                <ColumnDefinition Width="6" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
-            <ProgressBar
-                Grid.Row="0"
-                Height="4"
-                BorderThickness="0"
-                Foreground="{StaticResource AccentBrush80}"
-                Background="#111111"
-                Focusable="False"
-                IsIndeterminate="True">
-                <ProgressBar.Style>
-                    <Style TargetType="ProgressBar">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsLoading}" Value="True">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ProgressBar.Style>
-            </ProgressBar>
+            <Border Grid.Column="0">
+                <ListBox ItemsSource="{Binding SearchResults}"
+                         SelectionChanged="SearchResults_SelectionChanged"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         >
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="4"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:YoutubeSearchLeafNode}">
+                            <Grid ToolTip="{Binding Title}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
 
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="300" />
-                    <ColumnDefinition Width="6" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="4" Background="#22000000">
+                                    <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill" />
+                                </Border>
 
-                <Border Grid.Column="0">
-                    <ListBox ItemsSource="{Binding SearchResults}"
-                             SelectionChanged="SearchResults_SelectionChanged"
-                             BorderThickness="0"
-                             Background="Transparent">
-                        <ListBox.ItemContainerStyle>
-                            <Style TargetType="ListBoxItem">
-                                <Setter Property="Padding" Value="4"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Subtitle}" FontSize="11" Opacity="0.75" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+
+            <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+
+            <Border Grid.Column="2" Background="{DynamicResource BackgroundLayer}">
+                <Grid>
+                    <TextBlock Text="{Binding EmptyStateText}" Opacity="0.7" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Details.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
                             </Style>
-                        </ListBox.ItemContainerStyle>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate DataType="{x:Type vm:YoutubeSearchLeafNode}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="40" />
-                                        <ColumnDefinition Width="8" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
+                        </TextBlock.Style>
+                    </TextBlock>
 
-                                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="4" Background="#22000000">
-                                        <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill" />
-                                    </Border>
-
-                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Subtitle}" Opacity="0.75" FontSize="11" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Border>
-
-                <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
-
-                <Border Grid.Column="2" Background="{DynamicResource BackgroundLayer}">
-                    <Grid>
-                        <TextBlock Text="{Binding EmptyStateText}" Opacity="0.7" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <ScrollViewer x:Name="DetailsScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Details}">
+                            <ItemsControl.Style>
+                                <Style TargetType="ItemsControl">
+                                    <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Details.Count}" Value="0">
-                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                            </ItemsControl.Style>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:YoutubeDetailGroupNode}">
+                                    <Border Padding="10" Margin="0,0,0,8" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}">
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="200" />
+                                                <ColumnDefinition Width="18" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
 
-                        <ScrollViewer x:Name="DetailsScrollViewer" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl ItemsSource="{Binding Details}">
-                                <ItemsControl.Style>
-                                    <Style TargetType="ItemsControl">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Details.Count}" Value="0">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ItemsControl.Style>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate DataType="{x:Type vm:YoutubeDetailGroupNode}">
-                                        <Border Padding="10" Margin="0,0,0,8" BorderThickness="0,0,0,1" BorderBrush="{StaticResource StrokeSurface}">
-                                            <Grid Grid.Row="0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="150" />
-                                                    <ColumnDefinition Width="10" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <controls:SquarePanel Margin="0,0,0,8">
+                                                    <Border CornerRadius="8">
+                                                        <Border.Background>
+                                                            <ImageBrush 
+                                                                ImageSource="{Binding ThumbnailHighResUrl}"
+                                                                Stretch="UniformToFill"
+                                                                RenderOptions.BitmapScalingMode="LowQuality"
+                                                                AlignmentX="Center"
+                                                                AlignmentY="Center"
+                                                            />
+                                                        </Border.Background>
+                                                    </Border>
+                                                </controls:SquarePanel>
 
-                                                <StackPanel Grid.Column="0">
-                                                    <StackPanel.ContextMenu>
-                                                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                            <MenuItem Header="Add group to indexing" Click="GroupAddToIndexing_Click"/>
-                                                        </ContextMenu>
-                                                    </StackPanel.ContextMenu>
-                                                    <Image Source="{Binding ThumbnailUrl}" Stretch="UniformToFill" VerticalAlignment="Top" Margin="0,0,0,8"/>
-
-                                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                                    <TextBlock Opacity="0.75" FontSize="12" TextWrapping="Wrap" Margin="0,4" TextAlignment="Center">
-                                                        <Run Text="{Binding SubtitleArtistPart, Mode=OneWay}"/>
-                                                        <Run Text="{Binding SubtitleTypePart, Mode=OneWay}"/>
-                                                        <Run Text="{Binding SubtitleYearPart, Mode=OneWay}"/>
-                                                    </TextBlock>
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                    <controls:AppButton
+                                                        Style="{DynamicResource DefaultButton}"
+                                                        Icon="&#xE768;"
+                                                        ToolTip="Play"
+                                                        Margin="2,0"
+                                                        Width="32"
+                                                        Height="32"
+                                                        Padding="0"
+                                                        />
+                                                    <controls:AppButton
+                                                        Style="{DynamicResource DefaultButton}"
+                                                        Icon="&#xE896;"
+                                                        ToolTip="Download"
+                                                        Width="32"
+                                                        Height="32"
+                                                        Padding="0"
+                                                        />
+                                                    <controls:AppButton
+                                                        Style="{DynamicResource DefaultButton}"
+                                                        Icon="&#xE74E;"
+                                                        ToolTip="Save in library"
+                                                        Margin="2,0"
+                                                        Width="32"
+                                                        Height="32"
+                                                        Padding="0"
+                                                        />
 
                                                 </StackPanel>
 
-                                                <ListBox Grid.Column="2"
+                                            </StackPanel>
+                                            <Grid Grid.Column="2" RowDefinitions="Auto,*">
+                                                <Border Grid.Row="0" Padding="0,0,0,18">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" TextWrapping="Wrap" />
+                                                        <TextBlock FontSize="13" Text="{Binding ArtistName}" Margin="0,4" />
+                                                        <TextBlock FontSize="11">
+                                                            <Run Text="{Binding SubtitleTypePart, Mode=OneWay}" />
+                                                            <Run Text=" • " />
+                                                            <Run Text="{Binding SubtitleYearPart, Mode=OneWay}" />
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+                                                <ListBox Grid.Row="1"
                                                          ItemsSource="{Binding Tracks}"
                                                          SelectionMode="Extended"
                                                          SelectionChanged="TrackListBox_SelectionChanged"
@@ -180,55 +201,89 @@
                                                         <Style TargetType="ListBoxItem">
                                                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                                             <Setter Property="Padding" Value="2" />
+                                                            <Setter Property="BorderThickness" Value="0,1,0,0" />
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource StrokeDivider}" />
                                                         </Style>
                                                     </ListBox.ItemContainerStyle>
                                                     <ListBox.ItemTemplate>
                                                         <DataTemplate DataType="{x:Type vm:YoutubeDetailTrackNode}">
-                                                            <Grid Margin="2,1" ClipToBounds="True" HorizontalAlignment="Stretch"
-                                                                  Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}">
-                                                                <Grid.ContextMenu>
-                                                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                                        <MenuItem Header="Add track to indexing"
-                                                                                  Click="TrackAddToIndexing_Click"
-                                                                                  CommandParameter="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
-                                                                    </ContextMenu>
-                                                                </Grid.ContextMenu>
+                                                            <Grid Margin="2,0" 
+                                                                  ClipToBounds="True" 
+                                                                  HorizontalAlignment="Stretch"
+                                                                  Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                                  >
                                                                 <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="34" />
+                                                                    <ColumnDefinition Width="26" />
                                                                     <ColumnDefinition Width="*" />
-                                                                    <ColumnDefinition Width="64" />
+                                                                    <ColumnDefinition Width="Auto"/>
                                                                 </Grid.ColumnDefinitions>
 
                                                                 <TextBlock Grid.Column="0"
                                                                            Text="{Binding Index}"
+                                                                           FontSize="13"
                                                                            Opacity="0.65"
                                                                            VerticalAlignment="Center" />
 
                                                                 <TextBlock Grid.Column="1"
                                                                            Text="{Binding TitleWithSubtitle}"
+                                                                           FontSize="13"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            TextWrapping="NoWrap"
                                                                            VerticalAlignment="Center" />
 
-                                                                <TextBlock Grid.Column="2"
+
+                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0">
+                                                                    <controls:AppButton
+                                                                        Style="{DynamicResource SubtleButton}"
+                                                                        Icon="&#xE896;"
+                                                                        ToolTip="Download"
+                                                                        />
+                                                                    <controls:AppButton
+                                                                        Style="{DynamicResource SubtleButton}"
+                                                                        Icon="&#xE74E;"
+                                                                        ToolTip="Save in library"
+                                                                        />
+                                                                    <TextBlock 
                                                                            Text="{Binding Duration}"
+                                                                           FontSize="13"
                                                                            Opacity="0.75"
                                                                            TextAlignment="Right"
                                                                            VerticalAlignment="Center" />
+                                                                </StackPanel>
                                                             </Grid>
                                                         </DataTemplate>
                                                     </ListBox.ItemTemplate>
                                                 </ListBox>
                                             </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Grid>
-                </Border>
-            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
         </Grid>
+        <ProgressBar
+            Height="4"
+            BorderThickness="0"
+            Foreground="{StaticResource AccentBrush80}"
+            Background="#111111"
+            Focusable="False"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Top"
+            IsIndeterminate="True">
+            <ProgressBar.Style>
+                <Style TargetType="ProgressBar">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ProgressBar.Style>
+        </ProgressBar>
     </Grid>
 </UserControl>
 

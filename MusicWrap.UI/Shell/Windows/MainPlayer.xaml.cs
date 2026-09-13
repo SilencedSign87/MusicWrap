@@ -17,6 +17,11 @@ namespace MusicWrap.UI.Shell.Windows
             PlayerContainer.Children.Add(playerPage);
         }
 
+        private void CommandBinding_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            SearchInput.FocusInput();
+
+        }
     }
 }
 

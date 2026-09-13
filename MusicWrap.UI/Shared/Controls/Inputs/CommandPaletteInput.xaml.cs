@@ -58,6 +58,7 @@ namespace MusicWrap.UI.Controls
                 }
             }
         }
+        public void FocusInput() => CommandInput.Focus();
     }
 }
 

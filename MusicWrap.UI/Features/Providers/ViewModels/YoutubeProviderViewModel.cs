@@ -18,18 +18,10 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _currentQuery = string.Empty;
-    [ObservableProperty] private string _emptyStateText = "Type a query in CommandPalette and press Enter.";
+    [ObservableProperty] private string _emptyStateText = "Search or paste an url on the search bar.";
     [ObservableProperty] private YoutubeSearchKind _selectedKind = YoutubeSearchKind.Artists;
 
-    public ObservableCollection<YoutubeSearchKindOption> SearchKinds { get; } =
-    [
-        new YoutubeSearchKindOption(YoutubeSearchKind.Artists, "Artist"),
-        new YoutubeSearchKindOption(YoutubeSearchKind.Album, "Album"),
-        new YoutubeSearchKindOption(YoutubeSearchKind.Song, "Song"),
-        new YoutubeSearchKindOption(YoutubeSearchKind.Video, "Video"),
-        new YoutubeSearchKindOption(YoutubeSearchKind.Featured, "Featured"),
-        new YoutubeSearchKindOption(YoutubeSearchKind.CommunityPlaylist, "Community Playlist")
-    ];
+   public List<YoutubeSearchKind> AvailableSearchKinds { get; } = Enum.GetValues<YoutubeSearchKind>().ToList();
 
     public ObservableCollection<YoutubeSearchLeafNode> SearchResults { get; } = [];
     public ObservableCollection<YoutubeDetailGroupNode> Details { get; } = [];
@@ -77,7 +69,7 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
         {
             SearchResults.Clear();
             Details.Clear();
-            EmptyStateText = "Type a query in CommandPalette and press Enter.";
+            EmptyStateText = "Search or paste an url on the search bar.";
             return;
         }
 
@@ -170,15 +162,6 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
         {
             IsLoading = false;
         }
-    }
-
-    [RelayCommand]
-    private void ClearResults()
-    {
-        CancelDetailsLoad();
-        SearchResults.Clear();
-        Details.Clear();
-        EmptyStateText = "Type a query in CommandPalette and press Enter.";
     }
 
     public bool AddTrackToIndexing(YoutubeDetailTrackNode? track, YoutubeDetailGroupNode? group = null)
@@ -456,18 +439,6 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
     }
 }
 
-public sealed class YoutubeSearchKindOption
-{
-    public YoutubeSearchKind Value { get; }
-    public string Label { get; }
-
-    public YoutubeSearchKindOption(YoutubeSearchKind value, string label)
-    {
-        Value = value;
-        Label = label;
-    }
-}
-
 public sealed class YoutubeSearchLeafNode
 {
     public YoutubeSearchItem Item { get; }
@@ -506,9 +477,7 @@ public sealed class YoutubeDetailGroupNode
                 return string.Empty;
             }
 
-            return string.IsNullOrWhiteSpace(ArtistName)
-                ? GroupType
-                : $" • {GroupType}";
+            return GroupType;
         }
     }
 
@@ -524,9 +493,7 @@ public sealed class YoutubeDetailGroupNode
             bool hasPrevious = !string.IsNullOrWhiteSpace(ArtistName)
                 || !string.IsNullOrWhiteSpace(GroupType);
 
-            return hasPrevious
-                ? $" • {ReleaseYear.Value}"
-                : ReleaseYear.Value.ToString();
+            return ReleaseYear.Value.ToString();
         }
     }
 }
@@ -543,4 +510,3 @@ public sealed class YoutubeDetailTrackNode
     public string Duration { get; init; } = string.Empty;
     public string TitleWithSubtitle => string.IsNullOrWhiteSpace(Subtitle) ? Title : $"{Title}  •  {Subtitle}";
 }
-
