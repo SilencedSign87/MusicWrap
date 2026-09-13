@@ -23,21 +23,31 @@ namespace MusicWrap.UI.ViewModels
         [NotifyPropertyChangedFor(nameof(PlayPauseIcon))]
         private bool isPlaying = false;
 
-        public RepeatMode SelectedRepeatMode => _playerService.RepeatMode;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(RepeatModeIcon), nameof(RepeatModeTooltip))]
+        private RepeatMode selectedRepeatMode;
+
+        public string RepeatModeIcon => SelectedRepeatMode switch
+        {
+            RepeatMode.None => "\uebe7",
+            RepeatMode.RepeatOne => "\ue8ed",
+            _ => "\ue8ee"
+        };
+
+        public string RepeatModeTooltip => SelectedRepeatMode switch
+        {
+            RepeatMode.None => "No repeat",
+            RepeatMode.RepeatOne => "Repeat current track",
+            _ => "Repeat entire queue"
+        };
 
         [ObservableProperty]
-        private string repeatModeIcon = "";
-        [ObservableProperty]
-        private string repeatModeTooltip = "";
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(ShuffleIcon))]
+        [NotifyPropertyChangedFor(nameof(ShuffleIcon), nameof(ShuffleTooltip))]
         private bool isShuffleEnabled = false;
 
         public string ShuffleIcon => IsShuffleEnabled ? "\xE8B1" : "\xE73C";
 
-        [ObservableProperty]
-        private string shuffleTooltip = "Shuffle off";
+        public string ShuffleTooltip => IsShuffleEnabled ? "Shuffle on" : "Shuffle off";
 
         [ObservableProperty]
         private string currentTrackTitle = CommonStrings.NoTrackPlaying;
@@ -54,9 +64,9 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string? currentTrackHighlightColorHex;
 
-        
+
         //[ObservableProperty] 
-        public string PlayPauseIcon => IsPlaying ? "\ue769" : "\ue768" ; 
+        public string PlayPauseIcon => IsPlaying ? "\ue769" : "\ue768";
 
         private string ArtworkPath = "";
 
@@ -74,9 +84,9 @@ namespace MusicWrap.UI.ViewModels
             _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
             _playerService.TrackChanged += OnTrackChanged;
             _playerService.ShuffleStateChanged += _playerService_ShuffleStateChanged;
-           
+
             // Load initial states
-            UpdateRepeatModeIcon();
+            SelectedRepeatMode = _playerService.RepeatMode;
 
             UpdateCurrentTrackInfo();
 
@@ -87,7 +97,7 @@ namespace MusicWrap.UI.ViewModels
 
         private void _playerService_ShuffleStateChanged(object? sender, bool enabled)
         {
-            Application.Current?.Dispatcher.Invoke(()=>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 IsShuffleEnabled = enabled;
             });
@@ -121,14 +131,12 @@ namespace MusicWrap.UI.ViewModels
         [RelayCommand]
         private void CicleRepeatMode()
         {
-            _playerService.RepeatMode = SelectedRepeatMode switch
+            SelectedRepeatMode = SelectedRepeatMode switch
             {
                 RepeatMode.None => RepeatMode.RepeatOne,
                 RepeatMode.RepeatOne => RepeatMode.RepeatAll,
-                RepeatMode.RepeatAll => RepeatMode.None,
                 _ => RepeatMode.None
             };
-            UpdateRepeatModeIcon();
         }
 
         [RelayCommand]
@@ -146,24 +154,12 @@ namespace MusicWrap.UI.ViewModels
             }
         }
 
-        private void UpdateRepeatModeIcon()
+        partial void OnSelectedRepeatModeChanged(RepeatMode value)
         {
-            switch (SelectedRepeatMode)
+            if (_playerService.RepeatMode != value)
             {
-                case RepeatMode.None:
-                    RepeatModeIcon = "\uebe7"; // No repeat
-                    RepeatModeTooltip = "No repeat";
-                    break;
-                case RepeatMode.RepeatOne:
-                    RepeatModeIcon = "\ue8ed"; // Repeat one
-                    RepeatModeTooltip = "Repeat current track";
-                    break;
-                case RepeatMode.RepeatAll:
-                    RepeatModeIcon = "\ue8ee"; // Repeat all
-                    RepeatModeTooltip = "Repeat entire queue";
-                    break;
+                _playerService.RepeatMode = value;
             }
-            OnPropertyChanged(nameof(SelectedRepeatMode));
         }
 
         partial void OnIsShuffleEnabledChanged(bool value)

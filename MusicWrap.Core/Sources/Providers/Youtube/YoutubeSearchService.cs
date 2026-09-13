@@ -5,6 +5,7 @@ using YouTubeMusicAPI.Models;
 using YouTubeMusicAPI.Models.Info;
 using YouTubeMusicAPI.Models.Search;
 using YoutubeExplode;
+using Microsoft.Extensions.Logging;
 
 namespace MusicWrap.Core.Sources.Providers.Youtube;
 
@@ -12,6 +13,12 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
 {
     private readonly YouTubeMusicClient _ytmClient = new("US", null, null, null, null, new HttpClient());
     private readonly YoutubeClient _youtubeClient = new();
+    private readonly ILogger _logger;
+
+    public YoutubeSearchService(ILogger<YoutubeSearchService> logger)
+    {
+        _logger = logger;
+    }
 
     public async Task<IReadOnlyList<YoutubeSearchItem>> SearchAsync(string query, YoutubeSearchKind kind, CancellationToken cancellationToken = default)
     {
@@ -592,6 +599,11 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
         {
             return [];
         }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get artist info for artistId: {ArtistId}", artistItem.Id);
+            return [];
+        }
 
         if (artistInfo is null)
         {
@@ -712,13 +724,13 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
         {
             var browseId = await _ytmClient.GetAlbumBrowseIdAsync(albumItem.Id, cancellationToken);
             var albumInfo = await _ytmClient.GetAlbumInfoAsync(browseId, cancellationToken);
-            var tracks = await GetAlbumTracksAsync(albumItem.Id, cancellationToken);
+            //var tracks = await GetAlbumTracksAsync(albumItem.Id, cancellationToken);
 
             return
             [
                 new YoutubeDetailGroup
                 {
-                    GroupId = albumInfo.Id,
+                    GroupId = albumItem.Id,
                     Title = albumInfo.Name,
                     Subtitle = BuildAlbumInfoSubtitle(albumInfo),
                     ArtistName = JoinArtists(albumInfo.Artists),
@@ -726,7 +738,7 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
                     ReleaseYear = albumInfo.ReleaseYear > 0 ? albumInfo.ReleaseYear : null,
                     ThumbnailUrl = SelectThumbnailUrls(albumInfo.Thumbnails).LowRes,
                     ThumbnailHighResUrl = SelectThumbnailUrls(albumInfo.Thumbnails).HighRes,
-                    Tracks = tracks
+                    Tracks = []
                 }
             ];
         }
@@ -791,20 +803,20 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
             }
 
             var playlistInfo = await _ytmClient.GetCommunityPlaylistInfoAsync(browseId, cancellationToken);
-            var playlistTracks = await GetPlaylistTracksAsync(playlistItem.Id, cancellationToken);
+            //var playlistTracks = await GetPlaylistTracksAsync(playlistItem.Id, cancellationToken);
 
             return
             [
                 new YoutubeDetailGroup
                 {
-                    GroupId = playlistInfo.Id,
+                    GroupId = playlistItem.Id,
                     Title = playlistInfo.Name,
                     Subtitle = BuildPlaylistSubtitle(playlistInfo),
                     ArtistName = playlistInfo.Creator?.Name ?? string.Empty,
                     GroupType = "Playlist",
                     ThumbnailUrl = SelectThumbnailUrls(playlistInfo.Thumbnails).LowRes,
                     ThumbnailHighResUrl = SelectThumbnailUrls(playlistInfo.Thumbnails).HighRes,
-                    Tracks = playlistTracks
+                    Tracks = []
                 }
             ];
         }

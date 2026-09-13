@@ -13,7 +13,6 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
 {
     private readonly IYoutubeSearchService _searchService;
     private CancellationTokenSource? _detailsLoadCts;
-    private int _detailsLoadVersion;
     private bool _suppressSearchOnKindChange;
 
     [ObservableProperty] private bool _isLoading;
@@ -21,7 +20,7 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
     [ObservableProperty] private string _emptyStateText = "Search or paste an url on the search bar.";
     [ObservableProperty] private YoutubeSearchKind _selectedKind = YoutubeSearchKind.Artists;
 
-   public List<YoutubeSearchKind> AvailableSearchKinds { get; } = Enum.GetValues<YoutubeSearchKind>().ToList();
+    public List<YoutubeSearchKind> AvailableSearchKinds { get; } = Enum.GetValues<YoutubeSearchKind>().ToList();
 
     public ObservableCollection<YoutubeSearchLeafNode> SearchResults { get; } = [];
     public ObservableCollection<YoutubeDetailGroupNode> Details { get; } = [];
@@ -106,8 +105,6 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
             return;
         }
 
-        _detailsLoadVersion++;
-        int loadVersion = _detailsLoadVersion;
         _detailsLoadCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var detailsToken = _detailsLoadCts.Token;
 
@@ -119,23 +116,7 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
             Details.Clear();
             foreach (var detail in detailItems)
             {
-                var trackNodes = detail.Tracks
-                    .Select((t, idx) =>
-                    {
-                        var (subtitle, duration) = SplitSubtitleAndDuration(t.Subtitle);
-                        string effectiveDuration = !string.IsNullOrWhiteSpace(t.Duration) ? t.Duration : duration;
-                        return new YoutubeDetailTrackNode
-                        {
-                            Id = t.Id,
-                            Index = idx + 1,
-                            Title = t.Title,
-                            Artist = t.Artist,
-                            Album = t.Album,
-                            Genre = t.Genre,
-                            Subtitle = subtitle,
-                            Duration = effectiveDuration
-                        };
-                    });
+                var trackNodes = detail.Tracks.Select((t, idx) => ToTrackNode(t, idx + 1));
 
                 Details.Add(new YoutubeDetailGroupNode
                 {
@@ -147,16 +128,13 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
                     ReleaseYear = detail.ReleaseYear,
                     ThumbnailUrl = detail.ThumbnailUrl,
                     ThumbnailHighResUrl = detail.ThumbnailHighResUrl,
+                    TrackCount = detail.Tracks.Count,
+                    TracksLoaded = detail.Tracks.Count > 0,
                     Tracks = new ObservableCollection<YoutubeDetailTrackNode>(trackNodes)
                 });
             }
 
             EmptyStateText = Details.Count == 0 ? "No details found." : string.Empty;
-
-            if (SelectedKind == YoutubeSearchKind.Artists)
-            {
-                _ = HydrateArtistAlbumsProgressivelyAsync(loadVersion, detailsToken);
-            }
         }
         finally
         {
@@ -206,60 +184,6 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
         return AddTracksToIndexing(group.Tracks, group);
     }
 
-    private async Task HydrateArtistAlbumsProgressivelyAsync(int loadVersion, CancellationToken cancellationToken)
-    {
-        var albumGroups = Details
-            .Where(d => d.GroupId.StartsWith("album::", StringComparison.Ordinal))
-            .ToArray();
-
-        foreach (var albumGroup in albumGroups)
-        {
-            if (loadVersion != _detailsLoadVersion || cancellationToken.IsCancellationRequested)
-            {
-                break;
-            }
-
-            var albumId = albumGroup.GroupId["album::".Length..];
-            if (string.IsNullOrWhiteSpace(albumId))
-            {
-                continue;
-            }
-
-            IReadOnlyList<YoutubeDetailTrack> tracks;
-            try
-            {
-                tracks = await _searchService.GetAlbumTracksAsync(albumId, cancellationToken);
-            }
-            catch
-            {
-                continue;
-            }
-
-            if (loadVersion != _detailsLoadVersion || cancellationToken.IsCancellationRequested)
-            {
-                break;
-            }
-
-            albumGroup.Tracks.Clear();
-            foreach (var track in tracks)
-            {
-                var (subtitle, duration) = SplitSubtitleAndDuration(track.Subtitle);
-                string effectiveDuration = !string.IsNullOrWhiteSpace(track.Duration) ? track.Duration : duration;
-                albumGroup.Tracks.Add(new YoutubeDetailTrackNode
-                {
-                    Id = track.Id,
-                    Index = albumGroup.Tracks.Count + 1,
-                    Title = track.Title,
-                    Artist = track.Artist,
-                    Album = track.Album,
-                    Genre = track.Genre,
-                    Subtitle = subtitle,
-                    Duration = effectiveDuration
-                });
-            }
-        }
-    }
-
     private static (string Subtitle, string Duration) SplitSubtitleAndDuration(string subtitle)
     {
         if (string.IsNullOrWhiteSpace(subtitle))
@@ -285,7 +209,70 @@ public sealed partial class YoutubeProviderViewModel : ObservableObject
 
         return (text, string.Empty);
     }
+    public async Task LoadTracksAsync(YoutubeDetailGroupNode? group)
+    {
+        if (group is null || group.IsLoadingTracks) return;
 
+        if (group.TracksLoaded)
+        {
+            group.IsExpanded = !group.IsExpanded;
+            return;
+        }
+        group.IsLoadingTracks = true;
+
+        IsLoading = true;
+        try
+        {
+            var tracks = await FetchGroupTracksAsync(group);
+            group.Tracks.Clear();
+            foreach (var track in tracks)
+            {
+                group.Tracks.Add(ToTrackNode(track, group.Tracks.Count + 1));
+            }
+            group.TrackCount = tracks.Count;
+        }
+        finally
+        {
+            group.IsLoadingTracks = false;
+            IsLoading = false;
+        }
+
+        group.TracksLoaded = true;
+        group.IsExpanded = true;
+    }
+    private Task<IReadOnlyList<YoutubeDetailTrack>> FetchGroupTracksAsync(YoutubeDetailGroupNode group)
+    {
+        if (group.GroupId.StartsWith("album::", StringComparison.Ordinal))
+        {
+            return _searchService.GetAlbumTracksAsync(group.GroupId["album::".Length..]);
+        }
+        if (group.GroupType.Equals("Playlist", StringComparison.OrdinalIgnoreCase))
+        {
+            return _searchService.GetPlaylistTracksAsync(group.GroupId);
+        }
+        if (group.GroupType is "Album" or "EP" or "Single")
+        {
+            return _searchService.GetAlbumTracksAsync(group.GroupId);
+        }
+        // should not get here.
+        return Task.FromResult<IReadOnlyList<YoutubeDetailTrack>>([]);
+    }
+    private static YoutubeDetailTrackNode ToTrackNode(YoutubeDetailTrack t, int index)
+    {
+        var (subtitle, duration) = SplitSubtitleAndDuration(t.Subtitle);
+        string effectiveDuration = !string.IsNullOrWhiteSpace(t.Duration) ? t.Duration : duration;
+        return new YoutubeDetailTrackNode
+        {
+            Id = t.Id,
+            Index = index,
+            Title = t.Title,
+            Artist = t.Artist,
+            Album = t.Album,
+            Genre = t.Genre,
+            Subtitle = subtitle,
+            Duration = effectiveDuration
+        };
+    }
     private static StagedTrackNode BuildStagedTrack(YoutubeDetailTrackNode track, YoutubeDetailGroupNode? group, int index)
     {
         string artist = !string.IsNullOrWhiteSpace(track.Artist)
@@ -454,7 +441,7 @@ public sealed class YoutubeSearchLeafNode
     }
 }
 
-public sealed class YoutubeDetailGroupNode
+public sealed partial class YoutubeDetailGroupNode : ObservableObject
 {
     public required string GroupId { get; init; }
     public required string Title { get; init; }
@@ -465,6 +452,13 @@ public sealed class YoutubeDetailGroupNode
     public string ThumbnailUrl { get; init; } = string.Empty;
     public string ThumbnailHighResUrl { get; init; } = string.Empty;
     public required ObservableCollection<YoutubeDetailTrackNode> Tracks { get; init; }
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(TracksInfoText))] private int _trackCount;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(TracksInfoText))] private bool _tracksLoaded;
+    [ObservableProperty] private bool _isExpanded;
+    [ObservableProperty] private bool _isLoadingTracks;
+
+    public string TracksInfoText => TracksLoaded ? $"{TrackCount} {(TrackCount == 1 ? "track" : "tracks")}" : string.Empty;
 
     public string SubtitleArtistPart => ArtistName;
 

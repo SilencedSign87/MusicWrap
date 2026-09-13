@@ -18,7 +18,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
         private bool _followLyrics = true;
         private bool _isFirstLoad = true;
         private readonly LyricsViewModel _viewModel;
-        private BlurEffect _textBlurEffect = new() { Radius = 6 };
+        private BlurEffect _textBlurEffect = new() { Radius = 4 };
 
         public bool HasLyrics => _viewModel?.HasLyrics ?? false;
         public bool HasSyncedLyrics => _viewModel?.HasSyncedLyrics ?? false;
@@ -75,9 +75,20 @@ namespace MusicWrap.UI.Features.Lyrics.View
             DependencyProperty.Register(nameof(LyricsAligment), typeof(TextAlignment), typeof(LyricsView), new PropertyMetadata(TextAlignment.Center));
 
 
+
+        public Thickness LyricsPadding
+        {
+            get { return (Thickness)GetValue(LyricsPaddingProperty); }
+            set { SetValue(LyricsPaddingProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for LyricsPadding.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty LyricsPaddingProperty =
+            DependencyProperty.Register(nameof(LyricsPadding), typeof(Thickness), typeof(LyricsView), new PropertyMetadata(new Thickness(24, 48, 24, 48)));
+
+
+
         #endregion
-
-
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -191,6 +202,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
         {
             if (!_followLyrics) return;
             _followLyrics = false;
+            UpdateLineOpacities();
         }
 
         private void HandleResumeFollow(object sender, RoutedEventArgs e)
@@ -198,6 +210,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
             _followLyrics = true;
 
             CenterActiveLine();
+            UpdateLineOpacities();
         }
         #region Rendering
         private void CenterActiveLine()
@@ -272,7 +285,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
                     .ContainerFromIndex(i) is FrameworkElement container)
                 {
                     container.Opacity = i == activeIdx ? 1.0 : 0.3;
-                    container.Effect = i == activeIdx ? null : _textBlurEffect;
+                    container.Effect = _followLyrics ? (i == activeIdx ? null : _textBlurEffect) : null;
                 }
             }
         }

@@ -7,6 +7,7 @@
              xmlns:mw="clr-namespace:MusicWrap.UI.Features.Playback.Views"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
+             xmlns:lrc="clr-namespace:MusicWrap.UI.Features.Lyrics.View"
              x:Name="MusicWrapCompactWindow"
              d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
              mc:Ignorable="d"
@@ -178,19 +179,13 @@
                     Background="{DynamicResource BackgroundSolid2}"
                     >
                 <TabControl Style="{StaticResource SubtleTabControl}">
-                    <TabItem x:Name="QueueTab" Style="{StaticResource SubtleTabItem}" >
-                        <TabItem.Header>
-                            <StackPanel>
-                                <TextBlock Text="Queue" />
-                            </StackPanel>
-                        </TabItem.Header>
+                    <TabItem x:Name="QueueTab" Style="{StaticResource SubtleTabItem}" Header="Queue" >
+                        
                     </TabItem>
-                    <TabItem Style="{StaticResource SubtleTabItem}">
-                        <TabItem.Header>
-                            <StackPanel>
-                                <TextBlock Text="Library" />
-                            </StackPanel>
-                        </TabItem.Header>
+                    <TabItem x:Name="LyricsTab" Style="{StaticResource SubtleTabItem}" Header="Lyrics">
+                        <lrc:LyricsView AllowScroll="True" AllowSeek="True" FontSize="13" LyricsPadding="12,18" />
+                    </TabItem>
+                    <TabItem x:Name="LibraryTab" Style="{StaticResource SubtleTabItem}" Header="Library">
 
                     </TabItem>
                 </TabControl>

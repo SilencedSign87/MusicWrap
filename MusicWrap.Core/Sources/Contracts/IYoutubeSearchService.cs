@@ -5,6 +5,7 @@ public interface IYoutubeSearchService
     Task<IReadOnlyList<YoutubeSearchItem>> SearchAsync(string query, YoutubeSearchKind kind, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<YoutubeDetailGroup>> GetDetailsAsync(YoutubeSearchItem selectedItem, YoutubeSearchKind kind, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<YoutubeDetailTrack>> GetAlbumTracksAsync(string albumId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<YoutubeDetailTrack>> GetPlaylistTracksAsync(string playlistId, CancellationToken cancellationToken = default);
 }
 
 public enum YoutubeSearchKind

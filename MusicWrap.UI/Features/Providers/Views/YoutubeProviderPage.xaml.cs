@@ -230,6 +230,15 @@ namespace MusicWrap.UI.Features.Providers.Views
 
             return null;
         }
+
+        private async void ShowTracks_Click(object sender, RoutedEventArgs e)
+        {
+            if(sender is FrameworkElement { DataContext: YoutubeDetailGroupNode group })
+            {
+                await _viewModel.LoadTracksAsync(group);
+            }
+
+        }
     }
 }
 

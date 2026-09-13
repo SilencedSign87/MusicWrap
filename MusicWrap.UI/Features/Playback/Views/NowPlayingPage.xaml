@@ -118,8 +118,9 @@
                 <lyrics:LyricsView
                     x:Name="lyricsComponent"
                     AllowSeek="True"
-                    FontSize="20"
+                    FontSize="16"
                     LyricsStateChanged="lyricsComponent_LyricsStateChanged"
+                    LyricsPadding="12,20"
                     />
             </Border>
 
