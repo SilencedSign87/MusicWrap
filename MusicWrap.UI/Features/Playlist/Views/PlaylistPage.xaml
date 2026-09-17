@@ -196,12 +196,12 @@
         <Border Grid.Column="1" Background="{DynamicResource BackgroundLayer}">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="120" />
+                    <RowDefinition Height="95" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="90"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
@@ -209,28 +209,26 @@
                         <RowDefinition Height="42" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Center">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" RowDefinitions="*,*" ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Row="0" Text="{Binding SelectedEntry.Title}" FontSize="16" FontWeight="SemiBold"/>
-                        <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <Grid Grid.Row="1">
                             <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12" VerticalAlignment="Center"/>
-                            <Button Style="{StaticResource SubtleButton}" Margin="4,0,0,0" ToolTip="Play" Click="PlaySelectedPlaylist_click">
+                        </Grid>
+                        <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" Margin="8">
+                            <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="Play" Click="PlaySelectedPlaylist_click">
                                 <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
                             </Button>
-                            <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle" Click="ShufflePlaylist_click">
+                            <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="Shuffle" Click="ShufflePlaylist_click">
                                 <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
                             </Button>
-                            <Button Style="{StaticResource SubtleButton}" ToolTip="Shuffle">
+                            <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="More">
                                 <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE712;"/>
                             </Button>
                         </StackPanel>
                     </Grid>
                     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}">
                         <ListBox
-                            Margin="100,0,4,0"
+                            Margin="90,0,0,0"
                             ItemsSource="{Binding AllTabs}"
                             SelectedItem="{Binding SelectedTab, Mode=TwoWay}"
                             HorizontalAlignment="Left"
@@ -283,7 +281,7 @@
                         </ListBox>
                     </Grid>
 
-                    <Border Grid.RowSpan="2"  Width="90" Height="90" CornerRadius="45" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8">
+                    <Border Grid.RowSpan="2"  Width="72" Height="72" CornerRadius="45" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8">
                         <Border.Background>
                             <ImageBrush
                                 ImageSource="{Binding SelectedEntry.ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=150}"

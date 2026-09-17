@@ -53,6 +53,8 @@
                 Focusable="True"
                 PreviewKeyDown="VolumeHost_PreviewKeyDown"
                 SnapsToDevicePixels="True"
+                MouseEnter="VolumeHost_MouseEnter"
+                MouseLeave="VolumeHost_MouseLeave"
                 >
             <Grid x:Name="VolumeContainer" Background="Transparent">
 
@@ -78,7 +80,6 @@
                            MouseDown="InteractiveLayer_MouseDown"
                            MouseUp="InteractiveLayer_MouseUp"
                            MouseMove="InteractiveLayer_MouseMove"
-                           MouseEnter="InteractiveLayer_MouseEnter"
                            MouseLeave="InteractiveLayer_MouseLeave"/>
 
                 <!-- Volume Popup (visible only during drag) -->

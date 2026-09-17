@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System;
@@ -56,7 +57,7 @@ namespace MusicWrap.UI.Shell.Tray
 
             if (!IsVisible)
                 Show();
-            
+
 
             Topmost = true;
             Topmost = false;
@@ -152,7 +153,7 @@ namespace MusicWrap.UI.Shell.Tray
             base.OnSourceInitialized(e);
             var hwnd = new WindowInteropHelper(this).Handle;
             int disable = 1;
-            DwmSetWindowAttribute(hwnd, 3, ref disable, sizeof(int));
+            Win32Helper.DwmSetWindowAttribute(hwnd, Win32Helper.DWMWA_TRANSITIONS_FORCEDISABLED, ref disable);
 
             var area = SystemParameters.WorkArea;
             var pos = _userSettings.TrayPopupPosition;
@@ -175,10 +176,6 @@ namespace MusicWrap.UI.Shell.Tray
 
             _homeTop = Top;
         }
-
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
-
     }
 }
 

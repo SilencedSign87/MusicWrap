@@ -13,7 +13,7 @@
              d:DesignHeight="800" d:DesignWidth="500">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="120"/>
+            <RowDefinition Height="95"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -21,7 +21,7 @@
         <Border Grid.Row="0">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="90"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
@@ -29,14 +29,9 @@
                     <RowDefinition Height="42" />
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Bottom">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="auto"/>
-                    </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" RowDefinitions="*,*" ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Row="0" Grid.Column="0"  Text="{Binding HeaderTitle}" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal">
+                    <Grid Grid.Row="1" Grid.Column="0">
                         <TextBlock Opacity="0.75" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
                             <Run Text="{Binding HeaderAlbumsCountText}"/>
                             <Run Text=" Albums"/>
@@ -46,19 +41,22 @@
                             <Run Text=" • "/>
                             <Run Text="{Binding HeaderTotalDurationText}"/>
                         </TextBlock>
-                    </StackPanel>
-                    <StackPanel Grid.Row="2" Orientation="Horizontal">
+                    </Grid>
+                    <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Orientation="Horizontal" Margin="8">
                         <Button Style="{StaticResource SubtleButton}" Padding="0"  Width="26" Height="26" ToolTip="Play all" Command="{Binding PlayAllTracksCommand}">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
                         </Button>
                         <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle" Command="{Binding ShuffleAllTracksCommand}">
                             <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
                         </Button>
+                        <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="More" Command="{Binding ShuffleAllTracksCommand}">
+                            <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE712;"/>
+                        </Button>
                     </StackPanel>
 
                 </Grid>
 
-                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}" Padding="96,0,0,0">
+                <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}" Padding="90,0,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -153,9 +151,9 @@
                     </Grid>
                 </Border>
 
-                <Border Width="90" Height="90" Grid.RowSpan="2" CornerRadius="45" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8">
+                <Border Width="72" Height="72" Grid.RowSpan="2" CornerRadius="45" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8">
                     <Border.Background>
-                        <ImageBrush ImageSource="{Binding HeaderImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:90}" Stretch="UniformToFill"/>
+                        <ImageBrush ImageSource="{Binding HeaderImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:72}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Linear"/>
                     </Border.Background>
                 </Border>
                 

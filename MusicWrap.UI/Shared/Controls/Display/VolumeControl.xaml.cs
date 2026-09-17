@@ -354,15 +354,10 @@ namespace MusicWrap.UI.Controls
             UpdateVolumePopup(e);
             SetVolumeFromMouse(e);
         }
-        
-        private void InteractiveLayer_MouseEnter(object sender, MouseEventArgs e)
-        {
-            AnimateThumbLength(ThumbHoverLength);
-        }
 
         private void InteractiveLayer_MouseLeave(object sender, MouseEventArgs e)
         {
-            AnimateThumbLength(ThumbLength);
+            
             if (!isDragging) HideVolumePopup();
         }
 
@@ -392,6 +387,16 @@ namespace MusicWrap.UI.Controls
                 _viewModel.Volume = Math.Max(0.0f, _viewModel.Volume - 0.05f);
                 e.Handled = true;
             }
+        }
+
+        private void VolumeHost_MouseEnter(object sender, MouseEventArgs e)
+        {
+            AnimateThumbLength(ThumbHoverLength);
+        }
+
+        private void VolumeHost_MouseLeave(object sender, MouseEventArgs e)
+        {
+            AnimateThumbLength(ThumbLength);
         }
     }
 }

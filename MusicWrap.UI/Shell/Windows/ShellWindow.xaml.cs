@@ -1,6 +1,7 @@
 ﻿using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Shared.Services;
 using System.ComponentModel;
 using System.Windows;
