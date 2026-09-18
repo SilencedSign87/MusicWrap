@@ -40,7 +40,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         public string SidebarToggleIcon
             => IsSidePanelVisible ? "\xE89F" : "\xE8A0";
         public GridLength SidebarWidth
-            => IsSidePanelVisible ? new GridLength(300) : new GridLength(0);
+            => IsSidePanelVisible ? new GridLength(307) : new GridLength(0);
         public string SidebarTooltip
             => IsSidePanelVisible ? "Hide Sidebar" : "Show Sidebar";
 

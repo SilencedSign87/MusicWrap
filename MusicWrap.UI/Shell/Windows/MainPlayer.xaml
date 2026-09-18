@@ -45,10 +45,10 @@
                         CompactWidthThreshold="1100"
                         VerticalAlignment="Bottom"
                         >
-                        <nav:ShellTabItem Icon="&#xe8f1;" Text="Library" TextSize="14" IconSize="14" Spacing="8" TabIndex="0" ToolTip="Library"/>
-                        <nav:ShellTabItem Icon="&#xe90b;" Text="Playlists" TextSize="14" IconSize="14" Spacing="8" TabIndex="1" ToolTip="Playlists"/>
-                        <nav:ShellTabItem Icon="&#xECAA;" Text="Services" TextSize="14" IconSize="14" Spacing="8" TabIndex="2" ToolTip="Services"/>
-                        <nav:ShellTabItem Icon="&#xF61F;" Text="Now Playing" TextSize="14" IconSize="14" Spacing="8" TabIndex="3" ToolTip="Now Playing"/>
+                        <nav:ShellTabItem Icon="&#xe8f1;" Text="Library" TextSize="14" IconSize="14" Spacing="8" TabIndex="0" ToolTip="Library" FontWeight="Regular"/>
+                        <nav:ShellTabItem Icon="&#xe90b;" Text="Playlists" TextSize="14" IconSize="14" Spacing="8" TabIndex="1" ToolTip="Playlists" FontWeight="Regular"/>
+                        <nav:ShellTabItem Icon="&#xECAA;" Text="Services" TextSize="14" IconSize="14" Spacing="8" TabIndex="2" ToolTip="Services" FontWeight="Regular"/>
+                        <nav:ShellTabItem Icon="&#xF61F;" Text="Now Playing" TextSize="14" IconSize="14" Spacing="8" TabIndex="3" ToolTip="Now Playing" FontWeight="Normal"/>
                     </nav:ShellTabControl>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">
@@ -57,7 +57,6 @@
 
                     <controls:ActivityButton/>
 
-                    <Border Margin="0,4" Width="1" Background="{DynamicResource StrokeDivider}"/>
 
                     <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding openSettingsCommand}" ToolTip="Settings">
                         <TextBlock Text="&#xe713;" FontFamily="Segoe Fluent Icons" FontSize="16" />
@@ -65,6 +64,7 @@
                     <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding ToggleSidebarCommand}" ToolTip="{Binding SidebarTooltip}">
                         <TextBlock Text="{Binding SidebarToggleIcon}" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>
+                    <Border Margin="0,4" Width="1" Background="{DynamicResource StrokeDivider}"/>
                     <Button Style="{StaticResource TransparentTitleButton}" Command="{Binding showMiniplayerCommand}" ToolTip="MiniPlayer">
                         <TextBlock Text="&#xee49;" FontFamily="Segoe Fluent Icons" FontSize="16" />
                     </Button>

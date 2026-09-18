@@ -166,7 +166,6 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                 _labelBlock = new TextBlock
                 {
                     FontSize = TextSize,
-                    FontWeight = FontWeights.SemiBold,
                 };
                 _labelBlock.SetBinding(TextBlock.TextProperty, new Binding(nameof(Text)) { Source = this });
                 _panel.Children.Add(_labelBlock);

@@ -21,7 +21,7 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="4"
+                            CornerRadius="2"
                             Padding="{TemplateBinding Padding}">
                         <ContentPresenter
                             HorizontalAlignment="Center"

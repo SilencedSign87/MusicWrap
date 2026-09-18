@@ -196,7 +196,7 @@
         <Border Grid.Column="1" Background="{DynamicResource BackgroundLayer}">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="95" />
+                    <RowDefinition Height="90" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <Grid>
@@ -205,11 +205,11 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="42" />
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" RowDefinitions="*,*" ColumnDefinitions="*,Auto">
+                    <Grid Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" RowDefinitions="*,*" ColumnDefinitions="*,Auto" Margin="0,8">
                         <TextBlock Grid.Row="0" Text="{Binding SelectedEntry.Title}" FontSize="16" FontWeight="SemiBold"/>
                         <Grid Grid.Row="1">
                             <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12" VerticalAlignment="Center"/>
@@ -226,7 +226,7 @@
                             </Button>
                         </StackPanel>
                     </Grid>
-                    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}">
+                    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}" Height="32">
                         <ListBox
                             Margin="90,0,0,0"
                             ItemsSource="{Binding AllTabs}"
@@ -280,7 +280,7 @@
                         </ListBox>
                     </Grid>
 
-                    <Border Grid.RowSpan="2"  Width="72" Height="72" CornerRadius="45" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="8">
+                    <Border Grid.RowSpan="2"  Width="72" Height="72" CornerRadius="45" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <Border.Background>
                             <ImageBrush
                                 ImageSource="{Binding SelectedEntry.ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=150}"

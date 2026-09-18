@@ -153,14 +153,14 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4"
+                                CornerRadius="2"
                                 />
 
                             <Border
                                 x:Name="HoverOverlay"
                                 Visibility="Collapsed"
                                 IsHitTestVisible="False"
-                                CornerRadius="4"
+                                CornerRadius="2"
                                 Background="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Foreground, Converter={StaticResource ForegroundToHoverBrushConverter}}"/>
 
                             <ContentPresenter

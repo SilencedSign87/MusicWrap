@@ -6,7 +6,9 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Shell.Controls"
              xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
              mc:Ignorable="d" 
-             d:DesignHeight="800" d:DesignWidth="300">
+             d:DesignHeight="800" d:DesignWidth="300"
+             BorderThickness="1,0,0,0" BorderBrush="{DynamicResource StrokeSurface}"
+             >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -14,7 +16,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
-            <Border Background="{DynamicResource BackgroundCard1}" BorderThickness="1" BorderBrush="{DynamicResource BackgroundCard1}" CornerRadius="0">
+            <Border Background="{DynamicResource BackgroundLayer}" CornerRadius="0">
                 <nav:ShellTabControl
                     SelectionChanged="ShellTabControl_SelectionChanged"
                     VerticalAlignment="Bottom"
