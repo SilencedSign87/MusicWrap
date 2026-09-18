@@ -7,11 +7,8 @@ using System.Windows.Media;
 namespace MusicWrap.UI.Shared.Controls.Navigation
 {
     [TemplatePart(Name = "HeaderPanel", Type = typeof(StackPanel))]
-    [TemplatePart(Name = "SelectionIndicator", Type = typeof(FrameworkElement))]
     public class ShellTabControl : TabControl
     {
-        private FrameworkElement? _indicator;
-        private TranslateTransform? _indicatorTransform;
         private Window? _parentWindow;
         private bool _windowSuscribed;
         public static readonly DependencyProperty CompactWidthThresholdProperty =
@@ -43,17 +40,11 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
         {
             Loaded += ShellTabControl_Loaded;
             Unloaded += ShellTabControl_Unloaded;
-            SelectionChanged += ShellTabControl_SelectionChanged;
         }
         private void ShellTabControl_Loaded(object sender, RoutedEventArgs e)
         {
             UpdateWindowSubscription();
-            UpdateIndicatorPosition(animate: false);
             UpdateCompactMode();
-        }
-        private void ShellTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateIndicatorPosition(animate: true);
         }
         private void OnParentWindowSizeChanged(object? sender, SizeChangedEventArgs e)
         {
@@ -71,31 +62,17 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            _indicator = GetTemplateChild("SelectionIndicator") as FrameworkElement;
-            if (_indicator != null)
-            {
-                _indicatorTransform = new TranslateTransform();
-                _indicator.RenderTransform = _indicatorTransform;
-                _indicator.RenderTransformOrigin = new Point(0.5, 0.5);
-            }
 
             Loaded += OnLoaded;
-            SelectionChanged += OnSelectionChanged;
             SizeChanged += OnSizeChanged;
         }
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            UpdateIndicatorPosition(animate: false);
             UpdateCompactMode();
-        }
-        private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateIndicatorPosition(animate: true);
         }
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             UpdateCompactMode();
-            UpdateIndicatorPosition(animate: false);
         }
         private void UpdateCompactMode()
         {
@@ -109,7 +86,6 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                         if (ItemContainerGenerator.ContainerFromItem(item) is ShellTabItem tabItem)
                             tabItem.SetCompactMode(false);
                     }
-                    ScheduleIndicatorUpdate();
                 }
                 return;
             }
@@ -123,7 +99,6 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                     if (ItemContainerGenerator.ContainerFromItem(item) is ShellTabItem tabItem)
                         tabItem.SetCompactMode(compact);
                 }
-                ScheduleIndicatorUpdate();
             }
         }
         private void UpdateWindowSubscription()
@@ -149,53 +124,11 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                 _parentWindow = null;
             }
         }
-        private void UpdateIndicatorPosition(bool animate)
-        {
-            if (_indicator == null || _indicatorTransform == null)
-                return;
-            var container = ItemContainerGenerator.ContainerFromIndex(SelectedIndex) as TabItem;
-            if (container?.IsLoaded != true)
-                return;
-            var headerPanel = GetTemplateChild("HeaderPanel") as UIElement;
-            if (headerPanel == null)
-                return;
-            Point pos;
-            try
-            {
-                pos = container.TranslatePoint(new Point(0, 0), headerPanel);
-            }
-            catch
-            {
-                return;
-            }
-            double targetX = pos.X + (container.ActualWidth - _indicator.Width) / 2;
-            if (animate)
-            {
-                var anim = new DoubleAnimation
-                {
-                    To = targetX,
-                    Duration = TimeSpan.FromMilliseconds(250),
-                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-                };
-                _indicatorTransform.BeginAnimation(TranslateTransform.XProperty, anim);
-            }
-            else
-            {
-                _indicatorTransform.X = targetX;
-            }
-        }
         private static void OnThresholdChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var control = (ShellTabControl)d;
             control.UpdateWindowSubscription();
             control.UpdateCompactMode();
-        }
-
-        private void ScheduleIndicatorUpdate()
-        {
-            Dispatcher.BeginInvoke(
-                new Action(() => UpdateIndicatorPosition(animate: false)),
-                System.Windows.Threading.DispatcherPriority.Render);
         }
     }
 }

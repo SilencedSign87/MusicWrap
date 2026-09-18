@@ -24,7 +24,7 @@
                  IsSynchronizedWithCurrentItem="False"
                  Background="Transparent"
                  BorderThickness="0"
-                 Padding="8"
+                 Padding="0"
                  SizeChanged="AlbumsViewport_SizeChanged"
                  HorizontalContentAlignment="Stretch"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -75,12 +75,13 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button BorderThickness="0"
-                                            Padding="0"
-                                            Cursor="Hand"
-                                            Width="160"
-                                            Click="AlbumButton_Click"
-                                            Margin="0,0,0,0">
+                                    <Button 
+                                        BorderThickness="1"
+                                        Padding="0"
+                                        Cursor="Hand"
+                                        Width="160"
+                                        Click="AlbumButton_Click"
+                                        Margin="0,0,0,0">
                                         <Button.Style>
                                             <Style TargetType="Button">
                                                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -108,9 +109,17 @@
                                                 <Binding Path="Id"/>
                                                 <Binding Path="DataContext.ExpandedAlbumId"
                                                          RelativeSource="{RelativeSource AncestorType={x:Type ListBoxItem}}"/>
-                                                <Binding Path="DominantColor"/>
+                                                <Binding Source="{StaticResource BackgroundCard1}"/>
                                             </MultiBinding>
                                         </Button.Background>
+                                        <Button.BorderBrush>
+                                            <MultiBinding Converter="{StaticResource SelectedAlbumBackgroundConverter}">
+                                                <Binding Path="Id"/>
+                                                <Binding Path="DataContext.ExpandedAlbumId"
+                                                         RelativeSource="{RelativeSource AncestorType={x:Type ListBoxItem}}"/>
+                                                <Binding Source="{StaticResource StrokeControl}"/>
+                                            </MultiBinding>
+                                        </Button.BorderBrush>
                                         <local:AlbumPage DataContext="{Binding}"/>
                                     </Button>
                                 </DataTemplate>
@@ -121,7 +130,7 @@
                                 x:Name="ExpandedAlbumBorder"
                                 DataContext="{Binding}"
                                 Visibility="{Binding ExpandedAlbumId, Converter={StaticResource NullToCollapseConverter}}"
-                                Margin="4,4,4,0"
+                                Margin="8,0"
                                 CornerRadius="4"
                                 HorizontalAlignment="Stretch"
                                 

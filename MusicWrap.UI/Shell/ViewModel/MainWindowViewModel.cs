@@ -32,7 +32,6 @@ namespace MusicWrap.UI.Shell.ViewModel
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(SidebarToggleIcon))]
         [NotifyPropertyChangedFor(nameof(SidebarWidth))]
-        [NotifyPropertyChangedFor(nameof(SidebarBorderThickness))]
         [NotifyPropertyChangedFor(nameof(SidebarTooltip))]
         private bool isSidePanelVisible;
 
@@ -42,8 +41,6 @@ namespace MusicWrap.UI.Shell.ViewModel
             => IsSidePanelVisible ? "\xE89F" : "\xE8A0";
         public GridLength SidebarWidth
             => IsSidePanelVisible ? new GridLength(300) : new GridLength(0);
-        public Thickness SidebarBorderThickness
-            => IsSidePanelVisible ? new Thickness(4) : new Thickness(0);
         public string SidebarTooltip
             => IsSidePanelVisible ? "Hide Sidebar" : "Show Sidebar";
 
@@ -138,17 +135,6 @@ namespace MusicWrap.UI.Shell.ViewModel
             3 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
             _ => _cachedLibraryPage ??= _serviceProvider.GetRequiredService<LibraryPage>()
         };
-
-        private static BitmapImage LoadBitmapFromResource(string uri)
-        {
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.UriSource = new Uri(uri);
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.EndInit();
-            bitmap.Freeze();
-            return bitmap;
-        }
 
         #endregion
         public void Dispose()

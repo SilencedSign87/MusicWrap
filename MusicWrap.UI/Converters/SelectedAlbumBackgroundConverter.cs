@@ -7,7 +7,6 @@ namespace MusicWrap.UI.Converters
 {
     public class SelectedAlbumBackgroundConverter : IMultiValueConverter
     {
-        private static readonly SolidColorBrush SelectedBrush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF));
 
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
@@ -24,7 +23,7 @@ namespace MusicWrap.UI.Converters
                 return Brushes.Transparent;
             }
 
-            return SelectedBrush;
+            return values[2] as Brush ?? Brushes.Transparent;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

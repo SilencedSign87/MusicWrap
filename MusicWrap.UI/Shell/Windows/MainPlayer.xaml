@@ -91,9 +91,7 @@
                 <!-- Sidebar -->
                 <Border
                     Grid.Column="1"
-                    BorderThickness="{Binding SidebarBorderThickness}"
                     >
-
                     <Grid
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"

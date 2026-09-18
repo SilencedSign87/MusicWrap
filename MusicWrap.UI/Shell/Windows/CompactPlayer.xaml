@@ -12,7 +12,7 @@
              d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
              mc:Ignorable="d"
              Foreground="{Binding CurrentTrackHighlightColorHex}"
-             Background="Transparent"
+             Background="{Binding CurrentTrackDominantColorHex}"
              d:Background="#2c2c2c"
              d:Foreground="White"
              >
@@ -40,18 +40,20 @@
     </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="250"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
         <!--Artwork-->
         <Grid Grid.Row="0" x:Name="ArtworkArea">
-            <Image
+            <controls:SquarePanel>
+                <Image
                     x:Name="ArtworkImage"
                     Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=large:250}"
                     Width="250"
-                    Stretch="UniformToFill"
+                    Stretch="Uniform"
                     RenderOptions.BitmapScalingMode="HighQuality"
                     />
+            </controls:SquarePanel>
             <controls:HiddenPanel
                     Height="32"
                     Width="128"
@@ -82,7 +84,7 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="0" Background="{Binding CurrentTrackDominantColorHex}">
+            <Grid Grid.Row="0" Margin="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32" />
                     <RowDefinition />
@@ -180,7 +182,7 @@
                     >
                 <TabControl Style="{StaticResource SubtleTabControl}">
                     <TabItem x:Name="QueueTab" Style="{StaticResource SubtleTabItem}" Header="Queue" >
-                        
+
                     </TabItem>
                     <TabItem x:Name="LyricsTab" Style="{StaticResource SubtleTabItem}" Header="Lyrics">
                         <lrc:LyricsView AllowScroll="True" AllowSeek="True" FontSize="13" LyricsPadding="12,18" />

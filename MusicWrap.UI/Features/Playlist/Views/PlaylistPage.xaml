@@ -247,7 +247,6 @@
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="Padding" Value="8,6"/>
-                                    <Setter Property="Margin" Value="2,0"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="BorderThickness" Value="0"/>
@@ -294,6 +293,7 @@
                     Grid.Row="1" 
                     RowDefinitions="*"
                     Visibility="{Binding SelectedTab, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}"
+                    Margin="8,0"
                     >
                     <ScrollViewer
                         Grid.Row="0"
