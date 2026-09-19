@@ -8,6 +8,7 @@
          xmlns:vm="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
          xmlns:uimodels="clr-namespace:MusicWrap.UI.Controls.Models"
          xmlns:helpers="clr-namespace:MusicWrap.UI.Helpers"
+         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          mc:Ignorable="d" 
          d:DataContext="{d:DesignInstance Type=vm:AlbumTracksViewModel}"
@@ -25,7 +26,7 @@
 
         <!-- Album Header -->
         <StackPanel Grid.Row="0" Margin="8,8,0,0">
-            <StackPanel Margin="0,0,0,4">
+            <StackPanel Margin="0,0,36,4">
                 <TextBlock Text="{Binding AlbumTitle}" 
                            FontSize="16" 
                            FontWeight="Bold"
@@ -40,25 +41,28 @@
                     <Run Text=" • "/>
                     <Run Text="{Binding AlbumYear}"/>
                 </TextBlock>
-                <Button Width="26" Height="26" Padding="0" VerticalAlignment="Top"
-                        Foreground="{Binding Foreground, ElementName=RootAlbumTracksPage}"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Margin="8,0,0,0"
-                        ToolTip="{Binding AlbumPlayTooltip}" 
-                        Click="PlayPauseAlbum_Click"
-                        >
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding AlbumPlayGlyph}"/>
-                </Button>
-                <Button
-                        Width="26" Height="26" Padding="0" VerticalAlignment="Top"
-                        Foreground="{Binding Foreground, ElementName=RootAlbumTracksPage}"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Click="ShuffleButton_Click"
-                    >
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
-                </Button>
+                <controls:AppButton
+                    Width="24" Height="24" Padding="0"
+                    Icon="{Binding AlbumPlayGlyph}"
+                    ToolTip="{Binding AlbumPlayTooltip}" 
+                    Style="{StaticResource TransparentButton}"
+                    Foreground="{Binding Foreground, ElementName=RootAlbumTracksPage}"
+                    BorderThickness="0"
+                    Click="PlayPauseAlbum_Click"
+                    IconFontSize="13"
+                    Margin="8,0,0,0"
+                    />
+                <controls:AppButton
+                    Width="24" Height="24" Padding="0"
+                    Icon="&#xE8B1;"
+                    ToolTip="Shuffle"
+                    Style="{StaticResource TransparentButton}"
+                    Foreground="{Binding Foreground, ElementName=RootAlbumTracksPage}"
+                    BorderThickness="0"
+                    Click="ShuffleButton_Click"
+                    IconFontSize="13"
+                    />
+
             </StackPanel>
         </StackPanel>
 

@@ -9,6 +9,7 @@
          xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
          xmlns:vm="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
          xmlns:pages="clr-namespace:MusicWrap.UI.Features.Playback.Views"
+         xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
          xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
          xmlns:selectors="clr-namespace:MusicWrap.UI.Selectors"
          xmlns:views="clr-namespace:MusicWrap.UI.Features.Library.Views"
@@ -27,73 +28,93 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition/>
             </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4,8,0,0">
+                <controls:AppDropdownButton
+                    Style="{StaticResource SubtleButton}"
+                    Icon="&#xE8F1;"
+                    Text="Library"
+                    ShowIndicator="False"
+                    Margin="0,0,2,0"
+                    Spacing="8"
+                    >
+                    <controls:AppDropdownButton.Menu>
+                        <ContextMenu>
+                            <MenuItem Header="Rescan directories" Icon="{ex:Icon Glyph=E895}" Command="{Binding RescanAllDirectoriesCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="Add Folder" Icon="{ex:Icon Glyph=E8F4}" Command="{Binding AddFolderCommand}"/>
+                            <MenuItem Header="Add Files" Icon="{ex:Icon Glyph=E710}" Command="{Binding AddFilesCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="Refresh library" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}"/>
+                        </ContextMenu>
+                    </controls:AppDropdownButton.Menu>
+                </controls:AppDropdownButton>
+                <controls:AppDropdownButton
+                    Style="{StaticResource SubtleButton}"
+                    Icon="&#xE7B3;"
+                    Text="View"
+                    ShowIndicator="False"
+                    Spacing="8"
+                    >
+                    <controls:AppDropdownButton.Menu>
+                        <ContextMenu>
+                            <MenuItem Header="Albums" 
+                                      Command="{Binding Workspace.SetViewModeCommand}" 
+                                      CommandParameter="Album"
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Album}"
+                                      Icon="{ex:Icon Glyph=E93C}"
+                                      />
 
-            <Menu Grid.Row="0" VerticalAlignment="Center">
-                <MenuItem Header="Library" Icon="{ex:Icon Glyph=E8F1}">
-                    <MenuItem Header="Rescan directories" Icon="{ex:Icon Glyph=E895}" Command="{Binding RescanAllDirectoriesCommand}"/>
-                    <Separator/>
-                    <MenuItem Header="Add Folder" Icon="{ex:Icon Glyph=E8F4}" Command="{Binding AddFolderCommand}"/>
-                    <MenuItem Header="Add Files" Icon="{ex:Icon Glyph=E710}" Command="{Binding AddFilesCommand}"/>
-                    <Separator/>
-                    <MenuItem Header="Refresh library" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}"/>
-                </MenuItem>
-                <MenuItem Header="View" Icon="{ex:Icon Glyph=E7B3}">
-                    <MenuItem Header="Albums" 
-                              Command="{Binding Workspace.SetViewModeCommand}" 
-                              CommandParameter="Album"
-                              IsCheckable="True" 
-                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Album}"
-                              Icon="{ex:Icon Glyph=E93C}"
-                              />
+                            <MenuItem Header="Track Artist"
+                                      Command="{Binding Workspace.SetViewModeCommand}" 
+                                      CommandParameter="TrackArtist"
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=TrackArtist}"
+                                      Icon="{ex:Icon Glyph=E77B}"
+                                      />
 
-                    <MenuItem Header="Track Artist" 
-                              Command="{Binding Workspace.SetViewModeCommand}" 
-                              CommandParameter="TrackArtist"
-                              IsCheckable="True" 
-                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=TrackArtist}"
-                              Icon="{ex:Icon Glyph=E77B}"
-                              />
+                            <MenuItem Header="Album Artist" 
+                                      Command="{Binding Workspace.SetViewModeCommand}" 
+                                      CommandParameter="AlbumArtist"
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=AlbumArtist}"
+                                      Icon="{ex:Icon Glyph=E77B}"
+                                      />
 
-                    <MenuItem Header="Album Artist" 
-                              Command="{Binding Workspace.SetViewModeCommand}" 
-                              CommandParameter="AlbumArtist"
-                              IsCheckable="True" 
-                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=AlbumArtist}"
-                              Icon="{ex:Icon Glyph=E77B}"
-                              />
+                            <MenuItem Header="Genre" 
+                                      Command="{Binding Workspace.SetViewModeCommand}" 
+                                      CommandParameter="Genre"
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Genre}"
+                                      Icon="{ex:Icon Glyph=E8D6}"
+                                      />
 
-                    <MenuItem Header="Genre" 
-                              Command="{Binding Workspace.SetViewModeCommand}" 
-                              CommandParameter="Genre"
-                              IsCheckable="True" 
-                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Genre}"
-                              Icon="{ex:Icon Glyph=E8D6}"
-                              />
+                            <MenuItem Header="Decade" 
+                                      Command="{Binding Workspace.SetViewModeCommand}" 
+                                      CommandParameter="Decade"
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Decade}"
+                                      Icon="{ex:Icon Glyph=E787}"
+                                      />
 
-                    <MenuItem Header="Decade" 
-                              Command="{Binding Workspace.SetViewModeCommand}" 
-                              CommandParameter="Decade"
-                              IsCheckable="True" 
-                              IsChecked="{Binding Workspace.ListBy, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Decade}"
-                              Icon="{ex:Icon Glyph=E787}"
-                              />
+                            <Separator/>
+                            <MenuItem Header="Ascending" 
+                                      Command="{Binding Workspace.SetEntryListAscendingCommand}"
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding Workspace.IsEntryListAscending, Mode=OneWay}"
+                                      Icon="{ex:Icon Glyph=E74A, FontSize=12}"
+                                      />
 
-                    <Separator/>
-                    <MenuItem Header="Ascending" 
-                              Command="{Binding Workspace.SetEntryListAscendingCommand}"
-                              IsCheckable="True" 
-                              IsChecked="{Binding Workspace.IsEntryListAscending, Mode=OneWay}"
-                              Icon="{ex:Icon Glyph=E74A, FontSize=12}"
-                              />
-
-                    <MenuItem Header="Descending" 
-                              Command="{Binding Workspace.SetEntryListDescendingCommand}"
-                              IsCheckable="True" 
-                              IsChecked="{Binding Workspace.IsEntryListDescending, Mode=OneWay}"
-                              Icon="{ex:Icon Glyph=E74B, FontSize=12}"
-                              />
-                </MenuItem>
-            </Menu>
+                            <MenuItem Header="Descending" 
+                                      Command="{Binding Workspace.SetEntryListDescendingCommand}"
+                                      IsCheckable="True" 
+                                      IsChecked="{Binding Workspace.IsEntryListDescending, Mode=OneWay}"
+                                      Icon="{ex:Icon Glyph=E74B, FontSize=12}"
+                                      />
+                        </ContextMenu>
+                    </controls:AppDropdownButton.Menu>
+                </controls:AppDropdownButton>
+            </StackPanel>
             <ListView
                     x:Name="EntriesListView"
                     ItemsSource="{Binding EntriesViewSource.View, Mode=OneWay}"

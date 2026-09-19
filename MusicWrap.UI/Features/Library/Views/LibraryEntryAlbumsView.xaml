@@ -104,22 +104,6 @@
                                                 </Setter>
                                             </Style>
                                         </Button.Style>
-                                        <Button.Background>
-                                            <MultiBinding Converter="{StaticResource SelectedAlbumBackgroundConverter}">
-                                                <Binding Path="Id"/>
-                                                <Binding Path="DataContext.ExpandedAlbumId"
-                                                         RelativeSource="{RelativeSource AncestorType={x:Type ListBoxItem}}"/>
-                                                <Binding Source="{StaticResource BackgroundCard1}"/>
-                                            </MultiBinding>
-                                        </Button.Background>
-                                        <Button.BorderBrush>
-                                            <MultiBinding Converter="{StaticResource SelectedAlbumBackgroundConverter}">
-                                                <Binding Path="Id"/>
-                                                <Binding Path="DataContext.ExpandedAlbumId"
-                                                         RelativeSource="{RelativeSource AncestorType={x:Type ListBoxItem}}"/>
-                                                <Binding Source="{StaticResource StrokeControl}"/>
-                                            </MultiBinding>
-                                        </Button.BorderBrush>
                                         <local:AlbumPage DataContext="{Binding}"/>
                                     </Button>
                                 </DataTemplate>

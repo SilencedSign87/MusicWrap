@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Library.Views"
              xmlns:viewmodel="clr-namespace:MusicWrap.UI.Features.Library.ViewModels"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:contros="clr-namespace:MusicWrap.UI.Controls"
              mc:Ignorable="d" 
               x:Name="RootDetailPanel"
              d:DataContext="{d:DesignInstance Type=viewmodel:LibraryEntryDetailPanelViewModel}"
@@ -32,15 +33,42 @@
                     </TextBlock>
                 </Grid>
                 <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Orientation="Horizontal" Margin="8">
-                    <Button Style="{StaticResource SubtleButton}" Padding="0"  Width="26" Height="26" ToolTip="Play all" Command="{Binding PlayAllTracksCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
-                    </Button>
-                    <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="Shuffle" Command="{Binding ShuffleAllTracksCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
-                    </Button>
-                    <Button Style="{StaticResource SubtleButton}" Padding="0" Width="26" Height="26" ToolTip="More" Command="{Binding ShuffleAllTracksCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE712;"/>
-                    </Button>
+                    <contros:AppButton
+                        Style="{StaticResource SubtleButton}"
+                        Icon="&#xE768;"
+                        IconFontSize="13"
+                        Height="26"
+                        Width="26"
+                        Padding="0"
+                        ToolTip="Play all" 
+                        Command="{Binding PlayAllTracksCommand}"
+                        />
+                    <contros:AppButton
+                        Style="{StaticResource SubtleButton}"
+                        Icon="&#xE8B1;"
+                        IconFontSize="13"
+                        Height="26"
+                        Width="26"
+                        Padding="0"
+                        ToolTip="Shuffle" 
+                        Command="{Binding ShuffleAllTracksCommand}"
+                        />
+                    <contros:AppDropdownButton
+                        Style="{StaticResource SubtleButton}"
+                        Icon="&#xE712;"
+                        IconFontSize="13"
+                        Height="26"
+                        Width="26"
+                        Padding="0"
+                        ToolTip="More" 
+                        ShowIndicator="False"
+                        Command="{Binding ShuffleAllTracksCommand}">
+                        <contros:AppDropdownButton.Menu>
+                            <ContextMenu>
+                                <MenuItem Icon="{ex:Icon Glyph=E70F}" Header="Edit"/>
+                            </ContextMenu>
+                        </contros:AppDropdownButton.Menu>
+                    </contros:AppDropdownButton>
                 </StackPanel>
 
             </Grid>
@@ -103,6 +131,22 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
+                    <StackPanel Grid.Column="1">
+                        <contros:AppDropdownButton
+                            Style="{StaticResource SubtleButton}"
+                            Spacing="8"
+                            Icon="&#xE890;"
+                            Text="View"
+                            ShowIndicator="False"
+                            >
+                            <contros:AppDropdownButton.Menu>
+                                <ContextMenu>
+                                    <MenuItem Header="Grid"/>
+                                    <MenuItem Header="List"/>
+                                </ContextMenu>
+                            </contros:AppDropdownButton.Menu>
+                        </contros:AppDropdownButton>
+                    </StackPanel>
                 </Grid>
             </Border>
 

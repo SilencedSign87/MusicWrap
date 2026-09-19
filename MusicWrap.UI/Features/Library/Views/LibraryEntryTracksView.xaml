@@ -20,7 +20,7 @@
             AllTrackIds="{Binding AllTrackIds}"
             SelectedTrackIds="{Binding SelectedTrackIds, Mode=TwoWay}"
             VisualMode="ListImage"
-            IndexMode="ListIndex"
+            IndexMode="None"
             SelectionMode="Extended"
             IsMouseWheelScrollEnabled="True"
             />

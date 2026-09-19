@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Features.Playlist.Views"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              xmlns:controlsM="clr-namespace:MusicWrap.UI.Controls.Models"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Playlist.ViewModels"
              mc:Ignorable="d" 
@@ -67,43 +68,63 @@
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="48" />
-                <RowDefinition />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Menu Grid.Row="0">
-                <MenuItem Header="Playlists" Icon="{ex:Icon Glyph=EA37}">
-                    <MenuItem Header="New playlist" Icon="{ex:Icon Glyph=E710}" Command="{Binding NewPlaylistCommand}" />
-                    <MenuItem Header="Refresh" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}" />
-                    <Separator/>
-                    <MenuItem Header="Import" Icon="{ex:Icon Glyph=EA52}" />
-                    <MenuItem Header="Export" Icon="{ex:Icon Glyph=EDE1}" />
-                </MenuItem>
-                <MenuItem Header="View" Icon="{ex:Icon Glyph=E890}">
-                    <MenuItem Header="Title" IsCheckable="True" />
-                    <MenuItem Header="Album" IsCheckable="True" />
-                    <MenuItem Header="Artist" IsCheckable="True" />
-                    <MenuItem Header="Date added" IsCheckable="True" />
-                    <Separator />
-                    <MenuItem Header="Ascending" 
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4,8,0,0">
+                <controls:AppDropdownButton
+                    Style="{StaticResource SubtleButton}"
+                    Icon="&#xEA37;"
+                    Text="Playlists"
+                    ShowIndicator="False"
+                    Margin="0,0,2,0"
+                    Spacing="8"
+                    >
+                    <controls:AppDropdownButton.Menu>
+                        <ContextMenu>
+                            <MenuItem Header="New playlist" Icon="{ex:Icon Glyph=E710}" Command="{Binding NewPlaylistCommand}" />
+                            <MenuItem Header="Refresh" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}" />
+                            <Separator/>
+                            <MenuItem Header="Import" Icon="{ex:Icon Glyph=EA52}" />
+                            <MenuItem Header="Export" Icon="{ex:Icon Glyph=EDE1}" />
+                        </ContextMenu>
+                    </controls:AppDropdownButton.Menu>
+                </controls:AppDropdownButton>
+                <controls:AppDropdownButton
+                    Style="{StaticResource SubtleButton}"
+                    Icon="&#xE7B3;"
+                    Text="View"
+                    ShowIndicator="False"
+                    Spacing="8"
+                    >
+                    <controls:AppDropdownButton.Menu>
+                        <ContextMenu>
+                            <MenuItem Header="Title" IsCheckable="True" />
+                            <MenuItem Header="Track count" IsCheckable="True" />
+                            <MenuItem Header="Last updated" IsCheckable="True" />
+                            <Separator />
+                            <MenuItem Header="Ascending" 
                         IsCheckable="True" 
                         Icon="{ex:Icon Glyph=E74A, FontSize=12}"
                         />
 
-                    <MenuItem Header="Descending" 
+                            <MenuItem Header="Descending" 
                         IsCheckable="True" 
                         Icon="{ex:Icon Glyph=E74B, FontSize=12}"
                         />
-                    <Separator />
-                    <MenuItem Header="Compact view" 
+                            <Separator />
+                            <MenuItem Header="Artwork" 
                               IsCheckable="True" 
                               IsChecked="{Binding CompactMode, Mode=TwoWay}"
-                              Icon="{ex:Icon Glyph=E700}" />
-                    <MenuItem Header="List View" 
+                              Icon="{ex:Icon Glyph=E91B}" />
+                            <MenuItem Header="Compact" 
                               IsCheckable="True" 
                               IsChecked="{Binding CompactMode, Converter={StaticResource InverseBoolConverter}}"
                               Icon="{ex:Icon Glyph=E8FD}" />
-                </MenuItem>
-            </Menu>
+                        </ContextMenu>
+                    </controls:AppDropdownButton.Menu>
+                </controls:AppDropdownButton>
+            </StackPanel>
 
             <ListView
                 ItemsSource="{Binding Entries}"
@@ -215,7 +236,7 @@
                             <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12" VerticalAlignment="Center"/>
                         </Grid>
                         <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" Margin="8">
-                            <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="Play" Click="PlaySelectedPlaylist_click">
+                            <!--<Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="Play" Click="PlaySelectedPlaylist_click">
                                 <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
                             </Button>
                             <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="Shuffle" Click="ShufflePlaylist_click">
@@ -223,7 +244,46 @@
                             </Button>
                             <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="More">
                                 <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE712;"/>
-                            </Button>
+                            </Button>-->
+                            <controls:AppButton
+                        Style="{StaticResource SubtleButton}"
+                        Icon="&#xE768;"
+                        IconFontSize="13"
+                        Height="26"
+                        Width="26"
+                        Padding="0"
+                        ToolTip="Play all" 
+                        Click="PlaySelectedPlaylist_click"
+                        />
+                            <controls:AppButton
+                        Style="{StaticResource SubtleButton}"
+                        Icon="&#xE8B1;"
+                        IconFontSize="13"
+                        Height="26"
+                        Width="26"
+                        Padding="0"
+                        ToolTip="Shuffle" 
+                        Click="ShufflePlaylist_click"
+                        />
+                            <controls:AppDropdownButton
+                        Style="{StaticResource SubtleButton}"
+                        Icon="&#xE712;"
+                        IconFontSize="13"
+                        Height="26"
+                        Width="26"
+                        Padding="0"
+                        ToolTip="More" 
+                        ShowIndicator="False"
+                        Command="{Binding ShuffleAllTracksCommand}">
+                                <controls:AppDropdownButton.Menu>
+                                    <ContextMenu>
+                                        <MenuItem Icon="{ex:Icon Glyph=E8B1}" Header="Randomize order"/>
+                                        <Separator/>
+                                        <MenuItem Icon="{ex:Icon Glyph=E70F}" Header="Edit"/>
+                                        <MenuItem Icon="{ex:Icon Glyph=E74D}" Header="Remove"/>
+                                    </ContextMenu>
+                                </controls:AppDropdownButton.Menu>
+                            </controls:AppDropdownButton>
                         </StackPanel>
                     </Grid>
                     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource BackgroundLayer}" Height="32">
@@ -293,7 +353,7 @@
                     Grid.Row="1" 
                     RowDefinitions="*"
                     Visibility="{Binding SelectedTab, Converter={StaticResource TabStringToVisibilityConverter}, ConverterParameter=Tracks}"
-                    Margin="8,0"
+                    Margin="2,0"
                     >
                     <ScrollViewer
                         Grid.Row="0"
