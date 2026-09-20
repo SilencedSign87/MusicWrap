@@ -10,5 +10,9 @@ namespace MusicWrap.Data.Library.Models
     {
         [Key(0)] public int Id;
         [Key(1)] public required string Name;
+        [Key(2)] public string? SortName;
+
+        [IgnoreMember]
+        public string ResolvedName => string.IsNullOrWhiteSpace(SortName) ? Name : SortName;
     }
 }

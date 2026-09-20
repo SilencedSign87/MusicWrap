@@ -33,7 +33,14 @@ namespace MusicWrap.Data.Library.Models
         [Key(16)] public string? ExternalId; // id in the external service
         [Key(20)] public TrackOrigin Origin = TrackOrigin.Local;
 
+        // sort
+
+        [Key(21)] public string? SortTitle;
+
         [Key(100)] public int CoverId;
+
+        [IgnoreMember]
+        public string ResolvedTitle => string.IsNullOrWhiteSpace(SortTitle) ? Title : SortTitle;
 
     }
 

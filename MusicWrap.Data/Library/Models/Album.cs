@@ -17,5 +17,9 @@ namespace MusicWrap.Data.Library.Models
         [Key(3)] public int CoverId;
 
         [Key(4)] public int Year;
+        [Key(5)] public string? SortTitle;
+        
+        [IgnoreMember]
+        public string ResolvedSortTitle => string.IsNullOrWhiteSpace(SortTitle) ? Title : SortTitle;
     }
 }

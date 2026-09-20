@@ -59,10 +59,10 @@ namespace MusicWrap.UI.Controls
             if (Menu is null)
                 return;
 
-            Menu.PlacementTarget = this;
-            Menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-
-            Menu.IsOpen = !Menu.IsOpen;
+            Menu.SetCurrentValue(MinWidthProperty, ActualWidth);
+            Menu.SetCurrentValue(ContextMenu.PlacementTargetProperty, this);
+            Menu.SetCurrentValue(ContextMenu.PlacementProperty, System.Windows.Controls.Primitives.PlacementMode.Bottom);
+            Menu.SetCurrentValue(ContextMenu.IsOpenProperty, !Menu.IsOpen);
         }
 
         private void OnMenuOpened(object? sender, RoutedEventArgs e)
@@ -141,9 +141,9 @@ namespace MusicWrap.UI.Controls
             if (menu is null)
                 return;
 
-            menu.PlacementTarget = this;
-            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-            menu.StaysOpen = false;
+            menu.SetCurrentValue(ContextMenu.PlacementTargetProperty, this);
+            menu.SetCurrentValue(ContextMenu.PlacementProperty, System.Windows.Controls.Primitives.PlacementMode.Bottom);
+            menu.SetCurrentValue(ContextMenu.StaysOpenProperty, false);
 
             menu.Opened += OnMenuOpened;
         }
