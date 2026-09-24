@@ -72,58 +72,33 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="4,8,0,0">
-                <controls:AppDropdownButton
-                    Style="{StaticResource SubtleButton}"
-                    Icon="&#xEA37;"
-                    Text="Playlists"
-                    ShowIndicator="False"
-                    Margin="0,0,2,0"
-                    Spacing="8"
+                <controls:AppMenu>
+                    <controls:AppMenuItem
+                    Icon="{ex:Icon Glyph=EA37}"
+                    Header="Playlists"
                     >
-                    <controls:AppDropdownButton.Menu>
-                        <ContextMenu>
-                            <MenuItem Header="New playlist" Icon="{ex:Icon Glyph=E710}" Command="{Binding NewPlaylistCommand}" />
-                            <MenuItem Header="Refresh" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}" />
-                            <Separator/>
-                            <MenuItem Header="Import" Icon="{ex:Icon Glyph=EA52}" />
-                            <MenuItem Header="Export" Icon="{ex:Icon Glyph=EDE1}" />
-                        </ContextMenu>
-                    </controls:AppDropdownButton.Menu>
-                </controls:AppDropdownButton>
-                <controls:AppDropdownButton
-                    Style="{StaticResource SubtleButton}"
-                    Icon="&#xE7B3;"
-                    Text="View"
-                    ShowIndicator="False"
-                    Spacing="8"
+                        <controls:AppMenuItem Header="New playlist" Icon="{ex:Icon Glyph=E710}" Command="{Binding NewPlaylistCommand}" />
+                        <controls:AppMenuItem Header="Refresh" Icon="{ex:Icon Glyph=E72C}" Command="{Binding RefreshCommand}" />
+                        <Separator/>
+                        <controls:AppMenuItem Header="Import" Icon="{ex:Icon Glyph=EA52}" />
+                        <controls:AppMenuItem Header="Export" Icon="{ex:Icon Glyph=EDE1}" />
+                    </controls:AppMenuItem>
+                    <controls:AppMenuItem
+                    Icon="{ex:Icon Glyph=E7B3}"
+                    Header="View"
                     >
-                    <controls:AppDropdownButton.Menu>
-                        <ContextMenu>
-                            <MenuItem Header="Title" IsCheckable="True" />
-                            <MenuItem Header="Track count" IsCheckable="True" />
-                            <MenuItem Header="Last updated" IsCheckable="True" />
-                            <Separator />
-                            <MenuItem Header="Ascending" 
-                        IsCheckable="True" 
-                        Icon="{ex:Icon Glyph=E74A, FontSize=12}"
-                        />
+                        <controls:AppMenuItem Header="Title" IsCheckable="True" />
+                        <controls:AppMenuItem Header="Track count" IsCheckable="True" />
+                        <controls:AppMenuItem Header="Last updated" IsCheckable="True" />
+                        <Separator />
+                        <controls:AppMenuItem Header="Ascending" IsCheckable="True" Icon="{ex:Icon Glyph=E74A, FontSize=12}" />
 
-                            <MenuItem Header="Descending" 
-                        IsCheckable="True" 
-                        Icon="{ex:Icon Glyph=E74B, FontSize=12}"
-                        />
-                            <Separator />
-                            <MenuItem Header="Artwork" 
-                              IsCheckable="True" 
-                              IsChecked="{Binding CompactMode, Mode=TwoWay}"
-                              Icon="{ex:Icon Glyph=E91B}" />
-                            <MenuItem Header="Compact" 
-                              IsCheckable="True" 
-                              IsChecked="{Binding CompactMode, Converter={StaticResource InverseBoolConverter}}"
-                              Icon="{ex:Icon Glyph=E8FD}" />
-                        </ContextMenu>
-                    </controls:AppDropdownButton.Menu>
-                </controls:AppDropdownButton>
+                        <controls:AppMenuItem Header="Descending" IsCheckable="True" Icon="{ex:Icon Glyph=E74B, FontSize=12}" />
+                        <Separator />
+                        <controls:AppMenuItem Header="Artwork" IsCheckable="True" IsChecked="{Binding CompactMode, Mode=TwoWay}" Icon="{ex:Icon Glyph=E91B}" />
+                        <controls:AppMenuItem Header="Compact" IsCheckable="True" IsChecked="{Binding CompactMode, Converter={StaticResource InverseBoolConverter}}" Icon="{ex:Icon Glyph=E8FD}" />
+                    </controls:AppMenuItem>
+                </controls:AppMenu>
             </StackPanel>
 
             <ListView
@@ -236,15 +211,6 @@
                             <TextBlock Text="{Binding SelectedEntry.Description}" FontSize="12" VerticalAlignment="Center"/>
                         </Grid>
                         <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" Margin="8">
-                            <!--<Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="Play" Click="PlaySelectedPlaylist_click">
-                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE768;"/>
-                            </Button>
-                            <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="Shuffle" Click="ShufflePlaylist_click">
-                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE8B1;"/>
-                            </Button>
-                            <Button Style="{StaticResource SubtleButton}"  Width="26" Height="26" Padding="0" ToolTip="More">
-                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE712;"/>
-                            </Button>-->
                             <controls:AppButton
                         Style="{StaticResource SubtleButton}"
                         Icon="&#xE768;"

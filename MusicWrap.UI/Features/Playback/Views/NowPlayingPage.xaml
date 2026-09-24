@@ -15,62 +15,46 @@
              x:Name="RootNowPlaying"
              >
     <Grid RowDefinitions="Auto,*">
-        <Border Grid.Row="0">
-            <Menu HorizontalAlignment="Right">
-                <Menu.Resources>
-                    <Style TargetType="Menu" BasedOn="{StaticResource {x:Type Menu}}">
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="Margin" Value="0"/>
-                    </Style>
-                    <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="Margin" Value="0"/>
-                        <Setter Property="MinHeight" Value="0"/>
-                        <Setter Property="FontSize" Value="13"/>
-                    </Style>
-                </Menu.Resources>
-                <MenuItem Icon="{ex:Icon Glyph=E8A7,FontSize=12}" Header="Properties" Command="{Binding OpenPropertiesCommand}" IsCheckable="False" />
+        <Border Grid.Row="0" Padding="0,4,0,6">
+            <controls:AppMenu HorizontalAlignment="Right" Foreground="{DynamicResource TextPrimaryBrush}">
+                <controls:AppMenuItem Icon="{ex:Icon Glyph=E8A7,FontSize=12}" Header="Properties" Command="{Binding OpenPropertiesCommand}" IsCheckable="False" />
                 <Separator/>
-                <MenuItem Header="Panels" Icon="{ex:Icon Glyph=ECA5,FontSize=12}">
-                    <MenuItem Header="Lyrics" Icon="{ex:Icon Glyph=EC4F}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
-                    <MenuItem Header="Visualizer" Icon="{ex:Icon Glyph=F61F,FontSize=12}" >
-                        <MenuItem 
-                            Header="Hide"
-                            IsCheckable="True" 
+                <controls:AppMenuItem Header="Panels" Icon="{ex:Icon Glyph=ECA5,FontSize=12}">
+                    <controls:AppMenuItem Header="Lyrics" Icon="{ex:Icon Glyph=EC4F}" IsCheckable="True" IsChecked="{Binding ShowLyrics}" />
+                    <controls:AppMenuItem Header="Visualizer" Icon="{ex:Icon Glyph=F61F,FontSize=12}" >
+                        <controls:AppMenuItem Header="Hide" IsCheckable="True" 
                             Command="{Binding SetVisualizerCommand}"
                             CommandParameter="None"
                             IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
                             />
                         <Separator/>
-                        <MenuItem Header="Line" IsCheckable="True" 
+                        <controls:AppMenuItem Header="Line" IsCheckable="True" 
                             Command="{Binding SetVisualizerCommand}"
                             CommandParameter="LineSpectrum"
                             IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
-                        <MenuItem Header="Bars" IsCheckable="True" 
+                        <controls:AppMenuItem Header="Bars" IsCheckable="True" 
                             Command="{Binding SetVisualizerCommand}"
                             CommandParameter="BarSpectrum"
                             IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
-                        <MenuItem Header="Wave" IsCheckable="True" 
+                        <controls:AppMenuItem Header="Wave" IsCheckable="True" 
                             Command="{Binding SetVisualizerCommand}"
                             CommandParameter="MirroredBarSpectrum"
                             IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
                         <Separator/>
-                        <MenuItem Header="Spectrum" IsCheckable="True"
+                        <controls:AppMenuItem Header="Spectrum" IsCheckable="True"
                                   Command="{Binding SetSpectrumTypeCommand}"
                                   CommandParameter="Normal"
                                   IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}"
                                   />
-                        <MenuItem Header="Centered" IsCheckable="True"
+                        <controls:AppMenuItem Header="Centered" IsCheckable="True"
                                   Command="{Binding SetSpectrumTypeCommand}"
                                   CommandParameter="Centered"
                                   IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
                                   />
-                    </MenuItem>
-                </MenuItem>
-                <MenuItem Header="Effects" Icon="{ex:Icon Glyph=E794}">
-                    <MenuItem  Header="Artwork blur" IsCheckable="True" IsChecked="{Binding BlurEffect}" />
-                </MenuItem>
-            </Menu>
+                    </controls:AppMenuItem>
+                </controls:AppMenuItem>
+                <controls:AppMenuItem  Header="Artwork blur" Icon="{ex:Icon Glyph=E794}" IsCheckable="True" IsChecked="{Binding BlurEffect}" />
+            </controls:AppMenu>
         </Border>
 
         <Grid Grid.Row="1" x:Name="NowPlayingLayout" SizeChanged="OnNowPlayingLayoutSizeChanged">

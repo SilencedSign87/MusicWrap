@@ -8,7 +8,7 @@ namespace MusicWrap.UI.Helpers
     public class IconExtension : MarkupExtension
     {
         public string Glyph { get; set; } = "e80f";
-        public double FontSize { get; set; } = 16;
+        public double FontSize { get; set; } = 14;
         public string FontFamily { get; set; } = "Segoe Fluent Icons";
 
         public override object ProvideValue(IServiceProvider serviceProvider)

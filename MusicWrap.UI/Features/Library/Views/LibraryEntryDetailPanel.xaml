@@ -131,22 +131,9 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <StackPanel Grid.Column="1">
-                        <contros:AppDropdownButton
-                            Style="{StaticResource SubtleButton}"
-                            Spacing="8"
-                            Icon="&#xE890;"
-                            Text="View"
-                            ShowIndicator="False"
-                            >
-                            <contros:AppDropdownButton.Menu>
-                                <ContextMenu>
-                                    <MenuItem Header="Grid"/>
-                                    <MenuItem Header="List"/>
-                                </ContextMenu>
-                            </contros:AppDropdownButton.Menu>
-                        </contros:AppDropdownButton>
-                    </StackPanel>
+                    <Grid Grid.Column="1">
+                       
+                    </Grid>
                 </Grid>
             </Border>
 
