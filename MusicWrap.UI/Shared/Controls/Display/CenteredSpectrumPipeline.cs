@@ -1,4 +1,7 @@
-﻿namespace MusicWrap.UI.Controls;
+﻿using System.Runtime.Intrinsics.X86;
+using System.Windows.Media;
+
+namespace MusicWrap.UI.Controls;
 
 public sealed class CenteredSpectrumPipelineConfig
 {
@@ -12,12 +15,12 @@ public sealed class CenteredSpectrumPipelineConfig
     /// <summary>
     /// Lower bound of the analyzed spectrum.
     /// </summary>
-    public float MinHz { get; set; } = 40f;
+    public float MinHz { get; set; } = 30f;
 
     /// <summary>
     /// Upper bound of the analyzed spectrum (the outer edges).
     /// </summary>
-    public float MaxHz { get; set; } = 20000f;
+    public float MaxHz { get; set; } = 16000f;
 
     /// <summary>
     /// Split point between the central bass band and the outer spectrum.
@@ -41,11 +44,11 @@ public sealed class CenteredSpectrumPipelineConfig
     public float SmoothingAlpha { get; set; } = 1.0f;
     public float ChangeThreshold { get; set; } = 0.0f;
 
-    //  Per-zone boosts (bass / mid / treble)
+    // Tilt
 
-    public float BassBoost { get; set; } = 1.0f;
-    public float MidBoost { get; set; } = 1.3f;
-    public float TrebleBoost { get; set; } = 1.6f;
+    public float TiltDb { get; set; } = 4.5f;
+    public float CenterTrimDb { get; set; } = -3f;
+
 
     //  Mirroring
 
@@ -66,25 +69,40 @@ public enum CenteredAggregation
     Rms
 }
 
+internal sealed class ChannelState
+{
+    public float[] Analysis = [];
+    public float[] Smoothed = [];
+    public float[] Scratch = [];
+}
+
 public sealed class CenteredSpectrumPipeline
 {
     private const int MinimumAnalysisBands = 128;
+    private const int ChannelCount = 2;
+
+    private readonly ChannelState[] _channels = [new ChannelState(), new ChannelState()];
 
     private CenteredSpectrumPipelineConfig _config;
+
+    private float[] _bandFrequencies = [];
+    private float[] _bandLowHz = [];
+    private float[] _bandHighHz = [];
+    private float[] _tiltGains = [];
+    private float[] _radialFrequencies = [];
+
+    private float[] _radialValues = [];
+    private float[] _output = [];
 
     private int _sampleRate;
     private int _fftSize;
     private int _bandCount;
 
-    private float[] _analysisValues = Array.Empty<float>();
-    private float[] _smoothed = Array.Empty<float>();
-
-    private float[] _bandFrequencies = Array.Empty<float>();
-
-    private float[] _radialValues = Array.Empty<float>();
-    private float[] _output = Array.Empty<float>();
+    private float[] _analysisValues = [];
+    private float[] _smoothed = [];
 
     private float _centerValue;
+    private float _dbRange;
 
     public CenteredSpectrumPipeline(CenteredSpectrumPipelineConfig config)
     {
@@ -119,24 +137,31 @@ public sealed class CenteredSpectrumPipeline
         RebuildAnalysisBuffers();
     }
 
-    public float[] Process(float[] magnitudes)
+    public float[] Process(float[] magnitudes, int channelCount = 1)
     {
         if (magnitudes == null || magnitudes.Length == 0)
             return _output;
 
-        if (_analysisValues.Length == 0)
+        if (_channels[0].Analysis.Length == 0)
             RebuildAnalysisBuffers();
 
-        BuildLogAnalysisBands(magnitudes);
+        int channels = Math.Clamp(channelCount, 1, ChannelCount);
+        int bins = Math.Min(magnitudes.Length / channels, _fftSize / 2);
 
-        NormalizeToDb();
-        ApplyGate();
-        ApplyZoneBoosts();
-        ApplyEmaSmoothing();
+        for (int c = 0; c < ChannelCount; c++)
+        {
+            int source = Math.Min(c, channels - 1);
+            DeinterLeave(magnitudes, bins, channels, source, _channels[c].Scratch);
 
-        ComputeCenterValue(magnitudes);
+            BuildLogAnalysisBands(_channels[c]);
+            NormalizeToDb(_channels[c]);
+            ApplyGate(_channels[c]);
+            ApplyTilt(_channels[c]);
+            ApplyEmaSmoothing(_channels[c]);
+        }
 
-        BuildMirroredSpectrum();
+        ComputeCenterValue(magnitudes, bins, channels);
+        BuildCenteredSpectrum();
 
         return _output;
     }
@@ -151,24 +176,60 @@ public sealed class CenteredSpectrumPipeline
             _bandCount++;
     }
 
+    private static void DeinterLeave(float[] magnitudes, int bins, int channels, int source, float[] dest)
+    {
+        if (channels == 1)
+        {
+            Array.Copy(magnitudes, dest, bins);
+            return;
+        }
+        for (int i = 0; i < bins; i++)
+        {
+            dest[i] = magnitudes[(i * channels) + source];
+        }
+    }
+
     private void RebuildAnalysisBuffers()
     {
         int count = Math.Max(MinimumAnalysisBands, _bandCount * 3);
+        int half = (_bandCount + 1) / 2;
+        int scratch = _fftSize / 2;
 
-        if (_analysisValues.Length != count)
+        for (int c = 0; c < ChannelCount; c++)
         {
-            _analysisValues = new float[count];
-            _smoothed = new float[count];
-            _bandFrequencies = new float[count];
+            if (_channels[c].Analysis.Length != count)
+            {
+                _channels[c].Analysis = new float[count];
+                _channels[c].Smoothed = new float[count];
+            }
+
+            if (_channels[c].Scratch.Length != scratch)
+                _channels[c].Scratch = new float[scratch];
         }
 
-        if (_radialValues.Length != (_bandCount + 1) / 2)
-            _radialValues = new float[(_bandCount + 1) / 2];
+        if (_bandFrequencies.Length != count)
+        {
+            _bandFrequencies = new float[count];
+            _bandLowHz = new float[count];
+            _bandHighHz = new float[count];
+            _tiltGains = new float[count];
+        }
+
+        if (_radialFrequencies.Length != half)
+            _radialFrequencies = new float[half];
+
+        if (_radialValues.Length != half)
+            _radialValues = new float[half];
 
         if (_output.Length != _bandCount)
             _output = new float[_bandCount];
 
+        _dbRange = ComputeDbRange();
+
         BuildFrequencyTable();
+        BuildBandEdges();
+        BuildTiltTable();
+        BuildRadialFrequencies();
     }
 
     private void BuildFrequencyTable()
@@ -207,62 +268,13 @@ public sealed class CenteredSpectrumPipeline
     /// Extracts the outer spectrum (CenterHz to MaxHz) as a normal
     /// per-band spectrum, plus the full range table used for sampling.
     /// </summary>
-    private void BuildLogAnalysisBands(float[] magnitudes)
+    private void BuildLogAnalysisBands(ChannelState ch)
     {
-        int count = _analysisValues.Length;
+        float[] a = ch.Analysis;
+        float[] scratch = ch.Scratch;
 
-        float minHz = Math.Max(1f, _config.MinHz);
-
-        float nyquist = _sampleRate * 0.5f;
-
-        float maxHz = _config.MaxHz > 0
-            ? Math.Min(_config.MaxHz, nyquist)
-            : nyquist;
-
-        if (maxHz <= minHz)
-            maxHz = Math.Max(minHz + 1f, nyquist);
-
-        for (int i = 0; i < count; i++)
-        {
-            float centerHz = _bandFrequencies[i];
-
-            float lowHz;
-            float highHz;
-
-            if (i == 0)
-            {
-                lowHz = minHz;
-            }
-            else
-            {
-                lowHz =
-                    GeometricMean(
-                        _bandFrequencies[i - 1],
-                        centerHz);
-            }
-
-            if (i == count - 1)
-            {
-                highHz = maxHz;
-            }
-            else
-            {
-                highHz =
-                    GeometricMean(
-                        centerHz,
-                        _bandFrequencies[i + 1]);
-            }
-
-            lowHz = Math.Max(minHz, lowHz);
-            highHz = Math.Min(maxHz, highHz);
-
-            _analysisValues[i] =
-                SampleBand(
-                    magnitudes,
-                    centerHz,
-                    lowHz,
-                    highHz);
-        }
+        for (int i = 0; i < a.Length; i++)
+            a[i] = SampleBand(scratch, _bandFrequencies[i], _bandLowHz[i], _bandHighHz[i]);
     }
 
     /// <summary>
@@ -324,32 +336,29 @@ public sealed class CenteredSpectrumPipeline
     // Processing stages
     // --------------------------------------------------------------------
 
-    private void NormalizeToDb()
+    private void NormalizeToDb(ChannelState ch)
     {
         const float epsilon = 1e-8f;
 
         float floor = _config.NoiseFloorDb;
-        float ceiling = _config.CeilingDb;
+        float inv = _dbRange;
 
-        if (ceiling <= floor)
-            ceiling = floor + 1f;
-
-        for (int i = 0; i < _analysisValues.Length; i++)
+        for (int i = 0; i < ch.Analysis.Length; i++)
         {
-            float magnitude = Math.Max(0f, _analysisValues[i]);
+            float magnitude = Math.Max(0f, ch.Analysis[i]);
             float db = 20f * MathF.Log10(magnitude + epsilon);
-            _analysisValues[i] = (db - floor) / (ceiling - floor);
+            ch.Analysis[i] = (db - floor) * inv;
         }
     }
 
-    private void ApplyGate()
+    private void ApplyGate(ChannelState ch)
     {
         float gate = Math.Clamp(_config.NoiseGateNorm, 0f, 1f);
         if (gate <= 0f) return;
 
-        for (int i = 0; i < _analysisValues.Length; i++)
+        for (int i = 0; i < ch.Analysis.Length; i++)
         {
-            float norm = Math.Clamp(_analysisValues[i], 0f, 1f);
+            float norm = Math.Clamp(ch.Analysis[i], 0f, 1f);
 
             if (norm < gate)
             {
@@ -357,53 +366,123 @@ public sealed class CenteredSpectrumPipeline
                 norm *= ratio;
             }
 
-            _analysisValues[i] = norm;
+            ch.Analysis[i] = norm;
         }
     }
 
-    private void ApplyZoneBoosts()
+    private float MinHz() => MathF.Max(1f, _config.MinHz);
+    private float MaxHz() => _config.MaxHz > 0 ? MathF.Min(_config.MaxHz, _sampleRate * 0.5f) : _sampleRate * 0.5f;
+
+    private float ComputeDbRange()
     {
-        float midStart = Math.Max(1f, _config.CenterHz);
-        float trebleStart = Math.Max(midStart, 8000f);
+        float floor = _config.NoiseFloorDb;
+        float ceiling = _config.CeilingDb;
 
-        for (int i = 0; i < _analysisValues.Length; i++)
+        if (ceiling <= floor) ceiling = floor + 1f;
+
+        return 1f / (ceiling - floor);
+    }
+
+    private void BuildBandEdges()
+    {
+        int count = _bandFrequencies.Length;
+        float minHz = MinHz();
+        float maxHz = MathF.Max(minHz, MaxHz());
+
+        for (int i = 0; i < count; i++)
         {
-            float freq = _bandFrequencies[i];
+            float c = _bandFrequencies[i];
+            float lo = i == 0 ? minHz : GeometricMean(_bandFrequencies[i - 1], c);
+            float hi = i == count - 1 ? maxHz : GeometricMean(c, _bandFrequencies[i + 1]);
 
-            float boost = 1.0f;
-
-            if (freq < midStart)
-            {
-                boost *= _config.BassBoost;
-            }
-            else if (freq < trebleStart)
-            {
-                boost *= _config.MidBoost;
-            }
-            else
-            {
-                boost *= _config.TrebleBoost;
-            }
-
-            _analysisValues[i] *= boost;
+            _bandLowHz[i] = MathF.Max(minHz, lo);
+            _bandHighHz[i] = MathF.Min(maxHz, hi);
         }
     }
 
-    private void ApplyEmaSmoothing()
+    private void BuildTiltTable()
     {
-        for (int i = 0; i < _analysisValues.Length; i++)
-        {
-            float diff =
-                _analysisValues[i] - _smoothed[i];
+        int count = _bandFrequencies.Length;
+        float tiltDb = _config.TiltDb;
 
-            if (MathF.Abs(diff) < _config.ChangeThreshold)
+        if (MathF.Abs(tiltDb) <= 0.01f)
+        {
+            Array.Fill(_tiltGains, 1f);
+            return;
+        }
+
+        double pivot = Math.Log(Math.Max(1f, _config.CenterHz));
+        double span = Math.Log(MathF.Max(MinHz(), MaxHz())) - pivot;
+
+        if (Math.Abs(span) < 1e-9)
+        {
+            Array.Fill(_tiltGains, 1f);
+            return;
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            double t = (Math.Log(_bandFrequencies[i]) - pivot) / span;
+            _tiltGains[i] = (float)Math.Pow(10.0, tiltDb * t / 20.0);
+        }
+    }
+
+    private void BuildRadialFrequencies()
+    {
+        int half = _radialFrequencies.Length;
+
+        double pivot = Math.Log(MathF.Max(1f, _config.CenterHz));
+        double span = Math.Log(MathF.Max(MinHz(), MaxHz())) - pivot;
+        double power = Math.Max(0.05, _config.EdgeSpreadPower);
+
+        for (int radial = 0; radial < half; radial++)
+        {
+            if (radial == 0) { _radialFrequencies[0] = 0f; continue; }
+
+            double t = half <= 1 ? 1.0 : (double)radial / (half - 1);
+            _radialFrequencies[radial] = (float)Math.Exp(pivot + span * Math.Pow(t, power));
+        }
+    }
+
+    private void ApplyTilt(ChannelState ch)
+    {
+        if (MathF.Abs(_config.TiltDb) <= 0.01f)
+            return;
+
+        float[] gains = _tiltGains;
+        float[] a = ch.Analysis;
+
+        if (gains.Length != a.Length)
+            return;
+
+        for (int i = 0; i < a.Length; i++)
+            a[i] *= gains[i];
+    }
+
+    private void ApplyEmaSmoothing(ChannelState ch)
+    {
+        if (_config.SmoothingAlpha >= 1f && _config.ChangeThreshold <= 0f)
+        {
+            return;
+        }
+
+        float[] a = ch.Analysis;
+        float[] s = ch.Smoothed;
+        float alpha = _config.SmoothingAlpha;
+        float threshold = _config.ChangeThreshold;
+
+        for (int i = 0; i < a.Length; i++)
+        {
+            float diff = a[i] - s[i];
+
+            if (MathF.Abs(diff) < threshold)
             {
-                _analysisValues[i] = _smoothed[i];
+                a[i] = s[i];
                 continue;
             }
 
-            _smoothed[i] += diff * _config.SmoothingAlpha;
-            _analysisValues[i] = _smoothed[i];
+            s[i] += diff * alpha;
+            a[i] = s[i];
         }
     }
 
@@ -411,105 +490,48 @@ public sealed class CenteredSpectrumPipeline
     // Central band aggregation
     // --------------------------------------------------------------------
 
-    /// <summary>
-    /// Aggregates the whole central band (MinHz to CenterHz) into a single
-    /// value. This is the only place Aggregation mode is applied.
-    /// </summary>
-    private void ComputeCenterValue(float[] magnitudes)
+    private void ComputeCenterValue(float[] magnitudes, int bins, int channels)
     {
-        float minHz = Math.Max(1f, _config.MinHz);
-        float centerHz = Math.Max(minHz, _config.CenterHz);
+        float left = AggregateLowBand(magnitudes, bins, channels, 0);
 
-        float nyquist = _sampleRate * 0.5f;
-        float maxHz =
-            _config.MaxHz > 0
-                ? Math.Min(_config.MaxHz, nyquist)
-                : nyquist;
+        float right = channels > 1 ? AggregateLowBand(magnitudes, bins, channels, 1) : left;
 
-        if (maxHz <= minHz)
-            maxHz = Math.Max(minHz + 1f, nyquist);
+        float raw = (left + right) * 0.5f;
 
-        centerHz = Math.Min(centerHz, maxHz);
-
-        int fftBinCount = Math.Min(
-            magnitudes.Length,
-            Math.Max(1, _fftSize / 2));
-
-        float binHz =
-            _sampleRate * 0.5f / fftBinCount;
-
-        int lowBin = (int)Math.Floor(
-            Math.Max(minHz, 1f) / binHz);
-
-        int highBin = (int)Math.Ceiling(
-            Math.Max(centerHz, 1f) / binHz);
-
-        lowBin = Clamp(lowBin, 0, fftBinCount - 1);
-        highBin = Clamp(highBin, lowBin, fftBinCount - 1);
-
-        float raw;
-
-        switch (_config.Aggregation)
-        {
-            case CenteredAggregation.Max:
-                {
-                    float max = 0f;
-
-                    for (int i = lowBin; i <= highBin; i++)
-                    {
-                        float value = Math.Max(0f, magnitudes[i]);
-
-                        if (value > max)
-                            max = value;
-                    }
-
-                    raw = max;
-                    break;
-                }
-
-            case CenteredAggregation.Rms:
-                {
-                    double sum = 0;
-                    int n = 0;
-
-                    for (int i = lowBin; i <= highBin; i++)
-                    {
-                        double value = Math.Max(0f, magnitudes[i]);
-                        sum += value * value;
-                        n++;
-                    }
-
-                    raw = n > 0
-                        ? (float)Math.Sqrt(sum / n)
-                        : 0f;
-                    break;
-                }
-
-            default:
-                {
-                    double sum = 0;
-                    int n = 0;
-
-                    for (int i = lowBin; i <= highBin; i++)
-                    {
-                        sum += Math.Max(0f, magnitudes[i]);
-                        n++;
-                    }
-
-                    raw = n > 0
-                        ? (float)(sum / n)
-                        : 0f;
-                    break;
-                }
-        }
-
-        // Normalize, gate, boost and smooth the center value the same way
-        // as the rest of the spectrum.
         float normalized = NormalizeSingleToDb(raw);
         normalized = ApplySingleGate(normalized);
-        normalized = Math.Clamp(normalized * _config.BassBoost, 0f, 1f);
+        normalized = Math.Clamp(normalized + _config.CenterTrimDb * _dbRange, 0f, 1f);
 
         _centerValue = SmoothSingle(normalized, _config.SmoothingAlpha);
+    }
+    private float AggregateLowBand(float[] magnitudes, int bins, int channels, int channel)
+    {
+        float binHz = _sampleRate * 0.5f / bins;
+
+        int lowBin = Clamp((int)MathF.Floor(MinHz() / binHz), 0, bins - 1);
+        int highBin = Clamp(
+            (int)MathF.Ceiling(MathF.Max(MinHz(), _config.CenterHz) / binHz),
+            lowBin, bins - 1);
+
+        float max = 0f;
+        double sum = 0, sumSq = 0;
+
+        for (int i = lowBin; i <= highBin; i++)
+        {
+            float v = MathF.Max(0f, magnitudes[(i * channels) + channel]);
+            if (v > max) max = v;
+            sum += v;
+            sumSq += v * v;
+        }
+
+        int n = highBin - lowBin + 1;
+
+        return _config.Aggregation switch
+        {
+            CenteredAggregation.Max => max,
+            CenteredAggregation.Rms => (float)Math.Sqrt(sumSq / n),
+            _ => (float)(sum / n),
+        };
     }
 
     private float NormalizeSingleToDb(float magnitude)
@@ -556,89 +578,34 @@ public sealed class CenteredSpectrumPipeline
     // Mirrored spectrum building
     // --------------------------------------------------------------------
 
-    private void BuildMirroredSpectrum()
+    private void BuildCenteredSpectrum()
     {
-        int halfCount = (_bandCount + 1) / 2;
+        int half = _radialValues.Length;
+        int center = _bandCount / 2;
 
-        if (_analysisValues.Length == 0)
-        {
-            Array.Clear(_output, 0, _output.Length);
-            return;
-        }
-
-        float minHz =
-            Math.Max(1f, _config.MinHz);
-
-        float maxHz =
-            _config.MaxHz > 0
-                ? Math.Min(
-                    _config.MaxHz,
-                    _sampleRate * 0.5f)
-                : _sampleRate * 0.5f;
-
-        float centerHz =
-            Math.Max(minHz, _config.CenterHz);
-
-        if (maxHz <= centerHz)
-            maxHz = Math.Max(centerHz + 1f, maxHz);
-
-        /*
-         * Radial 0 is the CENTER of the graph: it holds the single
-         * aggregated bass value of the MinHz..CenterHz band.
-         *
-         * Radial k (k >= 1) is a normal spectrum point that expands
-         * logarithmically from CenterHz outward to MaxHz. A frequency
-         * sweep from 20..400Hz stays collapsed in the middle, and from
-         * 400..MaxHz it travels smoothly toward the outer edges.
-         */
         _radialValues[0] = _centerValue;
 
-        double centerLog = Math.Log(centerHz);
-        double maxLog = Math.Log(maxHz);
-
-        double spreadPower =
-            Math.Max(0.05, _config.EdgeSpreadPower);
-
-        for (int radial = 1; radial < halfCount; radial++)
+        for (int ch = 0; ch < ChannelCount; ch++)
         {
-            double t =
-                halfCount <= 1
-                    ? 1.0
-                    : (double)radial / (halfCount - 1);
+            float[] analysis = _channels[ch].Analysis;
 
-            double logT =
-                Math.Pow(t, spreadPower);
+            for (int d = 1; d < half; d++)
+                _radialValues[d] = SampleFrequency(_radialFrequencies[d], analysis);
 
-            double logFrequency =
-                centerLog + (maxLog - centerLog) * logT;
-
-            float frequency =
-                (float)Math.Exp(logFrequency);
-
-            _radialValues[radial] =
-                SampleFrequency(frequency);
-        }
-
-        int centerOutput =
-            _bandCount / 2;
-
-        for (int i = 0; i < _bandCount; i++)
-        {
-            int distance =
-                Math.Abs(i - centerOutput);
-
-            int radialIndex =
-                Math.Min(
-                    distance,
-                    _radialValues.Length - 1);
-
-            _output[i] =
-                Clamp01(
-                    _radialValues[radialIndex]);
+            if (ch == 0)
+            {
+                for (int i = 0; i <= center; i++)
+                    _output[i] = Clamp01(_radialValues[center - i]);
+            }
+            else
+            {
+                for (int i = center + 1; i < _bandCount; i++)
+                    _output[i] = Clamp01(_radialValues[i - center]);
+            }
         }
     }
 
-    private float SampleFrequency(float frequency)
+    private float SampleFrequency(float frequency, float[] analysis)
     {
         if (frequency <= 0)
             return 0f;
@@ -649,10 +616,10 @@ public sealed class CenteredSpectrumPipeline
             return 0f;
 
         if (frequency <= _bandFrequencies[0])
-            return _analysisValues[0];
+            return analysis[0];
 
         if (frequency >= _bandFrequencies[count - 1])
-            return _analysisValues[count - 1];
+            return analysis[count - 1];
 
         int lo = 0;
         int hi = count - 1;
@@ -670,8 +637,8 @@ public sealed class CenteredSpectrumPipeline
         float f1 = _bandFrequencies[lo];
         float f2 = _bandFrequencies[hi];
 
-        float v1 = _analysisValues[lo];
-        float v2 = _analysisValues[hi];
+        float v1 = analysis[lo];
+        float v2 = analysis[hi];
 
         double logF =
             Math.Log(frequency);

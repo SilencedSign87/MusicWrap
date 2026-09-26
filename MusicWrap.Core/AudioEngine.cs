@@ -48,7 +48,10 @@ namespace MusicWrap.Core
 
         // FFT buffers for spectrum analysis
         private const int _spectrumFftSize = 8192;
+        private const int MaxSpectrumChannels = 2;
         private float[] _spectrumMagnitudes = Array.Empty<float>();
+        private int _spectrumSource;
+        private const BassFlags SourceFlags = BassFlags.MixerChanNoRampin | BassFlags.MixerChanBuffer;
 
         private static string GetNativeLibExtension()
         {
@@ -73,6 +76,7 @@ namespace MusicWrap.Core
             _currentOutputMode = outputmode;
 
             Bass.PlaybackBufferLength = 90;
+            Bass.Configure(Configuration.MixerBufferLength, 400);
             Bass.UpdatePeriod = 5;
             Bass.NetTimeOut = 7000;
             Bass.NetReadTimeOut = 7000;
@@ -179,18 +183,29 @@ namespace MusicWrap.Core
                 return false;
 
             Bass.ChannelSetAttribute(trackStream, ChannelAttribute.SampleRateConversion, PreferredSrcQuality);
-            return BassMix.MixerAddChannel(_mixerStream, trackStream, BassFlags.MixerChanNoRampin);
+
+            if (!BassMix.MixerAddChannel(_mixerStream, trackStream, SourceFlags))
+                return false;
+
+            _spectrumSource = trackStream;
+            return true;
         }
 
         public bool AttachTrackToMixer(int trackStream)
         {
             if (_mixerStream == 0) return false;
-            Bass.ChannelSetAttribute(trackStream, ChannelAttribute.SampleRateConversion, PreferredSrcQuality);
-            return BassMix.MixerAddChannel(_mixerStream, trackStream, BassFlags.MixerChanNoRampin);
-        }
 
+            Bass.ChannelSetAttribute(trackStream, ChannelAttribute.SampleRateConversion, PreferredSrcQuality);
+
+            if (!BassMix.MixerAddChannel(_mixerStream, trackStream, SourceFlags))
+                return false;
+
+            _spectrumSource = trackStream;
+            return true;
+        }
         public bool DetachTrack(int trackStream)
         {
+            _spectrumSource = 0;
             return BassMix.MixerRemoveChannel(trackStream);
         }
 
@@ -289,6 +304,7 @@ namespace MusicWrap.Core
                 Bass.StreamFree(_mixerStream);
                 _mixerStream = 0;
             }
+            _spectrumSource = 0;
             _mixerSampleRate = 0;
             _mixerChannels = 0;
         }
@@ -571,16 +587,35 @@ namespace MusicWrap.Core
 
         public Errors GetLastError() => Bass.LastError;
 
-        public (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes()
+        public (float[] Magnitudes, int FftSize, int channels) GetSpectrumMagnitudes()
         {
-            if (_mixerStream == 0) return (Array.Empty<float>(), 0);
+            if (_mixerStream == 0 || _spectrumSource == 0)
+                return (Array.Empty<float>(), 0, 0);
 
-#if WINDOWS
-            if (_isWasapiInitialized && IsWasapiMode())
-                return GetWasapiSpectrum();
-#endif
+            if (!Bass.ChannelGetInfo(_spectrumSource, out var info))
+                return (Array.Empty<float>(), 0, 0);
 
-            return GetMixerSpectrum();
+            int channels = Math.Clamp(info.Channels, 1, MaxSpectrumChannels);
+
+            int bins = _spectrumFftSize / 2;
+            int required = bins * channels;
+
+            if (_spectrumMagnitudes.Length < required)
+                _spectrumMagnitudes = new float[required];
+
+            Array.Clear(_spectrumMagnitudes, 0, required);
+
+            int flags = GetFFTFlag(_spectrumFftSize)
+                      | (int)DataFlags.Float
+                      | (int)DataFlags.FFTIndividual;
+
+            if (BassMix.ChannelGetData(_spectrumSource, _spectrumMagnitudes, flags) <= 0)
+            {
+                Debug.WriteLine($"[AudioEngine] ChannelGetData FFT failed: {Bass.LastError}");
+                return (Array.Empty<float>(), 0, 0);
+            }
+
+            return (_spectrumMagnitudes, _spectrumFftSize, channels);
         }
 
         private static int GetFFTFlag(int fftSize) => (int)DataFlags.FFT256 | (int)Math.Log2(fftSize / 256);

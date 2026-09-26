@@ -943,7 +943,7 @@ namespace MusicWrap.Core.Services.Playback
         {
             return _audioEngine.GetOutputDevices();
         }
-        public (float[] Magnitudes, int FftSize) GetSpectrumMagnitudes()
+        public (float[] Magnitudes, int FftSize, int channels) GetSpectrumMagnitudes()
             => _audioEngine.GetSpectrumMagnitudes();
         public PlaybackQueueSnapshot BuildPlaybackSnapshot()
         {

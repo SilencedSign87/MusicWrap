@@ -131,15 +131,15 @@ namespace MusicWrap.UI.Controls
                 return;
             }
 
-            var (magnitudes, fftSize) = _musicService.GetSpectrumMagnitudes();
+            var (magnitudes, fftSize, channels) = _musicService.GetSpectrumMagnitudes();
 
-            if (magnitudes == null || magnitudes.Length == 0 || fftSize == 0)
+            if (magnitudes == null || magnitudes.Length == 0 || fftSize == 0 || channels == 0)
             {
                 DecayAll();
                 return;
             }
 
-            magnitudes = (float[])magnitudes.Clone(); // Clone to avoid modifying the original array
+            //magnitudes = (float[])magnitudes.Clone(); // Clone to avoid modifying the original array
 
             int sr = _musicService.GetCurrentOutputSampleRate();
 
@@ -158,7 +158,7 @@ namespace MusicWrap.UI.Controls
             }
 
             float[] displayBands = SpectrumType == SpectrumType.Centered
-                ? _centeredPipeline.Process(magnitudes)
+                ? _centeredPipeline.Process(magnitudes, channels)
                 : _spectrumPipeline.Process(magnitudes);
 
             if (_currentHeights.Length != displayBands.Length)
