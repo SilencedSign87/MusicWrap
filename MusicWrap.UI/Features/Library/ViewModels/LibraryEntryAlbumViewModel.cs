@@ -7,6 +7,7 @@ using MusicWrap.UI.Services;
 using System.Collections.ObjectModel;
 using MusicWrap.UI.Features.Library.Services;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
+using System.Diagnostics;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -21,8 +22,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [ObservableProperty] private int layoutColumns = 1;
 
         // View State
-        [ObservableProperty] private ObservableCollection<AlbumGridRowModel> gridRows = [];
+        public ObservableCollection<AlbumGridRowModel> GridRows { get; } = [];
         private int? _expandedAlbumId;
+        private AlbumTracksViewModel? _expandedTracks;
+        private AlbumGridRowModel? _expandedRow;
 
         // internal state
         private bool _isHibernating = true;
@@ -70,30 +73,28 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         #region Public
         public void ExpandAlbum(int albumId)
         {
-            var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
-            if (row is null) return;
-            if (row.ExpandedAlbumId == albumId)
-            {
-                CollapseAlbum();
-                return;
-            }
+            //var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
+            if (_expandedAlbumId == albumId) { CollapseAlbum(); return; }
             CollapseAlbum();
+            var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
+
+            if (row is null) return;
+
+            _expandedTracks = CreateTracksViewModel(row, albumId);
             row.ExpandedAlbumId = albumId;
-            row.TracksViewModel = CreateTracksViewModel(row, albumId);
+            _expandedRow = row;
             _expandedAlbumId = albumId;
         }
         public void CollapseAlbum()
         {
-            foreach (var row in GridRows)
-            {
-                row.ExpandedAlbumId = null;
-                row.TracksViewModel = null;
-            }
+            DetachExpandedRow();
             _expandedAlbumId = null;
+            DisposeExpandedTracks();
         }
         #endregion
         #region Partial functions
         partial void OnLayoutColumnsChanged(int value) => Reflow();
+
 
         #endregion
 
@@ -136,6 +137,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (_isHibernating || entry is null) return;
 
             CancelImageLoading();
+            DisposeExpandedTracks();
 
             var fresh = _libraryService
                .GetAlbumsForEntry(entry, useSearchQuery: true)
@@ -156,19 +158,49 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             if (_isHibernating) return;
 
-            var columns = Math.Max(1, LayoutColumns);
-            var rows = new ObservableCollection<AlbumGridRowModel>();
-            for (int i = 0; i < _sortedAlbums.Count; i += columns)
+            var columns = ClampColumns(LayoutColumns);
+            var rowCount = (_sortedAlbums.Count + columns - 1) / columns;
+            DetachExpandedRow();
+            while (GridRows.Count > rowCount)
             {
-                rows.Add(new AlbumGridRowModel
-                {
-                    Albums = [.. _sortedAlbums.Skip(i).Take(columns)]
-                });
+                GridRows.RemoveAt(GridRows.Count - 1);
             }
-            GridRows = rows;
-            RestoreExpandedIfPresent();
+
+            for (int r = 0; r < rowCount; r++)
+            {
+                var slice = _sortedAlbums.GetRange(
+             r * columns, Math.Min(columns, _sortedAlbums.Count - r * columns));
+
+                if (r < GridRows.Count)
+                {
+                    var row = GridRows[r];
+                    if (SameAlbums(row.Albums, slice)) continue;   // no-op: cero notificaciones
+                    row.Albums = slice;
+                }
+                else
+                {
+                    GridRows.Add(new AlbumGridRowModel { Albums = slice });
+                }
+            }
+            AttachExpandedRow();
         }
-        private void RestoreExpandedIfPresent()
+        private static bool SameAlbums(List<AlbumData> a, List<AlbumData> b)
+        {
+            if (a.Count != b.Count) return false;
+            for (int i = 0; i < a.Count; i++)
+                if (!ReferenceEquals(a[i], b[i])) return false;
+            return true;
+        }
+        private int ClampColumns(int available) => Math.Clamp(available, 1, Math.Max(1, _sortedAlbums.Count));
+        private void DetachExpandedRow()
+        {
+            //if (_expandedAlbumId is not { } id) return;
+            if (_expandedRow is null) return;
+            _expandedRow.ExpandedAlbumId = null;
+            _expandedRow.TracksViewModel = null;
+            _expandedRow = null;
+        }
+        private void AttachExpandedRow()
         {
             if (_expandedAlbumId is not { } id) return;
 
@@ -176,12 +208,21 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (album is null)
             {
                 _expandedAlbumId = null;
+                DisposeExpandedTracks();
                 return;
             }
 
             var row = GridRows.First(r => r.Albums.Contains(album));
+            _expandedTracks ??= CreateTracksViewModel(row, album.Id);
             row.ExpandedAlbumId = album.Id;
-            row.TracksViewModel = CreateTracksViewModel(row, album.Id);
+            row.TracksViewModel = _expandedTracks;
+            _expandedRow = row;
+        }
+
+        private void DisposeExpandedTracks()
+        {
+            _expandedTracks?.Dispose();
+            _expandedTracks = null;
         }
         private void CancelImageLoading()
         {
@@ -318,8 +359,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             CancelImageLoading();
             _rawAlbums.Clear();
             _sortedAlbums.Clear();
+            CollapseAlbum();
             GridRows.Clear();
-            _expandedAlbumId = null;
         }
         public void Dispose()
         {

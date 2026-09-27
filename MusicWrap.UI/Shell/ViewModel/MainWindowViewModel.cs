@@ -16,48 +16,36 @@ using System.Windows.Threading;
 
 namespace MusicWrap.UI.Shell.ViewModel
 {
-    public partial class MainPlayerViewModel : ObservableObject, IDisposable
+    public partial class MainPlayerViewModel : ObservableObject
     {
         private readonly MusicPlayerService _playerService;
-        private readonly IServiceProvider _serviceProvider;
         private readonly WindowManagerService _windowManager;
-        private readonly ILogger _logger;
         private readonly MusicWrapSettings _userSettings;
-        private LibraryPage? _cachedLibraryPage;
-        private int _currentLoadedIndex = -1;
 
         [ObservableProperty]
         private int selectedTabIndex;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(SidebarToggleIcon))]
-        [NotifyPropertyChangedFor(nameof(SidebarWidth))]
         [NotifyPropertyChangedFor(nameof(SidebarTooltip))]
         private bool isSidePanelVisible;
 
-        [ObservableProperty] public UserControl? currentControl;
-
         public string SidebarToggleIcon
             => IsSidePanelVisible ? "\xE89F" : "\xE8A0";
-        public GridLength SidebarWidth
-            => IsSidePanelVisible ? new GridLength(307) : new GridLength(0);
         public string SidebarTooltip
             => IsSidePanelVisible ? "Hide Sidebar" : "Show Sidebar";
 
         private bool _disposed = false;
 
-        public MainPlayerViewModel(MusicPlayerService playerService, IServiceProvider serviceProvider, ILogger<MainPlayerViewModel> logger, WindowManagerService manager, MusicWrapSettings userSettings)
+        public MainPlayerViewModel(MusicPlayerService playerService, WindowManagerService manager, MusicWrapSettings userSettings)
         {
             _playerService = playerService;
-            _serviceProvider = serviceProvider;
             _windowManager = manager;
-            _logger = logger;
             _userSettings = userSettings;
 
             IsSidePanelVisible = _userSettings.IsSidebarOpen;
 
             SelectedTabIndex = _userSettings.MainWindowTab;
-            Navigate(_userSettings.MainWindowTab);
         }
 
         #region Relay Commands
@@ -107,50 +95,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         }
         #endregion
         #region Partial Functions
-        partial void OnSelectedTabIndexChanged(int value) => Navigate(value);
+        partial void OnSelectedTabIndexChanged(int value) => _userSettings.MainWindowTab = value;
         #endregion
-        #region Internal
-        private void Navigate(int index)
-        {
-            _userSettings.MainWindowTab = index;
-            if (_currentLoadedIndex == index && CurrentControl != null)
-                return;
-
-            _currentLoadedIndex = index;
-            var previousControl = CurrentControl;
-            var nextControl = CreatePage(index);
-
-            CurrentControl = nextControl;
-
-            if (previousControl is IDisposable disposable && !ReferenceEquals(previousControl, _cachedLibraryPage))
-            {
-                disposable.Dispose();
-            }
-        }
-
-        private UserControl CreatePage(int index) => index switch
-        {
-            1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
-            2 => _serviceProvider.GetRequiredService<ServicesPage>(),
-            3 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
-            _ => _cachedLibraryPage ??= _serviceProvider.GetRequiredService<LibraryPage>()
-        };
-
-        #endregion
-        public void Dispose()
-        {
-            if (_disposed)
-                return;
-            _disposed = true;
-
-            if (CurrentControl is IDisposable currentDisposable && !ReferenceEquals(CurrentControl, _cachedLibraryPage))
-            {
-                currentDisposable.Dispose();
-            }
-            
-            _cachedLibraryPage?.Dispose();
-            _cachedLibraryPage = null;
-            CurrentControl = null;
-        }
     }
 }

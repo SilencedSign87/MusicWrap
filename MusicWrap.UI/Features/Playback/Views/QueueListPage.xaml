@@ -46,7 +46,7 @@
                     />
             </StackPanel>
         </Border>
-        <Border Grid.Row="1" Height="1" Background="{Binding Foreground, ElementName=QueueRoot}" Opacity="0.3" SnapsToDevicePixels="True"/>
+        <Border Grid.Row="1" Height="1" Background="{Binding Foreground, ElementName=QueueRoot}" Opacity="0.25" SnapsToDevicePixels="True"/>
         <controlsM:TracksView
             x:Name="QueueTracksView"
             Grid.Row="2"

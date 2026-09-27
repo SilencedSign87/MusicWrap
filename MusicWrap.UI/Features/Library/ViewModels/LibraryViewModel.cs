@@ -391,7 +391,17 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
         public class AlbumGridRowModel : INotifyPropertyChanged
         {
-            public List<AlbumData> Albums { get; set; } = [];
+            //public List<AlbumData> Albums { get; set; } = [];
+            private List<AlbumData> _albums = [];
+            public List<AlbumData> Albums
+            {
+                get => _albums;
+                set
+                {
+                    _albums = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Albums)));
+                }
+            }
 
             private AlbumTracksViewModel? _tracksViewModel;
             public AlbumTracksViewModel? TracksViewModel

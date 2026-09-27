@@ -1,9 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core.Services.Search;
 using MusicWrap.UI.Features.Library.ViewModels;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Features.Library.Services;
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -28,7 +23,6 @@ namespace MusicWrap.UI.Features.Library.Views
 
             if (sender is Button button && button.DataContext is LibraryViewModel.AlbumData albumData)
                 viewModel.ExpandAlbum(albumData.Id);
-
         }
 
         private void CloseTracksButton_Click(object sender, RoutedEventArgs e)
@@ -44,7 +38,12 @@ namespace MusicWrap.UI.Features.Library.Views
             if (DataContext is not LibraryEntryAlbumViewModel viewModel || e.NewSize.Width <= 0)
                 return;
 
-            viewModel.LayoutColumns = CalculateColumns(Math.Max(1, (int)AlbumsViewport.ActualWidth));
+            //viewModel.LayoutColumns = CalculateColumns(Math.Max(1, (int)AlbumsViewport.ActualWidth));
+            var columns = CalculateColumns(AlbumsViewport.ActualWidth);
+            if (columns == viewModel.LayoutColumns)
+                return;
+
+            viewModel.LayoutColumns = columns;
         }
 
         private void AlbumsViewport_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -55,7 +54,12 @@ namespace MusicWrap.UI.Features.Library.Views
             }
         }
 
-        private static int CalculateColumns(int width) => Math.Max(MinColumns, Math.Max(1, width) / (MinTileWidth + Gutter));
+        private static int CalculateColumns(double width)
+        {
+            var safeWidth = Math.Max(1d, width);
+            var columns = (int)Math.Floor((safeWidth) / (MinTileWidth + Gutter));
+            return Math.Max(columns, MinColumns);
+        }
 
     }
 }
