@@ -37,7 +37,7 @@ namespace MusicWrap.UI.Controls
 
             _musicService = App.Services.GetRequiredService<MusicPlayerService>();
 
-            _spectrumPipeline = new SpectrumPipeline(new SpectrumPipelineConfig { SampleRate = _samplerate, FftSize = _currentFFTSize });
+            _spectrumPipeline = new SpectrumPipeline(new SpectrumPipelineConfig { SampleRate = _samplerate, binCount = _currentFFTSize });
             _centeredPipeline = new CenteredSpectrumPipeline(new CenteredSpectrumPipelineConfig
             {
                 SampleRate = _samplerate,
@@ -144,7 +144,7 @@ namespace MusicWrap.UI.Controls
                 return;
             }
 
-            magnitudes = (float[])magnitudes.Clone(); // Clone to avoid modifying the original array
+            //magnitudes = (float[])magnitudes.Clone(); // Clone to avoid modifying the original array
 
             int sr = _musicService.GetCurrentOutputSampleRate();
 
@@ -363,7 +363,8 @@ namespace MusicWrap.UI.Controls
                     {
                         double segmentHeight = Math.Max(barWidth * 0.45, 3.0);
                         double stride = segmentHeight + SegmentGap;
-                        int segmentCount = (int)((barHeight + SegmentGap) / stride);
+                        //int segmentCount = (int)((barHeight + SegmentGap) / stride);
+                        int segmentCount = Math.Max(1, (int)((barHeight + SegmentGap) / stride));
 
                         for (int s = 0; s < segmentCount; s++)
                         {

@@ -5,7 +5,7 @@ namespace MusicWrap.UI.Controls
     {
         // ---- Frequencies / mapping ----
         public int BandCount { get; set; } = 8;
-        public int FftSize { get; set; } = 16384;
+        public int binCount { get; set; } = 16384;
         public int SampleRate { get; set; } = 44100;
         public float MinEqHz { get; set; } = 20f;
         public float MaxEqHz { get; set; } = 20000f;
@@ -38,6 +38,7 @@ namespace MusicWrap.UI.Controls
         private readonly SpectrumPipelineConfig _cfg;
 
         private float[] _smoothed;
+        private float[] _channelScratch = [];
         private BandMapping[] _bandMap = [];
 
         public SpectrumPipeline(SpectrumPipelineConfig config)
@@ -52,7 +53,7 @@ namespace MusicWrap.UI.Controls
         public void OnConfigurationChanged(int sampleRate, int fftSize)
         {
             _cfg.SampleRate = sampleRate;
-            _cfg.FftSize = fftSize;
+            _cfg.binCount = fftSize;
             RebuildBandMapping();
             ResetSmoothing();
         }
@@ -64,31 +65,45 @@ namespace MusicWrap.UI.Controls
 
         public void SetBandCount(int bandCount)
         {
-            _cfg.BandCount = Math.Max(bandCount, 1);
-            _smoothed = new float[_cfg.BandCount];
+            //_cfg.BandCount = Math.Max(bandCount, 1);
+            //_smoothed = new float[_cfg.BandCount];
+
+            int n = Math.Max(bandCount, 1);
+            if (n == _cfg.BandCount)
+                return;
+
+            _cfg.BandCount = n;
+            _smoothed = new float[n];
+
             RebuildBandMapping();
         }
 
         // channel 0 = left, 1 = right
         public float[] ProcessChannel(float[] interleavedMagnitudes, int channel)
         {
-            int fftSize = interleavedMagnitudes.Length / 2;
-            var channelData = new float[fftSize];
+            //int fftSize = interleavedMagnitudes.Length / 2;
+            //var channelData = new float[fftSize];
+            int binCount = interleavedMagnitudes.Length / 2;
+
+            if (_channelScratch.Length != binCount)
+                _channelScratch = new float[binCount];
+
             int startIndex = channel == 0 ? 0 : 1;
 
-            for (int i = 0; i < fftSize; i++)
+            for (int i = 0; i < binCount; i++)
             {
-                channelData[i] = interleavedMagnitudes[startIndex + i * 2];
+                _channelScratch[i] = interleavedMagnitudes[startIndex + i * 2];
             }
 
-            return Process(channelData);
+            return Process(_channelScratch);
         }
 
         public float[] Process(float[] magnitudes)
         {
             var raw = ExtractRawBands(magnitudes);
             var gated = ApplyGate(raw);
-            var boosted = ApplyHighShelf(gated);
+            //var boosted = ApplyHighShelf(gated);
+            var boosted = _cfg.HighShelfGain > 0f ? ApplyHighShelf(gated) : gated;
             SmoothBands(boosted);
             var display = ApplyGamma(_smoothed);
             return display;
@@ -100,6 +115,7 @@ namespace MusicWrap.UI.Controls
         {
             int count = _cfg.BandCount;
             var result = new float[count];
+            float span = Math.Max(1e-3f, _cfg.CeilingDb - _cfg.NoiseFloorDb);
 
             for (int i = 0; i < count; i++)
             {
@@ -112,7 +128,8 @@ namespace MusicWrap.UI.Controls
                 float magnitude = (mLeft + 2f * mCenter + mRight) * 0.25f;
 
                 float db = 20f * MathF.Log10(magnitude + 1e-8f);
-                result[i] = (db - _cfg.NoiseFloorDb) / (_cfg.CeilingDb - _cfg.NoiseFloorDb);
+                //result[i] = (db - _cfg.NoiseFloorDb) / (_cfg.CeilingDb - _cfg.NoiseFloorDb);
+                result[i] = (db - _cfg.NoiseFloorDb) / span;
             }
 
             return result;
@@ -171,7 +188,8 @@ namespace MusicWrap.UI.Controls
             {
                 float t = count > 1 ? (float)i / (count - 1) : 0f;
                 float bandGamma = Math.Max(_cfg.EqGamma - _cfg.GammaDelta * t, _cfg.GammaFloor) * _cfg.ContrastGamma;
-                result[i] = MathF.Pow(input[i], bandGamma);
+                //result[i] = MathF.Pow(input[i], bandGamma);
+                result[i] = bandGamma == 1f ? input[i] : MathF.Pow(input[i], bandGamma);
             }
             return result;
         }
@@ -185,7 +203,7 @@ namespace MusicWrap.UI.Controls
             int count = _cfg.BandCount;
             _bandMap = new BandMapping[count];
 
-            int usableBins = Math.Max(1, _cfg.FftSize / 2);
+            int usableBins = Math.Max(1, _cfg.binCount / 2);
             float nyquist = _cfg.SampleRate * 0.5f;
             float binHz = nyquist / usableBins;
 

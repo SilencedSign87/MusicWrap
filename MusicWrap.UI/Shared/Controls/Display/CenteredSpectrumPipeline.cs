@@ -1,8 +1,4 @@
-﻿using System.Diagnostics;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
-
-namespace MusicWrap.UI.Controls;
+﻿namespace MusicWrap.UI.Controls;
 
 public sealed class CenteredSpectrumPipelineConfig
 {
@@ -30,7 +26,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// Transition frequency: everything from MinHz to TransitionHz is collapsed
     /// into a single bass value per channel. Above TransitionHz, spectrum expands normally.
     /// </summary>
-    public float TransitionHz { get; set; } = 150f;
+    public float TransitionHz { get; set; } = 200f;
 
     /// <summary>
     /// How many bars the collapsed bass region "bleeds" into (affects neighbors).
@@ -58,7 +54,7 @@ public sealed class CenteredSpectrumPipelineConfig
     public float ChangeThreshold { get; set; } = 0.0f;
 
     // Per-zone boosts (applied after normalization, before collapse/bleed)
-    public float BassBoost { get; set; } = 1.1f;
+    public float BassBoost { get; set; } = 1.2f;
     public float MidBoost { get; set; } = 1.0f;
     public float TrebleBoost { get; set; } = 1.2f;
 
@@ -96,6 +92,7 @@ public sealed class CenteredSpectrumPipeline
 
     // How many bands each child pipeline needs to produce
     private int _childBandCount;
+    private float[] _boosts = [];
 
     private float[] _leftProcessed = [];
     private float[] _rightProcessed = [];
@@ -105,8 +102,6 @@ public sealed class CenteredSpectrumPipeline
     private float _effMaxHz;
     private float _effTransitionHz;
     private int _transitionIndex;
-
-    private int _diagFrame;
 
 
     public CenteredSpectrumPipeline(CenteredSpectrumPipelineConfig config)
@@ -124,7 +119,7 @@ public sealed class CenteredSpectrumPipeline
         _childConfig = new SpectrumPipelineConfig
         {
             SampleRate = _sampleRate,
-            FftSize = _fftSize,
+            binCount = _fftSize,
             MinEqHz = Math.Max(1f, _config.MinHz),
             MaxEqHz = Math.Min(_config.MaxHz, _sampleRate * 0.5f),
             NoiseFloorDb = _config.NoiseFloorDb,
@@ -172,7 +167,7 @@ public sealed class CenteredSpectrumPipeline
         _config.FftSize = _fftSize;
 
         _childConfig.SampleRate = _sampleRate;
-        _childConfig.FftSize = _fftSize;
+        _childConfig.binCount = _fftSize;
 
         _leftPipeline.OnConfigurationChanged(_sampleRate, _fftSize);
         _rightPipeline.OnConfigurationChanged(_sampleRate, _fftSize);
@@ -206,17 +201,6 @@ public sealed class CenteredSpectrumPipeline
         // Mirror: invert left and append right
         BuildCenteredOutput();
 
-        if (++_diagFrame == 120)
-        {
-            int n = _childBandCount;
-            Debug.WriteLine(
-                $"[Spec] childBands={n} t={_transitionIndex} cfgFft={_childConfig.FftSize} " +
-                $"effMin={_effMinHz:F0} effMax={_effMaxHz:F0} " +
-                $"L[0]={_leftProcessed[0]:F4} " +
-                $"L[{n - 3}]={_leftProcessed[n - 3]:F4} " +
-                $"L[{n - 2}]={_leftProcessed[n - 2]:F4} " +
-                $"L[{n - 1}]={_leftProcessed[n - 1]:F4}");
-        }
 
         return _output;
     }
@@ -256,6 +240,7 @@ public sealed class CenteredSpectrumPipeline
 
         _childBandCount = n;
         _transitionIndex = n > 2 ? Math.Clamp(CollapsedIndex(n, f), 0, n - 2) : 0;
+        RebuildBoostTable();
     }
     private static int CollapsedIndex(int bandCount, double collapsedFraction)
         => Math.Max(0, (int)Math.Ceiling(bandCount * collapsedFraction) - 1);
@@ -269,42 +254,65 @@ public sealed class CenteredSpectrumPipeline
         if (_output.Length != _outputBandCount)
             _output = new float[_outputBandCount];
     }
-
     // --------------------------------------------------------------------
     // Processing stages
     // --------------------------------------------------------------------
+    private void RebuildBoostTable()
+    {
+        _boosts = new float[_childBandCount];
+        if (_childBandCount <= 1 || _effMaxHz <= _effMinHz)
+            return;
+
+        double logRange = Math.Log(_effMaxHz) - Math.Log(_effMinHz);
+        float trebleStart = Math.Max(_config.TransitionHz, 8000f);
+
+        for (int i = 0; i < _childBandCount; i++)
+        {
+            double t = (double)i / (_childBandCount - 1);
+            float freq = (float)Math.Exp(Math.Log(_effMinHz) + logRange * t);
+
+            _boosts[i] = freq < _config.TransitionHz ? _config.BassBoost
+                   : freq < trebleStart ? _config.MidBoost
+                   : _config.TrebleBoost;
+        }
+    }
 
     private void ApplyZoneBoosts(float[] bands)
     {
-        if (bands.Length == 0) return;
+        //if (bands.Length == 0) return;
 
-        float minHz = Math.Max(1f, _config.MinHz);
-        float maxHz = Math.Min(_config.MaxHz, _sampleRate * 0.5f);
+        //float minHz = Math.Max(1f, _config.MinHz);
+        //float maxHz = Math.Min(_config.MaxHz, _sampleRate * 0.5f);
 
-        if (maxHz <= minHz) return;
+        //if (maxHz <= minHz) return;
 
-        double minLog = Math.Log(minHz);
-        double maxLog = Math.Log(maxHz);
-        double logRange = maxLog - minLog;
+        //double minLog = Math.Log(minHz);
+        //double maxLog = Math.Log(maxHz);
+        //double logRange = maxLog - minLog;
 
-        for (int i = 0; i < bands.Length; i++)
+        //for (int i = 0; i < bands.Length; i++)
+        //{
+        //    double t = bands.Length <= 1 ? 0 : (double)i / (bands.Length - 1);
+        //    double logFreq = minLog + logRange * t;
+        //    float freq = (float)Math.Exp(logFreq);
+
+        //    float boost = 1.0f;
+        //    float transitionHz = _config.TransitionHz;
+        //    float trebleStart = Math.Max(transitionHz, 8000f);
+
+        //    if (freq < transitionHz)
+        //        boost *= _config.BassBoost;
+        //    else if (freq < trebleStart)
+        //        boost *= _config.MidBoost;
+        //    else
+        //        boost *= _config.TrebleBoost;
+
+        //    bands[i] *= boost;
+        //}
+        int n = Math.Min(bands.Length, _boosts.Length);
+        for (int i = 0; i < n; i++)
         {
-            double t = bands.Length <= 1 ? 0 : (double)i / (bands.Length - 1);
-            double logFreq = minLog + logRange * t;
-            float freq = (float)Math.Exp(logFreq);
-
-            float boost = 1.0f;
-            float transitionHz = _config.TransitionHz;
-            float trebleStart = Math.Max(transitionHz, 8000f);
-
-            if (freq < transitionHz)
-                boost *= _config.BassBoost;
-            else if (freq < trebleStart)
-                boost *= _config.MidBoost;
-            else
-                boost *= _config.TrebleBoost;
-
-            bands[i] *= boost;
+            bands[i] *= _boosts[i];
         }
     }
 
@@ -428,39 +436,5 @@ public sealed class CenteredSpectrumPipeline
                     return (float)Math.Sqrt(sumSq / count);
                 }
         }
-    }
-    private static float GeometricMean(
-        float a,
-        float b)
-    {
-        a = Math.Max(0.0001f, a);
-        b = Math.Max(0.0001f, b);
-
-        return (float)Math.Sqrt(a * b);
-    }
-
-    private static int Clamp(
-        int value,
-        int min,
-        int max)
-    {
-        if (value < min)
-            return min;
-
-        if (value > max)
-            return max;
-
-        return value;
-    }
-
-    private static float Clamp01(float value)
-    {
-        if (value <= 0f)
-            return 0f;
-
-        if (value >= 1f)
-            return 1f;
-
-        return value;
     }
 }
