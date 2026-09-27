@@ -69,6 +69,21 @@ namespace MusicWrap.UI.Controls
             RebuildBandMapping();
         }
 
+        // channel 0 = left, 1 = right
+        public float[] ProcessChannel(float[] interleavedMagnitudes, int channel)
+        {
+            int fftSize = interleavedMagnitudes.Length / 2;
+            var channelData = new float[fftSize];
+            int startIndex = channel == 0 ? 0 : 1;
+
+            for (int i = 0; i < fftSize; i++)
+            {
+                channelData[i] = interleavedMagnitudes[startIndex + i * 2];
+            }
+
+            return Process(channelData);
+        }
+
         public float[] Process(float[] magnitudes)
         {
             var raw = ExtractRawBands(magnitudes);

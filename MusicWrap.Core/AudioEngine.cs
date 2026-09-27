@@ -583,13 +583,13 @@ namespace MusicWrap.Core
             return GetMixerSpectrum();
         }
 
-        private static int GetFFTFlag(int fftSize) => (int)DataFlags.FFT256 | (int)Math.Log2(fftSize / 256);
+        private static int GetFFTFlag(int fftSize) => (int)DataFlags.FFT256 | (int)Math.Log2(fftSize / 256) | (int)DataFlags.FFTIndividual;
 
 #if WINDOWS
         private (float[] Magnitudes, int FftSize) GetWasapiSpectrum()
         {
-            if (_spectrumMagnitudes.Length < _spectrumFftSize / 2)
-                _spectrumMagnitudes = new float[_spectrumFftSize / 2];
+            if (_spectrumMagnitudes.Length < _spectrumFftSize)
+                _spectrumMagnitudes = new float[_spectrumFftSize];
 
             int flags = GetFFTFlag(_spectrumFftSize) | (int)DataFlags.Float;
 
@@ -604,8 +604,8 @@ namespace MusicWrap.Core
 #endif
         private (float[] Magnitudes, int FftSize) GetMixerSpectrum()
         {
-            if (_spectrumMagnitudes.Length < _spectrumFftSize / 2)
-                _spectrumMagnitudes = new float[_spectrumFftSize / 2];
+            if (_spectrumMagnitudes.Length < _spectrumFftSize)
+                _spectrumMagnitudes = new float[_spectrumFftSize];
 
             int flags = GetFFTFlag(_spectrumFftSize) | (int)DataFlags.Float;
 
