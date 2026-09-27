@@ -82,6 +82,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             _expandedTracks = CreateTracksViewModel(row, albumId);
             row.ExpandedAlbumId = albumId;
+            row.TracksViewModel = _expandedTracks;
             _expandedRow = row;
             _expandedAlbumId = albumId;
         }

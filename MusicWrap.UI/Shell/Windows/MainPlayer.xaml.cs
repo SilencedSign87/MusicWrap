@@ -16,19 +16,22 @@ namespace MusicWrap.UI.Shell.Windows
     /// </summary>
     public partial class MainPlayer : UserControl
     {
-        private const double SidebarExpandedWidth = 307;
-        private const double ContentEnterOffset = 12d;
+        private const double SidebarExpandedWidth = 307d;
+        private const double ContentEnterOffset = 32d;
         private static readonly TimeSpan SidebarDuration = TimeSpan.FromMilliseconds(250);
         private static readonly TimeSpan ContentEnterDuration = TimeSpan.FromMilliseconds(300);
 
         private readonly MainPlayerViewModel _viewmodel;
         private readonly IServiceProvider _serviceProvider;
+        private readonly TranslateTransform _sidebarSlide = new();
         private LibraryPage? _cachedLibraryPage;
         private int _currentIndex = -1;
 
         public MainPlayer(PlayerPage playerPage, MainPlayerViewModel viewmodel, IServiceProvider serviceProvider)
         {
             InitializeComponent();
+
+            SidebarContent.RenderTransform = _sidebarSlide;
             _viewmodel = viewmodel;
             _serviceProvider = serviceProvider;
             DataContext = viewmodel;
@@ -50,37 +53,53 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void AnimateSidebar(bool isSidePanelVisible, bool animate = true)
         {
-            var target = isSidePanelVisible ? SidebarExpandedWidth : 0d;
+            var restingX = isSidePanelVisible ? 0d : SidebarExpandedWidth;
 
             if (!animate)
             {
-                SidebarHost.BeginAnimation(FrameworkElement.WidthProperty, null);
-                SidebarHost.Width = target;
+                _sidebarSlide.BeginAnimation(TranslateTransform.XProperty, null);
+                _sidebarSlide.X = restingX;
+                SidebarHost.Opacity = isSidePanelVisible ? 1d : 0d;
+                SetSidebarColumnWidth(isSidePanelVisible);
                 return;
             }
 
-            var from = SidebarHost.ActualWidth;
-
-            SidebarHost.BeginAnimation(FrameworkElement.WidthProperty, null);
-            SidebarHost.Width = target;
-
-            SidebarHost.BeginAnimation(FrameworkElement.WidthProperty, new DoubleAnimation(from, target, SidebarDuration)
+            if (isSidePanelVisible)
             {
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
-                FillBehavior = FillBehavior.HoldEnd
-            });
+                SetSidebarColumnWidth(true);
+            }
 
-            SidebarHost.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(isSidePanelVisible ? 1d : 0d, TimeSpan.FromMilliseconds(140)));
+            var slide = new DoubleAnimation(_sidebarSlide.X, restingX, SidebarDuration)
+            {
+                EasingFunction = new CubicEase { EasingMode = isSidePanelVisible ? EasingMode.EaseOut : EasingMode.EaseIn},
+                FillBehavior = FillBehavior.HoldEnd
+            };
+
+            if (!isSidePanelVisible)
+            {
+                slide.Completed += (s, e) =>
+                {
+                    if (!_viewmodel.IsSidePanelVisible) // Check again in case it changed during the animation
+                        SetSidebarColumnWidth(false);
+                };
+            }
+
+            _sidebarSlide.BeginAnimation(TranslateTransform.XProperty, slide);
+            SidebarHost.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(isSidePanelVisible ? 1d : 0d, SidebarDuration));
         }
+
+        private void SetSidebarColumnWidth(bool isVisible) => SidebarColumn.Width = isVisible ? new GridLength(SidebarExpandedWidth) : new GridLength(0);
 
         private void AnimateContent(int index, bool animate = true)
         {
             if (index == _currentIndex) return;
+            var direction = index - _currentIndex > 0 ? 1 : -1;
             _currentIndex = index;
             SwapContent(ResolvePage(index));
             if (!animate) return;
 
-            ContentOffset.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(ContentEnterOffset, 0d, ContentEnterDuration)
+
+            ContentOffset.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(ContentEnterOffset * direction, 0d, ContentEnterDuration)
             {
                 FillBehavior = FillBehavior.Stop,
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
