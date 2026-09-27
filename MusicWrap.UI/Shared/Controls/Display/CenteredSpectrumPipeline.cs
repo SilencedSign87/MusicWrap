@@ -26,7 +26,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// Transition frequency: everything from MinHz to TransitionHz is collapsed
     /// into a single bass value per channel. Above TransitionHz, spectrum expands normally.
     /// </summary>
-    public float TransitionHz { get; set; } = 200f;
+    public float TransitionHz { get; set; } = 150f;
 
     /// <summary>
     /// How many bars the collapsed bass region "bleeds" into (affects neighbors).
@@ -54,7 +54,7 @@ public sealed class CenteredSpectrumPipelineConfig
     public float ChangeThreshold { get; set; } = 0.0f;
 
     // Per-zone boosts (applied after normalization, before collapse/bleed)
-    public float BassBoost { get; set; } = 1.2f;
+    public float BassBoost { get; set; } = 1.1f;
     public float MidBoost { get; set; } = 1.0f;
     public float TrebleBoost { get; set; } = 1.2f;
 
@@ -119,7 +119,7 @@ public sealed class CenteredSpectrumPipeline
         _childConfig = new SpectrumPipelineConfig
         {
             SampleRate = _sampleRate,
-            binCount = _fftSize,
+            BinCount = _fftSize,
             MinEqHz = Math.Max(1f, _config.MinHz),
             MaxEqHz = Math.Min(_config.MaxHz, _sampleRate * 0.5f),
             NoiseFloorDb = _config.NoiseFloorDb,
@@ -127,12 +127,10 @@ public sealed class CenteredSpectrumPipeline
             NoiseGateNorm = _config.NoiseGateNorm,
             SmoothingAlpha = _config.SmoothingAlpha,
             ChangeThreshold = _config.ChangeThreshold,
-            HighShelfGain = 0f, // We'll handle boosts manually
-            HighShelfCurve = 1f,
-            ContrastGamma = 1f,
-            EqGamma = 1f,
-            GammaDelta = 0f,
-            GammaFloor = 1f
+            BassBoost = 1f,
+            MidBoost = 1f,
+            TrebleBoost = 1f,
+            ContrastGamma = 1.5f,
         };
 
         _leftPipeline = new SpectrumPipeline(_childConfig);
@@ -167,7 +165,7 @@ public sealed class CenteredSpectrumPipeline
         _config.FftSize = _fftSize;
 
         _childConfig.SampleRate = _sampleRate;
-        _childConfig.binCount = _fftSize;
+        _childConfig.BinCount = _fftSize;
 
         _leftPipeline.OnConfigurationChanged(_sampleRate, _fftSize);
         _rightPipeline.OnConfigurationChanged(_sampleRate, _fftSize);

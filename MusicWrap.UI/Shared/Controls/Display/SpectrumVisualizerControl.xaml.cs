@@ -37,7 +37,7 @@ namespace MusicWrap.UI.Controls
 
             _musicService = App.Services.GetRequiredService<MusicPlayerService>();
 
-            _spectrumPipeline = new SpectrumPipeline(new SpectrumPipelineConfig { SampleRate = _samplerate, binCount = _currentFFTSize });
+            _spectrumPipeline = new SpectrumPipeline(new SpectrumPipelineConfig { SampleRate = _samplerate, BinCount = _currentFFTSize });
             _centeredPipeline = new CenteredSpectrumPipeline(new CenteredSpectrumPipelineConfig
             {
                 SampleRate = _samplerate,
@@ -164,7 +164,7 @@ namespace MusicWrap.UI.Controls
 
             float[] displayBands = SpectrumType == SpectrumType.Centered
                 ? _centeredPipeline.Process(magnitudes)
-                : _spectrumPipeline.ProcessChannel(magnitudes,0);
+                : _spectrumPipeline.ProcessChannel(magnitudes,-1);
 
             if (_currentHeights.Length != displayBands.Length)
             {
