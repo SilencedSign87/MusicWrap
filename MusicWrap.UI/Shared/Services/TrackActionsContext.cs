@@ -20,29 +20,21 @@ namespace MusicWrap.UI.Services
             _libraryService = libraryService;
         }
 
-        public void PlayNow(IReadOnlyList<int> selectedTrackIds, IReadOnlyList<int>? contextTrackIds = null)
+        public void PlayNow(IReadOnlyList<int> selectedTrackIds)
         {
-            if (selectedTrackIds.Count == 0)
-            {
-                return;
-            }
-
-            var queue = contextTrackIds is { Count: > 0 }
-                ? contextTrackIds.ToList()
-                : selectedTrackIds.ToList();
-
-            _musicPlayerService.SetQueue(queue);
+            if (selectedTrackIds.Count == 0) return;
+            _musicPlayerService.SetQueue(selectedTrackIds.ToList());
             _musicPlayerService.PlayTrack(selectedTrackIds[0]);
         }
 
-        public void PlayNext(IReadOnlyList<int> selectedTrackIds, IReadOnlyList<int>? contextTrackIds = null)
+        public void PlayNext(IReadOnlyList<int> selectedTrackIds)
         {
             _musicPlayerService.AddToNextInQueue(selectedTrackIds);
         }
 
         public void AddToQueue(IReadOnlyList<int> selectedTrackIds)
         {
-           _musicPlayerService.AddToQueue(selectedTrackIds);
+            _musicPlayerService.AddToQueue(selectedTrackIds);
         }
 
         public void PlayNowInQueue(IReadOnlyList<int> selectedTrackIds)

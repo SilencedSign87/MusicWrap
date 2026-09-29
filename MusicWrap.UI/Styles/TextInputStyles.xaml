@@ -143,20 +143,23 @@
                                 <TextBlock Text="{TemplateBinding PlaceholderText}"
                                        FontSize="{TemplateBinding FontSize}"
                                        VerticalAlignment="Center"
-                                           Margin="4,0"
+                                           Margin="8,0"
                                        IsHitTestVisible="False"
                                        Foreground="{DynamicResource TextDisabledBrush}">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Style.Triggers>
-                                                <MultiDataTrigger>
+                                                <!--<MultiDataTrigger>
                                                     <MultiDataTrigger.Conditions>
                                                         <Condition Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value=""/>
                                                         <Condition Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource TemplatedParent}}" Value="False"/>
                                                     </MultiDataTrigger.Conditions>
                                                     <Setter Property="Visibility" Value="Visible"/>
-                                                </MultiDataTrigger>
+                                                </MultiDataTrigger>-->
+                                                <DataTrigger Binding="{Binding Text, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </TextBlock.Style>

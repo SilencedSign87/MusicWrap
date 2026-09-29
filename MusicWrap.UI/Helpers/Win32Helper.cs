@@ -17,6 +17,10 @@ namespace MusicWrap.UI.Helpers
         public const int DWMWA_SYSTEMBACKDROP_TYPE = 25;
         public const int DWMWA_MICA_EFFECT = 26;
 
+        // Window Styles
+        public const int GWL_STYLE = -16;
+        public const int WS_SYSMENU = 0x80000;
+
         public enum DWM_SYSTEMBACKDROP_TYPE
         {
             DWMSBT_AUTO,
@@ -34,8 +38,25 @@ namespace MusicWrap.UI.Helpers
         public static bool DwmSetWindowAttribute(IntPtr hWnd, int attribute, ref int value)
             => hWnd != IntPtr.Zero && DwmSetWindowAttribute(hWnd, attribute, ref value, sizeof(int)) == 0; // 0 == S_OK
 
+        public static bool DwnSetWindowLong(IntPtr hWnd, int index, int newLong)
+        {
+            if (hWnd == IntPtr.Zero) return false;
+            int result = SetWindowLong(hWnd, index, newLong);
+            return result != 0; // 0 indicates failure
+        }
+        public static int DwnGetWindowLong(IntPtr hWnd, int index)
+        {
+            if (hWnd == IntPtr.Zero) return 0;
+            return GetWindowLong(hWnd, index);
+        }
+
         [DllImport("dwmapi.dll", SetLastError = true)]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        [DllImport("user32.dll")]
+        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
         #endregion
 

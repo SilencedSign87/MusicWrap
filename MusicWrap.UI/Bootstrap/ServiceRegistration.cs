@@ -111,7 +111,7 @@ public static class ServiceRegistration
 
         services.AddTransient<IndexingWindow>();
         services.AddTransient<InformationWindow>();
-        services.AddTransient<NewPlaylistWindow>();
+        services.AddTransient<PlaylistManagerWindow>();
         services.AddTransient<QueueListPage>();
         services.AddTransient<TrackInformationPage>();
 

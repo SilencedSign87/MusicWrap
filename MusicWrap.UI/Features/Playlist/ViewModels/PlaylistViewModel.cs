@@ -13,6 +13,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using MusicWrap.Core.Messages;
 using MusicWrap.Core.Threading;
 using MusicWrap.Core.Services.Search;
+using MusicWrap.Data.Playlist.Models;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
@@ -61,12 +62,22 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             {
                 _uiDispatcher.Invoke(() =>
                 {
-                    if (m.PlaylistId == SelectedEntry?.id)
+                    if (m.PlaylistId == SelectedEntry?.Id)
                     {
                         LoadPlaylistTracks();
                     }
                 });
             });
+        }
+
+        public IReadOnlyList<int> ResolvePlaylistTrackIds(PlaylistEntry entry)
+        {
+            return _playlistService.GetTracksByPlaylistId(entry.Id) ?? [];
+        }
+
+        private PlaylistDto? GetPlaylistByEntry(int entryId)
+        {
+            return _playlistService.GetPlaylistById(entryId);
         }
 
         private void _searchService_SearchSubmitted(object? sender, string e)
@@ -76,7 +87,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
 
         private void _playlistService_PlaylistItemsChanged(object? sender, PlaylistItemsChangedEventArgs e)
         {
-            if (e.PlaylistId == SelectedEntry?.id)
+            if (e.PlaylistId == SelectedEntry?.Id)
             {
                 LoadPlaylistTracks();
             }
@@ -87,6 +98,24 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
             ConstructEntries();
         }
         #region Commands
+        [RelayCommand]
+        private void OpenPlaylistManager(int playlistId)
+        {
+            var playlist = _playlistService.GetPlaylistById(playlistId);
+            if (playlist is not null)
+            {
+                _windowManager.LaunchEditPlaylistWindow(playlist);
+            }
+        }
+        [RelayCommand]
+        private void DeletePlaylist(int playlistId)
+        {
+            var playlist = _playlistService.GetPlaylistById(playlistId);
+            if (playlist is null) return;
+
+            _playlistService.DeletePlaylist(playlist.Id);
+            _saveCoordinator.Enqueue(SaveKind.Playlist);
+        }
 
         [RelayCommand]
         private void NewPlaylist()
@@ -104,7 +133,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             if (SelectedEntry is null) return;
 
-            _playlistService.ReorderTrack(SelectedEntry.id, request.SourceTrackId, request.TargetTrackId, request.PlaceAfterTarget);
+            _playlistService.ReorderTrack(SelectedEntry.Id, request.SourceTrackId, request.TargetTrackId, request.PlaceAfterTarget);
 
             _saveCoordinator.Enqueue(SaveKind.Playlist);
         }
@@ -134,14 +163,14 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             if (SelectedEntry is null || SelectedTrackIds.Count == 0) return;
 
-            _playlistService.RemoveTracksFromPlaylist(SelectedTrackIds, SelectedEntry.id);
+            _playlistService.RemoveTracksFromPlaylist(SelectedTrackIds, SelectedEntry.Id);
             _saveCoordinator?.Enqueue(SaveKind.Playlist);
         }
         [RelayCommand]
         private void PlaySelected()
         {
             if (SelectedEntry is null) return;
-            var tracks = _playlistService.GetTracksByPlaylistId(SelectedEntry.id);
+            var tracks = _playlistService.GetTracksByPlaylistId(SelectedEntry.Id);
             if (tracks == null || tracks.Count == 0) return;
             _musicPlayerService.SetQueue(tracks, false);
             _musicPlayerService.PlayIndex(0);
@@ -194,7 +223,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             Tracks.Clear();
 
-            var selectedPlaylist = _playlistService.GetPlaylistById(SelectedEntry?.id ?? 0);
+            var selectedPlaylist = _playlistService.GetPlaylistById(SelectedEntry?.Id ?? 0);
             if (selectedPlaylist != null)
             {
                 var ids = selectedPlaylist.TrackIds.ToList();
@@ -221,7 +250,7 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
     }
 
     public record PlaylistEntry(
-        int id,
+        int Id,
         string Title,
         string ImagePath,
         string Description

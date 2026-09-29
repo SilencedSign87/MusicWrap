@@ -1,13 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playlists;
 using MusicWrap.Core.Threading;
+using MusicWrap.Data.Playlist.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Windows;
 using System.Windows;
-using System.Windows.Media.Animation;
 
 namespace MusicWrap.UI.Shared.Services
 {
@@ -22,7 +23,7 @@ namespace MusicWrap.UI.Shared.Services
         // windows
         public ShellWindow? ShellWindow { get; private set; }
         public Window? CurrentWindow => ShellWindow;
-        private NewPlaylistWindow? newPlaylistWindow = null;
+        private PlaylistManagerWindow? newPlaylistWindow = null;
         private InformationWindow? metadataEditorWindow = null;
         private SettingsWindow? settingsWindow = null;
 
@@ -60,6 +61,7 @@ namespace MusicWrap.UI.Shared.Services
         }
 
         #region Dialog launchers
+     
         public void LaunchSettingsWindow()
         {
             if (IsShuttingDown)
@@ -127,19 +129,37 @@ namespace MusicWrap.UI.Shared.Services
 
             if (newPlaylistWindow is null)
             {
-                newPlaylistWindow = _serviceProvider.GetRequiredService<NewPlaylistWindow>();
+                newPlaylistWindow = _serviceProvider.GetRequiredService<PlaylistManagerWindow>();
 
-                newPlaylistWindow.Initialize(tracksId);
+                newPlaylistWindow.Initialize(new PlaylistManagerStateCreate(tracksId ?? []));
 
                 WindowHelper.LauchFromParent(currentWindow, newPlaylistWindow, false);
 
                 newPlaylistWindow.Closed += (_, _) => newPlaylistWindow = null;
             }
-            else
+            else if (newPlaylistWindow.Mode is PlaylistManagerStateCreate)
             {
                 newPlaylistWindow.AddTracks(tracksId ?? []);
             }
 
+            newPlaylistWindow.Activate();
+        }
+
+        public void LaunchEditPlaylistWindow(PlaylistDto playlist)
+        {
+            var currentWindow = CurrentWindow;
+            if (currentWindow is null) return;
+            if (newPlaylistWindow is null)
+            {
+                newPlaylistWindow = _serviceProvider.GetRequiredService<PlaylistManagerWindow>();
+                newPlaylistWindow.Initialize(new PlaylistManagerStateEdit(playlist));
+                WindowHelper.LauchFromParent(currentWindow, newPlaylistWindow, false);
+                newPlaylistWindow.Closed += (_, _) => newPlaylistWindow = null;
+            }
+            else if (newPlaylistWindow.Mode is PlaylistManagerStateEdit)
+            {
+                newPlaylistWindow.Initialize(new PlaylistManagerStateEdit(playlist));
+            }
             newPlaylistWindow.Activate();
         }
 

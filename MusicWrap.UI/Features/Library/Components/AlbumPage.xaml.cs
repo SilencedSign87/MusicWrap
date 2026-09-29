@@ -36,8 +36,7 @@ namespace MusicWrap.UI.Features.Library.Components
 
                 RootBorder.ContextMenu = _menuFactory.Create(
                     () => [.. TracksId],
-                    ContextMenuType.Playback | ContextMenuType.AddToQueue | ContextMenuType.AddToPlaylist | ContextMenuType.TrackProperties,
-                    TracksId
+                    ContextMenuType.Playback | ContextMenuType.AddToQueue | ContextMenuType.AddToPlaylist | ContextMenuType.TrackProperties
                     );
             }
         }

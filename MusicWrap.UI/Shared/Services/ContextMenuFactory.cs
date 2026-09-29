@@ -1,10 +1,6 @@
 ﻿using MusicWrap.Core.Services.Playlists;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -27,7 +23,12 @@ namespace MusicWrap.UI.Shared.Services
         Standard = Playback | AddToQueue | AddToPlaylist | TrackProperties | ShowInExplorer,
         Queue = QueuePlayback | AddToPlaylist | RemoveFromQueue | MoveToLast,
     }
-    public sealed record ExtraMenuItem(string Header, string IconGlyph, ICommand Command);
+    public sealed record ExtraMenuItem(
+        string Header,
+        string IconGlyph,
+        ICommand Command,
+        object? CommandParameter = null
+        );
     public sealed class ContextMenuFactory
     {
         private readonly TrackActionService _actions;
@@ -41,9 +42,9 @@ namespace MusicWrap.UI.Shared.Services
             _windowManager = windowManager;
         }
 
-        public ContextMenu Create(TracksView view, ContextMenuType type, IReadOnlyList<ExtraMenuItem>? extras = null) => Create(view.GetSelectedTrackIds, type, view.AllTrackIds?.ToList(), extras);
+        public ContextMenu Create(TracksView view, ContextMenuType type, IReadOnlyList<ExtraMenuItem>? extras = null) => Create(view.GetSelectedTrackIds, type, extras);
 
-        public ContextMenu Create(Func<List<int>> getSelectedIds, ContextMenuType type, IReadOnlyList<int>? contextIds = null, IReadOnlyList<ExtraMenuItem>? extras = null)
+        public ContextMenu Create(Func<List<int>> getSelectedIds, ContextMenuType type, IReadOnlyList<ExtraMenuItem>? extras = null)
         {
             var menu = new ContextMenu();
             bool inQueue = type.HasFlag(ContextMenuType.QueuePlayback);
@@ -53,13 +54,13 @@ namespace MusicWrap.UI.Shared.Services
                 Add(menu.Items, "Play now", "\uE768", () => WithSelection(getSelectedIds, ids =>
                {
                    if (inQueue) _actions.PlayNowInQueue(ids);
-                   else _actions.PlayNow(ids, contextIds);
+                   else _actions.PlayNow(ids);
                }));
 
                 Add(menu.Items, inQueue ? "Move to next" : "Add to next", "\xE97A", () => WithSelection(getSelectedIds, ids =>
                 {
                     if (inQueue) _actions.PlayNextInQueue(ids);
-                    else _actions.PlayNext(ids, contextIds);
+                    else _actions.PlayNext(ids);
                 }));
             }
 
@@ -83,7 +84,7 @@ namespace MusicWrap.UI.Shared.Services
             {
                 menu.Items.Add(new Separator());
                 foreach (var extra in extras)
-                    menu.Items.Add(new MenuItem { Header = extra.Header, Icon = Icon(extra.IconGlyph), Command = extra.Command });
+                    menu.Items.Add(new MenuItem { Header = extra.Header, Icon = Icon(extra.IconGlyph), Command = extra.Command, CommandParameter = extra.CommandParameter });
             }
 
             if (type.HasFlag(ContextMenuType.TrackProperties))

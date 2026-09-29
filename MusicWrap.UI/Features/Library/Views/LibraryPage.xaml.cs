@@ -19,8 +19,6 @@ namespace MusicWrap.UI.Features.Library.Views
         private readonly ILibraryService _libraryService;
         private readonly ContextMenuFactory _menuFactory;
 
-        private MenuItem? _playlistMenu;
-
         private bool _disposed;
 
         public LibraryPage(LibraryViewModel viewmodel, ILibraryService libraryService, ContextMenuFactory menuFactory)
@@ -87,8 +85,8 @@ namespace MusicWrap.UI.Features.Library.Views
             var trackIds = _libraryService.GetTrackIdsForEntry(entry).ToList();
             var menu = _menuFactory.Create(
                 () => [.. trackIds],
-                ContextMenuType.Playback | ContextMenuType.AddToQueue | ContextMenuType.AddToPlaylist,
-                trackIds);
+                ContextMenuType.Playback | ContextMenuType.AddToQueue | ContextMenuType.AddToPlaylist
+                );
 
             e.Handled = true;    // ignore automatic opening
             target.ContextMenu = menu;

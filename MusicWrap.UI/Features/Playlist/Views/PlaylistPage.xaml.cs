@@ -11,19 +11,21 @@ namespace MusicWrap.UI.Features.Playlist.Views
     public partial class PlaylistPage : UserControl, IDisposable
     {
         private PlaylistViewModel _vm;
-
+        private readonly ContextMenuFactory _menuFactory;
         private bool _isDisposed = false;
 
         public PlaylistPage(PlaylistViewModel playlistViewModel, ContextMenuFactory menuFactory)
         {
             InitializeComponent();
-            
+
             _vm = playlistViewModel;
             DataContext = _vm;
 
-            PlaylistTracksView.ContextMenu = menuFactory.Create(
-                PlaylistTracksView, 
-                ContextMenuType.Standard, 
+            _menuFactory = menuFactory;
+
+            PlaylistTracksView.ContextMenu = _menuFactory.Create(
+                PlaylistTracksView,
+                ContextMenuType.Standard,
                 extras: [
                     new ExtraMenuItem("Remove from playlist", "\uE74D",_vm.RemoveSelectedTracksCommand)
                 ]);
@@ -34,9 +36,9 @@ namespace MusicWrap.UI.Features.Playlist.Views
             var entry = _vm.SelectedEntry;
             if (entry == null) return;
 
-            if (_vm.PlayPlaylistCommand.CanExecute(entry.id))
+            if (_vm.PlayPlaylistCommand.CanExecute(entry.Id))
             {
-                _vm.PlayPlaylistCommand.Execute(entry.id);
+                _vm.PlayPlaylistCommand.Execute(entry.Id);
             }
 
         }
@@ -45,9 +47,9 @@ namespace MusicWrap.UI.Features.Playlist.Views
         {
             var entry = _vm.SelectedEntry;
             if (entry == null) return;
-            if (_vm.ShufflePlaylistCommand.CanExecute(entry.id))
+            if (_vm.ShufflePlaylistCommand.CanExecute(entry.Id))
             {
-                _vm.ShufflePlaylistCommand.Execute(entry.id);
+                _vm.ShufflePlaylistCommand.Execute(entry.Id);
             }
         }
 
@@ -72,6 +74,26 @@ namespace MusicWrap.UI.Features.Playlist.Views
             if (_isDisposed) return;
 
             _vm.Dispose();
+        }
+
+        private void PlaylistGrid_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            if (sender is not FrameworkElement { DataContext: PlaylistEntry entry } target) return;
+
+            var trackIds = _vm.ResolvePlaylistTrackIds(entry);
+
+            var menu = _menuFactory.Create(
+                () => [.. trackIds],
+                ContextMenuType.Playback | ContextMenuType.AddToQueue,
+                extras: [
+                    new ExtraMenuItem("Edit playlist", "\xE70F", _vm.OpenPlaylistManagerCommand, entry.Id),
+                    new ExtraMenuItem("Delete playlist", "\xE74D", _vm.DeletePlaylistCommand,entry.Id)
+                    ]
+                );
+
+            e.Handled = true;
+            target.ContextMenu = menu;
+            menu.IsOpen = true;
         }
     }
 }

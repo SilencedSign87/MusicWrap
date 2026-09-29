@@ -1,30 +1,22 @@
-using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playlists;
-using MusicWrap.Data.Playlist;
 using MusicWrap.Data.Playlist.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using MusicWrap.UI.Helpers;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+using System.Windows.Interop;
 
 namespace MusicWrap.UI.Shell.Dialogs
 {
     /// <summary>
     /// Lógica de interacción para NewPlaylistWindow.xaml
     /// </summary>
-    public partial class NewPlaylistWindow : Window
+    public partial class PlaylistManagerWindow : Window
     {
         private readonly IPlaylistService _playlistService;
         private readonly PlaylistData _playlist;
         private IEnumerable<int> _trackIds = [];
-        public NewPlaylistWindow(IPlaylistService playlistService, PlaylistData playlistData)
+        public PlaylistManagerMode Mode = new();
+        public PlaylistManagerWindow(IPlaylistService playlistService, PlaylistData playlistData)
         {
             InitializeComponent();
             _playlistService = playlistService;
@@ -35,18 +27,42 @@ namespace MusicWrap.UI.Shell.Dialogs
         private void NewPlaylistWindow_Loaded(object sender, RoutedEventArgs e)
         {
             PlaylistNameInput.Focus();
+            var hwnd = new WindowInteropHelper(this).Handle;
+            Win32Helper.DwnSetWindowLong(hwnd, Win32Helper.GWL_STYLE, Win32Helper.DwnGetWindowLong(hwnd, Win32Helper.GWL_STYLE) & ~Win32Helper.WS_SYSMENU);
         }
 
-        public void Initialize(IEnumerable<int>? trackIds = null)
+        public void Initialize(PlaylistManagerMode state)
+        {
+            if (state is PlaylistManagerStateCreate createState)
+            {
+                Mode = state;
+                InitializeForCreate(createState.TrackIds);
+            }
+            else if (state is PlaylistManagerStateEdit editState)
+            {
+                Mode = state;
+                InitializeForEdit(editState.Playlist);
+            }
+        }
+
+        private void InitializeForCreate(IEnumerable<int> trackIds)
         {
             _trackIds = trackIds ?? [];
-            if (trackIds is not null && trackIds.Count() > 0)
+            if (_trackIds.Any())
             {
-                Title = $"Create Playlist - {trackIds.Count()} tracks";
-            }else
+                Title = $"Create Playlist - {_trackIds.Count()} tracks";
+            }
+            else
             {
                 Title = "Create Playlist";
             }
+            TitleBox.Text = $"New playlist";
+        }
+        private void InitializeForEdit(PlaylistDto playlist)
+        {
+            PlaylistNameInput.Text = playlist.Name;
+            Title = $"Edit Playlist - {playlist.Name}";
+            TitleBox.Text = "Playlist information";
         }
         public void AddTracks(IEnumerable<int> tracksId)
         {
@@ -103,6 +119,26 @@ namespace MusicWrap.UI.Shell.Dialogs
             }
         }
 
+    }
+
+    public class PlaylistManagerMode { }
+
+    public class PlaylistManagerStateCreate : PlaylistManagerMode
+    {
+        public IEnumerable<int> TrackIds { get; }
+        public PlaylistManagerStateCreate(IEnumerable<int> trackIds)
+        {
+            TrackIds = trackIds;
+        }
+    }
+
+    public class PlaylistManagerStateEdit : PlaylistManagerMode
+    {
+        public PlaylistDto Playlist { get; }
+        public PlaylistManagerStateEdit(PlaylistDto playlist)
+        {
+            Playlist = playlist;
+        }
     }
 }
 

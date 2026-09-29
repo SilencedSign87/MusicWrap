@@ -102,67 +102,67 @@
             </StackPanel>
 
             <ListView
+                x:Name="PlaylistListView"
                 ItemsSource="{Binding Entries}"
                 SelectedItem="{Binding SelectedEntry, Mode=TwoWay}"
                 Grid.Row="1"
                 SelectionMode="Single"
                 HorizontalAlignment="Stretch"
+                ScrollViewer.CanContentScroll="True"
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                ScrollViewer.VerticalScrollBarVisibility="Auto"
                 >
-                <ListView.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Icon="{ex:Icon Glyph=E768}" Header="Play" Click="PlayPlaylist_Click"/>
-                        <MenuItem Icon="{ex:Icon Glyph=E893}" Header="Play next"  Click="PlayNext_Click"/>
-                        <MenuItem Icon="{ex:Icon Glyph=E710}" Header="Add to queue" />
-                        <Separator/>
-                        <MenuItem Icon="{ex:Icon Glyph=E70F}" Header="Rename" />
-                        <MenuItem Icon="{ex:Icon Glyph=E74D}" Header="Delete" />
-                    </ContextMenu>
-                </ListView.ContextMenu>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
+                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Height" Value="auto"/>
-                        <Setter Property="Padding" Value="4"/>
+                        <Setter Property="Padding" Value="0"/>
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate DataType="vm:PlaylistEntry">
-                        <Grid 
+                        <Border
+                            Padding="4"
+                            >
+                            <Grid 
+                            x:Name="PlaylistItemGrid"
+                            ContextMenuOpening="PlaylistGrid_ContextMenuOpening"
                             HorizontalAlignment="Stretch"
                             Margin="0"
                             >
-                            <!-- Compact -->
-                            <StackPanel x:Name="CompactLayout"
-                            Orientation="Horizontal"
-                            Margin="0"
-                            ToolTipService.ToolTip="{Binding Title}"
-                            HorizontalAlignment="Stretch">
-                                <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
-                           Width="42"
-                           Height="42"
-                           Stretch="UniformToFill"
-                           RenderOptions.BitmapScalingMode="LowQuality" />
-                                <StackPanel Orientation="Vertical" Margin="8,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Text="{Binding Description}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                                <!-- Compact -->
+                                <StackPanel x:Name="CompactLayout"
+                                            Orientation="Horizontal"
+                                            Margin="0"
+                                            ToolTipService.ToolTip="{Binding Title}"
+                                            HorizontalAlignment="Stretch">
+                                    <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
+                                        Width="42"
+                                        Height="42"
+                                        Stretch="UniformToFill"
+                                        RenderOptions.BitmapScalingMode="LowQuality" />
+                                    <StackPanel Orientation="Vertical" Margin="8,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Description}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
 
-                            <!-- List -->
-                            <StackPanel
+                                <!-- List -->
+                                <StackPanel
                                 x:Name="ListLayout"
                                 Visibility="Collapsed"
                                 Orientation="Horizontal"
                                 >
-                                <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" VerticalAlignment="Center" Margin="8,0"/>
-                                <TextBlock
+                                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE90B;" VerticalAlignment="Center" Margin="8,0"/>
+                                    <TextBlock
                                     TextTrimming="CharacterEllipsis"
                                     VerticalAlignment="Center"
                                     Text="{Binding Title}"
                                     FontSize="14"
                                     />
-                                <TextBlock
+                                    <TextBlock
                                     TextTrimming="CharacterEllipsis"
                                     VerticalAlignment="Center"
                                     FontSize="12"
@@ -171,12 +171,13 @@
                                     >
                                     <Run Text="• " />
                                     <Run Text="{Binding Description}" />
-                                </TextBlock>
+                                    </TextBlock>
 
-                                <TextBlock 
+                                    <TextBlock 
                                     />
-                            </StackPanel>
-                        </Grid>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding DataContext.CompactMode, RelativeSource={RelativeSource AncestorType=ListView}}" Value="False">
                                 <Setter TargetName="CompactLayout" Property="Visibility" Value="Collapsed" />
