@@ -24,13 +24,25 @@
         <Border Grid.Row="0" Padding="36,28,36,0">
             <StackPanel>
                 <TextBlock x:Name="TitleBox" FontSize="18" FontWeight="Bold" Margin="0,0,0,18"/>
-
                 <controls:SquarePanel >
                     <Border 
+                        x:Name="PlaylistArtworkBorder"
                         Background="{DynamicResource BackgroundLayer}" 
                         CornerRadius="4"
+                        MouseLeftButtonUp="PlaylistArtwork_MouseLeftButtonUp"
+                        BorderThickness="1"
+                        BorderBrush="Transparent"
                         >
-
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                     </Border>
                 </controls:SquarePanel>
             </StackPanel>

@@ -66,7 +66,6 @@ public static class ServiceRegistration
         services.AddTransient<AlbumTracksViewModel>();
         services.AddTransient<PlaylistViewModel>();
         services.AddTransient<ServicePageViewModel>();
-        services.AddTransient<PlaylistManagerViewModel>();
         services.AddTransient<SettingsIndexViewModel>();
         services.AddTransient<SettingsYoutubeViewModel>();
         services.AddTransient<YoutubeProviderViewModel>();

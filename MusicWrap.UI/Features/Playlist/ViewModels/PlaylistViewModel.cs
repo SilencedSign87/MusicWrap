@@ -14,6 +14,7 @@ using MusicWrap.Core.Messages;
 using MusicWrap.Core.Threading;
 using MusicWrap.Core.Services.Search;
 using MusicWrap.Data.Playlist.Models;
+using System.Windows;
 
 namespace MusicWrap.UI.Features.Playlist.ViewModels
 {
@@ -112,6 +113,9 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
         {
             var playlist = _playlistService.GetPlaylistById(playlistId);
             if (playlist is null) return;
+
+            var result = MessageBox.Show($"Are you sure you want to delete the playlist '{playlist.Name}'?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes) return;
 
             _playlistService.DeletePlaylist(playlist.Id);
             _saveCoordinator.Enqueue(SaveKind.Playlist);

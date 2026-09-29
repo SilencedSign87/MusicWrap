@@ -5,8 +5,6 @@ using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Forms;
 

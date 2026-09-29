@@ -14,6 +14,7 @@ namespace MusicWrap.Core.Services.Playlists
 
         // Services
         void RenamePlaylist(int playlistId, string newName);
+        void SetPlaylistArtwork(int playlistId, string? artworkPath);
         void DeletePlaylist(int playlistId);
         void CreatePlaylist(string name, IEnumerable<int>? trackIds = null);
         void SetTracksInPlaylist(IEnumerable<int> trackIds, int playlistId, bool shouldBeInPlaylist);
@@ -91,6 +92,14 @@ namespace MusicWrap.Core.Services.Playlists
             playlist.Name = newName;
             playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
             _messenger.Send(new PlaylistListChangedMessage());
+        }
+        public void SetPlaylistArtwork(int playlistId, string? artworkPath)
+        {
+            var playlist = _playlists.Playlists.FirstOrDefault(p => p.Id == playlistId);
+            if (playlist == null) return;
+
+            // TODO
+
         }
         public void DeletePlaylist(int playlistId)
         {

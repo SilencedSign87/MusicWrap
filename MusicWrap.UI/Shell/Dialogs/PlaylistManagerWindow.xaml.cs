@@ -1,9 +1,12 @@
 using MusicWrap.Core.Services.Playlists;
 using MusicWrap.Data.Playlist.Models;
 using MusicWrap.UI.Helpers;
+using System.ComponentModel;
 using System.Windows;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace MusicWrap.UI.Shell.Dialogs
 {
@@ -16,6 +19,8 @@ namespace MusicWrap.UI.Shell.Dialogs
         private readonly PlaylistData _playlist;
         private IEnumerable<int> _trackIds = [];
         public PlaylistManagerMode Mode = new();
+
+        public string? PlaylistArtworkPath { get; set; }
         public PlaylistManagerWindow(IPlaylistService playlistService, PlaylistData playlistData)
         {
             InitializeComponent();
@@ -26,7 +31,6 @@ namespace MusicWrap.UI.Shell.Dialogs
 
         private void NewPlaylistWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            PlaylistNameInput.Focus();
             var hwnd = new WindowInteropHelper(this).Handle;
             Win32Helper.DwnSetWindowLong(hwnd, Win32Helper.GWL_STYLE, Win32Helper.DwnGetWindowLong(hwnd, Win32Helper.GWL_STYLE) & ~Win32Helper.WS_SYSMENU);
         }
@@ -57,12 +61,14 @@ namespace MusicWrap.UI.Shell.Dialogs
                 Title = "Create Playlist";
             }
             TitleBox.Text = $"New playlist";
+            PlaylistNameInput.Focus();
         }
         private void InitializeForEdit(PlaylistDto playlist)
         {
             PlaylistNameInput.Text = playlist.Name;
             Title = $"Edit Playlist - {playlist.Name}";
             TitleBox.Text = "Playlist information";
+            PlaylistNameInput.Focus();
         }
         public void AddTracks(IEnumerable<int> tracksId)
         {
@@ -77,7 +83,7 @@ namespace MusicWrap.UI.Shell.Dialogs
                 Title = "Create Playlist";
             }
         }
-        private void PlaylistNameInput_KeyDown(object sender, KeyEventArgs e)
+        private void PlaylistNameInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
@@ -89,7 +95,25 @@ namespace MusicWrap.UI.Shell.Dialogs
 
         private void SavePlaylist_Click(object sender, RoutedEventArgs e)
         {
-            TryToCreatePlaylist(PlaylistNameInput.Text);
+            if (string.IsNullOrWhiteSpace(PlaylistNameInput.Text))
+            {
+                System.Windows.MessageBox.Show(
+                    "Please enter a valid playlist name.",
+                    "Invalid Playlist Name",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
+                return;
+            }
+
+            if (Mode is PlaylistManagerStateEdit)
+            {
+                TryToEditPlaylist(PlaylistNameInput.Text);
+            }
+            else if (Mode is PlaylistManagerStateCreate)
+            {
+                TryToCreatePlaylist(PlaylistNameInput.Text);
+            }
         }
 
         private void CancelPlaylist_Click(object sender, RoutedEventArgs e)
@@ -97,12 +121,35 @@ namespace MusicWrap.UI.Shell.Dialogs
             Close();
         }
 
+        private void TryToEditPlaylist(string playlistName)
+        {
+            var existing = _playlist.Playlists.Any(p => p.Name.Equals(playlistName, StringComparison.OrdinalIgnoreCase));
+            if (existing)
+            {
+                System.Windows.MessageBox.Show(
+                     $"A playlist with the name '{playlistName}' already exists.",
+                     "Duplicate Playlist Name",
+                     MessageBoxButton.OK,
+                     MessageBoxImage.Error
+                    );
+            }
+            else
+            {
+
+                if (Mode is PlaylistManagerStateEdit editmode)
+                {
+                    _playlistService.RenamePlaylist(editmode.Playlist.Id, playlistName);
+                    _playlistService.SetPlaylistArtwork(editmode.Playlist.Id, PlaylistArtworkPath);
+                    Close();
+                }
+            }
+        }
         private void TryToCreatePlaylist(string playlistName)
         {
             var existing = _playlist.Playlists.Any(p => p.Name.Equals(playlistName, StringComparison.OrdinalIgnoreCase));
             if (existing)
             {
-                MessageBox.Show(
+                System.Windows.MessageBox.Show(
                      $"A playlist with the name '{playlistName}' already exists.",
                      "Duplicate Playlist Name",
                      MessageBoxButton.OK,
@@ -118,6 +165,29 @@ namespace MusicWrap.UI.Shell.Dialogs
 
             }
         }
+
+        private void PlaylistArtwork_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog
+            {
+                Filter = "Image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png|All files (*.*)|*.*",
+                Title = $"Select a playlist artwork",
+                Multiselect = false
+            };
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                PlaylistArtworkPath = openFileDialog.FileName;
+
+                var imageBrush = new ImageBrush
+                {
+                    ImageSource = new System.Windows.Media.Imaging.BitmapImage(new Uri(PlaylistArtworkPath)),
+                    Stretch = Stretch.UniformToFill
+                };
+
+                PlaylistArtworkBorder.Background = imageBrush;
+            }
+        }
+
 
     }
 

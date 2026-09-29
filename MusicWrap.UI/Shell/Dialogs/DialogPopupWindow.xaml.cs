@@ -22,4 +22,5 @@ namespace MusicWrap.UI.Shell.Dialogs
             InitializeComponent();
         }
     }
+
 }
