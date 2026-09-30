@@ -110,16 +110,10 @@ namespace MusicWrap.UI.Controls
                 _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
                 _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
             }
-            //else
-            //{
-            //    _waveformData = Enumerable.Repeat(1f, 1000).ToArray();
-            //}
 
             _duration = _musicService.Duration;
             _isPlaying = _musicService.IsPlaying;
             SyncBaseline();
-
-            _position = _musicService.CurrentPosition;
 
             DrawWaveform();
             UpdateProgressVisual(_position);
@@ -144,9 +138,11 @@ namespace MusicWrap.UI.Controls
         private void _positionTimer_Tick(object? sender, EventArgs e)
         {
             if (_isSeeking || _isDragging || _duration <= 0 || !_isPlaying) return;
+
             var elapsed = (DateTime.UtcNow - _lastEnginePositionAtUTC).TotalSeconds;
             var predicted = _lastEnginePosition + elapsed;
             predicted = Math.Clamp(predicted, 0, _duration);
+
             if (Math.Abs(predicted - _position) >= 0.01)
             {
                 _position = predicted;
@@ -304,7 +300,7 @@ namespace MusicWrap.UI.Controls
                     midY - (height / 2),
                     width,
                     height),
-                height/2,
+                height / 2,
                 height / 2);
             PathBackground.Data = track;
             PathForeground.Data = track;

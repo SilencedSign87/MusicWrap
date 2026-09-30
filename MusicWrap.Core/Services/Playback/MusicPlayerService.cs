@@ -1210,6 +1210,7 @@ namespace MusicWrap.Core.Services.Playback
             {
                 if (_currentStream == 0) return;
                 _audioEngine.SetPosition(_currentStream, 0.0);
+                PositionChanged?.Invoke(this, 0.0);
                 ArmPreloadSync();
             }
         }
