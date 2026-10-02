@@ -50,7 +50,8 @@ namespace MusicWrap.UI.Shell.Windows
 
             bool shouldShow;
 
-            switch (vm.ActivePanel) {
+            switch (vm.ActivePanel)
+            {
                 case FullscreenPlayerPanel.Queue:
                     shouldShow = true;
                     break;
@@ -62,7 +63,7 @@ namespace MusicWrap.UI.Shell.Windows
                     shouldShow = false;
                     break;
             }
-            
+
             double targetWidth = shouldShow ? (ActualWidth > 0 ? (ActualWidth / 2.0) : 500) : 0;
             double targetOpacity = shouldShow ? 1.0 : 0.0;
 

@@ -1,10 +1,8 @@
 using MusicWrap.Core.Services.Playlists;
-using MusicWrap.Data.Playlist.Models;
 using MusicWrap.UI.Helpers;
-using System.ComponentModel;
+using MusicWrap.UI.Services;
 using System.Windows;
-using System.Windows.Forms;
-using System.Windows.Input;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 
@@ -16,179 +14,181 @@ namespace MusicWrap.UI.Shell.Dialogs
     public partial class PlaylistManagerWindow : Window
     {
         private readonly IPlaylistService _playlistService;
-        private readonly PlaylistData _playlist;
-        private IEnumerable<int> _trackIds = [];
-        public PlaylistManagerMode Mode = new();
+        private readonly IwindowsImageService _imageService;
 
-        public string? PlaylistArtworkPath { get; set; }
-        public PlaylistManagerWindow(IPlaylistService playlistService, PlaylistData playlistData)
+        private readonly List<int> _trackIds = [];
+        private readonly HashSet<int> _trackIdSet = [];
+
+        public PlaylistManagerMode? Mode { get; private set; }
+        private const int ArtworkSize = 300;
+        private string? _pendingArtwork;
+        private bool _artworkChanged = false;
+
+        public PlaylistManagerWindow(IPlaylistService playlistService, IwindowsImageService imageService)
         {
             InitializeComponent();
             _playlistService = playlistService;
-            _playlist = playlistData;
-            Loaded += NewPlaylistWindow_Loaded;
+            _imageService = imageService;
+            SourceInitialized += OnSourceInitialized;
         }
 
-        private void NewPlaylistWindow_Loaded(object sender, RoutedEventArgs e)
+        private void OnSourceInitialized(object? sender, EventArgs e)
         {
             var hwnd = new WindowInteropHelper(this).Handle;
-            Win32Helper.DwnSetWindowLong(hwnd, Win32Helper.GWL_STYLE, Win32Helper.DwnGetWindowLong(hwnd, Win32Helper.GWL_STYLE) & ~Win32Helper.WS_SYSMENU);
+            var style = Win32Helper.DwnGetWindowLong(hwnd, Win32Helper.GWL_STYLE) & ~Win32Helper.WS_SYSMENU;
+            Win32Helper.DwnSetWindowLong(hwnd, Win32Helper.GWL_STYLE, style);
+        }
+
+        protected override void OnContentRendered(EventArgs e)
+        {
+            base.OnContentRendered(e);
+            PlaylistNameInput.Focus();
         }
 
         public void Initialize(PlaylistManagerMode state)
         {
-            if (state is PlaylistManagerStateCreate createState)
+            Mode = state;
+
+            _pendingArtwork = null;
+            _artworkChanged = false;
+            SetArtworkPreview(null);
+
+            switch (state)
             {
-                Mode = state;
-                InitializeForCreate(createState.TrackIds);
-            }
-            else if (state is PlaylistManagerStateEdit editState)
-            {
-                Mode = state;
-                InitializeForEdit(editState.Playlist);
+                case PlaylistManagerStateCreate create:
+                    InitializeForCreate(create.TrackIds);
+                    break;
+                case PlaylistManagerStateEdit edit:
+                    InitializeForEdit(edit.Playlist);
+                    break;
             }
         }
 
         private void InitializeForCreate(IEnumerable<int> trackIds)
         {
-            _trackIds = trackIds ?? [];
-            if (_trackIds.Any())
-            {
-                Title = $"Create Playlist - {_trackIds.Count()} tracks";
-            }
-            else
-            {
-                Title = "Create Playlist";
-            }
+            _trackIds.Clear();
+            _trackIdSet.Clear();
+            AddTracks(trackIds);
+
             TitleBox.Text = $"New playlist";
-            PlaylistNameInput.Focus();
+            PlaylistNameInput.Text = string.Empty;
+        }
+        private void UpdateTitle()
+        {
+            Title = _trackIds.Count > 0 ? $"Create Playlist - {_trackIds.Count} tracks" : "Create Playlist";
         }
         private void InitializeForEdit(PlaylistDto playlist)
         {
-            PlaylistNameInput.Text = playlist.Name;
-            Title = $"Edit Playlist - {playlist.Name}";
             TitleBox.Text = "Playlist information";
-            PlaylistNameInput.Focus();
+            PlaylistNameInput.Text = playlist.Name;
+            SetArtworkPreview(playlist.CoverPath);
+            Title = $"Edit Playlist - {playlist.Name}";
         }
-        public void AddTracks(IEnumerable<int> tracksId)
+        public void AddTracks(IEnumerable<int> tracksIds)
         {
-            _trackIds = _trackIds.Concat(tracksId).Distinct();
+            if (Mode is not PlaylistManagerStateCreate || tracksIds is null) return;
 
-            if (_trackIds.Any())
-            {
-                Title = $"Create Playlist - {_trackIds.Count()} tracks";
-            }
-            else
-            {
-                Title = "Create Playlist";
-            }
-        }
-        private void PlaylistNameInput_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                var playlistName = PlaylistNameInput.Text;
-                TryToCreatePlaylist(playlistName);
-                e.Handled = true;
-            }
+            foreach (var id in tracksIds)
+                if (_trackIdSet.Add(id))
+                    _trackIds.Add(id);
+
+            UpdateTitle();
         }
 
-        private void SavePlaylist_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(PlaylistNameInput.Text))
-            {
-                System.Windows.MessageBox.Show(
-                    "Please enter a valid playlist name.",
-                    "Invalid Playlist Name",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning
-                );
-                return;
-            }
-
-            if (Mode is PlaylistManagerStateEdit)
-            {
-                TryToEditPlaylist(PlaylistNameInput.Text);
-            }
-            else if (Mode is PlaylistManagerStateCreate)
-            {
-                TryToCreatePlaylist(PlaylistNameInput.Text);
-            }
-        }
+        private void SavePlaylist_Click(object sender, RoutedEventArgs e) => Save();
 
         private void CancelPlaylist_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }
 
-        private void TryToEditPlaylist(string playlistName)
+        private void Save()
         {
-            var existing = _playlist.Playlists.Any(p => p.Name.Equals(playlistName, StringComparison.OrdinalIgnoreCase));
-            if (existing)
-            {
-                System.Windows.MessageBox.Show(
-                     $"A playlist with the name '{playlistName}' already exists.",
-                     "Duplicate Playlist Name",
-                     MessageBoxButton.OK,
-                     MessageBoxImage.Error
-                    );
-            }
-            else
-            {
+            var name = PlaylistNameInput.Text?.Trim();
 
-                if (Mode is PlaylistManagerStateEdit editmode)
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                System.Windows.MessageBox.Show("Please enter a valid playlist name.", "Invalid Playlist Name",
+                                MessageBoxButton.OK, MessageBoxImage.Warning);
+                PlaylistNameInput.Focus();
+                return;
+            }
+
+            var editMode = Mode as PlaylistManagerStateEdit;
+            if (_playlistService.PlaylistNameExists(name, editMode?.Playlist.Id))
+            {
+                System.Windows.MessageBox.Show($"A playlist with the name '{name}' already exists.", "Duplicate Playlist Name",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                if (editMode is not null)
                 {
-                    _playlistService.RenamePlaylist(editmode.Playlist.Id, playlistName);
-                    _playlistService.SetPlaylistArtwork(editmode.Playlist.Id, PlaylistArtworkPath);
-                    Close();
+                    _playlistService.RenamePlaylist(editMode.Playlist.Id, name);
+                    if (_artworkChanged)
+                        _playlistService.SetPlaylistArtwork(editMode.Playlist.Id, _pendingArtwork);
                 }
-            }
-        }
-        private void TryToCreatePlaylist(string playlistName)
-        {
-            var existing = _playlist.Playlists.Any(p => p.Name.Equals(playlistName, StringComparison.OrdinalIgnoreCase));
-            if (existing)
-            {
-                System.Windows.MessageBox.Show(
-                     $"A playlist with the name '{playlistName}' already exists.",
-                     "Duplicate Playlist Name",
-                     MessageBoxButton.OK,
-                     MessageBoxImage.Error
-                    );
-
-            }
-            else
-            {
-                _playlistService.CreatePlaylist(playlistName, _trackIds);
+                else if (Mode is PlaylistManagerStateCreate)
+                {
+                    _playlistService.CreatePlaylist(name, _trackIds, _artworkChanged ? _pendingArtwork : null);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Initialize() debe llamarse antes de guardar.");
+                }
 
                 Close();
-
+            }
+            catch (Exception ex)
+            {
+                // TODO: log
+                System.Windows.MessageBox.Show($"No se pudo guardar la playlist.\n\n{ex.Message}",
+                                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void PlaylistArtwork_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void SetArtworkPreview(string? path)
         {
-            var openFileDialog = new OpenFileDialog
+            if (string.IsNullOrEmpty(path))
             {
-                Filter = "Image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png|All files (*.*)|*.*",
-                Title = $"Select a playlist artwork",
-                Multiselect = false
-            };
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                PlaylistArtworkPath = openFileDialog.FileName;
-
-                var imageBrush = new ImageBrush
-                {
-                    ImageSource = new System.Windows.Media.Imaging.BitmapImage(new Uri(PlaylistArtworkPath)),
-                    Stretch = Stretch.UniformToFill
-                };
-
-                PlaylistArtworkBorder.Background = imageBrush;
+                PlaylistArtworkBorder.SetResourceReference(Border.BackgroundProperty, "BackgroundLayer");
+                return;
             }
+
+            PlaylistArtworkBorder.Background = new ImageBrush
+            {
+                ImageSource = _imageService.LoadForSize(path, ArtworkSize),
+                Stretch = Stretch.UniformToFill
+            };
         }
 
+        private void SwapArtwork_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png",
+                Title = "Select playlist artwork",
+                Multiselect = false,
+                CheckFileExists = true
+            };
 
+            if (dialog.ShowDialog(this) != true) return;
+
+            _pendingArtwork = dialog.FileName;
+            _artworkChanged = true;
+            SetArtworkPreview(_pendingArtwork);
+        }
+
+        private void RemoveArtwork_click(object sender, RoutedEventArgs e)
+        {
+            _pendingArtwork = null;
+            _artworkChanged = true;
+            SetArtworkPreview(null);
+        }
+
+        private void PlaylistNameInput_EnterPressed(object sender, RoutedEventArgs e) => Save();
     }
 
     public class PlaylistManagerMode { }

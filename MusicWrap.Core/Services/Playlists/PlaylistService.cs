@@ -1,6 +1,9 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using AngleSharp.Io;
+using CommunityToolkit.Mvvm.Messaging;
 using MusicWrap.Core.Messages;
 using MusicWrap.Core.Services.Contracts;
+using MusicWrap.Core.Services.Images;
+using MusicWrap.Core.Services.Library;
 using MusicWrap.Data.Playlist.Models;
 
 namespace MusicWrap.Core.Services.Playlists
@@ -11,12 +14,13 @@ namespace MusicWrap.Core.Services.Playlists
         IReadOnlyList<PlaylistDto> GetPlaylists(bool useSearchQuery = false);
         PlaylistDto? GetPlaylistById(int playlistId);
         List<int> GetTracksByPlaylistId(int playlistId);
+        bool PlaylistNameExists(string name, int? excludePlaylistId = null);
 
         // Services
         void RenamePlaylist(int playlistId, string newName);
         void SetPlaylistArtwork(int playlistId, string? artworkPath);
         void DeletePlaylist(int playlistId);
-        void CreatePlaylist(string name, IEnumerable<int>? trackIds = null);
+        void CreatePlaylist(string name, IEnumerable<int>? trackIds = null, string? artworkPath = null);
         void SetTracksInPlaylist(IEnumerable<int> trackIds, int playlistId, bool shouldBeInPlaylist);
         void RemoveTracksFromPlaylist(IEnumerable<int> trackIds, int playlistId);
         void ReorderTrack(int playlistId, int sourceTrackId, int targetTrackId, bool placeAfterTarget);
@@ -27,16 +31,20 @@ namespace MusicWrap.Core.Services.Playlists
     public class PlaylistService : IPlaylistService
     {
         private readonly PlaylistData _playlists;
-        private readonly ISearchQueryProvider searchQueryProvider;
+        private readonly ISearchQueryProvider _searchQueryProvider;
         private readonly IMessenger _messenger;
+        private readonly LibraryIndexer _indexer;
+        private readonly ILibraryService _libraryService;
 
         private Dictionary<int, int[]>? TrackIdsByPlaylistId = null;
 
-        public PlaylistService(PlaylistData playlist, ISearchQueryProvider searchQueryProvider, IMessenger messenger)
+        public PlaylistService(PlaylistData playlist, ISearchQueryProvider searchQueryProvider, IMessenger messenger, LibraryIndexer indexer, ILibraryService libraryService)
         {
             _playlists = playlist;
-            this.searchQueryProvider = searchQueryProvider;
-            this._messenger = messenger;
+            _searchQueryProvider = searchQueryProvider;
+            _messenger = messenger;
+            _indexer = indexer;
+            _libraryService = libraryService;
             EnsureCache();
         }
 
@@ -46,6 +54,7 @@ namespace MusicWrap.Core.Services.Playlists
 
             var allData = _playlists.Playlists.Select(p => new PlaylistDto(
                 p.Id,
+                p.CoverId is not null ? _libraryService.GetCoverAsset(p.CoverId.Value)?.FileName : null,
                 p.Name,
                 p.UpdatedAtUtcTicks,
                 TrackIdsByPlaylistId!.TryGetValue(p.Id, out var trackIds) ? trackIds : []
@@ -53,7 +62,7 @@ namespace MusicWrap.Core.Services.Playlists
 
             if (useSearchQuery)
             {
-                return allData.Where(p => p.Name.Contains(searchQueryProvider.ActiveQuery ?? string.Empty, StringComparison.OrdinalIgnoreCase)).ToList();
+                return allData.Where(p => p.Name.Contains(_searchQueryProvider.ActiveQuery ?? string.Empty, StringComparison.OrdinalIgnoreCase)).ToList();
             }
             else
             {
@@ -70,6 +79,7 @@ namespace MusicWrap.Core.Services.Playlists
 
             return new PlaylistDto(
                 playlist.Id,
+                playlist.CoverId is not null ? _libraryService.GetCoverAsset(playlist.CoverId.Value)?.FileName : null,
                 playlist.Name,
                 playlist.UpdatedAtUtcTicks,
                 trackIds);
@@ -83,12 +93,19 @@ namespace MusicWrap.Core.Services.Playlists
             }
             return [];
         }
+        public bool PlaylistNameExists(string name, int? excludePlaylistId = null)
+        {
+            return _playlists.Playlists.Any(p =>
+                p.Id != excludePlaylistId &&
+                p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
         public void RenamePlaylist(int playlistId, string newName)
         {
             var playlist = _playlists.Playlists.FirstOrDefault(p => p.Id == playlistId);
-            if (playlist == null) return;
-            if (string.IsNullOrWhiteSpace(newName) || playlist.Name == newName)
-                return;
+            if (playlist is null) return;
+            if (string.IsNullOrWhiteSpace(newName)) return;
+            if (playlist.Name.Equals(newName, StringComparison.OrdinalIgnoreCase)) return;
+
             playlist.Name = newName;
             playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
             _messenger.Send(new PlaylistListChangedMessage());
@@ -96,10 +113,12 @@ namespace MusicWrap.Core.Services.Playlists
         public void SetPlaylistArtwork(int playlistId, string? artworkPath)
         {
             var playlist = _playlists.Playlists.FirstOrDefault(p => p.Id == playlistId);
-            if (playlist == null) return;
+            if (playlist is null) return;
 
-            // TODO
+            playlist.CoverId = ResolveCoverId(artworkPath);
+            playlist.UpdatedAtUtcTicks = DateTime.UtcNow.Ticks;
 
+            _messenger.Send(new PlaylistListChangedMessage());
         }
         public void DeletePlaylist(int playlistId)
         {
@@ -226,7 +245,7 @@ namespace MusicWrap.Core.Services.Playlists
             }
         }
 
-        public void CreatePlaylist(string name, IEnumerable<int>? trackIds = null)
+        public void CreatePlaylist(string name, IEnumerable<int>? trackIds = null, string? artworkPath = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 return;
@@ -243,6 +262,8 @@ namespace MusicWrap.Core.Services.Playlists
                 var now = DateTime.UtcNow.Ticks;
                 playlist.Items = trackIds.Distinct().Select(id => new PlaylistItem { TrackId = id, AddedAtUtcTicks = now }).ToList();
             }
+
+            playlist.CoverId = ResolveCoverId(artworkPath);
 
             _playlists.Playlists.Add(playlist);
 
@@ -292,9 +313,20 @@ namespace MusicWrap.Core.Services.Playlists
             TrackIdsByPlaylistId ??= _playlists.Playlists.ToDictionary(p => p.Id, p => p.Items.Select(i => i.TrackId).ToArray());
         }
 
+        private int? ResolveCoverId(string? artworkPath)
+        {
+            if (string.IsNullOrEmpty(artworkPath) || !File.Exists(artworkPath))
+                return null;   // ojo: null, no 0 (ver punto 8)
+
+            var bytes = File.ReadAllBytes(artworkPath);
+            var mimeType = LibraryIndexer.GetMimeTypeFromExtension(Path.GetExtension(artworkPath));
+            return _indexer.GetOrCreateCoverAsset(bytes, mimeType);
+        }
+
     }
     public sealed record PlaylistDto(
         int Id,
+        string? CoverPath,
         string Name,
         long UpdatedAtUtcTicks,
         IReadOnlyList<int> TrackIds

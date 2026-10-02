@@ -17,16 +17,16 @@
         <nav:ShellTabControl Grid.Row="0"
                              SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <nav:ShellTabItem Icon="&#xEDA2;" IconSize="20" Spacing="8" Text="General" Orientation="Vertical">
+            <nav:ShellTabItem Icon="&#xEDA2;" IconSize="20" Spacing="8" Text="General" Orientation="Vertical" MinWidth="50">
                 <views:MetadataGeneralView DataContext="{Binding General}"/>
             </nav:ShellTabItem>
-            <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" Orientation="Vertical">
+            <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" Orientation="Vertical" MinWidth="50">
                 <views:MetadataEditorView DataContext="{Binding Fields }"/>
             </nav:ShellTabItem>
-            <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" Orientation="Vertical">
+            <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" Orientation="Vertical" MinWidth="50">
                 <views:MetadataArtworkEditorView DataContext="{Binding Artwork}"/>
             </nav:ShellTabItem>
-            <nav:ShellTabItem Icon="&#xEC4F;" IconSize="20" Spacing="8" Text="Lyrics" Orientation="Vertical">
+            <nav:ShellTabItem Icon="&#xEC4F;" IconSize="20" Spacing="8" Text="Lyrics" Orientation="Vertical" MinWidth="50">
                 <views:MetadataLyricsEditorView DataContext="{Binding Lyrics}"/>
             </nav:ShellTabItem>
         </nav:ShellTabControl>

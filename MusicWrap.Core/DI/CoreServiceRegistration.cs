@@ -49,8 +49,8 @@ namespace MusicWrap.Core.DI
             // Core Services
             services.AddSingleton<ImageProcessor>();
             services.AddSingleton<ActivityService>();
-            services.AddTransient<ILibraryScanner, LibraryScanner>();
-            services.AddTransient<ILibraryIndexer, LibraryIndexer>();
+            services.AddTransient<LibraryScanner>();
+            services.AddTransient<LibraryIndexer>();
             services.AddSingleton<ISaveCoordinator, SaveScheduler>();
             services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
             services.AddSingleton<MetadataEditorService>();

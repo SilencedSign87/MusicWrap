@@ -61,7 +61,7 @@ namespace MusicWrap.UI.Shared.Services
         }
 
         #region Dialog launchers
-     
+
         public void LaunchSettingsWindow()
         {
             if (IsShuttingDown)
@@ -141,6 +141,10 @@ namespace MusicWrap.UI.Shared.Services
             {
                 newPlaylistWindow.AddTracks(tracksId ?? []);
             }
+            else if (newPlaylistWindow.Mode is PlaylistManagerStateEdit)
+            {
+                newPlaylistWindow.Initialize(new PlaylistManagerStateCreate(tracksId ?? []));
+            }
 
             newPlaylistWindow.Activate();
         }
@@ -157,6 +161,10 @@ namespace MusicWrap.UI.Shared.Services
                 newPlaylistWindow.Closed += (_, _) => newPlaylistWindow = null;
             }
             else if (newPlaylistWindow.Mode is PlaylistManagerStateEdit)
+            {
+                newPlaylistWindow.Initialize(new PlaylistManagerStateEdit(playlist));
+            }
+            else if (newPlaylistWindow.Mode is PlaylistManagerStateCreate)
             {
                 newPlaylistWindow.Initialize(new PlaylistManagerStateEdit(playlist));
             }

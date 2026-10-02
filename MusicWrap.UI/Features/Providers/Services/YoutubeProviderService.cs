@@ -18,10 +18,10 @@ namespace MusicWrap.UI.Features.Providers.Services
     public class YoutubeProviderService : IYoutubeProviderService
     {
         private readonly MusicLibrary _library;
-        private readonly ILibraryIndexer _indexer;
+        private readonly LibraryIndexer _indexer;
         private readonly ILibraryRepository _repository;
         private readonly MusicWrapSettings _settings;
-        public YoutubeProviderService(MusicLibrary library, ILibraryIndexer indexer, ILibraryRepository repository, MusicWrapSettings settings)
+        public YoutubeProviderService(MusicLibrary library, LibraryIndexer indexer, ILibraryRepository repository, MusicWrapSettings settings)
         {
             _library = library;
             _indexer = indexer;

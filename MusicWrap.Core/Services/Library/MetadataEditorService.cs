@@ -11,12 +11,12 @@ namespace MusicWrap.Core.Services.Library
     public class MetadataEditorService
     {
         private readonly ILibraryService _library;
-        private readonly ILibraryIndexer _libraryIndexer;
+        private readonly LibraryIndexer _libraryIndexer;
         private readonly ISaveCoordinator _saveCoordinator;
         private readonly ILogger<MetadataEditorService> _logger;
         private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-        public MetadataEditorService(ILibraryService library, ISaveCoordinator saveCoordinator, ILogger<MetadataEditorService> logger, ILibraryIndexer libraryIndexer)
+        public MetadataEditorService(ILibraryService library, ISaveCoordinator saveCoordinator, ILogger<MetadataEditorService> logger, LibraryIndexer libraryIndexer)
         {
             _library = library;
             _saveCoordinator = saveCoordinator;

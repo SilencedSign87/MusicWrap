@@ -133,21 +133,34 @@
                             Margin="0"
                             >
                                 <!-- Compact -->
-                                <StackPanel x:Name="CompactLayout"
-                                            Orientation="Horizontal"
-                                            Margin="0"
-                                            ToolTipService.ToolTip="{Binding Title}"
-                                            HorizontalAlignment="Stretch">
-                                    <Image Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
-                                        Width="42"
-                                        Height="42"
-                                        Stretch="UniformToFill"
-                                        RenderOptions.BitmapScalingMode="LowQuality" />
-                                    <StackPanel Orientation="Vertical" Margin="8,0,0,0" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding Description}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                </StackPanel>
+                                <Grid 
+                                    x:Name="CompactLayout"
+                                    Margin="0"
+                                    ToolTipService.ToolTip="{Binding Title}"
+                                    HorizontalAlignment="Stretch"
+                                    ColumnDefinitions="42,8,*"
+                                    >
+
+                                    <controls:SquarePanel Grid.Column="0" Height="42">
+                                        <controls:SquarePanel.Background>
+                                            <ImageBrush 
+                                                ImageSource="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
+                                                Stretch="UniformToFill"
+                                                RenderOptions.BitmapScalingMode="LowQuality"
+                                                AlignmentX="Center"
+                                                AlignmentY="Center"
+                                                />
+                                        </controls:SquarePanel.Background>
+                                    </controls:SquarePanel>
+                                    <Grid Grid.Column="2">
+                                        <StackPanel 
+                                        Orientation="Vertical" 
+                                        VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Description}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
 
                                 <!-- List -->
                                 <StackPanel
@@ -307,11 +320,12 @@
                         </ListBox>
                     </Grid>
 
-                    <Border Grid.RowSpan="2"  Width="72" Height="72" CornerRadius="45" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Border Grid.RowSpan="2"  Width="72" Height="72" CornerRadius="36" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <Border.Background>
                             <ImageBrush
                                 ImageSource="{Binding SelectedEntry.ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=150}"
-                                />
+                                Stretch="UniformToFill"
+                                RenderOptions.BitmapScalingMode="Linear"/>
                         </Border.Background>
                     </Border>
 

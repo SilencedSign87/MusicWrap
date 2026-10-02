@@ -212,7 +212,9 @@ namespace MusicWrap.UI.Features.Playlist.ViewModels
                     new PlaylistEntry(
                         entry.Id,
                         entry.Name,
-                        _libraryCacheService.FindCover(trackIds: tracks) ?? string.Empty,
+                        entry.CoverPath is not null
+                            ? entry.CoverPath
+                            : (_libraryCacheService.FindCover(trackIds: tracks) ?? string.Empty),
                         $"{tracks.Count} items"
                         )
                     );

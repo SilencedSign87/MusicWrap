@@ -36,7 +36,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         private readonly IProgress<ScanProgress> _scanProgress;
 
         // Services
-        private readonly ILibraryScanner _scanner;
+        private readonly LibraryScanner _scanner;
         private readonly ILibraryService _LibraryCache;
         private readonly MusicPlayerService _player;
         private readonly ILogger _logger;
@@ -49,7 +49,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         public LibraryWorkspace Workspace => _workspace;
 
         public LibraryViewModel(
-            ILibraryScanner scanner,
+            LibraryScanner scanner,
             ILibraryService libraryCache,
             MusicPlayerService player,
             IMessenger messenger,

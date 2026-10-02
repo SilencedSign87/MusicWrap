@@ -139,7 +139,10 @@
 
             <Border Width="72" Height="72" Grid.RowSpan="2" CornerRadius="36" VerticalAlignment="Center" HorizontalAlignment="Center" >
                 <Border.Background>
-                    <ImageBrush ImageSource="{Binding HeaderImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:72}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Linear"/>
+                    <ImageBrush 
+                        ImageSource="{Binding HeaderImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=medium:72}" 
+                        Stretch="UniformToFill" 
+                        RenderOptions.BitmapScalingMode="Linear"/>
                 </Border.Background>
             </Border>
 

@@ -38,7 +38,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         [ObservableProperty]
         private double progressPercentage = 0;
 
-        private readonly ILibraryScanner _scanner;
+        private readonly LibraryScanner _scanner;
         private readonly ILibraryService _libraryService;
         private readonly ActivityService _activityService;
         private readonly ILibraryIntegrityService _libraryIntegrityService;
@@ -47,7 +47,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
 
         private ActivityScope? _currentScanScope;
 
-        public DirectoriesManagerViewModel(ILibraryScanner scanner, ILibraryService libraryService, ActivityService activityService, ILibraryIntegrityService libraryIntegrityService, ISaveCoordinator saveCoordinator, WindowManagerService windowManager)
+        public DirectoriesManagerViewModel(LibraryScanner scanner, ILibraryService libraryService, ActivityService activityService, ILibraryIntegrityService libraryIntegrityService, ISaveCoordinator saveCoordinator, WindowManagerService windowManager)
         {
             _scanner = scanner;
             _libraryService = libraryService;

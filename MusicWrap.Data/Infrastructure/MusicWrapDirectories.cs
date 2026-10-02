@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-
-namespace MusicWrap.Data.Infrastructure
+﻿namespace MusicWrap.Data.Infrastructure
 {
     public static class MusicWrapDirectories
     {

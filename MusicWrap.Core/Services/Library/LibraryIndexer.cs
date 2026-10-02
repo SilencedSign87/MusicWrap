@@ -3,15 +3,7 @@ using MusicWrap.Data.Library.Models;
 
 namespace MusicWrap.Core.Services.Library
 {
-    public interface ILibraryIndexer
-    {
-        Task IndexFileAsync(string filePath, CancellationToken ct = default);
-        ExternalTrackIndexResult IndexExternalTrack(ExternalTrackIndexRequest request);
-        ExternalTrackIndexResult UpsertExternalTrack(ExternalTrackIndexRequest request, bool updateExistingMetadata);
-        Task ReplaceTrackAsync(int trackId, CancellationToken ct = default);
-        bool TryAttachExternalTrackLocalFile(ExternalTrackLocalFileRequest request, out int trackId);
-    }
-    public class LibraryIndexer : ILibraryIndexer
+    public class LibraryIndexer
     {
         private static readonly string[] preferredCoverBaseNames = [
             "cover",
@@ -509,7 +501,7 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        private int GetOrCreateCoverAsset(byte[] imageBytes, string mimeType)
+        public int GetOrCreateCoverAsset(byte[] imageBytes, string mimeType)
         {
             if (imageBytes is null || imageBytes.Length == 0) return 0;
 
@@ -659,7 +651,7 @@ namespace MusicWrap.Core.Services.Library
 
             return int.MaxValue;
         }
-        private static string GetMimeTypeFromExtension(string extension) => extension.ToLowerInvariant() switch
+        public static string GetMimeTypeFromExtension(string extension) => extension.ToLowerInvariant() switch
         {
             ".jpg" or ".jpeg" => "image/jpeg",
             ".png" => "image/png",

@@ -11,22 +11,11 @@ using System.Threading.Channels;
 
 namespace MusicWrap.Core.Services.Library
 {
-    public interface ILibraryScanner
-    {
-        Task ScanAllDirectories(IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
-        Task ScanSpecificDirectories(string[] paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
-        Task ScanDirectory(string path, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
-        Task ScanFiles(IEnumerable<string> paths, IProgress<ScanProgress>? progress, CancellationToken? cancellationToken);
-        void AddDirectory(string path, bool recursive);
-        void RemoveDirectory(string path, bool keepTracks);
-        IReadOnlyList<RawMetadata> GetRawMetadata(string path);
-        IReadOnlyList<ScanDirectory> GetDirectories();
-    }
-    public class LibraryScanner : ILibraryScanner
+    public class LibraryScanner
     {
         private readonly IMessenger _messenger;
         private readonly MusicLibrary _library;
-        private readonly ILibraryIndexer _indexer;
+        private readonly LibraryIndexer _indexer;
         private readonly ILogger _logger;
         private readonly ISaveCoordinator _saveCoordinator;
 
@@ -39,7 +28,7 @@ namespace MusicWrap.Core.Services.Library
             }
         }
 
-        public LibraryScanner(MusicLibrary library, ILibraryIndexer indexer, ILogger<LibraryScanner> logger, ISaveCoordinator saveCoordinator, IMessenger messenger)
+        public LibraryScanner(MusicLibrary library, LibraryIndexer indexer, ILogger<LibraryScanner> logger, ISaveCoordinator saveCoordinator, IMessenger messenger)
         {
             _library = library;
             _indexer = indexer;

@@ -216,6 +216,7 @@
 
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
                     <controls:SpectrumVisualizerControl
+                        x:Name="SpectrumVisualizer"
                         Height="150"
                         BarCount="128"
                         Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"

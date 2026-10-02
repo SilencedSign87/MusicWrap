@@ -9,8 +9,8 @@
         ResizeMode="NoResize"
         d:Background="#202020"
         d:Foreground="White"
-        Title="New Playlist" 
-        Height="350" 
+        Title="" 
+        Height="380" 
         Width="250"
         d:WindowStyle="None"
         >
@@ -21,15 +21,14 @@
                       GlassFrameThickness="-1"/>
     </WindowChrome.WindowChrome>
     <Grid RowDefinitions="Auto,*,Auto">
-        <Border Grid.Row="0" Padding="36,28,36,0">
+        <Border Grid.Row="0" Padding="24,20,24,16">
             <StackPanel>
                 <TextBlock x:Name="TitleBox" FontSize="18" FontWeight="Bold" Margin="0,0,0,18"/>
                 <controls:SquarePanel >
                     <Border 
                         x:Name="PlaylistArtworkBorder"
                         Background="{DynamicResource BackgroundLayer}" 
-                        CornerRadius="4"
-                        MouseLeftButtonUp="PlaylistArtwork_MouseLeftButtonUp"
+                        CornerRadius="8"
                         BorderThickness="1"
                         BorderBrush="Transparent"
                         >
@@ -43,16 +42,46 @@
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
+                        <controls:HiddenPanel>
+                            <Border 
+                                VerticalAlignment="Stretch" 
+                                HorizontalAlignment="Stretch" 
+                                BorderBrush="{DynamicResource AccentBrush100}"
+                                Background="{DynamicResource TintOnText}"
+                                BorderThickness="4" 
+                                CornerRadius="4" 
+                                >
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <controls:AppButton 
+                                        Style="{StaticResource AccentButton}" 
+                                        Click="SwapArtwork_Click"
+                                        IsSquare="True"
+                                        Icon="&#xE8AB;"
+                                        IconFontSize="18"
+                                        ToolTip="Swap artwork"
+                                        />
+                                    <controls:AppButton 
+                                        Style="{StaticResource AccentButton}" 
+                                        Click="RemoveArtwork_click"
+                                        IsSquare="True"
+                                        Icon="&#xECC9;" 
+                                        IconFontSize="18"
+                                        ToolTip="Remove"
+                                        Margin="2,0,0,0" 
+                                        />
+                                </StackPanel>
+                            </Border>
+                        </controls:HiddenPanel>
                     </Border>
                 </controls:SquarePanel>
             </StackPanel>
         </Border>
-        <StackPanel Grid.Row="1" Margin="36,0,36,12" VerticalAlignment="Center">
+        <StackPanel Grid.Row="1" Margin="24,0,24,12" VerticalAlignment="Center">
             <controls:AppInput
                 x:Name="PlaylistNameInput"
                 Height="32"
                 PlaceholderText="Playlist name..."
-                PreviewKeyDown="PlaylistNameInput_KeyDown"
+                EnterPressed="PlaylistNameInput_EnterPressed"
                 />
         </StackPanel>
         <StackPanel Grid.Row="2" >
