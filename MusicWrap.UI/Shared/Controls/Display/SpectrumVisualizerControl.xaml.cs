@@ -16,11 +16,11 @@ namespace MusicWrap.UI.Controls
         private float[] _currentHeights = [];
         private bool _isActive;
 
-        private const float RiseSpeed = 0.7f;
-        private const float FallSpeed = 0.35f;
-        private const float HeightDecay = 0.1f;
+        private const float HeightDecay = 0.05f;
 
-        private float _valleyGamma = 1.5f;
+        private const float _valleyGamma = 1.5f;
+        private const int FPS = 25;
+        private const int Interval = 1000 / FPS;
 
         private readonly SpectrumPipeline _spectrumPipeline;
         private readonly CenteredSpectrumPipeline _centeredPipeline;
@@ -47,7 +47,7 @@ namespace MusicWrap.UI.Controls
 
             _timer = new DispatcherTimer(DispatcherPriority.Render)
             {
-                Interval = TimeSpan.FromMilliseconds(33)
+                Interval = TimeSpan.FromMilliseconds(Interval)
             };
             _timer.Tick += OnTick;
 
@@ -215,8 +215,9 @@ namespace MusicWrap.UI.Controls
                 if (_valleyGamma != 1.0f)
                     target = MathF.Pow(Math.Max(target, 0f), _valleyGamma);
 
-                float speed = target > _currentHeights[i] ? RiseSpeed : FallSpeed;
-                _currentHeights[i] += (target - _currentHeights[i]) * speed;
+                //float speed = target > _currentHeights[i] ? RiseSpeed : FallSpeed;
+                //_currentHeights[i] += (target - _currentHeights[i]) * speed;
+                _currentHeights[i] = target;
             }
         }
         private void Render()

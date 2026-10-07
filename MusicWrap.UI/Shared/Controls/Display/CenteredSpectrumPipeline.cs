@@ -26,7 +26,7 @@ public sealed class CenteredSpectrumPipelineConfig
     /// Transition frequency: everything from MinHz to TransitionHz is collapsed
     /// into a single bass value per channel. Above TransitionHz, spectrum expands normally.
     /// </summary>
-    public float TransitionHz { get; set; } = 150f;
+    public float TransitionHz { get; set; } = 200f;
 
     /// <summary>
     /// How many bars the collapsed bass region "bleeds" into (affects neighbors).
@@ -40,29 +40,29 @@ public sealed class CenteredSpectrumPipelineConfig
     public float BleedingGamma { get; set; } = 1.5f;
 
     // Dynamic range (dB)
-    public float NoiseFloorDb { get; set; } = -80f;
+    public float NoiseFloorDb { get; set; } = -90f;
     public float CeilingDb { get; set; } = 0f;
 
     // Noise gate
     //  0..1 (0 = off) 
-    public float NoiseGateNorm { get; set; } = 0.05f;
+    public float NoiseGateNorm { get; set; } = 0.5f;
 
     // Smoothing
     // EMA (0 = ignore new , 1 = no smoothing)
-    public float SmoothingAlpha { get; set; } = 0.9f;
+    public float SmoothingAlpha { get; set; } = 0.6f;
     // dead zone 0..1 (0 = off)
     public float ChangeThreshold { get; set; } = 0.0f;
 
     // Per-zone boosts (applied after normalization, before collapse/bleed)
-    public float BassBoost { get; set; } = 1.1f;
-    public float MidBoost { get; set; } = 1.0f;
-    public float TrebleBoost { get; set; } = 1.2f;
+    public float BassBoost { get; set; } = 1.0f;
+    public float MidBoost { get; set; } = 1.2f;
+    public float TrebleBoost { get; set; } = 1.4f;
 
     /// <summary>
     /// How the whole central band (MinHz to CenterHz) is merged into the
     /// single center value of the graph. Only affects the center point.
     /// </summary>
-    public CenteredAggregation Aggregation { get; set; } = CenteredAggregation.PowerMean;
+    public CenteredAggregation Aggregation { get; set; } = CenteredAggregation.Max;
 
     public float AggregationPower { get; set; } = 6f;
 }
