@@ -36,140 +36,15 @@
             <Setter Property="BorderThickness" Value="0"/>
         </Style>
     </UserControl.Resources>
-
-    <Grid RowDefinitions="*" ColumnDefinitions="*">
-        <controls:HiddenPanel HorizontalAlignment="Stretch" VerticalAlignment="Top">
-            <Grid ColumnDefinitions="Auto,*,Auto" Background="{StaticResource BackgroundSolid}">
-                <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="4,0,0,0">
-                    <Button 
-                        Grid.Column="0" 
-                        Style="{StaticResource PlayerButton}"  
-                        ToolTip="Previous track" 
-                        Command="{Binding PlayerViewModel.PreviousCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
-                    </Button>
-                    <Button 
-                        Grid.Column="1" 
-                        Style="{StaticResource PlayerButton}"  
-                        Command="{Binding PlayerViewModel.PlayPauseCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.PlayPauseIcon, Mode=OneWay}" FontSize="20"/>
-                    </Button>
-                    <Button 
-                        Grid.Column="2"
-                        Style="{StaticResource PlayerButton}" 
-                        ToolTip="Next track" 
-                        Command="{Binding PlayerViewModel.NextCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
-                    </Button>
-                    <Button 
-                        Grid.Column="3"
-                        Style="{StaticResource PlayerButton}" 
-                        ToolTip="{Binding PlayerViewModel.RepeatModeTooltip}" 
-                        Command="{Binding PlayerViewModel.CicleRepeatModeCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.RepeatModeIcon}" FontSize="14"/>
-                    </Button>
-                    <Button 
-                        Grid.Column="4"
-                        Style="{StaticResource PlayerButton}" 
-                        ToolTip="{Binding PlayerViewModel.ShuffleTooltip}"
-                        Command="{Binding PlayerViewModel.ToggleShuffleCommand}">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.ShuffleIcon}" FontSize="12"/>
-                    </Button>
-
-                    <controls:VolumeControl 
-                            Grid.Column="5"
-                            Height="32"
-                            Width="120"
-                            ShowMuteButton="False"
-                            Foreground="{StaticResource TextPrimaryBrush}"
-                            Margin="4,0"
-                            />
-                </Grid>
-                <Grid Grid.Column="1" Margin="24,0,8,0">
-                    <controls:WaveformPlayerControl
-                        Foreground="{StaticResource TextPrimaryBrush}"
-                        Height="32"
-                        />
-                </Grid>
-
-                <StackPanel Orientation="Horizontal" Grid.Column="2" Margin="0,0,4,0">
-                    <Menu Foreground="{DynamicResource TextPrimaryBrush}" >
-                        <MenuItem Icon="{ex:Icon Glyph=&#xE90F;}" Header="Properties" Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"/>
-                        <MenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
-                            <MenuItem Header="Off" IsCheckable="True" 
-                                      Command="{Binding SetVisualizerCommand}"
-                                      CommandParameter="None"
-                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
-                            <MenuItem Header="Line" IsCheckable="True" 
-                                      Command="{Binding SetVisualizerCommand}"
-                                      CommandParameter="LineSpectrum"
-                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
-                            <MenuItem Header="Bars" IsCheckable="True" 
-                                      Command="{Binding SetVisualizerCommand}"
-                                      CommandParameter="BarSpectrum"
-                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
-                            <MenuItem Header="Wave" IsCheckable="True"
-                                      Command="{Binding SetVisualizerCommand}"
-                                      CommandParameter="MirroredBarSpectrum"
-                                      IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
-                            <Separator/>
-                            <MenuItem Header="Spectrum" IsCheckable="True"
-                                      Command="{Binding SetSpectrumTypeCommand}"
-                                      CommandParameter="Normal"
-                                      IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}"
-                                      />
-                            <MenuItem Header="Centered" IsCheckable="True"
-                                      Command="{Binding SetSpectrumTypeCommand}"
-                                      CommandParameter="Centered"
-                                      IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
-                                      />
-                        </MenuItem>
-                        <MenuItem Icon="{ex:Icon Glyph=E90D}"  Header="Panel">
-                            <MenuItem 
-                                Icon="{ex:Icon Glyph=F5A6}"
-                                Header="None" 
-                                IsCheckable="True" 
-                                Command="{Binding SetPanelCommand}"
-                                CommandParameter="None"
-                                IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
-                                />
-                            <MenuItem 
-                                Icon="{ex:Icon Glyph=EC4F}"
-                                Header="Lyrics" 
-                                IsCheckable="True" 
-                                Command="{Binding SetPanelCommand}"
-                                CommandParameter="Lyrics"
-                                IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Lyrics}"
-                                />
-                            <MenuItem
-                                Icon="{ex:Icon Glyph=E90B}"
-                                Header="Queue"
-                                IsCheckable="True"
-                                Command="{Binding SetPanelCommand}"
-                                CommandParameter="Queue"
-                                IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Queue}"
-                                />
-                        </MenuItem>
-                    </Menu>
-                    <Border Margin="4" Width="1" Background="{StaticResource StrokeSurface}"/>
-                    <controls:AppButton 
-                        Style="{StaticResource PlayerButton}"
-                        Command="{Binding ExitFullScreenCommand}"
-                        ToolTip="Exit fullscreen"
-                        Icon="&#xE73F;"
-                        IconFontSize="20"
-                        />
-                </StackPanel>
-            </Grid>
-        </controls:HiddenPanel>
-        <!-- MainContent -->
-        <Grid x:Name="MainContentGrid">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="ArtworkColumn" Width="*" />
-                <ColumnDefinition x:Name="PanelColumn" Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <Grid Grid.Column="0" RowDefinitions="*" ColumnDefinitions="*">
-                <StackPanel 
+    <!-- MainContent -->
+    <Grid x:Name="MainContentGrid">
+        <Grid 
+                x:Name="ArtworkHost"
+                HorizontalAlignment="Left" 
+                ClipToBounds="True"
+                RowDefinitions="*" 
+                ColumnDefinitions="*">
+            <StackPanel 
                     Grid.Column="0"
                     Grid.Row="0"
                     x:Name="ArtworkPanel"
@@ -179,32 +54,32 @@
                     Margin="16"
                     MaxWidth="700"
                     >
-                    <Border CornerRadius="8" Width="500" Height="500" Margin="0,0,0,16" SnapsToDevicePixels="True">
-                        <Border.Background>
-                            <ImageBrush
+                <Border CornerRadius="8" Width="500" Height="500" Margin="0,0,0,16" SnapsToDevicePixels="True">
+                    <Border.Background>
+                        <ImageBrush
                                 ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:600}"
                                 RenderOptions.BitmapScalingMode="HighQuality"
                                 Stretch="Uniform"
                                 AlignmentX="Center"
                                 AlignmentY="Center"
                                 />
-                        </Border.Background>
-                        <Border.Effect>
-                            <DropShadowEffect
+                    </Border.Background>
+                    <Border.Effect>
+                        <DropShadowEffect
                                 BlurRadius="16"
                                 Opacity="0.24"
                                 Direction="275"
                                 />
-                        </Border.Effect>
-                    </Border>
-                    <TextBlock 
+                    </Border.Effect>
+                </Border>
+                <TextBlock 
                         Text="{Binding PlayerViewModel.CurrentTrackTitle}" 
                         TextAlignment="Center" 
                         FontSize="30" 
                         FontWeight="Bold" 
                         TextWrapping="Wrap"
                         />
-                    <TextBlock 
+                <TextBlock 
                         Text="{Binding PlayerViewModel.CurrentTrackAlbum}" 
                         TextAlignment="Center" 
                         FontSize="24" 
@@ -212,10 +87,10 @@
                         TextWrapping="Wrap"
                         Opacity="0.5"
                         />
-                </StackPanel>
+            </StackPanel>
 
-                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
-                    <controls:SpectrumVisualizerControl
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
+                <controls:SpectrumVisualizerControl
                         x:Name="SpectrumVisualizer"
                         Height="150"
                         BarCount="128"
@@ -223,16 +98,140 @@
                         Visualizer="{Binding PreferredVisualizer}"
                         SpectrumType="{Binding PreferredSpectrumType}"
                         />
-                </StackPanel>
-            </Grid>
-            <Border 
+            </StackPanel>
+        </Grid>
+
+        <Border 
                 x:Name="PanelContainer"
-                Grid.Column="1" 
-                Padding="52"
+                HorizontalAlignment="Right"
                 ClipToBounds="True"
                 >
+        </Border>
 
-            </Border>
-        </Grid>
+        <controls:HiddenPanel HorizontalAlignment="Stretch" VerticalAlignment="Top">
+            <Grid ColumnDefinitions="Auto,*,Auto" Background="{StaticResource BackgroundSolid}">
+                <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" Margin="4,0,0,0">
+                    <Button 
+                Grid.Column="0" 
+                Style="{StaticResource PlayerButton}"  
+                ToolTip="Previous track" 
+                Command="{Binding PlayerViewModel.PreviousCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe892;" FontSize="14"/>
+                    </Button>
+                    <Button 
+                Grid.Column="1" 
+                Style="{StaticResource PlayerButton}"  
+                Command="{Binding PlayerViewModel.PlayPauseCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.PlayPauseIcon, Mode=OneWay}" FontSize="20"/>
+                    </Button>
+                    <Button 
+                Grid.Column="2"
+                Style="{StaticResource PlayerButton}" 
+                ToolTip="Next track" 
+                Command="{Binding PlayerViewModel.NextCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xe893;" FontSize="14"/>
+                    </Button>
+                    <Button 
+                Grid.Column="3"
+                Style="{StaticResource PlayerButton}" 
+                ToolTip="{Binding PlayerViewModel.RepeatModeTooltip}" 
+                Command="{Binding PlayerViewModel.CicleRepeatModeCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.RepeatModeIcon}" FontSize="14"/>
+                    </Button>
+                    <Button 
+                Grid.Column="4"
+                Style="{StaticResource PlayerButton}" 
+                ToolTip="{Binding PlayerViewModel.ShuffleTooltip}"
+                Command="{Binding PlayerViewModel.ToggleShuffleCommand}">
+                        <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.ShuffleIcon}" FontSize="12"/>
+                    </Button>
+
+                    <controls:VolumeControl 
+                    Grid.Column="5"
+                    Height="32"
+                    Width="120"
+                    ShowMuteButton="False"
+                    Foreground="{StaticResource TextPrimaryBrush}"
+                    Margin="4,0"
+                    />
+                </Grid>
+                <Grid Grid.Column="1" Margin="24,0,8,0">
+                    <controls:WaveformPlayerControl
+                Foreground="{StaticResource TextPrimaryBrush}"
+                Height="32"
+                />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Grid.Column="2" Margin="0,0,4,0">
+                    <Menu Foreground="{DynamicResource TextPrimaryBrush}" >
+                        <MenuItem Icon="{ex:Icon Glyph=&#xE90F;}" Header="Properties" Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"/>
+                        <MenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
+                            <MenuItem Header="Off" IsCheckable="True" 
+                              Command="{Binding SetVisualizerCommand}"
+                              CommandParameter="None"
+                              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                            <MenuItem Header="Line" IsCheckable="True" 
+                              Command="{Binding SetVisualizerCommand}"
+                              CommandParameter="LineSpectrum"
+                              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
+                            <MenuItem Header="Bars" IsCheckable="True" 
+                              Command="{Binding SetVisualizerCommand}"
+                              CommandParameter="BarSpectrum"
+                              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
+                            <MenuItem Header="Wave" IsCheckable="True"
+                              Command="{Binding SetVisualizerCommand}"
+                              CommandParameter="MirroredBarSpectrum"
+                              IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                            <Separator/>
+                            <MenuItem Header="Spectrum" IsCheckable="True"
+                              Command="{Binding SetSpectrumTypeCommand}"
+                              CommandParameter="Normal"
+                              IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}"
+                              />
+                            <MenuItem Header="Centered" IsCheckable="True"
+                              Command="{Binding SetSpectrumTypeCommand}"
+                              CommandParameter="Centered"
+                              IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
+                              />
+                        </MenuItem>
+                        <MenuItem Icon="{ex:Icon Glyph=E90D}"  Header="Panel">
+                            <MenuItem 
+                        Icon="{ex:Icon Glyph=F5A6}"
+                        Header="None" 
+                        IsCheckable="True" 
+                        Command="{Binding SetPanelCommand}"
+                        CommandParameter="None"
+                        IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
+                        />
+                            <MenuItem 
+                        Icon="{ex:Icon Glyph=EC4F}"
+                        Header="Lyrics" 
+                        IsCheckable="True" 
+                        Command="{Binding SetPanelCommand}"
+                        CommandParameter="Lyrics"
+                        IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Lyrics}"
+                        />
+                            <MenuItem
+                        Icon="{ex:Icon Glyph=E90B}"
+                        Header="Queue"
+                        IsCheckable="True"
+                        Command="{Binding SetPanelCommand}"
+                        CommandParameter="Queue"
+                        IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Queue}"
+                        />
+                        </MenuItem>
+                    </Menu>
+                    <Border Margin="4" Width="1" Background="{StaticResource StrokeSurface}"/>
+                    <controls:AppButton 
+                Style="{StaticResource PlayerButton}"
+                Command="{Binding ExitFullScreenCommand}"
+                ToolTip="Exit fullscreen"
+                Icon="&#xE73F;"
+                IconFontSize="20"
+                />
+                </StackPanel>
+            </Grid>
+        </controls:HiddenPanel>
     </Grid>
+
 </UserControl>

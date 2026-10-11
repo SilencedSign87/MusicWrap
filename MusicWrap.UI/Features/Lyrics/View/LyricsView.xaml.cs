@@ -3,6 +3,7 @@ using MusicWrap.Core.Services.Lyrics;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -16,9 +17,8 @@ namespace MusicWrap.UI.Features.Lyrics.View
     public partial class LyricsView : UserControl
     {
         private bool _followLyrics = true;
-        private bool _isFirstLoad = true;
         private readonly LyricsViewModel _viewModel;
-        private BlurEffect _textBlurEffect = new() { Radius = 4 };
+        private readonly BlurEffect _textBlurEffect = new() { Radius = 4 };
 
         public bool HasLyrics => _viewModel?.HasLyrics ?? false;
         public bool HasSyncedLyrics => _viewModel?.HasSyncedLyrics ?? false;
@@ -293,9 +293,8 @@ namespace MusicWrap.UI.Features.Lyrics.View
         #region Animation
         private void AnimateScrollTo(double targetOffset)
         {
-            if (_isFirstLoad)
+            if (!IsVisible)
             {
-                _isFirstLoad = false;
                 LyricsScrollViewer.ScrollToVerticalOffset(targetOffset);
                 return;
             }

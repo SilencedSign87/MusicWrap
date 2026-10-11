@@ -66,6 +66,12 @@ namespace MusicWrap.Core.Services.Lyrics
                             return null;
                         }
                     }, ct);
+
+                    if (string.IsNullOrWhiteSpace(raw))
+                    {
+                        raw = await SearchLyricFileForTrack(path, ct);
+                    }
+
                 }
                 var parsed = LyricsParser.Parse(raw, LyricsSource.Embedded);
                 return UpdateCache(parsed, trackId, path, ticks);
@@ -74,6 +80,67 @@ namespace MusicWrap.Core.Services.Lyrics
             {
                 _gate.Release();
             }
+        }
+
+        public async Task<string> SearchLyricFileForTrack(string trackPath, CancellationToken ct = default)
+        {
+            var directory = Path.GetDirectoryName(trackPath);
+            if (directory is null) return string.Empty;
+
+            var trackFileName = Path.GetFileNameWithoutExtension(trackPath);
+
+            var supportedExtensions = new[] { ".lrc", ".txt" };
+
+            var lyricFiles = Directory.GetFiles(directory)
+                .Where(file => supportedExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                .ToList();
+
+            if (lyricFiles.Count == 0) return string.Empty;
+
+            var bestMatch = lyricFiles
+                .Select(file => new
+                {
+                    FilePath = file,
+                    FileNameWithoutExtension = Path.GetFileNameWithoutExtension(file),
+                    LevenshteinDistance = LyricsProviderService.LevenshteinDistance(trackFileName, Path.GetFileNameWithoutExtension(file))
+                })
+                .OrderBy(x => x.LevenshteinDistance)
+                .FirstOrDefault();
+
+            var contents = await File.ReadAllTextAsync(lyricFiles[0], ct);
+
+            return contents;
+        }
+
+        private static int LevenshteinDistance(string trackFileName, string v)
+        {
+            var distance = new int[trackFileName.Length + 1, v.Length + 1];
+
+            for (int i = 0; i <= trackFileName.Length; i++)
+                distance[i, 0] = i;
+
+            for (int j = 0; j <= v.Length; j++)
+                distance[0, j] = j;
+
+            for (int i = 1; i <= trackFileName.Length; i++)
+            {
+                for (int j = 1; j <= v.Length; j++)
+                {
+                    int subtitutionCost = 0;
+                    if (trackFileName[i] != v[j])
+                        subtitutionCost = 1;
+
+                    distance[i, j] = Math.Min(
+                        distance[i - 1, j] + 1,
+                        Math.Min(
+                        distance[i, j - 1] + 1,
+                        distance[i - 1, j - 1] + subtitutionCost
+                        )
+                    );
+                }
+            }
+
+            return distance[trackFileName.Length, v.Length];
         }
 
         public ParsedLyrics GetLyricsForTrackId(int trackId)
