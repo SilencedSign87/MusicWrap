@@ -2,6 +2,7 @@
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
+using NetVips;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,6 +14,7 @@ namespace MusicWrap.UI.Shared.Services
     {
         private readonly MusicWrapSettings _userSettings;
         private readonly ISaveCoordinator _saveCoordinator;
+        private Uri? _appliedThemeUri;
 
         public ThemeService(MusicWrapSettings userSettings, ISaveCoordinator saveCoordinator)
         {
@@ -35,7 +37,15 @@ namespace MusicWrap.UI.Shared.Services
         }
         private void ApplyTheme(ThemePreference theme)
         {
-           
+            var desire = theme switch
+            {
+                ThemePreference.Light => new Uri("/Styles/Theme/Light.xaml", UriKind.Relative),
+                ThemePreference.Dark => new Uri("/Styles/Theme/Dark.xaml", UriKind.Relative),
+                ThemePreference.System => GetSystemThemeUri(),
+                _ => new Uri("/Styles/Theme/Dark.xaml", UriKind.Relative)
+            };
+
+            if (_appliedThemeUri == desire) return;
 
             Application.Current.ThemeMode = theme switch
             {
@@ -45,27 +55,18 @@ namespace MusicWrap.UI.Shared.Services
                 _ => ThemeMode.Dark
             };
 
-            var themeDict = new ResourceDictionary
-            {
-                Source = theme switch
-                {
-                    ThemePreference.Light => new Uri("/Styles/Theme/Light.xaml", UriKind.Relative),
-                    ThemePreference.Dark => new Uri("/Styles/Theme/Dark.xaml", UriKind.Relative),
-                    ThemePreference.System => GetSystemThemeUri(),
-                    _ => new Uri("/Styles/Theme/Dark.xaml", UriKind.Relative)
-                }
-            };
-
-            var oldTheme = Application.Current.Resources.MergedDictionaries.FirstOrDefault(d => d.Source?.OriginalString?.Contains("/Theme/") == true);
+            var oldTheme = Application.Current.Resources.MergedDictionaries
+                .FirstOrDefault(d => d.Source?.OriginalString?.Contains("/Theme/") == true);
 
             if (oldTheme != null)
                 Application.Current.Resources.MergedDictionaries.Remove(oldTheme);
 
-            Application.Current.Resources.MergedDictionaries.Add(themeDict);
+            Application.Current.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = desire });
+            _appliedThemeUri = desire;
 
         }
 
-        private Uri GetSystemThemeUri()
+        private static Uri GetSystemThemeUri()
         {
             // Detect Windows theme
             var useLight = Microsoft.Win32.Registry.GetValue(

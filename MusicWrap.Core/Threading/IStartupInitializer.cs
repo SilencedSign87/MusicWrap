@@ -8,4 +8,6 @@ namespace MusicWrap.Core.Threading
     {
         void Initialize();
     }
+
+    public interface IBackgroundStartupInitializer : IStartupInitializer { }
 }

@@ -124,8 +124,6 @@ public static class ServiceRegistration
 
         // Startup
         services.AddSingleton<IStartupInitializer>(sp => sp.GetRequiredService<ThemeService>());
-        services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(MusicPlayerService)));
-        //services.AddSingleton<IStartupInitializer>(sp => sp.GetRequiredService<TrayService>());
         services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(ISaveCoordinator)));
         services.AddSingleton<IStartupInitializer>(sp => new StartupWarmup(sp, typeof(PlayerViewModel)));
     }

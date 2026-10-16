@@ -14,7 +14,7 @@ using MusicWrap.Data.User.Models;
 
 namespace MusicWrap.Core.Services.Playback
 {
-    public class MusicPlayerService : IStartupInitializer, IDisposable
+    public class MusicPlayerService : IBackgroundStartupInitializer, IDisposable
     {
         // Providers
         private readonly IQueueManager _queue;

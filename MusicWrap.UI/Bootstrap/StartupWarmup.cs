@@ -11,6 +11,8 @@ namespace MusicWrap.UI.Bootstrap
         private readonly IServiceProvider _serviceProvider;
         private readonly Type _serviceType;
 
+        public Type Type => _serviceType;
+
         public StartupWarmup(IServiceProvider serviceProvider, Type serviceType)
         {
             _serviceProvider = serviceProvider;

@@ -1,16 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core.Saving;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure;
-using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
-using MusicWrap.UI.ViewModels;
 using Serilog;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 
@@ -51,57 +45,74 @@ public static class StartupOrquestrator
 
     public static async Task InitializeAsync(IServiceProvider serviceProvider, SplashScreen? splash = null)
     {
-        WindowManagerService? windowManager = null;
-        PlayerMode modeToShow = PlayerMode.MainPlayer;
+        await Task.Yield();
+
+        var all = serviceProvider.GetServices<IStartupInitializer>().ToList();
+        var background = all.OfType<IBackgroundStartupInitializer>().Cast<IStartupInitializer>().ToList();
+        var foreground = all.Where(i => !background.Contains(i)).ToList();
 
         try
         {
-            windowManager = serviceProvider.GetRequiredService<WindowManagerService>();
-            modeToShow = serviceProvider.GetRequiredService<MusicWrapSettings>().LastWindowMode;
-
-            foreach (var initializer in serviceProvider.GetServices<IStartupInitializer>())
+            foreach (var initializer in foreground)
             {
-                Log.Information("Initializing service {Initializer}...", initializer.GetType().Name);
-
+                var sw = Stopwatch.StartNew();
                 initializer.Initialize();
-            }
+                bool isWarmup = initializer is StartupWarmup;
+                String ServiceName = isWarmup ? ((StartupWarmup)initializer).Type.Name : initializer.GetType().Name;
 
+                Log.Information("UI initializer | {Elapsed} ms | {Initializer}", sw.ElapsedMilliseconds, ServiceName);
+            }
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error during application initialization");
+            Log.Error(ex, "Error during UI initialization");
         }
-        finally
+
+        try
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            var windowManager = serviceProvider.GetRequiredService<WindowManagerService>();
+            var modeToShow = serviceProvider.GetRequiredService<MusicWrapSettings>().LastWindowMode;
+
+            splash?.Close(TimeSpan.FromMilliseconds(500));
+
+            switch (modeToShow)
+            {
+                case PlayerMode.CompactPlayer:
+                    windowManager.SwitchToCompactPlayer();
+                    break;
+                case PlayerMode.FullScreenPlayer:
+                    windowManager.SwitchToFullScreenPlayer();
+                    break;
+                default:
+                    windowManager.SwitchToMainPlayer();
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error during window initialization");
+        }
+
+        _ = Task.Run(() =>
+        {
+            foreach (var initializer in background)
             {
                 try
                 {
-                    splash?.Close(TimeSpan.FromSeconds(0.5));
-                }
-                catch { }
-
-                try
-                {
-                    if (modeToShow == PlayerMode.CompactPlayer)
-                    {
-                        windowManager?.SwitchToCompactPlayer();
-                    }
-                    else
-                    {
-                        windowManager?.SwitchToMainPlayer();
-                    }
+                    var sw = Stopwatch.StartNew();
+                    initializer.Initialize();
+                    Log.Information("Background initializer | {Elapsed} ms | {Initializer}", sw.ElapsedMilliseconds, initializer.GetType().Name);
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex, "Error showing main window");
+                    Log.Error(ex, "Error during background initialization of {Initializer}", initializer.GetType().Name);
                 }
-            });
+            }
+        });
 
-            // Initialize the tray icon in the background
-            Application.Current.Dispatcher.Invoke(
-                () => serviceProvider.GetRequiredService<TrayService>().Initialize(),
-                System.Windows.Threading.DispatcherPriority.Background);
-        }
+        Application.Current.Dispatcher.Invoke(
+            () => serviceProvider.GetRequiredService<TrayService>().Initialize(),
+            System.Windows.Threading.DispatcherPriority.Background
+            );
     }
 }

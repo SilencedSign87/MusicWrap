@@ -25,7 +25,7 @@ namespace MusicWrap.Core.Services.Library
         void Verify(IProgress<LibraryVerificationProgress>? progress = null, CancellationToken cancellationToken = default);
     }
 
-    public class LibraryIntegrityService : ILibraryIntegrityService, IStartupInitializer
+    public class LibraryIntegrityService : ILibraryIntegrityService, IBackgroundStartupInitializer
     {
         private readonly MusicLibrary _library;
         private readonly ILibraryService _libraryService;
@@ -65,11 +65,16 @@ namespace MusicWrap.Core.Services.Library
             {
                 foreach (var directory in directories)
                 {
-                    foreach (var file in Directory.EnumerateFiles(directory.Path, "*.*", enumerationOptions))
+                    //foreach (var file in Directory.EnumerateFiles(directory.Path, "*.*", enumerationOptions))
+                    //{
+                    //    var fileinfo = new FileInfo(file);
+                    //    currentFiles[(fileinfo.Length, fileinfo.LastWriteTimeUtc.Ticks)] = file;
+                    //}
+
+                    var dirInfo = new DirectoryInfo(directory.Path);
+                    foreach (var fi in dirInfo.EnumerateFiles("*.*", enumerationOptions))
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        var fileinfo = new FileInfo(file);
-                        currentFiles[(fileinfo.Length, fileinfo.LastWriteTimeUtc.Ticks)] = file;
+                        currentFiles[(fi.Length, fi.LastWriteTimeUtc.Ticks)] = fi.FullName;
                     }
                 }
 
@@ -121,7 +126,7 @@ namespace MusicWrap.Core.Services.Library
         }
         void IStartupInitializer.Initialize()
         {
-            Task.Run(() => Verify());
+            _ = Task.Run(() => Verify());
         }
     }
     public sealed record TrackVerificationResult
