@@ -23,7 +23,7 @@ namespace MusicWrap.UI.Converters
             {
                 string param = parameter as string ?? "";
                 if (param.Contains("Index", StringComparison.OrdinalIgnoreCase))
-                    gate = mode != TrackIndexDisplayMode.None;
+                    gate = true;
                 else if (param.Contains("Duration", StringComparison.OrdinalIgnoreCase))
                     gate = mode == TrackIndexDisplayMode.None;
             }

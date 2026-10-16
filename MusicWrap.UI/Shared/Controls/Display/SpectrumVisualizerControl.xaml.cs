@@ -19,8 +19,14 @@ namespace MusicWrap.UI.Controls
         private const float HeightDecay = 0.05f;
 
         private const float _valleyGamma = 1.5f;
-        private const int FPS = 25;
+        private const int FPS = 30;
         private const int Interval = 1000 / FPS;
+        private const float deltaSeconds = 1f / FPS;
+        private const float AttackSeconds = 0.015f;
+        private const float ReleaseSeconds = 0.100f;
+
+        private static readonly float AttackAlpha = 1f - MathF.Exp(-1f / (deltaSeconds * AttackSeconds));
+        private static readonly float ReleaseAlpha = 1f - MathF.Exp(-1f / (deltaSeconds * ReleaseSeconds));
 
         private readonly SpectrumPipeline _spectrumPipeline;
         private readonly CenteredSpectrumPipeline _centeredPipeline;
@@ -164,7 +170,7 @@ namespace MusicWrap.UI.Controls
 
             float[] displayBands = SpectrumType == SpectrumType.Centered
                 ? _centeredPipeline.Process(magnitudes)
-                : _spectrumPipeline.ProcessChannel(magnitudes,-1);
+                : _spectrumPipeline.ProcessChannel(magnitudes, -1);
 
             if (_currentHeights.Length != displayBands.Length)
             {
@@ -209,15 +215,18 @@ namespace MusicWrap.UI.Controls
         }
         private void UpdateHeights(float[] bands)
         {
+            float dt = Math.Clamp(deltaSeconds, 0f, 0.1f);
+
             for (int i = 0; i < _currentHeights.Length && i < bands.Length; i++)
             {
+                float current = _currentHeights[i];
                 float target = Math.Clamp(bands[i], 0f, 1f);
-                if (_valleyGamma != 1.0f)
-                    target = MathF.Pow(Math.Max(target, 0f), _valleyGamma);
 
-                //float speed = target > _currentHeights[i] ? RiseSpeed : FallSpeed;
-                //_currentHeights[i] += (target - _currentHeights[i]) * speed;
-                _currentHeights[i] = target;
+                float tau = target > current ? AttackSeconds : ReleaseSeconds;
+
+                float alpha = 1f - MathF.Exp(-dt / tau);
+
+                _currentHeights[i] = current + (target - current) * alpha;
             }
         }
         private void Render()

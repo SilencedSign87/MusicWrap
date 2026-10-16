@@ -6,6 +6,13 @@ namespace MusicWrap.UI.Helpers
 {
     public class ColumnFlowPanel : Panel
     {
+
+        public static readonly DependencyProperty ColumnsProperty =
+            DependencyProperty.RegisterAttached(
+                "Columns",
+                typeof(int),
+                typeof(ColumnFlowPanel),
+                new FrameworkPropertyMetadata(1, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange));
         public static int GetColumns(DependencyObject obj)
         {
             return (int)obj.GetValue(ColumnsProperty);
@@ -16,65 +23,90 @@ namespace MusicWrap.UI.Helpers
             obj.SetValue(ColumnsProperty, value);
         }
 
-        public static readonly DependencyProperty ColumnsProperty =
-            DependencyProperty.RegisterAttached(
-                "Columns",
-                typeof(int),
+        // fixed height for each item
+        public double ItemHeight
+        {
+            get { return (double)GetValue(ItemHeightProperty); }
+            set { SetValue(ItemHeightProperty, value); }
+        }
+
+        public static readonly DependencyProperty ItemHeightProperty =
+            DependencyProperty.Register(
+                nameof(ItemHeight),
+                typeof(double),
                 typeof(ColumnFlowPanel),
-                new FrameworkPropertyMetadata(1, FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange));
+                new FrameworkPropertyMetadata(
+                    double.NaN,
+                    FrameworkPropertyMetadataOptions.AffectsMeasure | FrameworkPropertyMetadataOptions.AffectsArrange
+                    ),
+                value =>
+                {
+                    double height = (double)value;
+                    return double.IsNaN(height) ||
+                          (!double.IsInfinity(height) && height > 0);
+                }
+                );
+
 
         protected override Size MeasureOverride(Size availableSize)
         {
-            int columns = GetColumns(this);
-            if (columns <= 0) columns = 1;
+            int count = InternalChildren.Count;
+            if (count == 0) return new Size(0, 0);
 
-            int itemCount = InternalChildren.Count;
-            int rows = itemCount > 0 ? (int)Math.Ceiling((double)itemCount / columns) : 0;
+            int columns = Math.Max(1, GetColumns(this));
+            int rows = (count + columns - 1) / columns;
 
-            double itemWidth = availableSize.Width / columns;
+            double itemWidth = double.IsInfinity(availableSize.Width)
+                ? double.PositiveInfinity
+                : availableSize.Width / columns;
+
+            double fixedHeight = ItemHeight;
+            bool hasFixedHeight = !double.IsNaN(fixedHeight);
+
+            Size constraint = new(
+                itemWidth,
+                hasFixedHeight ? fixedHeight : double.PositiveInfinity
+                );
+
+            double maxDesiredHeight = 0;
+            double maxDesiredWidth = 0;
 
             foreach (UIElement child in InternalChildren)
             {
-                child.Measure(new Size(itemWidth, double.PositiveInfinity));
+                child.Measure(constraint);
+
+                maxDesiredWidth = Math.Max(maxDesiredWidth, child.DesiredSize.Width);
+                maxDesiredHeight = Math.Max(maxDesiredHeight, child.DesiredSize.Height);
             }
 
-            double maxWidth = 0;
-            double maxHeight = 0;
+            double rowHeight = hasFixedHeight ? fixedHeight : maxDesiredHeight;
+            double desiredWidth = double.IsInfinity(availableSize.Width) ? maxDesiredWidth * columns : availableSize.Width;
 
-            foreach (UIElement child in InternalChildren)
-            {
-                maxWidth = Math.Max(maxWidth, child.DesiredSize.Width);
-                maxHeight = Math.Max(maxHeight, child.DesiredSize.Height);
-            }
+            double desiredHeight = rowHeight * rows;
 
-            double totalWidth = maxWidth * columns;
-            double totalHeight = maxHeight * rows;
-
-            return new Size(
-                double.IsInfinity(availableSize.Width) ? totalWidth : availableSize.Width,
-                double.IsInfinity(availableSize.Height) ? totalHeight : availableSize.Height
-            );
+            return new Size(desiredWidth, desiredHeight);
         }
 
         protected override Size ArrangeOverride(Size finalSize)
         {
-            int columns = GetColumns(this);
-            if (columns <= 0) columns = 1;
+            int count = InternalChildren.Count;
 
-            int itemCount = InternalChildren.Count;
-            int rows = itemCount > 0 ? (int)Math.Ceiling((double)itemCount / columns) : 0;
+            if (count == 0) return finalSize;
 
-            if (rows == 0) return finalSize;
+            int columns = Math.Max(1, GetColumns(this));
+            int rows = (count + columns - 1) / columns;
 
             double itemWidth = finalSize.Width / columns;
-            double itemHeight = finalSize.Height / rows;
 
-            for (int index = 0; index < InternalChildren.Count; index++)
+            double itemHeight = !double.IsNaN(ItemHeight) ? ItemHeight : finalSize.Height / rows;
+
+            for (int index = 0; index < count; index++)
             {
+                // columns top to bottom, left to right
                 int row = index % rows;
-                int col = index / rows;
+                int column = index / rows;
 
-                double x = col * itemWidth;
+                double x = column * itemWidth;
                 double y = row * itemHeight;
 
                 InternalChildren[index].Arrange(new Rect(x, y, itemWidth, itemHeight));

@@ -38,7 +38,6 @@ namespace MusicWrap.UI.Features.Library.Views
             if (DataContext is not LibraryEntryAlbumViewModel viewModel || e.NewSize.Width <= 0)
                 return;
 
-            //viewModel.LayoutColumns = CalculateColumns(Math.Max(1, (int)AlbumsViewport.ActualWidth));
             var columns = CalculateColumns(AlbumsViewport.ActualWidth);
             if (columns == viewModel.LayoutColumns)
                 return;

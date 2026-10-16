@@ -161,7 +161,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
 
             var columns = ClampColumns(LayoutColumns);
             var rowCount = (_sortedAlbums.Count + columns - 1) / columns;
-            DetachExpandedRow();
+            //DetachExpandedRow();
             while (GridRows.Count > rowCount)
             {
                 GridRows.RemoveAt(GridRows.Count - 1);
@@ -175,7 +175,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 if (r < GridRows.Count)
                 {
                     var row = GridRows[r];
-                    if (SameAlbums(row.Albums, slice)) continue;   // no-op: cero notificaciones
+                    if (SameAlbums(row.Albums, slice)) continue;
                     row.Albums = slice;
                 }
                 else
@@ -205,19 +205,23 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             if (_expandedAlbumId is not { } id) return;
 
-            var album = GridRows.SelectMany(r => r.Albums).FirstOrDefault(a => a.Id == id);
-            if (album is null)
+            var row = GridRows.FirstOrDefault(r=>r.Albums.Any(a => a.Id == id));
+            if(row is null)
             {
                 _expandedAlbumId = null;
+                DetachExpandedRow();
                 DisposeExpandedTracks();
                 return;
             }
 
-            var row = GridRows.First(r => r.Albums.Contains(album));
-            _expandedTracks ??= CreateTracksViewModel(row, album.Id);
-            row.ExpandedAlbumId = album.Id;
+            if (ReferenceEquals(row, _expandedRow)) return;
+
+            DetachExpandedRow();
+            _expandedTracks ??= CreateTracksViewModel(row, id);
+            row.ExpandedAlbumId = id;
             row.TracksViewModel = _expandedTracks;
             _expandedRow = row;
+
         }
 
         private void DisposeExpandedTracks()

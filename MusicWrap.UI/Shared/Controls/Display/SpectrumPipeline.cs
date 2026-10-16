@@ -12,26 +12,30 @@ namespace MusicWrap.UI.Controls
         public float NyquistBias { get; set; } = 0.98f;    // % de Nyquist as ceiling
 
         // ---- Stage: Dynamic range (dB) ----
-        public float NoiseFloorDb { get; set; } = -65f;
-        public float CeilingDb { get; set; } = -0f;
+        public float NoiseFloorDb { get; set; } = -70f;
+        public float CeilingDb { get; set; } = 0f;
 
         // ---- Stage: Noise gate ----
         public float NoiseGateNorm { get; set; } = 0.2f;   //  0..1 (0 = off) 
 
         // ---- Stage: boosting ----
         public float BassBoost { get; set; } = .95f;
-        public float MidBoost { get; set; } = 1.2f;
-        public float TrebleBoost { get; set; } = 1.65f;
+        public float MidBoost { get; set; } = 1.1f;
+        public float TrebleBoost { get; set; } = 1.15f;
         public float BassMaxHz { get; set; } = 200f;      // bass | mid boundary
         public float TrebleMinHz { get; set; } = 4000f;
-        public float ZoneBlendOctaves { get; set; } = 0.5f; // widht of the crossfade; 0 = sharp
+        public float ZoneBlendOctaves { get; set; } = 0.8f; // widht of the crossfade; 0 = sharp
 
         // ---- Stage: Smoothing ----
-        public float SmoothingAlpha { get; set; } = 0.8f;  // EMA (0 = ignore new , 1 = no smoothing)
+        public float SmoothingAlpha { get; set; } = 0.9f;  // EMA (0 = ignore new , 1 = no smoothing)
         public float ChangeThreshold { get; set; } = 0.01f;// dead zone 0..1 (0 = off)
 
         // ---- Stage: Gamma and Contrast ----
-        public float ContrastGamma { get; set; } = 1.5f;
+        // 0 - 1 - +
+        // 0 = flatten
+        // 1 = same
+        // + = decrease valleys
+        public float ContrastGamma { get; set; } = 1.9f;
     }
 
     public sealed class SpectrumPipeline

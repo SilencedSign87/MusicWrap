@@ -40,7 +40,7 @@ public sealed class CenteredSpectrumPipelineConfig
     public float BleedingGamma { get; set; } = 1.5f;
 
     // Dynamic range (dB)
-    public float NoiseFloorDb { get; set; } = -90f;
+    public float NoiseFloorDb { get; set; } = -70f;
     public float CeilingDb { get; set; } = 0f;
 
     // Noise gate
@@ -49,14 +49,14 @@ public sealed class CenteredSpectrumPipelineConfig
 
     // Smoothing
     // EMA (0 = ignore new , 1 = no smoothing)
-    public float SmoothingAlpha { get; set; } = 0.6f;
+    public float SmoothingAlpha { get; set; } = 0.9f;
     // dead zone 0..1 (0 = off)
     public float ChangeThreshold { get; set; } = 0.0f;
 
     // Per-zone boosts (applied after normalization, before collapse/bleed)
-    public float BassBoost { get; set; } = 1.0f;
+    public float BassBoost { get; set; } = .9f;
     public float MidBoost { get; set; } = 1.2f;
-    public float TrebleBoost { get; set; } = 1.4f;
+    public float TrebleBoost { get; set; } = 1.5f;
 
     /// <summary>
     /// How the whole central band (MinHz to CenterHz) is merged into the
@@ -130,7 +130,7 @@ public sealed class CenteredSpectrumPipeline
             BassBoost = 1f,
             MidBoost = 1f,
             TrebleBoost = 1f,
-            ContrastGamma = 1.5f,
+            ContrastGamma = 0.9f,
         };
 
         _leftPipeline = new SpectrumPipeline(_childConfig);

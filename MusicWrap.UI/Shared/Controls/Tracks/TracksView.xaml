@@ -305,8 +305,6 @@
                     </TextBlock>
                 </Grid>
 
-                <ContentPresenter Grid.Column="1" Content="{Binding}" ContentTemplate="{StaticResource TrackIndexSlotTemplate}" />
-
                 <Grid Grid.Column="2" HorizontalAlignment="Stretch" Margin="8,0" VerticalAlignment="Center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -337,7 +335,7 @@
                     <ColumnDefinition Width="60"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Style="{StaticResource TrackIndexNumberStyle}"/>
+                <ContentPresenter Grid.Column="0" Content="{Binding}" ContentTemplate="{StaticResource TrackIndexSlotTemplate}" />
 
                 <Grid Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
                     <controls:SquarePanel>
@@ -345,34 +343,8 @@
                         Source="{Binding CoverAssetPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=20}" 
                         Stretch="UniformToFill" 
                         RenderOptions.BitmapScalingMode="LowQuality"
-                        >
-                            <Image.Style>
-                                <Style TargetType="Image">
-                                    <Style.Triggers>
-                                        <DataTrigger Value="{x:Static Visibility.Visible}">
-                                            <DataTrigger.Binding>
-                                                <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
-                                                    <Binding ElementName="Root" Path="CurrentTrackId"/>
-                                                    <Binding Path="Id"/>
-                                                    <Binding ElementName="Root" Path="IsPlaybackActive"/>
-                                                </MultiBinding>
-                                            </DataTrigger.Binding>
-                                            <Setter Property="Opacity" Value="0.1"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Image.Style>
-                        </Image>
+                        />
                     </controls:SquarePanel>
-                    <TextBlock Style="{StaticResource TrackPlayingCoverIconStyle}" IsHitTestVisible="False">
-                        <TextBlock.Visibility>
-                            <MultiBinding Converter="{StaticResource TrackPlayingToVisibilityConverter}">
-                                <Binding ElementName="Root" Path="CurrentTrackId"/>
-                                <Binding Path="Id"/>
-                                <Binding ElementName="Root" Path="IsPlaybackActive"/>
-                            </MultiBinding>
-                        </TextBlock.Visibility>
-                    </TextBlock>
                 </Grid>
 
                 <TextBlock Grid.Column="2" Text="{Binding Title}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>

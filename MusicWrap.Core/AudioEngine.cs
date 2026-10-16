@@ -49,6 +49,8 @@ namespace MusicWrap.Core
         // FFT buffers for spectrum analysis
         private const int _spectrumFftSize = 8192;
         private float[] _spectrumMagnitudes = Array.Empty<float>();
+        private const double WaveformSampleWindowSeconds = 0.020;
+
 
         private static string GetNativeLibExtension()
         {
@@ -346,56 +348,58 @@ namespace MusicWrap.Core
 
         public static async Task<float[]> GetWaveFromDataAsync(string filePath, int dataPoints = 2000)
         {
+            if (dataPoints <= 0) dataPoints = 1;
+
             return await Task.Run(() =>
             {
-                int stream = Bass.CreateStream(filePath, 0, 0,
-                    BassFlags.Decode | BassFlags.Float | BassFlags.Prescan);
+                int stream = Bass.CreateStream(filePath, 0, 0, BassFlags.Decode | BassFlags.Float);
+
                 if (stream == 0)
-                    return Array.Empty<float>();
+                    return [];
 
                 try
                 {
                     long lengthBytes = Bass.ChannelGetLength(stream);
-                    if (lengthBytes <= 0) return Array.Empty<float>();
+                    if (lengthBytes <= 0) return [];
 
-                    long bytesPerChunk = lengthBytes / dataPoints;
-                    if (bytesPerChunk <= 0) bytesPerChunk = 4;
+                    long segmentBytes = Math.Max(lengthBytes / dataPoints, 4);
 
-                    int floatsPerChunk = (int)(bytesPerChunk / 4);
-                    float[] buffer = new float[floatsPerChunk];
+                    long windowBytes = Math.Clamp(
+                        Bass.ChannelSeconds2Bytes(stream, WaveformSampleWindowSeconds),
+                        4,
+                        segmentBytes
+                        );
+
+                    int floatsPerWindow = (int)(windowBytes / 4);
+                    float[] buffer = new float[floatsPerWindow];
                     float[] waveform = new float[dataPoints];
+
+                    long maxSeek = Math.Max(lengthBytes - windowBytes, 0);
 
                     for (int i = 0; i < dataPoints; i++)
                     {
-                        int bytesRead = Bass.ChannelGetData(stream, buffer, (int)bytesPerChunk);
-                        if (bytesRead <= 0) break;
+                        long pos = (long)((i + 0.5) * lengthBytes / dataPoints);
+
+                        pos = Math.Clamp(pos, 0, maxSeek);
+
+                        if (!Bass.ChannelSetPosition(stream, pos, PositionFlags.Decode))
+                            return ReadSequentialWaveform(stream, lengthBytes, dataPoints); // fallback
+
+                        int bytesRead = Bass.ChannelGetData(stream, buffer, (int)windowBytes);
+
+                        if (bytesRead <= 0) continue;
 
                         int floatsRead = bytesRead / 4;
-                        if (floatsRead <= 0) break;
-
                         double sumSq = 0;
                         for (int j = 0; j < floatsRead; j++)
                             sumSq += buffer[j] * buffer[j];
 
-                        waveform[i] = (float)Math.Sqrt(sumSq / floatsRead);
+                        waveform[i] = floatsRead > 0
+                            ? (float)Math.Sqrt(sumSq / floatsRead)
+                            : 0f;
                     }
 
-                    var nonZero = waveform.Where(v => v > 0).OrderBy(v => v).ToArray();
-                    float refLevel = nonZero.Length > 0
-                        ? nonZero[(int)Math.Clamp(nonZero.Length * 0.98, 0, nonZero.Length - 1)]
-                        : 0f;
-
-                    if (refLevel <= 1e-6f)
-                        refLevel = waveform.Max();
-
-                    if (refLevel > 0f)
-                    {
-                        for (int i = 0; i < waveform.Length; i++)
-                        {
-                            float v = Math.Clamp(waveform[i] / refLevel, 0f, 1f);
-                            waveform[i] = Math.Clamp(MathF.Pow(v, 0.85f) * 0.9f, 0f, 1f);
-                        }
-                    }
+                    NormalizeWaveform(waveform);
 
                     return waveform;
                 }
@@ -407,6 +411,55 @@ namespace MusicWrap.Core
             });
         }
 
+        private static float[] ReadSequentialWaveform(int stream, long lengthBytes, int dataPoints)
+        {
+            Bass.ChannelSetPosition(stream, 0, PositionFlags.Decode);
+
+            long bytesPerChunk = lengthBytes / dataPoints;
+            if (bytesPerChunk <= 0) bytesPerChunk = 4;
+
+            int floatsPerChunk = (int)(bytesPerChunk / 4);
+            float[] buffer = new float[floatsPerChunk];
+            float[] waveform = new float[dataPoints];
+
+            for (int i = 0; i < dataPoints; i++)
+            {
+                int bytesRead = Bass.ChannelGetData(stream, buffer, (int)bytesPerChunk);
+                if (bytesRead <= 0) break;
+
+                int floatsRead = bytesRead / 4;
+                if (floatsRead <= 0) break;
+
+                double sumSq = 0;
+                for (int j = 0; j < floatsRead; j++)
+                    sumSq += buffer[j] * buffer[j];
+
+                waveform[i] = (float)Math.Sqrt(sumSq / floatsRead);
+            }
+
+            NormalizeWaveform(waveform);
+            return waveform;
+        }
+
+        private static void NormalizeWaveform(float[] waveform)
+        {
+            var nonZero = waveform.Where(v => v > 0).OrderBy(v => v).ToArray();
+            float refLevel = nonZero.Length > 0
+                ? nonZero[(int)Math.Clamp(nonZero.Length * 0.98, 0, nonZero.Length - 1)]
+                : 0f;
+
+            if (refLevel <= 1e-6f)
+                refLevel = waveform.Max();
+
+            if (refLevel > 0f)
+            {
+                for (int i = 0; i < waveform.Length; i++)
+                {
+                    float v = Math.Clamp(waveform[i] / refLevel, 0f, 1f);
+                    waveform[i] = Math.Clamp(MathF.Pow(v, 0.85f) * 0.9f, 0f, 1f);
+                }
+            }
+        }
         #region PLAYBACK
 
         public bool Play(int stream, bool restart = false)
