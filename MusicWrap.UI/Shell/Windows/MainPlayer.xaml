@@ -17,7 +17,7 @@
              d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
              >
     <UserControl.CommandBindings>
-        <CommandBinding  Command="Find" Executed="CommandBinding_Executed"/>
+        <CommandBinding  Command="Find" Executed="CommandBinding_Search"/>
     </UserControl.CommandBindings>
     <!--Window-->
     <Border

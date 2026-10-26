@@ -132,7 +132,39 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                     <Grid Grid.Column="1">
-                       
+                        <contros:AppMenu
+                            Padding="0"
+                            >
+                            <contros:AppMenuItem
+                               Icon="{ex:Icon Glyph=E8CB}"
+                                >
+                                <contros:AppMenuItem Header="Year"
+                                    IsCheckable="True"
+                                    IsChecked="{Binding Workspace.IsSortByYear, Mode=OneWay}"
+                                    Command="{Binding Workspace.SortTracksByYearCommand}"/>
+                                <contros:AppMenuItem Header="Title"
+                                    IsCheckable="True"
+                                    IsChecked="{Binding Workspace.IsSortByTitle, Mode=OneWay}"
+                                    Command="{Binding Workspace.SortTracksByTitleCommand}"/>
+                                <contros:AppMenuItem Header="Duration"
+                                    IsCheckable="True"
+                                    IsChecked="{Binding Workspace.IsSortByDuration, Mode=OneWay}"
+                                    Command="{Binding Workspace.SortTracksByDurationCommand}"/>
+                                <contros:AppMenuItem Header="Artist"
+                                    IsCheckable="True"
+                                    IsChecked="{Binding Workspace.IsSortByArtistName, Mode=OneWay}"
+                                    Command="{Binding Workspace.SortTracksByArtistNameCommand}"/>
+                                <Separator/>
+                                <contros:AppMenuItem Header="Ascending"
+                                    IsCheckable="True"
+                                    IsChecked="{Binding Workspace.IsSortAscending, Mode=OneWay}"
+                                    Command="{Binding Workspace.SetSortAscendingCommand}"/>
+                                <contros:AppMenuItem Header="Descending"
+                                    IsCheckable="True"
+                                    IsChecked="{Binding Workspace.IsSortDescending, Mode=OneWay}"
+                                    Command="{Binding Workspace.SetSortDescendingCommand}"/>
+                            </contros:AppMenuItem>
+                        </contros:AppMenu>
                     </Grid>
                 </Grid>
             </Border>

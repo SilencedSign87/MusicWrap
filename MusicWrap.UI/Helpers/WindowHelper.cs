@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
+using System.Windows.Input;
 
 namespace MusicWrap.UI.Helpers
 {
@@ -28,6 +29,15 @@ namespace MusicWrap.UI.Helpers
                 child.Show();
                 return null;
             }
+        }
+
+        public static bool IsTextInputFocused()
+        {
+            var focusedElement = Keyboard.FocusedElement;
+            return focusedElement is System.Windows.Controls.TextBox ||
+                   focusedElement is System.Windows.Controls.PasswordBox ||
+                   focusedElement is System.Windows.Controls.RichTextBox ||
+                   focusedElement is System.Windows.Controls.Primitives.TextBoxBase;
         }
     }
 }

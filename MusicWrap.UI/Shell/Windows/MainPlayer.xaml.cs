@@ -128,10 +128,9 @@ namespace MusicWrap.UI.Shell.Windows
             _ => _cachedLibraryPage ??= _serviceProvider.GetRequiredService<LibraryPage>()
         };
 
-        private void CommandBinding_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        private void CommandBinding_Search(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
             SearchInput.FocusInput();
-
         }
     }
 }

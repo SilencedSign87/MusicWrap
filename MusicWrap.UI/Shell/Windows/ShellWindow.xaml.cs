@@ -195,21 +195,21 @@ namespace MusicWrap.UI.Shell.Windows
                     e.Handled = true;
                     return;
                 case Key.K:
-                    if (!IsTextInputFocused())
+                    if (!WindowHelper.IsTextInputFocused())
                     {
                         _musicPlayerService.TogglePlayPause();
                         e.Handled = true;
                     }
                     break;
                 case Key.L:
-                    if (!IsTextInputFocused())
+                    if (!WindowHelper.IsTextInputFocused())
                     {
                         _musicPlayerService.Next();
                         e.Handled = true;
                     }
                     break;
                 case Key.J:
-                    if (!IsTextInputFocused())
+                    if (!WindowHelper.IsTextInputFocused())
                     {
                         _musicPlayerService.Previous();
                         e.Handled = true;
@@ -247,14 +247,6 @@ namespace MusicWrap.UI.Shell.Windows
             Closing -= ShellWindow_Closing;
             Closed -= ShellWindow_Closed;
             KeyDown -= ShellWindow_KeyDown;
-        }
-        private static bool IsTextInputFocused()
-        {
-            var focusedElement = Keyboard.FocusedElement;
-            return focusedElement is System.Windows.Controls.TextBox ||
-                   focusedElement is System.Windows.Controls.PasswordBox ||
-                   focusedElement is System.Windows.Controls.RichTextBox ||
-                   focusedElement is System.Windows.Controls.Primitives.TextBoxBase;
         }
         #endregion
 

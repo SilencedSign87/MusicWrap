@@ -59,7 +59,7 @@
             </ListBox.ItemContainerStyle>
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Grid Margin="0,0,0,16" HorizontalAlignment="Stretch">
+                    <Grid Margin="4" HorizontalAlignment="Stretch">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -111,8 +111,8 @@
                         <Border Grid.Row="1"
                                 x:Name="ExpandedAlbumBorder"
                                 Visibility="{Binding ExpandedAlbumId, Converter={StaticResource NullToCollapseConverter}}"
-                                Margin="8,0"
-                                CornerRadius="2"
+                                Margin="6"
+                                CornerRadius="4"
                                 HorizontalAlignment="Stretch"
                                 >
                             <Border.Background>

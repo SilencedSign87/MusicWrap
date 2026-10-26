@@ -23,7 +23,7 @@
         ToolTip="{Binding Title}"
         BorderThickness="0"
         CornerRadius="4"
-        Margin="4"
+        Margin="0"
         Padding="0"
         >
         <Grid>
@@ -34,16 +34,20 @@
 
             <!-- Album Cover -->
             <controls:SquarePanel Grid.Row="0">
-                <Image
-                    Source="{Binding CoverImage}"
-                    Stretch="Uniform"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    />
+                <Border CornerRadius="4">
+                    <Border.Background>
+                        <ImageBrush 
+                            ImageSource="{Binding CoverImage}"
+                            Stretch="Uniform"
+                            AlignmentX="Center"
+                            AlignmentY="Center"
+                            />
+                    </Border.Background>
+                </Border>
             </controls:SquarePanel>
             <!-- Album Info -->
             <Border Grid.Row="1" 
-                    Padding="8,4"
+                    Padding="2,4"
                     Background="Transparent">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -55,15 +59,16 @@
                                FontSize="12" 
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
-                               TextAlignment="Center"
+                               TextAlignment="Left"
                                TextTrimming="CharacterEllipsis"
+                               Margin="0,0,0,2"
                                TextWrapping="NoWrap"/>
                     <TextBlock Grid.Row="1"
                                FontSize="11" 
-                               TextAlignment="Center"
+                               TextAlignment="Left"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="{Binding Year}"
-                               TextTrimming="CharacterEllipsis"
+                               Text="{Binding ArtistNames}"
+                               TextTrimming="CharacterEllipsis" 
                                TextWrapping="NoWrap"/>
                 </Grid>
             </Border>
