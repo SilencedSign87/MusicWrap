@@ -64,7 +64,10 @@
         <Grid Grid.Row="2" x:Name="ContentContainer">
         </Grid>
         <Border Grid.Row="3"
-                Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource StrokeDivider}"
+                >
             <controls:SpectrumVisualizerControl 
                 Height="60"
                 BarCount="64"

@@ -174,7 +174,7 @@
                 <Separator Margin="0,2"/>
 
                 <!-- Actions -->
-                <StackPanel Orientation="Horizontal" Margin="8,0">
+                <StackPanel Orientation="Horizontal" Margin="8,0,8,2">
                     <controls:AppButton Icon="&#xE70F;" Text="Edit information"
                                     Style="{StaticResource DefaultButton}"
                                     Command="{Binding EditTrackInfoCommand}"/>
