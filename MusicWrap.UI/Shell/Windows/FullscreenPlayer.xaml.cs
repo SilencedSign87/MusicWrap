@@ -2,6 +2,9 @@
 using MusicWrap.UI.Features.Lyrics.View;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Shell.ViewModel;
+using MusicWrap.UI.ViewModels;
+using System.ComponentModel;
+using System.Runtime.Intrinsics.Arm;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -21,6 +24,8 @@ namespace MusicWrap.UI.Shell.Windows
         private readonly TranslateTransform _panelSlide = new();
         private UIElement? _openPanelChild;
 
+        private double backdropRPM = 1.2;
+
 
         public FullScreenWindow(FullscreenWindowViewModel viewmodel, QueueListPage queueListPage)
         {
@@ -29,7 +34,7 @@ namespace MusicWrap.UI.Shell.Windows
             PanelContainer.RenderTransform = _panelSlide;
 
             QueueListPage = queueListPage;
-            QueueListPage.Margin = new Thickness(0,52,0,36);
+            QueueListPage.Margin = new Thickness(0, 52, 0, 36);
             LyricsView = new LyricsView
             {
                 FontSize = 36,
@@ -216,10 +221,123 @@ namespace MusicWrap.UI.Shell.Windows
 
         private void RootFullScreenWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            if (DataContext is FullscreenWindowViewModel vm)
+            {
+                vm.PlayerViewModel.PropertyChanged -= OnPlayerViewModelPropertyChanged;
+                vm.PlayerViewModel.PropertyChanged += OnPlayerViewModelPropertyChanged;
+            }
+
             ApplyPanelState(animate: false);
             ApplyProgress();
+            RandomizeBackdrop();
+        }
+        private void RootFullScreenWindow_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is FullscreenWindowViewModel vm)
+            {
+                vm.PlayerViewModel.PropertyChanged -= OnPlayerViewModelPropertyChanged;
+            }
+
+            BackdropRotate.BeginAnimation(RotateTransform.AngleProperty, null);
+        }
+        private void OnPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(PlayerViewModel.CurrentTrackImagePath)) return;
+            if (DataContext is not FullscreenWindowViewModel vm) return;
+            if (string.IsNullOrEmpty(vm.PlayerViewModel.CurrentTrackImagePath)) return;
+
+            RandomizeBackdrop();
+        }
+
+        private void RandomizeBackdrop()
+        {
+            double viewW = BackdropRoot.ActualWidth;
+            double viewH = BackdropRoot.ActualHeight;
+            double imgW = BackdropImage.ActualWidth;
+            double imgH = BackdropImage.ActualHeight;
+            if (viewW <= 0 || viewH <= 0 || imgW <= 0 || imgH <= 0) return;
+
+            // Visible zone
+            double visibleLeft = -BackdropImage.Margin.Left;
+            double visibleTop = -BackdropImage.Margin.Top;
+
+            // random image UV
+            double u = 0.35 + Random.Shared.NextDouble() * 0.30; // 0.35..0.65
+            double v = 0.35 + Random.Shared.NextDouble() * 0.30;
+            var pImg = new Point(visibleLeft + u * viewW, visibleTop + v * viewH);
+
+            // random window UV
+            double su = 0.25 + Random.Shared.NextDouble() * 0.50; // 0.25..0.75
+            double sv = 0.25 + Random.Shared.NextDouble() * 0.50;
+            var pScr = new Point(su * viewW, sv * viewH);
+
+            // Random angle
+            double currentAngle = BackdropRotate.Angle;
+            double direction = Math.Sign(backdropRPM);
+
+            // Minimun Zoom
+            double minZoom = MinZoomForFullRotation(pImg, pScr, 128, imgW, imgH, viewW, viewH);
+
+            double zoom = Math.Max(minZoom, 1.3 + Random.Shared.NextDouble() * 0.5);
+
+            BackdropScale.CenterX = pImg.X;
+            BackdropScale.CenterY = pImg.Y;
+            BackdropScale.ScaleX = zoom;
+            BackdropScale.ScaleY = zoom;
+
+            BackdropRotate.CenterX = pImg.X;
+            BackdropRotate.CenterY = pImg.Y;
+
+            BackdropTranslate.X = pScr.X - pImg.X - BackdropImage.Margin.Left;
+            BackdropTranslate.Y = pScr.Y - pImg.Y - BackdropImage.Margin.Top;
+
+            var duration = TimeSpan.FromSeconds(30 + Random.Shared.NextDouble() * 30);
+            var animation = new DoubleAnimation
+            {
+                From = currentAngle,
+                To = currentAngle + 360.0 * direction,
+                Duration = TimeSpan.FromSeconds(60.0/Math.Abs(backdropRPM)),
+                RepeatBehavior = RepeatBehavior.Forever,
+            };
+
+            BackdropRotate.BeginAnimation(
+                RotateTransform.AngleProperty, animation, HandoffBehavior.SnapshotAndReplace);
+        }
+
+        private static double MinZoomForFullRotation(
+            Point pImg, Point pScr, double blurFade,
+            double imgW, double imgH, double viewW, double viewH)
+        {
+            double maxCornerDistance = 0;
+            var corners = new[]
+            {
+        new Point(0, 0),
+        new Point(viewW, 0),
+        new Point(0, viewH),
+        new Point(viewW, viewH)
+    };
+
+            foreach (var corner in corners)
+            {
+                double dx = corner.X - pScr.X;
+                double dy = corner.Y - pScr.Y;
+                maxCornerDistance = Math.Max(maxCornerDistance, Math.Sqrt(dx * dx + dy * dy));
+            }
+
+            double edgeDistance = Math.Min(
+                Math.Min(pImg.X, imgW - pImg.X),
+                Math.Min(pImg.Y, imgH - pImg.Y)) - blurFade;
+
+            if (edgeDistance <= 0) return double.PositiveInfinity;
+
+            return maxCornerDistance / edgeDistance;
         }
 
         private void LyricsControl_LyricsStateChanged(object? sender, LyricsStateChangedEventArgs e) => ApplyPanelState(animate: true);
+
+        private void VolumeButton_Click(object sender, RoutedEventArgs e)
+        {
+            VolumePopup.IsOpen = true;
+        }
     }
 }

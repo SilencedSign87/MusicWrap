@@ -33,6 +33,7 @@
             <converters:EnumComparisonConverter x:Key="EnumComparisonConverter"/>
             <converters:NullToDoNothingConverter x:Key="NullToDoNothingConverter"/>
             <converters:EqualityConverter x:Key="EqualityConverter"/>
+            <converters:TextCaseConverter x:Key="TextCaseConverter"/>
 
             <tb:TaskbarIcon
                 x:Key="TrayIcon"
