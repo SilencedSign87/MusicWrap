@@ -34,7 +34,7 @@
 
             <!-- Album Cover -->
             <controls:SquarePanel Grid.Row="0">
-                <Border CornerRadius="4">
+                <Border CornerRadius="4" Grid.Column="0" Grid.Row="0">
                     <Border.Background>
                         <ImageBrush 
                             ImageSource="{Binding CoverImage}"
@@ -67,9 +67,12 @@
                                FontSize="11" 
                                TextAlignment="Left"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="{Binding ArtistNames}"
                                TextTrimming="CharacterEllipsis" 
-                               TextWrapping="NoWrap"/>
+                               TextWrapping="NoWrap">
+                        <Run Text="{Binding Year}" />
+                        <Run Text="·"/>
+                        <Run Text="{Binding ArtistNames}" />
+                    </TextBlock>
                 </Grid>
             </Border>
         </Grid>

@@ -48,7 +48,6 @@
                         <nav:ShellTabItem Icon="&#xe8f1;" Text="Library" TextSize="14" IconSize="14" Spacing="8" TabIndex="0" ToolTip="Library" FontWeight="Regular"/>
                         <nav:ShellTabItem Icon="&#xe90b;" Text="Playlists" TextSize="14" IconSize="14" Spacing="8" TabIndex="1" ToolTip="Playlists" FontWeight="Regular"/>
                         <nav:ShellTabItem Icon="&#xECAA;" Text="Services" TextSize="14" IconSize="14" Spacing="8" TabIndex="2" ToolTip="Services" FontWeight="Regular"/>
-                        <nav:ShellTabItem Icon="&#xF61F;" Text="Now Playing" TextSize="14" IconSize="14" Spacing="8" TabIndex="3" ToolTip="Now Playing" FontWeight="Normal"/>
                     </nav:ShellTabControl>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Column="1" ClipToBounds="True" WindowChrome.IsHitTestVisibleInChrome="True">

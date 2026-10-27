@@ -24,7 +24,7 @@ namespace MusicWrap.UI.Shell.Windows
         private readonly TranslateTransform _panelSlide = new();
         private UIElement? _openPanelChild;
 
-        private double backdropRPM = 1.2;
+        private double backdropRPM = 0.7;
 
 
         public FullScreenWindow(FullscreenWindowViewModel viewmodel, QueueListPage queueListPage)
@@ -230,6 +230,7 @@ namespace MusicWrap.UI.Shell.Windows
             ApplyPanelState(animate: false);
             ApplyProgress();
             RandomizeBackdrop();
+            ScaleUIElements();
         }
         private void RootFullScreenWindow_Unloaded(object sender, RoutedEventArgs e)
         {
@@ -249,88 +250,54 @@ namespace MusicWrap.UI.Shell.Windows
             RandomizeBackdrop();
         }
 
+        private void ScaleUIElements()
+        {
+            var dpi = VisualTreeHelper.GetDpi(this);
+
+            ArtworkBorder.Height = 640 / dpi.DpiScaleY;
+            ArtworkBorder.Width = 640 / dpi.DpiScaleX;
+
+            SpectrumVisualizer.Height = 150 / dpi.DpiScaleY;
+        }
+
         private void RandomizeBackdrop()
         {
-            double viewW = BackdropRoot.ActualWidth;
-            double viewH = BackdropRoot.ActualHeight;
-            double imgW = BackdropImage.ActualWidth;
-            double imgH = BackdropImage.ActualHeight;
-            if (viewW <= 0 || viewH <= 0 || imgW <= 0 || imgH <= 0) return;
+            double w = BackdropImage.ActualWidth;
+            double h = BackdropImage.ActualHeight;
+            if (w <= 0 || h <= 0) return;
 
-            // Visible zone
-            double visibleLeft = -BackdropImage.Margin.Left;
-            double visibleTop = -BackdropImage.Margin.Top;
+            double angle = Random.Shared.NextDouble() * 360.0;
+            double rad = angle * Math.PI / 180.0;
+            double cos = Math.Abs(Math.Cos(rad));
+            double sin = Math.Abs(Math.Sin(rad));
 
-            // random image UV
-            double u = 0.35 + Random.Shared.NextDouble() * 0.30; // 0.35..0.65
-            double v = 0.35 + Random.Shared.NextDouble() * 0.30;
-            var pImg = new Point(visibleLeft + u * viewW, visibleTop + v * viewH);
+            double cover = Math.Max(cos + (h / w) * sin, cos + (w / h) * sin);
+            double zoom = Math.Max(3.0 + Random.Shared.NextDouble() * 3.0, cover);
 
-            // random window UV
-            double su = 0.25 + Random.Shared.NextDouble() * 0.50; // 0.25..0.75
-            double sv = 0.25 + Random.Shared.NextDouble() * 0.50;
-            var pScr = new Point(su * viewW, sv * viewH);
+            double cx = w * 0.5, cy = h * 0.5;
 
-            // Random angle
-            double currentAngle = BackdropRotate.Angle;
-            double direction = Math.Sign(backdropRPM);
-
-            // Minimun Zoom
-            double minZoom = MinZoomForFullRotation(pImg, pScr, 128, imgW, imgH, viewW, viewH);
-
-            double zoom = Math.Max(minZoom, 1.3 + Random.Shared.NextDouble() * 0.5);
-
-            BackdropScale.CenterX = pImg.X;
-            BackdropScale.CenterY = pImg.Y;
+            BackdropScale.CenterX = cx;
+            BackdropScale.CenterY = cy;
             BackdropScale.ScaleX = zoom;
             BackdropScale.ScaleY = zoom;
 
-            BackdropRotate.CenterX = pImg.X;
-            BackdropRotate.CenterY = pImg.Y;
+            BackdropRotate.BeginAnimation(RotateTransform.AngleProperty, null);
+            BackdropRotate.CenterX = cx;
+            BackdropRotate.CenterY = cy;
+            BackdropRotate.Angle = angle;
 
-            BackdropTranslate.X = pScr.X - pImg.X - BackdropImage.Margin.Left;
-            BackdropTranslate.Y = pScr.Y - pImg.Y - BackdropImage.Margin.Top;
+            double vw = w * cos + h * sin;
+            double vh = w * sin + h * cos;
 
-            var duration = TimeSpan.FromSeconds(30 + Random.Shared.NextDouble() * 30);
-            var animation = new DoubleAnimation
-            {
-                From = currentAngle,
-                To = currentAngle + 360.0 * direction,
-                Duration = TimeSpan.FromSeconds(60.0/Math.Abs(backdropRPM)),
-                RepeatBehavior = RepeatBehavior.Forever,
-            };
+            double slackX = Math.Max(0, (w - vw / zoom) * 0.5);
+            double slackY = Math.Max(0, (h - vh / zoom) * 0.5);
 
-            BackdropRotate.BeginAnimation(
-                RotateTransform.AngleProperty, animation, HandoffBehavior.SnapshotAndReplace);
-        }
+            double dx = (Random.Shared.NextDouble() * 2 - 1) * slackX;
+            double dy = (Random.Shared.NextDouble() * 2 - 1) * slackY;
 
-        private static double MinZoomForFullRotation(
-            Point pImg, Point pScr, double blurFade,
-            double imgW, double imgH, double viewW, double viewH)
-        {
-            double maxCornerDistance = 0;
-            var corners = new[]
-            {
-        new Point(0, 0),
-        new Point(viewW, 0),
-        new Point(0, viewH),
-        new Point(viewW, viewH)
-    };
-
-            foreach (var corner in corners)
-            {
-                double dx = corner.X - pScr.X;
-                double dy = corner.Y - pScr.Y;
-                maxCornerDistance = Math.Max(maxCornerDistance, Math.Sqrt(dx * dx + dy * dy));
-            }
-
-            double edgeDistance = Math.Min(
-                Math.Min(pImg.X, imgW - pImg.X),
-                Math.Min(pImg.Y, imgH - pImg.Y)) - blurFade;
-
-            if (edgeDistance <= 0) return double.PositiveInfinity;
-
-            return maxCornerDistance / edgeDistance;
+            double cosA = Math.Cos(rad), sinA = Math.Sin(rad);
+            BackdropTranslate.X = -zoom * (dx * cosA - dy * sinA);
+            BackdropTranslate.Y = -zoom * (dx * sinA + dy * cosA);
         }
 
         private void LyricsControl_LyricsStateChanged(object? sender, LyricsStateChangedEventArgs e) => ApplyPanelState(animate: true);

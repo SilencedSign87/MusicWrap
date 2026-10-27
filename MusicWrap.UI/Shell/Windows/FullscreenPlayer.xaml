@@ -19,50 +19,79 @@
              d:Height="1080"
              >
     <UserControl.Resources>
-        <SolidColorBrush x:Key="HighligtColor" Color="{Binding NowPlayingViewModel.HighlightColorHex}" />
-        <SolidColorBrush x:Key="HighligtForegroundColor" Color="{Binding NowPlayingViewModel.HighlightForegroundHex}" />
-        <SolidColorBrush x:Key="DominantColor" Color="{Binding NowPlayingViewModel.DominantColorHex}" />
-        <SolidColorBrush x:Key="DominantForegroundColor" Color="{Binding NowPlayingViewModel.ForegroundColorHex}" />
-        <SolidColorBrush x:Key="BackdropTint" Color="#999999" Opacity="0.7"/>
+        <SolidColorBrush x:Key="BackdropTint" Color="#000000" Opacity="0.25"/>
         <SolidColorBrush x:Key="ControlForeground" Color="White" Opacity="0.8"/>
 
-        <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
+        <Style x:Key="PlayerButton" TargetType="Button">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Foreground" Value="{StaticResource ControlForeground}"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border 
+                            Height="{TemplateBinding Height}"
+                            Width="{TemplateBinding Width}"
+                            Background="{TemplateBinding Background}"
+                            Padding="0"
+                            Margin="0"
+                            CornerRadius="8"
+                            >
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#40ffffff" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#1affffff" />
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
     <!-- MainContent -->
-    <Grid x:Name="BackdropRoot" ClipToBounds="True" Background="{StaticResource DominantColor}">
+    <Grid x:Name="BackdropRoot" ClipToBounds="True">
 
-        <Image x:Name="BackdropImage"
-           Source="{Binding PlayerViewModel.CurrentTrackImagePath,
-                            Converter={StaticResource PathToImageConverter},
-                            ConverterParameter=large:360}"
-           Stretch="UniformToFill"
-           RenderOptions.BitmapScalingMode="Linear"
-           RenderTransformOrigin="0,0"
-           IsHitTestVisible="False"
-           Margin="-120">
-            <Image.Effect>
-                <BlurEffect Radius="128"
-                        KernelType="Gaussian"
-                        RenderingBias="Performance" />
-            </Image.Effect>
-            <Image.CacheMode>
-                <BitmapCache RenderAtScale="0.75" />
-            </Image.CacheMode>
-            <Image.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform x:Name="BackdropScale" ScaleX="1.3" ScaleY="1.3" />
-                    <RotateTransform x:Name="BackdropRotate" Angle="0" />
-                    <TranslateTransform x:Name="BackdropTranslate" X="0" Y="0" />
-                </TransformGroup>
-            </Image.RenderTransform>
-        </Image>
+        <Border
+            Margin="-384"
+            Background="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}"
+            IsHitTestVisible="False"
+            >
+            <Image x:Name="BackdropImage"
+                   Source="{Binding PlayerViewModel.CurrentTrackImagePath,
+                   Converter={StaticResource PathToImageConverter},
+                   ConverterParameter=large:360}"
+                   Stretch="UniformToFill"
+                    RenderOptions.BitmapScalingMode="HighQuality"
+                    RenderTransformOrigin="0,0"
+                    IsHitTestVisible="False">
+                <Image.CacheMode>
+                    <BitmapCache RenderAtScale="0.75" />
+                </Image.CacheMode>
+                <Image.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="BackdropScale" ScaleX="1.3" ScaleY="1.3" />
+                        <RotateTransform x:Name="BackdropRotate" Angle="0" />
+                        <TranslateTransform x:Name="BackdropTranslate" X="0" Y="0" />
+                    </TransformGroup>
+                </Image.RenderTransform>
+            </Image>
+            <Border.Effect>
+                <BlurEffect 
+                    x:Name="BackdropBlurEffect"
+                    Radius="512"
+                    KernelType="Gaussian"
+                    RenderingBias="Performance" />
+            </Border.Effect>
+        </Border>
 
         <Rectangle Fill="{StaticResource BackdropTint}"
                IsHitTestVisible="False">
@@ -85,35 +114,25 @@
                     Margin="16"
                     MaxWidth="700"
                     >
-                    <Border CornerRadius="8" Width="640" Height="640" Margin="0,0,0,28" SnapsToDevicePixels="True" BorderThickness="1" BorderBrush="{DynamicResource StrokeSurface}">
-                        <Border.Background>
-                            <ImageBrush
-                                ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:640}"
+                    <controls:SquarePanel x:Name="ArtworkBorder" Width="640" Height="640" SnapsToDevicePixels="True">
+                        <Image
+                            Source="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:700}"
                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                Stretch="Fill"
-                                AlignmentX="Center"
-                                AlignmentY="Center"
-                                />
-                        </Border.Background>
-                        <Border.Effect>
-                            <DropShadowEffect 
-                                BlurRadius="128"
-                                Opacity="0.2"
-                                />
-                        </Border.Effect>
-                    </Border>
+                                Stretch="Uniform"
+                            />
+                    </controls:SquarePanel>
                     <TextBlock 
                         Text="{Binding PlayerViewModel.CurrentTrackTitle}" 
                         TextAlignment="Center" 
-                        FontSize="18" 
-                        FontWeight="Bold" 
+                        FontSize="22" 
+                        FontWeight="SemiBold" 
                         TextWrapping="NoWrap"
                         MaxWidth="600"
-                        Margin="0,0,0,4"
+                        Margin="0,36,0,4"
                         />
                     <TextBlock 
                         TextAlignment="Center" 
-                        FontSize="18" 
+                        FontSize="20" 
                         FontWeight="SemiBold" 
                         TextWrapping="NoWrap"
                         Opacity="0.5"
@@ -147,8 +166,8 @@
                         </Grid>
                         <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,*" HorizontalAlignment="Stretch" Margin="0,8,0,0">
 
-                            <controls:AppMenu Grid.Column="0">
-                                <controls:AppMenuItem Icon="{ex:Icon Glyph=E712}">
+                            <controls:AppMenu Grid.Column="6"  HorizontalAlignment="Right">
+                                <controls:AppMenuItem Icon="{ex:Icon Glyph=E712, FontSize=14}" Height="40" Width="40">
                                     <controls:AppMenuItem Icon="{ex:Icon Glyph=&#xE90F;}" Header="Properties" Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"/>
                                     <controls:AppMenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
                                         <controls:AppMenuItem Header="Off" IsCheckable="True" 
@@ -240,39 +259,39 @@
                                 Style="{StaticResource PlayerButton}" 
                                 ToolTip="{Binding PlayerViewModel.ShuffleTooltip}"
                                 Command="{Binding PlayerViewModel.ToggleShuffleCommand}">
-                                <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.ShuffleIcon}" FontSize="12"/>
+                                <TextBlock FontFamily="Segoe Fluent Icons" Text="{Binding PlayerViewModel.ShuffleIcon}" FontSize="14"/>
                             </Button>
-                            <Grid Grid.Column="6">
-                                <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource PlayerButton}" Padding="0" ToolTip="Volume" HorizontalAlignment="Right">
+                            <Grid Grid.Column="0">
+                                <Button x:Name="VolumeButton" Click="VolumeButton_Click" Style="{StaticResource PlayerButton}" Padding="0" ToolTip="Volume" HorizontalAlignment="Left">
                                     <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE767;" FontSize="14"/>
                                 </Button>
                             </Grid>
                             <Popup
-          x:Name="VolumePopup"
-          PlacementTarget="{Binding ElementName=VolumeButton}"
-          Placement="Center"
-          PopupAnimation="None"
-          AllowsTransparency="True"
-          StaysOpen="False">
+                                x:Name="VolumePopup"
+                                PlacementTarget="{Binding ElementName=VolumeButton}"
+                                Placement="Center"
+                                PopupAnimation="None"
+                                AllowsTransparency="True"
+                                StaysOpen="False">
                                 <Border>
                                     <Border 
-                 Background="{DynamicResource BackgroundFloating}" 
-                 BorderBrush="{DynamicResource StrokeFloating}" 
-                 CornerRadius="8" 
-                 Margin="8,16"
-                 Padding="8,4"
-                 BorderThickness="1">
+                                        Background="{DynamicResource BackgroundFloating}" 
+                                        BorderBrush="{DynamicResource StrokeFloating}" 
+                                        CornerRadius="8" 
+                                        Margin="8,16"
+                                        Padding="8,4"
+                                        BorderThickness="1">
                                         <Border.Effect>
                                             <DropShadowEffect Color="#000000"
-                         BlurRadius="16"
-                         ShadowDepth="4"
-                         Direction="270"
-                         Opacity="0.5"/>
+                                                BlurRadius="16"
+                                                ShadowDepth="4"
+                                                Direction="270"
+                                                Opacity="0.5"/>
                                         </Border.Effect>
                                         <StackPanel>
                                             <controls:VolumeControl
-                         Width="150"
-                         Height="32"/>
+                                                Width="150"
+                                                Height="32"/>
                                         </StackPanel>
                                     </Border>
                                 </Border>
@@ -284,7 +303,7 @@
                 <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
                     <controls:SpectrumVisualizerControl
                         x:Name="SpectrumVisualizer"
-                        Height="175"
+                        Height="150"
                         BarCount="128"
                         Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding PreferredVisualizer}"
@@ -310,7 +329,7 @@
                 IconFontSize="20"
                 />
             </Grid>
-            
+
         </Grid>
     </Grid>
 

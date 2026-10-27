@@ -141,11 +141,21 @@
                         <Trigger Property="Role" Value="SubmenuHeader">
                             <Setter TargetName="Bd" Property="Margin" Value="4,2"/>
                         </Trigger>
-                        <Trigger Property="Header" Value="{x:Null}">
+                        <!--<Trigger Property="Header" Value="{x:Null}">
                             <Setter TargetName="IconHost" Property="Margin" Value="0"/>
                         </Trigger>
                         <Trigger Property="Header" Value="">
                             <Setter TargetName="IconHost" Property="Margin" Value="0"/>
+                        </Trigger>-->
+                         <Trigger Property="Header" Value="{x:Null}">
+                            <Setter TargetName="IconHost" Property="Margin" Value="0"/>
+                            <Setter TargetName="IconHost" Property="Grid.ColumnSpan" Value="3"/>
+                            <Setter TargetName="IconHost" Property="HorizontalAlignment" Value="Center"/>
+                        </Trigger>
+                        <Trigger Property="Header" Value="">
+                            <Setter TargetName="IconHost" Property="Margin" Value="0"/>
+                            <Setter TargetName="IconHost" Property="Grid.ColumnSpan" Value="3"/>
+                            <Setter TargetName="IconHost" Property="HorizontalAlignment" Value="Center"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

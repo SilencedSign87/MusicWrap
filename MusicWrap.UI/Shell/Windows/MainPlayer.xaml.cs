@@ -124,7 +124,6 @@ namespace MusicWrap.UI.Shell.Windows
         {
             1 => _serviceProvider.GetRequiredService<PlaylistPage>(),
             2 => _serviceProvider.GetRequiredService<ServicesPage>(),
-            3 => _serviceProvider.GetRequiredService<NowPlayingPage>(),
             _ => _cachedLibraryPage ??= _serviceProvider.GetRequiredService<LibraryPage>()
         };
 

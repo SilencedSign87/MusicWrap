@@ -1,4 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.UI.Controls;
+using MusicWrap.UI.Features.Lyrics.View;
+using MusicWrap.UI.Features.Playback.ViewModels;
 using MusicWrap.UI.Features.Playback.Views;
 using System;
 using System.Collections.Generic;
@@ -21,9 +24,11 @@ namespace MusicWrap.UI.Shell.Controls
     public partial class SidebarControl : UserControl
     {
         private new int TabIndex = 0;
+        private UIElement? cachedLyricsPage;
         public SidebarControl()
         {
             InitializeComponent();
+            DataContext = App.Services.GetRequiredService<NowPlayingViewModel>();
             LoadIndex(0);
         }
 
@@ -42,7 +47,7 @@ namespace MusicWrap.UI.Shell.Controls
         private void LoadIndex(int index)
         {
             var children = ContentContainer.Children;
-            
+
             foreach (var item in children)
             {
                 if (item is IDisposable disposable)
@@ -59,11 +64,28 @@ namespace MusicWrap.UI.Shell.Controls
                     ContentContainer.Children.Add(queuepage);
                     break;
                 case 1:
+                    cachedLyricsPage ??= BuildLyricsSection();
+                    ContentContainer.Children.Add(cachedLyricsPage!);
+                    break;
+                case 2:
                     var trackInfoPage = App.Services.GetRequiredService<TrackInformationPage>();
                     trackInfoPage.VerticalAlignment = VerticalAlignment.Stretch;
                     ContentContainer.Children.Add(trackInfoPage);
                     break;
             }
+        }
+
+        private UIElement BuildLyricsSection()
+        {
+            return new LyricsView
+            {
+                FontSize = 18,
+                AllowScroll = true,
+                AllowSeek = true,
+                ShowToolbar = true,
+                LyricsAligment = TextAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Stretch
+            };
         }
     }
 }

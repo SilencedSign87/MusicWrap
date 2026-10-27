@@ -253,4 +253,20 @@
         </Style.Triggers>
     </Style>
 
+    <Style x:Key="CircleButton" TargetType="Button">
+        <Setter Property="Background" Value="{DynamicResource BackgroundFloating}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border CornerRadius="1000" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" >
+                        <ContentPresenter/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+
+    </Style>
+
 </ResourceDictionary>

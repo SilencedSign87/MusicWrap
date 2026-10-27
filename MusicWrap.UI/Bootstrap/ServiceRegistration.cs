@@ -118,7 +118,6 @@ public static class ServiceRegistration
         services.AddTransient<LibraryPage>();
         services.AddTransient<PlaylistPage>();
         services.AddTransient<ServicesPage>();
-        services.AddTransient<NowPlayingPage>();
 
         services.AddTransient<YoutubeProviderPage>();
 

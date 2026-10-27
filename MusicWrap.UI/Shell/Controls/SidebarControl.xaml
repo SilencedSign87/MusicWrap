@@ -5,28 +5,73 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MusicWrap.UI.Shell.Controls"
              xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
+             xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+             xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              mc:Ignorable="d" 
              d:DesignHeight="800" d:DesignWidth="300"
              BorderThickness="1,0,0,0" BorderBrush="{DynamicResource StrokeDivider}"
+             
              >
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="4"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0">
             <Border Background="{DynamicResource BackgroundLayer}" CornerRadius="0">
-                <nav:ShellTabControl
+                <Grid ColumnDefinitions="*,Auto">
+                    <nav:ShellTabControl Grid.Column="0"
                     SelectionChanged="ShellTabControl_SelectionChanged"
                     VerticalAlignment="Bottom"
                     CompactWidthThreshold="0">
-                    <nav:ShellTabItem Icon="&#xE90B;" IconSize="20" Spacing="0" TabIndex="0" ToolTip="Queue"/>
-                    <nav:ShellTabItem Icon="&#xE93C;" IconSize="20" Spacing="0" TabIndex="1" ToolTip="Information"/>
-                </nav:ShellTabControl>
+                        <nav:ShellTabItem Icon="&#xE90B;" IconSize="20" Spacing="0" TabIndex="0" ToolTip="Queue"/>
+                        <nav:ShellTabItem Icon="&#xEC4F;" IconSize="20" Spacing="0" TabIndex="1" ToolTip="Lyrics"/>
+                        <nav:ShellTabItem Icon="&#xE93C;" IconSize="20" Spacing="0" TabIndex="2" ToolTip="Information"/>
+                    </nav:ShellTabControl>
+                    <controls:AppMenu Grid.Column="1"
+                                      Foreground="{DynamicResource TextPrimaryBrush}">
+                        <controls:AppMenuItem Icon="{ex:Icon Glyph=E712,FontSize=16}">
+                            <controls:AppMenuItem Icon="{ex:Icon Glyph=F61F,FontSize=16}"
+                                              Header="Visualizer">
+                                <controls:AppMenuItem Header="Hide" IsCheckable="True"
+                                Command="{Binding SetVisualizerCommand}" CommandParameter="None"
+                                IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}" />
+                                <Separator/>
+                                <controls:AppMenuItem Header="Line" IsCheckable="True"
+                                Command="{Binding SetVisualizerCommand}" CommandParameter="LineSpectrum"
+                                IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=LineSpectrum}" />
+                                <controls:AppMenuItem Header="Bars" IsCheckable="True"
+                                Command="{Binding SetVisualizerCommand}" CommandParameter="BarSpectrum"
+                                IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=BarSpectrum}" />
+                                <controls:AppMenuItem Header="Wave" IsCheckable="True"
+                                Command="{Binding SetVisualizerCommand}" CommandParameter="MirroredBarSpectrum"
+                                IsChecked="{Binding PreferredVisualizer, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=MirroredBarSpectrum}" />
+                                <Separator/>
+                                <controls:AppMenuItem Header="Spectrum" IsCheckable="True"
+                                Command="{Binding SetSpectrumTypeCommand}" CommandParameter="Normal"
+                                IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Normal}" />
+                                <controls:AppMenuItem Header="Centered" IsCheckable="True"
+                                Command="{Binding SetSpectrumTypeCommand}" CommandParameter="Centered"
+                                IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}" />
+                            </controls:AppMenuItem>
+                        </controls:AppMenuItem>
+                    </controls:AppMenu>
+                </Grid>
             </Border>
         </Grid>
         <Grid Grid.Row="2" x:Name="ContentContainer">
         </Grid>
+        <Border Grid.Row="3"
+                Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <controls:SpectrumVisualizerControl 
+                Height="60"
+                BarCount="64"
+                Opacity="0.5"
+                Foreground="{DynamicResource TextPrimaryBrush}"
+                Visualizer="{Binding PreferredVisualizer}"
+                SpectrumType="{Binding PreferredSpectrumType}" />
+        </Border>
     </Grid>
 </UserControl>

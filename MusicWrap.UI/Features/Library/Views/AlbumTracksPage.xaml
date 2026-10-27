@@ -38,7 +38,7 @@
                            VerticalAlignment="Center"
                            Opacity="0.7">
                     <Run Text="{Binding AlbumArtists}"/>
-                    <Run Text=" • "/>
+                    <Run Text=" · "/>
                     <Run Text="{Binding AlbumYear}"/>
                 </TextBlock>
                 <controls:AppButton
