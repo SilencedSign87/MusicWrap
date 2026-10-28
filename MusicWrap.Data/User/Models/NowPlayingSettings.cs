@@ -9,8 +9,8 @@ namespace MusicWrap.Data.User.Models
     public class NowPlayingSettings
     {
         [Key(0)] public bool ShowLyrics { get; set; } = false;
-        [Key(1)] public PreferredVisualizer PreferredVisualizer { get; set; } = PreferredVisualizer.LineSpectrum;
-        [Key(3)] public SpectrumType SpectrumType { get; set; } = SpectrumType.Normal;
+        [Key(1)] public PreferredVisualizer PreferredVisualizer { get; set; } = PreferredVisualizer.BarSpectrum;
+        [Key(3)] public SpectrumType SpectrumType { get; set; } = SpectrumType.Centered;
         [Key(2)] public bool BlurEffect { get; set; } = true;   
     }
 

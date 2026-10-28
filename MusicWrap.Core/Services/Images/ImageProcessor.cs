@@ -12,9 +12,12 @@ namespace MusicWrap.Core.Services.Images
         public const int SmallCoverSize = 64;
         public const int MediumCoverSize = 180;
         public const int LargeCoverSize = 360;
-        public const int BlurCoverSize = 1080;
+        public const int BlurCoverSize = 1440;
 
         private const int ColorSampleSize = 128;
+
+        private const float DominantColorFactor = 0.7f;
+        private const float ImageColorFactor = 1f - DominantColorFactor;
 
         public ColorExtractionResult ProcessPipeline(byte[] imageBytes, string fileName)
         {
@@ -104,8 +107,8 @@ namespace MusicWrap.Core.Services.Images
 
             var (baseR, baseG, baseB) = ParseHexColor(dominantColorHex);
 
-            float domFactor = 0.85f;
-            float imgFactor = 1f - domFactor;
+            float domFactor = DominantColorFactor;
+            float imgFactor = ImageColorFactor;
 
             double[] a =
             [
