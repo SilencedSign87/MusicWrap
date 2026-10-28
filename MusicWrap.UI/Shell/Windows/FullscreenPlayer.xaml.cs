@@ -4,11 +4,13 @@ using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Shell.ViewModel;
 using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.Intrinsics.Arm;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.Shell.Windows
 {
@@ -23,8 +25,6 @@ namespace MusicWrap.UI.Shell.Windows
         private readonly Grid _panelHost = new();
         private readonly TranslateTransform _panelSlide = new();
         private UIElement? _openPanelChild;
-
-        private double backdropRPM = 0.7;
 
 
         public FullScreenWindow(FullscreenWindowViewModel viewmodel, QueueListPage queueListPage)
@@ -42,10 +42,9 @@ namespace MusicWrap.UI.Shell.Windows
                 AllowSeek = false,
                 ShowToolbar = false,
                 LyricsAligment = TextAlignment.Left,
+                Visibility = Visibility.Collapsed
             };
-            LyricsView.LyricsStateChanged += LyricsControl_LyricsStateChanged;
 
-            LyricsView.Visibility = Visibility.Collapsed;
             QueueListPage.Visibility = Visibility.Collapsed;
 
             _panelHost.Children.Add(LyricsView);
@@ -53,10 +52,13 @@ namespace MusicWrap.UI.Shell.Windows
             PanelContainer.Child = _panelHost;
 
             DataContext = viewmodel;
-            viewmodel.PropertyChanged += OnViewmodelPropertyChanged;
-            SizeChanged += (_, _) => ApplyProgress();
+            //viewmodel.PropertyChanged += OnViewmodelPropertyChanged;
+
+            SizeChanged += (_, _) =>ApplyProgress();
+            
         }
 
+        #region Dependency Properties
         public double PanelProgress
         {
             get { return (double)GetValue(PanelProgressProperty); }
@@ -83,6 +85,8 @@ namespace MusicWrap.UI.Shell.Windows
                 ApplyPanelState(animate: true);
             }
         }
+
+        #endregion
 
         private void ApplyProgress()
         {
@@ -225,11 +229,15 @@ namespace MusicWrap.UI.Shell.Windows
             {
                 vm.PlayerViewModel.PropertyChanged -= OnPlayerViewModelPropertyChanged;
                 vm.PlayerViewModel.PropertyChanged += OnPlayerViewModelPropertyChanged;
+                vm.PropertyChanged -= OnViewmodelPropertyChanged;
+                vm.PropertyChanged += OnViewmodelPropertyChanged;
             }
+
+            LyricsView.LyricsStateChanged -= LyricsControl_LyricsStateChanged;
+            LyricsView.LyricsStateChanged += LyricsControl_LyricsStateChanged;
 
             ApplyPanelState(animate: false);
             ApplyProgress();
-            RandomizeBackdrop();
             ScaleUIElements();
         }
         private void RootFullScreenWindow_Unloaded(object sender, RoutedEventArgs e)
@@ -237,17 +245,16 @@ namespace MusicWrap.UI.Shell.Windows
             if (DataContext is FullscreenWindowViewModel vm)
             {
                 vm.PlayerViewModel.PropertyChanged -= OnPlayerViewModelPropertyChanged;
+                vm.PropertyChanged -= OnViewmodelPropertyChanged;
             }
 
-            BackdropRotate.BeginAnimation(RotateTransform.AngleProperty, null);
+            LyricsView.LyricsStateChanged -= LyricsControl_LyricsStateChanged;
         }
         private void OnPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName != nameof(PlayerViewModel.CurrentTrackImagePath)) return;
             if (DataContext is not FullscreenWindowViewModel vm) return;
             if (string.IsNullOrEmpty(vm.PlayerViewModel.CurrentTrackImagePath)) return;
-
-            RandomizeBackdrop();
         }
 
         private void ScaleUIElements()
@@ -257,47 +264,7 @@ namespace MusicWrap.UI.Shell.Windows
             ArtworkBorder.Height = 640 / dpi.DpiScaleY;
             ArtworkBorder.Width = 640 / dpi.DpiScaleX;
 
-            SpectrumVisualizer.Height = 150 / dpi.DpiScaleY;
-        }
-
-        private void RandomizeBackdrop()
-        {
-            double w = BackdropImage.ActualWidth;
-            double h = BackdropImage.ActualHeight;
-            if (w <= 0 || h <= 0) return;
-
-            double angle = Random.Shared.NextDouble() * 360.0;
-            double rad = angle * Math.PI / 180.0;
-            double cos = Math.Abs(Math.Cos(rad));
-            double sin = Math.Abs(Math.Sin(rad));
-
-            double cover = Math.Max(cos + (h / w) * sin, cos + (w / h) * sin);
-            double zoom = Math.Max(3.0 + Random.Shared.NextDouble() * 3.0, cover);
-
-            double cx = w * 0.5, cy = h * 0.5;
-
-            BackdropScale.CenterX = cx;
-            BackdropScale.CenterY = cy;
-            BackdropScale.ScaleX = zoom;
-            BackdropScale.ScaleY = zoom;
-
-            BackdropRotate.BeginAnimation(RotateTransform.AngleProperty, null);
-            BackdropRotate.CenterX = cx;
-            BackdropRotate.CenterY = cy;
-            BackdropRotate.Angle = angle;
-
-            double vw = w * cos + h * sin;
-            double vh = w * sin + h * cos;
-
-            double slackX = Math.Max(0, (w - vw / zoom) * 0.5);
-            double slackY = Math.Max(0, (h - vh / zoom) * 0.5);
-
-            double dx = (Random.Shared.NextDouble() * 2 - 1) * slackX;
-            double dy = (Random.Shared.NextDouble() * 2 - 1) * slackY;
-
-            double cosA = Math.Cos(rad), sinA = Math.Sin(rad);
-            BackdropTranslate.X = -zoom * (dx * cosA - dy * sinA);
-            BackdropTranslate.Y = -zoom * (dx * sinA + dy * cosA);
+            SpectrumVisualizer.Height = 100 / dpi.DpiScaleY;
         }
 
         private void LyricsControl_LyricsStateChanged(object? sender, LyricsStateChangedEventArgs e) => ApplyPanelState(animate: true);

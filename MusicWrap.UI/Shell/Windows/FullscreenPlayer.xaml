@@ -12,15 +12,27 @@
              mc:Ignorable="d"
              x:Name="RootFullScreenWindow"
              d:DataContext="{d:DesignInstance Type=vm:FullscreenWindowViewModel}"
-             Foreground="White"
+             Foreground="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}"
              Loaded="RootFullScreenWindow_Loaded"
              Unloaded="RootFullScreenWindow_Unloaded"
              d:Width="1920"
              d:Height="1080"
              >
+    <UserControl.Background>
+        <ImageBrush
+             ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath,
+            Converter={StaticResource PathToImageConverter},
+            ConverterParameter=blur:1080}"
+            Stretch="UniformToFill"
+            RenderOptions.BitmapScalingMode="HighQuality"
+            AlignmentX="Center"
+            AlignmentY="Center"
+            />
+    </UserControl.Background>
     <UserControl.Resources>
         <SolidColorBrush x:Key="BackdropTint" Color="#000000" Opacity="0.25"/>
-        <SolidColorBrush x:Key="ControlForeground" Color="White" Opacity="0.8"/>
+        <SolidColorBrush x:Key="ControlForeground" Color="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}" Opacity="0.8"/>
+        <SolidColorBrush x:Key="ControlHoverForeground" Color="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}" Opacity="0.1"/>
 
         <Style x:Key="PlayerButton" TargetType="Button">
             <Setter Property="Width" Value="40"/>
@@ -49,53 +61,13 @@
 
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#40ffffff" />
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#1affffff" />
+                    <Setter Property="Background" Value="{StaticResource ControlHoverForeground}" />
                 </Trigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
     <!-- MainContent -->
     <Grid x:Name="BackdropRoot" ClipToBounds="True">
-
-        <Border
-            Margin="-384"
-            Background="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}"
-            IsHitTestVisible="False"
-            >
-            <Image x:Name="BackdropImage"
-                   Source="{Binding PlayerViewModel.CurrentTrackImagePath,
-                   Converter={StaticResource PathToImageConverter},
-                   ConverterParameter=large:360}"
-                   Stretch="UniformToFill"
-                    RenderOptions.BitmapScalingMode="HighQuality"
-                    RenderTransformOrigin="0,0"
-                    IsHitTestVisible="False">
-                <Image.CacheMode>
-                    <BitmapCache RenderAtScale="0.75" />
-                </Image.CacheMode>
-                <Image.RenderTransform>
-                    <TransformGroup>
-                        <ScaleTransform x:Name="BackdropScale" ScaleX="1.3" ScaleY="1.3" />
-                        <RotateTransform x:Name="BackdropRotate" Angle="0" />
-                        <TranslateTransform x:Name="BackdropTranslate" X="0" Y="0" />
-                    </TransformGroup>
-                </Image.RenderTransform>
-            </Image>
-            <Border.Effect>
-                <BlurEffect 
-                    x:Name="BackdropBlurEffect"
-                    Radius="512"
-                    KernelType="Gaussian"
-                    RenderingBias="Performance" />
-            </Border.Effect>
-        </Border>
-
-        <Rectangle Fill="{StaticResource BackdropTint}"
-               IsHitTestVisible="False">
-        </Rectangle>
 
         <Grid x:Name="MainContentGrid">
             <Grid 
@@ -111,15 +83,23 @@
                     Orientation="Vertical"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Margin="16"
+                    Margin="0,64,0,0"
                     MaxWidth="700"
                     >
                     <controls:SquarePanel x:Name="ArtworkBorder" Width="640" Height="640" SnapsToDevicePixels="True">
                         <Image
-                            Source="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:700}"
+                            Source="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:900}"
                                 RenderOptions.BitmapScalingMode="HighQuality"
                                 Stretch="Uniform"
-                            />
+                            >
+                            <Image.Effect>
+                                <DropShadowEffect 
+                                    BlurRadius="64"
+                                    Direction="275"
+                                    Opacity="0.2"
+                                    />
+                            </Image.Effect>
+                        </Image>
                     </controls:SquarePanel>
                     <TextBlock 
                         Text="{Binding PlayerViewModel.CurrentTrackTitle}" 
@@ -152,7 +132,6 @@
                             <controls:WaveformPlayerControl
                                 x:Name="ProgressBar"
                                 Grid.Column="1"
-                                Foreground="{StaticResource TextPrimaryBrush}"
                                 Height="8"
                                 Margin="8,0"
                                 UsePlaceholderWaveform="True"
@@ -167,9 +146,16 @@
                         <Grid Grid.Row="1" Grid.Column="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,*" HorizontalAlignment="Stretch" Margin="0,8,0,0">
 
                             <controls:AppMenu Grid.Column="6"  HorizontalAlignment="Right">
-                                <controls:AppMenuItem Icon="{ex:Icon Glyph=E712, FontSize=14}" Height="40" Width="40">
-                                    <controls:AppMenuItem Icon="{ex:Icon Glyph=&#xE90F;}" Header="Properties" Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"/>
-                                    <controls:AppMenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer">
+                                <controls:AppMenuItem 
+                                    Icon="{ex:Icon Glyph=E712, FontSize=14}" 
+                                    Height="40" Width="40">
+                                    <controls:AppMenuItem 
+                                        Icon="{ex:Icon Glyph=&#xE90F;}" 
+                                        Header="Properties" 
+                                        Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"
+                                        Foreground="{DynamicResource TextPrimaryBrush}"
+                                        />
+                                    <controls:AppMenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer" Foreground="{DynamicResource TextPrimaryBrush}">
                                         <controls:AppMenuItem Header="Off" IsCheckable="True" 
                                             Command="{Binding SetVisualizerCommand}"
                                             CommandParameter="None"
@@ -198,7 +184,7 @@
                                             IsChecked="{Binding PreferredSpectrumType, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Centered}"
                                             />
                                     </controls:AppMenuItem>
-                                    <controls:AppMenuItem Icon="{ex:Icon Glyph=E90D}"  Header="Panel">
+                                    <controls:AppMenuItem Icon="{ex:Icon Glyph=E90D}"  Header="Panel" Foreground="{DynamicResource TextPrimaryBrush}">
                                         <controls:AppMenuItem 
                                             Icon="{ex:Icon Glyph=F5A6}"
                                             Header="None" 
@@ -275,7 +261,7 @@
                                 StaysOpen="False">
                                 <Border>
                                     <Border 
-                                        Background="{DynamicResource BackgroundFloating}" 
+                                        Background="{Binding PlayerViewModel.CurrentTrackDominantColorHex}" 
                                         BorderBrush="{DynamicResource StrokeFloating}" 
                                         CornerRadius="8" 
                                         Margin="8,16"
@@ -304,7 +290,7 @@
                     <controls:SpectrumVisualizerControl
                         x:Name="SpectrumVisualizer"
                         Opacity="0.5"
-                        Height="150"
+                        Height="100"
                         BarCount="128"
                         Visibility="{Binding IsVisualizerVisible, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Visualizer="{Binding PreferredVisualizer}"
