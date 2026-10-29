@@ -40,7 +40,7 @@ public sealed class CenteredSpectrumPipelineConfig
     public float BleedingGamma { get; set; } = 1.5f;
 
     // Dynamic range (dB)
-    public float NoiseFloorDb { get; set; } = -70f;
+    public float NoiseFloorDb { get; set; } = -75f;
     public float CeilingDb { get; set; } = 0f;
 
     // Noise gate
@@ -130,7 +130,7 @@ public sealed class CenteredSpectrumPipeline
             BassBoost = 1f,
             MidBoost = 1f,
             TrebleBoost = 1f,
-            ContrastGamma = 0.9f,
+            ContrastGamma = 1.5f,
         };
 
         _leftPipeline = new SpectrumPipeline(_childConfig);

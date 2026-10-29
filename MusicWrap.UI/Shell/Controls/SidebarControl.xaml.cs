@@ -84,7 +84,8 @@ namespace MusicWrap.UI.Shell.Controls
                 AllowSeek = true,
                 ShowToolbar = true,
                 LyricsAligment = TextAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Stretch
+                VerticalAlignment = VerticalAlignment.Stretch,
+                LyricsPadding = new Thickness(12),
             };
         }
     }
