@@ -84,63 +84,57 @@ namespace MusicWrap.Core.Services.Lyrics
 
         public async Task<string> SearchLyricFileForTrack(string trackPath, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(trackPath)) return string.Empty;
+
             var directory = Path.GetDirectoryName(trackPath);
-            if (directory is null) return string.Empty;
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory)) return string.Empty;
 
-            var trackFileName = Path.GetFileNameWithoutExtension(trackPath);
+            var trackName = Path.GetFileNameWithoutExtension(trackPath);
 
-            var supportedExtensions = new[] { ".lrc", ".txt" };
+            string? best = null;
+            int bestRank = int.MaxValue;
 
-            var lyricFiles = Directory.GetFiles(directory)
-                .Where(file => supportedExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
-                .ToList();
-
-            if (lyricFiles.Count == 0) return string.Empty;
-
-            var bestMatch = lyricFiles
-                .Select(file => new
-                {
-                    FilePath = file,
-                    FileNameWithoutExtension = Path.GetFileNameWithoutExtension(file),
-                    LevenshteinDistance = LyricsProviderService.LevenshteinDistance(trackFileName, Path.GetFileNameWithoutExtension(file))
-                })
-                .OrderBy(x => x.LevenshteinDistance)
-                .FirstOrDefault();
-
-            var contents = await File.ReadAllTextAsync(lyricFiles[0], ct);
-
-            return contents;
-        }
-
-        private static int LevenshteinDistance(string trackFileName, string v)
-        {
-            var distance = new int[trackFileName.Length + 1, v.Length + 1];
-
-            for (int i = 0; i <= trackFileName.Length; i++)
-                distance[i, 0] = i;
-
-            for (int j = 0; j <= v.Length; j++)
-                distance[0, j] = j;
-
-            for (int i = 1; i <= trackFileName.Length; i++)
+            try
             {
-                for (int j = 1; j <= v.Length; j++)
+                foreach (var file in Directory.EnumerateFiles(directory))
                 {
-                    int subtitutionCost = 0;
-                    if (trackFileName[i] != v[j])
-                        subtitutionCost = 1;
+                    var ext = Path.GetExtension(file);
+                    int rank = ext.ToLowerInvariant() switch
+                    {
+                        ".lrc" => 0,
+                        ".txt" => 1,
+                        "" => 2,
+                        _ => int.MaxValue
+                    };
+                    if (rank >= bestRank) continue;
 
-                    distance[i, j] = Math.Min(
-                        distance[i - 1, j] + 1,
-                        Math.Min(
-                        distance[i, j - 1] + 1,
-                        distance[i - 1, j - 1] + subtitutionCost
-                        )
-                    );
+                    if (!string.Equals(Path.GetFileNameWithoutExtension(file), trackName,
+                                       StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    best = file;
+                    bestRank = rank;
+                    if (rank == 0) break;
                 }
             }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _logger.LogWarning(ex, "Failed to enumerate lyric files in {Directory}", directory);
+                return string.Empty;
+            }
 
-            return distance[trackFileName.Length, v.Length];
+            if (best is null) return string.Empty;
+
+            try
+            {
+                return await File.ReadAllTextAsync(best, ct);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _logger.LogWarning(ex, "Failed to read lyric file {Path}", best);
+                return string.Empty;
+            }
+
         }
 
         public ParsedLyrics GetLyricsForTrackId(int trackId)
