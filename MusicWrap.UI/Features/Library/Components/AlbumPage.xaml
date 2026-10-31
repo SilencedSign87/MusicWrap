@@ -34,16 +34,9 @@
 
             <!-- Album Cover -->
             <controls:SquarePanel Grid.Row="0">
-                <Border CornerRadius="4" Grid.Column="0" Grid.Row="0">
-                    <Border.Background>
-                        <ImageBrush 
-                            ImageSource="{Binding CoverImage}"
-                            Stretch="Uniform"
-                            AlignmentX="Center"
-                            AlignmentY="Center"
-                            />
-                    </Border.Background>
-                </Border>
+                <controls:ImageContainer
+                     Source="{Binding CoverImage}"
+                    />
             </controls:SquarePanel>
             <!-- Album Info -->
             <Border Grid.Row="1" 

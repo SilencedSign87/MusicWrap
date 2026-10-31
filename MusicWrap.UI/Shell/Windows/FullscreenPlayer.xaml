@@ -86,21 +86,16 @@
                     Margin="0,64,0,0"
                     MaxWidth="700"
                     >
-                    <controls:SquarePanel x:Name="ArtworkBorder" Width="640" Height="640" SnapsToDevicePixels="True">
-                        <Image
-                            Source="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:900}"
-                                RenderOptions.BitmapScalingMode="HighQuality"
-                                Stretch="Uniform"
-                            >
-                            <Image.Effect>
-                                <DropShadowEffect 
-                                    BlurRadius="64"
-                                    Direction="275"
-                                    Opacity="0.2"
-                                    />
-                            </Image.Effect>
-                        </Image>
-                    </controls:SquarePanel>
+                    <controls:ImageContainer 
+                        x:Name="ArtworkBorder" 
+                        Width="640" 
+                        Height="640" 
+                        Source="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:900}"
+                        CornerRadius="12"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource StrokeSurface}"
+                        SnapsToDevicePixels="True" 
+                        />
                     <TextBlock 
                         Text="{Binding PlayerViewModel.CurrentTrackTitle}" 
                         TextAlignment="Center" 

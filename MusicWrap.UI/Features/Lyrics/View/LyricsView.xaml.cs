@@ -1,13 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Lyrics;
-using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 using System.Windows.Threading;
@@ -23,6 +20,8 @@ namespace MusicWrap.UI.Features.Lyrics.View
         public bool HasLyrics => _viewModel?.HasLyrics ?? false;
         public bool HasSyncedLyrics => _viewModel?.HasSyncedLyrics ?? false;
         public event EventHandler<LyricsStateChangedEventArgs>? LyricsStateChanged;
+
+        private bool _hasBeenShown;
 
         public LyricsView()
         {
@@ -93,17 +92,6 @@ namespace MusicWrap.UI.Features.Lyrics.View
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             _viewModel.PropertyChanged += OnViewmodelPropertyChanged;
-
-            if (!IsVisible) return;
-
-            Dispatcher.BeginInvoke(
-                DispatcherPriority.Loaded,
-                new Action(() =>
-                {
-                    UpdateSpacers();
-                    UpdateLineOpacities();
-                    CenterActiveLine();
-                }));
         }
 
 
@@ -141,7 +129,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
-                new Action(CenterActiveLine));
+                new Action(() => CenterActiveLine()));
         }
         private void OnLyricsChanged()
         {
@@ -213,7 +201,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
             UpdateLineOpacities();
         }
         #region Rendering
-        private void CenterActiveLine()
+        private void CenterActiveLine(bool animate = true)
         {
             if (!_followLyrics)
                 return;
@@ -271,7 +259,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
                     0,
                     maxOffset);
 
-            AnimateScrollTo(targetOffset);
+            AnimateScrollTo(targetOffset, animate);
         }
 
         private void UpdateLineOpacities()
@@ -291,9 +279,9 @@ namespace MusicWrap.UI.Features.Lyrics.View
         }
         #endregion
         #region Animation
-        private void AnimateScrollTo(double targetOffset)
+        private void AnimateScrollTo(double targetOffset, bool animate = true)
         {
-            if (!IsVisible)
+            if (!animate || !IsVisible)
             {
                 LyricsScrollViewer.ScrollToVerticalOffset(targetOffset);
                 return;
@@ -339,17 +327,20 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
         private void LyricsViewRoot_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (IsVisible)
-            {
-                Dispatcher.BeginInvoke(
-                    DispatcherPriority.Loaded,
-                    new Action(() =>
-                    {
-                        UpdateSpacers();
-                        UpdateLineOpacities();
-                        CenterActiveLine();
-                    }));
-            }
+            if (!IsVisible) return;
+
+            var animate = _hasBeenShown;
+            _hasBeenShown = true;
+
+            Dispatcher.BeginInvoke(
+                DispatcherPriority.Loaded,
+                new Action(() =>
+                {
+                    UpdateSpacers();
+                    UpdateLineOpacities();
+                    CenterActiveLine(animate);
+                }));
+
         }
     }
     public class LyricsStateChangedEventArgs : EventArgs

@@ -10,6 +10,8 @@ namespace MusicWrap.UI.Features.Library.Views
         private const int Gutter = 8;
         private const int MinColumns = 1;
 
+        private bool _isLoaded;
+
         public LibraryEntryAlbumsView()
         {
             InitializeComponent();
@@ -35,7 +37,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void AlbumsViewport_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (DataContext is not LibraryEntryAlbumViewModel viewModel || e.NewSize.Width <= 0)
+            if (DataContext is not LibraryEntryAlbumViewModel viewModel || e.NewSize.Width <= 0 || !_isLoaded)
                 return;
 
             var columns = CalculateColumns(AlbumsViewport.ActualWidth);
@@ -47,7 +49,7 @@ namespace MusicWrap.UI.Features.Library.Views
 
         private void AlbumsViewport_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListBox listBox && listBox.SelectedItem is not null)
+            if (sender is ListBox listBox && listBox.SelectedItem is not null && _isLoaded)
             {
                 listBox.SelectedItem = null;
             }
@@ -60,5 +62,22 @@ namespace MusicWrap.UI.Features.Library.Views
             return Math.Max(columns, MinColumns);
         }
 
+        private void RootAlbumsView_Loaded(object sender, RoutedEventArgs e)
+        {
+            _isLoaded = true;
+
+            // initial layout calculation
+            var columns = CalculateColumns(AlbumsViewport.ActualWidth);
+            if (DataContext is LibraryEntryAlbumViewModel viewModel)
+            {
+                viewModel.LayoutColumns = columns;
+            }
+        }
+
+        private void RootAlbumsView_Unloaded(object sender, RoutedEventArgs e)
+        {
+            _isLoaded = false;
+
+        }
     }
 }

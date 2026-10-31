@@ -10,7 +10,10 @@
              xmlns:views="clr-namespace:MusicWrap.UI.Features.Library.Views"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:LibraryEntryAlbumViewModel}"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800"
+             Loaded="RootAlbumsView_Loaded"
+             Unloaded="RootAlbumsView_Unloaded"
+             >
     <UserControl.Resources>
         <DataTemplate DataType="{x:Type vm:AlbumTracksViewModel}">
             <views:AlbumTracksPage />

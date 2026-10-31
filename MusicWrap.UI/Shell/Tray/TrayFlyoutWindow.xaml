@@ -83,14 +83,12 @@
 
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
             <controls:SquarePanel Grid.Column="0">
-                <Border Margin="8" CornerRadius="4">
-                    <Border.Background>
-                        <ImageBrush
-                            ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=small:64}"
-                            RenderOptions.BitmapScalingMode="LowQuality"
-                            Stretch="UniformToFill"
-                            />
-                    </Border.Background>
+                <Border Padding="8">
+                    <controls:ImageContainer
+                        Source="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=small:64}"
+                        CornerRadius="4"
+                        RenderOptions.BitmapScalingMode="LowQuality"
+                        />
                 </Border>
             </controls:SquarePanel>
 

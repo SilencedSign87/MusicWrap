@@ -174,14 +174,14 @@
                                 ColumnDefinitions="42,8,*,2"
                                 ContextMenuOpening="RootGrid_ContextMenuOpening"
                                 >
-                                <Image
-                                Grid.Column="0"
-                                Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
-                                Width="42"
-                                Height="42"
-                                Stretch="UniformToFill"
-                                RenderOptions.BitmapScalingMode="LowQuality"
-                                />
+                                <controls:ImageContainer
+                                    Grid.Column="0"
+                                    Source="{Binding ImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=42}"
+                                    CornerRadius="2"
+                                    Width="42"
+                                    Height="42"
+                                    RenderOptions.BitmapScalingMode="LowQuality"
+                                    />
                                 <Grid Grid.Column="2">
                                     <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                         <TextBlock Text="{Binding Title}" 
