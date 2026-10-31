@@ -12,12 +12,14 @@
              mc:Ignorable="d"
              x:Name="RootFullScreenWindow"
              d:DataContext="{d:DesignInstance Type=vm:FullscreenWindowViewModel}"
-             Foreground="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}"
              Loaded="RootFullScreenWindow_Loaded"
              Unloaded="RootFullScreenWindow_Unloaded"
              d:Width="1920"
              d:Height="1080"
              >
+    <UserControl.Foreground>
+        <SolidColorBrush Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.8"/>
+    </UserControl.Foreground>
     <UserControl.Background>
         <ImageBrush
              ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath,
@@ -31,8 +33,8 @@
     </UserControl.Background>
     <UserControl.Resources>
         <SolidColorBrush x:Key="BackdropTint" Color="#000000" Opacity="0.25"/>
-        <SolidColorBrush x:Key="ControlForeground" Color="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}" Opacity="0.8"/>
-        <SolidColorBrush x:Key="ControlHoverForeground" Color="{Binding PlayerViewModel.CurrentTrackHighlightColorHex}" Opacity="0.1"/>
+        <SolidColorBrush x:Key="ControlForeground" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.8"/>
+        <SolidColorBrush x:Key="ControlHoverForeground" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.1"/>
 
         <Style x:Key="PlayerButton" TargetType="Button">
             <Setter Property="Width" Value="40"/>
@@ -304,11 +306,12 @@
 
             <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
                 <controls:AppButton 
-                Style="{StaticResource PlayerButton}" 
-                Command="{Binding ExitFullScreenCommand}"
-                ToolTip="Exit fullscreen"
-                Icon="&#xE73F;"
-                IconFontSize="20"
+                    Style="{StaticResource PlayerButton}" 
+                    Command="{Binding ExitFullScreenCommand}"
+                    ToolTip="Exit fullscreen"
+                    Icon="&#xE73F;"
+                    IconFontSize="20"
+                    Opacity="0.5"
                 />
             </Grid>
 
