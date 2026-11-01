@@ -54,6 +54,7 @@ namespace MusicWrap.Core.DI
             services.AddSingleton<ISaveCoordinator, SaveScheduler>();
             services.AddSingleton<IMetadataAutocompleteService, MetadataAutocompleteService>();
             services.AddSingleton<MetadataEditorService>();
+            services.AddTransient<LocalMetadataEditorService>();
 
             services.AddSingleton<IQueueManager, QueueManager>();
             services.AddSingleton<ILibraryIntegrityService, LibraryIntegrityService>();

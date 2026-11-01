@@ -11,7 +11,11 @@
         d:Foreground="White"
         Title="" 
         Height="380" 
+        MinHeight="380"
+        MaxHeight="380"
         Width="250"
+        MinWidth="250"
+        MaxWidth="250"
         d:WindowStyle="None"
         >
     <WindowChrome.WindowChrome>

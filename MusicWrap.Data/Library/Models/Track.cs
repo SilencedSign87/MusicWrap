@@ -37,6 +37,12 @@ namespace MusicWrap.Data.Library.Models
 
         [Key(21)] public string? SortTitle;
 
+        [Key(22)] public int TrackCount;
+        [Key(23)] public int DiscCount;
+        [Key(24)] public int Rating;
+
+        [Key(25)] public int PlayCount;
+
         [Key(100)] public int CoverId;
 
         [IgnoreMember]

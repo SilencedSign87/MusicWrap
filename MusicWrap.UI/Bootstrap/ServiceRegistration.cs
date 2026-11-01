@@ -73,7 +73,7 @@ public static class ServiceRegistration
         services.AddSingleton<QueueViewModel>();
         services.AddTransient<DeviceViewModel>();
         services.AddSingleton<PlayerViewModel>();
-        services.AddTransient<VolumeControlViewModel>();
+        services.AddSingleton<VolumeControlViewModel>();
         services.AddSingleton<CommandPaletteViewModel>();
         services.AddTransient<TaskbarIconViewModel>();
         services.AddTransient<DJControlViewModel>();

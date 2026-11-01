@@ -83,6 +83,8 @@ namespace MusicWrap.Core.Services.Library
                     track.BitDeph = tagFile.Properties.BitsPerSample;
                     track.Disk = (int)tagFile.Tag.Disc;
                     track.TrackNumber = (int)tagFile.Tag.Track;
+                    track.TrackCount = (int)tagFile.Tag.TrackCount;
+                    track.DiscCount = (int)tagFile.Tag.DiscCount;
                     track.FileSize = fileSize;
                     track.LastWriteTime = lastModifiedUtc.Ticks;
 
@@ -326,6 +328,30 @@ namespace MusicWrap.Core.Services.Library
                 trackId = track.Id;
                 return true;
             }
+        }
+
+        public int[] GetOrCreateArtistIds(IReadOnlyList<string> names)
+        {
+            if (names.Count == 0)
+                return [];
+
+            var ids = new int[names.Count];
+            for (int i = 0; i < names.Count; i++)
+                ids[i] = GetOrCreateArtist(names[i]);
+
+            return ids;
+        }
+
+        public int[] GetOrCreateGenreIds(IReadOnlyList<string> names)
+        {
+            if (names.Count == 0)
+                return [];
+
+            var ids = new int[names.Count];
+            for (int i = 0; i < names.Count; i++)
+                ids[i] = GetOrCreateGenre(names[i]);
+
+            return ids;
         }
 
         #region  Internal

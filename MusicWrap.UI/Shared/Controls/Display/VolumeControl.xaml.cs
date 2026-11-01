@@ -11,12 +11,11 @@ using System.Windows.Media.Animation;
 
 namespace MusicWrap.UI.Controls
 {
-    public partial class VolumeControl : UserControl, IDisposable
+    public partial class VolumeControl : UserControl
     {
         private readonly VolumeControlViewModel _viewModel;
         private bool isDragging;
         private bool isSubscribed;
-        private bool isDisposed;
 
         private const double TrackThickness = 4d;
         private const double ThumbWidth = 4d;
@@ -31,38 +30,37 @@ namespace MusicWrap.UI.Controls
 
             Loaded += VolumeControl_Loaded;
             Unloaded += VolumeControl_Unloaded;
+            IsVisibleChanged += VolumeControl_IsVisibleChanged;
 
             _viewModel = App.Services.GetRequiredService<VolumeControlViewModel>();
             DataContext = _viewModel;
         }
 
-        private void VolumeControl_Loaded(object sender, RoutedEventArgs e)
+        private void VolumeControl_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (!isSubscribed)
+            if (IsVisible && !isSubscribed)
             {
                 _viewModel.PropertyChanged += PlayerViewModel_PropertyChanged;
                 isSubscribed = true;
             }
-            ApplyLayout();
-            UpdateVolumeVisual(_viewModel.Volume);
+            else if (!IsVisible && isSubscribed)
+            {
+                _viewModel.PropertyChanged -= PlayerViewModel_PropertyChanged;
+                isSubscribed = false;
+            }
+        }
+
+        private void VolumeControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(() =>
+            {
+                ApplyLayout();
+                UpdateVolumeVisual(_viewModel.Volume);
+            }, DispatcherPriority.Loaded);
         }
 
         private void VolumeControl_Unloaded(object sender, RoutedEventArgs e)
         {
-            Dispose();
-        }
-        public void Dispose()
-        {
-            if (isDisposed) return;
-            isDisposed = true;
-            if (isSubscribed)
-            {
-                _viewModel.PropertyChanged -= PlayerViewModel_PropertyChanged;
-                (_viewModel as IDisposable)?.Dispose();
-                Loaded -= VolumeControl_Loaded;
-                Unloaded -= VolumeControl_Unloaded;
-                isSubscribed = false;
-            }
             isDragging = false;
             HideVolumePopup();
         }
@@ -129,15 +127,6 @@ namespace MusicWrap.UI.Controls
             {
                 UpdateVolumeVisual(_viewModel.Volume);
             }
-        }
-
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            Dispatcher.BeginInvoke(() =>
-            {
-                ApplyLayout();
-                UpdateVolumeVisual(_viewModel.Volume);
-            }, DispatcherPriority.Loaded);
         }
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -357,7 +346,7 @@ namespace MusicWrap.UI.Controls
 
         private void InteractiveLayer_MouseLeave(object sender, MouseEventArgs e)
         {
-            
+
             if (!isDragging) HideVolumePopup();
         }
 

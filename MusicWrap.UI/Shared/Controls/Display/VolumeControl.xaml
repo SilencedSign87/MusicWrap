@@ -7,7 +7,6 @@
              mc:Ignorable="d"
              x:Name="RootVolumeControl"
              d:DataContext="{d:DesignInstance Type=vm:VolumeControlViewModel}"
-             Loaded="UserControl_Loaded"
              SizeChanged="UserControl_SizeChanged"
              d:DesignHeight="32" 
              d:DesignWidth="200"

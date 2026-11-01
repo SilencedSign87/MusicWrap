@@ -7,10 +7,9 @@ using System.Text;
 
 namespace MusicWrap.UI.Shared.Controls.ViewModel
 {
-    internal partial class VolumeControlViewModel : ObservableObject, IDisposable
+    internal partial class VolumeControlViewModel : ObservableObject
     {
         private readonly MusicPlayerService _musicPlayerService;
-        private bool _disposed;
         private float _previousVolume = 1.0f;
 
         [ObservableProperty] private float volume;
@@ -30,7 +29,7 @@ namespace MusicWrap.UI.Shared.Controls.ViewModel
 
         private void OnPlayerVolumeChanged(object? sender, float newVolume)
         {
-            if (Math.Abs(Volume - newVolume) > 0.0001f && !_disposed)
+            if (Math.Abs(Volume - newVolume) > 0.0001f)
             {
                 Volume = newVolume;
             }
@@ -76,13 +75,6 @@ namespace MusicWrap.UI.Shared.Controls.ViewModel
                 < 0.75f => "\xE994",
                 _ => "\xE767"
             };
-        }
-
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-            _musicPlayerService.VolumeChanged -= OnPlayerVolumeChanged;
         }
     }
 }

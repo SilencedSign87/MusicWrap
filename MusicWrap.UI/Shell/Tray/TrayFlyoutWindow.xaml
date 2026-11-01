@@ -113,7 +113,7 @@
             </StackPanel>
         </Grid>
         <Border Padding="16,2,16,8" Grid.Row="1">
-            <Grid ColumnDefinitions="Auto,8,*,8,Auto">
+            <Grid ColumnDefinitions="Auto,12,*,12,Auto">
                 <TextBlock 
                     Grid.Column="0" 
                     FontSize="10"
@@ -127,7 +127,7 @@
                     UsePlaceholderWaveform="True"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Stretch"
-                    Height="4"
+                    Height="6"
                     />
                 <TextBlock 
                     Grid.Column="4"

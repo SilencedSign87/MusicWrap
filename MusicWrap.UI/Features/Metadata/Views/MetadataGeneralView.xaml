@@ -20,24 +20,10 @@
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
-    <Grid RowDefinitions="Auto,Auto,*">
-        <Border
-            Grid.Row="0"
-            Padding="8"
-            Background="{DynamicResource BackgroundLayer}"
-            BorderThickness="1"
-            BorderBrush="{DynamicResource StrokeLayerCard}">
-            <Grid>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE946;" VerticalAlignment="Center" />
-                    <TextBlock Text="File Information" Margin="8,0,0,0" VerticalAlignment="Center" />
-                </StackPanel>
-                <controls:AppButton Style="{DynamicResource DefaultButton}" HorizontalAlignment="Right" Command="{Binding ShowInExplorerCommand}" Icon="&#xEC50;" ToolTip="Open in explorer" />
-            </Grid>
-        </Border>
-        <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="4" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+    <Grid RowDefinitions="Auto,*,48">
+        <ProgressBar Grid.Row="0" IsIndeterminate="True" Height="4" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-        <StackPanel  Grid.Row="2" Margin="16,4,16,0">
+        <StackPanel  Grid.Row="1" Margin="16,4,16,0">
             <ItemsControl ItemsSource="{Binding Rows}" IsTabStop="False">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
@@ -54,8 +40,22 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-
         </StackPanel>
+        <Border 
+            Grid.Row="2" 
+            Padding="8" 
+            Background="{DynamicResource BackgroundLayer}"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource StrokeSurface}"
+            >
+            <controls:AppButton 
+                Style="{DynamicResource DefaultButton}" 
+                HorizontalAlignment="Right" 
+                Command="{Binding ShowInExplorerCommand}" 
+                Icon="&#xEC50;" 
+                Spacing="8"
+                Text="Open in explorer"/>
+        </Border>
 
     </Grid>
 </UserControl>

@@ -7,6 +7,7 @@ using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
@@ -15,19 +16,96 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
     {
         public static string MultipleValuesString = "Mixed Values";
         private readonly MetadataEditorWorkspace _workspace;
-        private readonly MetadataEditorService _metadataEditorService;
         private readonly ILibraryService _libraryService;
+        private readonly IMetadataAutocompleteService _autocomplete;
+        private readonly LocalMetadataEditorService _localMetadata;
         private readonly ILogger _logger;
-        private int _loadVersion;
+        private Snapshot _original = Snapshot.Empty;
 
-        public ObservableCollection<TagRow> Rows { get; } = [];
-        public ObservableCollection<TagDefinition> AvailableTags { get; } = [];
+
+        public MetadataEditorViewmodel(MetadataEditorWorkspace workspace, ILibraryService libraryService, ILogger<MetadataEditorViewmodel> logger, IMetadataAutocompleteService autocomplete, LocalMetadataEditorService localMetadata)
+        {
+            _workspace = workspace;
+            _libraryService = libraryService;
+            _logger = logger;
+            _autocomplete = autocomplete;
+            _localMetadata = localMetadata;
+        }
+
+        #region Properties
 
         [ObservableProperty]
-        public partial TagDefinition? SelectedTagToAdd { get; set; }
+        [NotifyPropertyChangedFor(nameof(DetailTitle))]
+        public partial string Title { get; set; } = string.Empty;
 
-        [ObservableProperty]
-        public partial string TagSearchText { get; set; } = string.Empty;
+        [ObservableProperty] public partial string Album { get; set; } = string.Empty;
+        [ObservableProperty] public partial string Year { get; set; } = string.Empty;
+        [ObservableProperty] public partial string TrackNumber { get; set; } = string.Empty;
+        [ObservableProperty] public partial string TrackCount { get; set; } = string.Empty;
+        [ObservableProperty] public partial string DiscNumber { get; set; } = string.Empty;
+        [ObservableProperty] public partial string DiscCount { get; set; } = string.Empty;
+        [ObservableProperty] public partial string Rating { get; set; } = string.Empty;
+        [ObservableProperty] public partial string PlayCount { get; set; } = string.Empty;
+
+        public ObservableCollection<string> Artists { get; } = [];
+        public ObservableCollection<string> AlbumArtists { get; } = [];
+        public ObservableCollection<string> Genres { get; } = [];
+
+        [ObservableProperty] public partial string ArtistsPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string AlbumArtistsPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string GenresPlaceholder { get; set; } = string.Empty;
+
+        [ObservableProperty] public partial IReadOnlyList<string> ArtistSuggestions { get; set; } = [];
+        [ObservableProperty] public partial IReadOnlyList<string> AlbumArtistSuggestions { get; set; } = [];
+        [ObservableProperty] public partial IReadOnlyList<string> GenreSuggestions { get; set; } = [];
+
+        //[ObservableProperty]
+        //public partial bool IsLoading { get; set; }
+
+        //[ObservableProperty]
+        //[NotifyPropertyChangedFor(nameof(DetailTitle))]
+        //public partial string Title { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string Album { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string Year { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string TrackNumber { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string TrackCount { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string DiscNumber { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string DiscCount { get; set; } = string.Empty;
+
+        //public ObservableCollection<string> Artists { get; set; } = [];
+        //public ObservableCollection<string> AlbumArtists { get; set; } = [];
+        //public ObservableCollection<string> Genres { get; set; } = [];
+
+        //[ObservableProperty]
+        //public partial string ArtistsPlaceholder { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string AlbumArtistsPlaceholder { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial string GenresPlaceholder { get; set; } = string.Empty;
+
+        //[ObservableProperty]
+        //public partial IReadOnlyList<string> ArtistSuggestions { get; set; } = [];
+
+        //[ObservableProperty]
+        //public partial IReadOnlyList<string> GenreSuggestions { get; set; } = [];
+
+        //public string? DetailTitle => _workspace.IsSingleTrack ? Title : null;
+
+        #endregion
 
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SaveChangesCommand), nameof(CancelChangesCommand))]
@@ -36,229 +114,216 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         [ObservableProperty]
         public partial bool IsLoading { get; set; }
 
-        public bool HasAvailableTags => AvailableTags.Count > 0;
-        public bool HasChanges => Rows.Any(r => r.HasChanges);
+        public bool HasChanges => BuildChanges().Count > 0;
         private bool CanSave => !IsSaving && HasChanges;
         private bool CanCancel => !IsSaving && HasChanges;
-        public string? DetailTitle => DetermineTitle();
 
-        public MetadataEditorViewmodel(MetadataEditorWorkspace workspace, ILibraryService libraryService, ILogger<MetadataEditorViewmodel> logger, MetadataEditorService metadataEditorService)
-        {
-            _workspace = workspace;
-            _libraryService = libraryService;
-            _logger = logger;
-            _metadataEditorService = metadataEditorService;
-        }
+        public string? DetailTitle =>
+            _workspace.IsSingleTrack && !string.IsNullOrWhiteSpace(_original.Title)
+                ? _original.Title
+                : null;
 
         public void Load()
         {
-            int version = ++_loadVersion;
-
-            foreach (var row in Rows)
-                row.PropertyChanged -= OnRowPropertyChanged;
-
-            Rows.Clear();
-            AvailableTags.Clear();
-
-            foreach (var definition in TagDefinitions.All)
-                AvailableTags.Add(definition);
-
             IsLoading = true;
-            var trackIds = _workspace.TrackIds.ToList();
 
-            _ = LoadCoreAsync(trackIds, version);
-        }
-
-        private async Task LoadCoreAsync(IReadOnlyList<int> trackIds, int version)
-        {
             try
             {
-                var rows = await Task.Run(() => BuildRows(trackIds));
-                if (version != _loadVersion)
-                    return;
+                var snapshots = _workspace.TrackIds
+                    .Select(_libraryService.GetTrackById)
+                    .Where(t => t is { Origin: TrackOrigin.Local })
+                    .Cast<Track>()
+                    .Select(t => (Track: t, Album: _libraryService.GetAlbumById(t.AlbumId)))
+                    .ToArray();
 
-                foreach (var row in rows)
-                {
-                    Rows.Add(row);
-                    row.PropertyChanged += OnRowPropertyChanged;
-                    AvailableTags.Remove(row.Definition);
-                }
-                OnPropertyChanged(nameof(HasAvailableTags));
+                Title = Scalar(snapshots, LocalTagKey.Title);
+                Album = Scalar(snapshots, LocalTagKey.Album);
+                Year = Scalar(snapshots, LocalTagKey.Year);
+                TrackNumber = Scalar(snapshots, LocalTagKey.TrackNumber);
+                TrackCount = Scalar(snapshots, LocalTagKey.TrackCount);
+                DiscNumber = Scalar(snapshots, LocalTagKey.DiscNumber);
+                DiscCount = Scalar(snapshots, LocalTagKey.DiscCount);
+                Rating = Scalar(snapshots, LocalTagKey.Rating);
+                PlayCount = Scalar(snapshots, LocalTagKey.PlayCount);
+
+                FillList(Artists, snapshots, LocalTagKey.Artist, p => ArtistsPlaceholder = p);
+                FillList(AlbumArtists, snapshots, LocalTagKey.AlbumArtist, p => AlbumArtistsPlaceholder = p);
+                FillList(Genres, snapshots, LocalTagKey.Genre, p => GenresPlaceholder = p);
+
+                ArtistSuggestions = _autocomplete.GetAllValues(MetadataType.ArtistName);
+                AlbumArtistSuggestions = ArtistSuggestions;
+                GenreSuggestions = _autocomplete.GetAllValues(MetadataType.GenreName);
+
+                _original = Capture();
                 NotifyHasChangesChanged();
                 OnPropertyChanged(nameof(DetailTitle));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while loading tags.");
+                _logger.LogError(ex, "Error loading local metadata.");
             }
             finally
             {
-                if (version == _loadVersion)
-                    IsLoading = false;
+                IsLoading = false;
             }
         }
 
-        private IReadOnlyList<TagRow> BuildRows(IReadOnlyList<int> trackIds)
+        private string Scalar(IReadOnlyList<(Track Track, Album? Album)> snapshots, LocalTagKey key)
         {
-            var tracks = trackIds
-                .Select(_libraryService.GetTrackById)
-                .Where(t => t is not null && t.Origin == TrackOrigin.Local)
-                .Cast<Track>()
-                .ToList();
-            if (tracks.Count == 0)
-                return [];
+            if (snapshots.Count == 0)
+                return string.Empty;
 
-            var perTrack = new IReadOnlyDictionary<string, string>?[tracks.Count];
-            var options = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2) };
-            Parallel.ForEach(Enumerable.Range(0, tracks.Count), options, i =>
+            string value = First(snapshots[0], key);
+
+            for (int i = 1; i < snapshots.Count; i++)
             {
-                perTrack[i] = ReadTrack(tracks[i]);
-            });
-
-            var readable = perTrack.Where(d => d is not null).Select(d => d!).ToList();
-            if (readable.Count == 0)
-                return [];
-
-            var rows = new List<TagRow>();
-            foreach (var definition in TagDefinitions.All)
-            {
-                var values = readable
-                    .Select(d => d.TryGetValue(definition.Key, out var value) ? value : string.Empty)
-                    .ToList();
-                if (values.All(string.IsNullOrWhiteSpace))
-                    continue;
-
-                bool allEqual = values.All(v => string.Equals(v, values[0], StringComparison.Ordinal));
-                rows.Add(allEqual
-                    ? TagRow.FromValue(definition, values[0])
-                    : TagRow.FromMixed(definition, MultipleValuesString));
+                if (!string.Equals(value, First(snapshots[i], key), StringComparison.OrdinalIgnoreCase))
+                    return string.Empty;
             }
-            return rows;
+
+            return value;
         }
 
-        private static IReadOnlyDictionary<string, string>? ReadTrack(Track track)
+        private string First((Track Track, Album? Album) snapshot, LocalTagKey key)
         {
-            try
-            {
-                using var file = TagLib.File.Create(track.Path);
-                var result = new Dictionary<string, string>();
-                if (file.Tag is not { } tag)
-                    return result;
+            var values = _localMetadata.GetValues(key, snapshot.Track, snapshot.Album);
+            return values.Count > 0 ? values[0] : string.Empty;
+        }
 
-                foreach (var definition in TagDefinitions.All)
+        private void FillList(
+            ObservableCollection<string> target,
+            IReadOnlyList<(Track Track, Album? Album)> snapshots,
+            LocalTagKey key,
+            Action<string> setPlaceholder)
+        {
+            target.Clear();
+            setPlaceholder(string.Empty);
+
+            if (snapshots.Count == 0)
+                return;
+
+            var first = _localMetadata.GetValues(key, snapshots[0].Track, snapshots[0].Album);
+
+            for (int i = 1; i < snapshots.Count; i++)
+            {
+                var next = _localMetadata.GetValues(key, snapshots[i].Track, snapshots[i].Album);
+
+                if (!next.SequenceEqual(first, StringComparer.OrdinalIgnoreCase))
                 {
-                    try
-                    {
-                        result[definition.Key] = definition.GetValue(tag) ?? string.Empty;
-                    }
-                    catch
-                    {
-                        result[definition.Key] = string.Empty;
-                    }
-
+                    setPlaceholder(MultipleValuesString);
+                    return;
                 }
-                return result;
             }
-            catch
-            {
-                return null;
-            }
+
+            foreach (var value in first)
+                if (!string.IsNullOrWhiteSpace(value))
+                    target.Add(value);
         }
 
-        partial void OnSelectedTagToAddChanged(TagDefinition? value)
+        private Snapshot Capture() => new(
+           Title, [.. Artists],
+           Album, [.. AlbumArtists],
+           [.. Genres],
+           Year, TrackNumber, TrackCount, DiscNumber, DiscCount, Rating, PlayCount);
+
+        private List<LocalTagChange> BuildChanges()
         {
-            if (value is not null)
-                AddTagCore(value);
-        }
-        private void AddTagCore(TagDefinition definition)
-        {
-            var row = TagRow.New(definition);
-            Rows.Add(row);
-            row.PropertyChanged += OnRowPropertyChanged;
-            AvailableTags.Remove(definition);
+            var changes = new List<LocalTagChange>(12);
+            var original = _original;
 
-            SelectedTagToAdd = null;   // handler re-entra con null → guard
-            TagSearchText = string.Empty;
+            if (!string.Equals(Title, original.Title, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.Title, [Title]));
 
-            OnPropertyChanged(nameof(HasAvailableTags));
-            NotifyHasChangesChanged();
+            if (!Artists.SequenceEqual(original.Artists, StringComparer.Ordinal))
+                changes.Add(new(LocalTagKey.Artist, [.. Artists]));
+
+            if (!string.Equals(Album, original.Album, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.Album, [Album]));
+
+            if (!AlbumArtists.SequenceEqual(original.AlbumArtists, StringComparer.Ordinal))
+                changes.Add(new(LocalTagKey.AlbumArtist, [.. AlbumArtists]));
+
+            if (!Genres.SequenceEqual(original.Genres, StringComparer.Ordinal))
+                changes.Add(new(LocalTagKey.Genre, [.. Genres]));
+
+            if (!string.Equals(Year, original.Year, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.Year, [Year]));
+
+            if (!string.Equals(TrackNumber, original.TrackNumber, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.TrackNumber, [TrackNumber]));
+
+            if (!string.Equals(TrackCount, original.TrackCount, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.TrackCount, [TrackCount]));
+
+            if (!string.Equals(DiscNumber, original.DiscNumber, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.DiscNumber, [DiscNumber]));
+
+            if (!string.Equals(DiscCount, original.DiscCount, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.DiscCount, [DiscCount]));
+
+            if (!string.Equals(Rating, original.Rating, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.Rating, [Rating]));
+
+            if (!string.Equals(PlayCount, original.PlayCount, StringComparison.Ordinal))
+                changes.Add(new(LocalTagKey.PlayCount, [PlayCount]));
+
+            return changes;
         }
+
+        #region Relay Commands
+
         [RelayCommand(CanExecute = nameof(CanCancel))]
-        private void CancelChanges()
-        {
-            var keptKeys = new HashSet<string>(StringComparer.Ordinal);
+        private void CancelChanges() => Load();
 
-            for (int i = Rows.Count - 1; i >= 0; i--)
-            {
-                var row = Rows[i];
-                if (row.IsNew)
-                {
-                    Rows.RemoveAt(i);
-                    row.PropertyChanged -= OnRowPropertyChanged;
-                    continue;
-                }
-
-                keptKeys.Add(row.Key);
-                row.Reset();
-            }
-
-            AvailableTags.Clear();
-            foreach (var definition in TagDefinitions.All)
-                if (!keptKeys.Contains(definition.Key))
-                    AvailableTags.Add(definition);
-
-            SelectedTagToAdd = null;
-            OnPropertyChanged(nameof(HasAvailableTags));
-            NotifyHasChangesChanged();
-        }
         [RelayCommand(CanExecute = nameof(CanSave))]
-        private async Task SaveChangesAsync(CancellationToken ct)
+        private void SaveChanges()
         {
-            var changedRows = Rows.Where(r => r.HasChanges).ToList();
             var trackIds = _workspace.TrackIds.ToList();
-            if (changedRows.Count == 0 || trackIds.Count == 0)
+            var changes = BuildChanges();
+
+            if (trackIds.Count == 0 || changes.Count == 0)
                 return;
 
             IsSaving = true;
 
             try
             {
-                int ok = 0;
-                ok = await _metadataEditorService.EditTagsAsync(trackIds, tag =>
-                {
-                    foreach (var row in changedRows)
-                        row.Definition.SetValue(tag, row.Value);
-                }, ct);
+                int updated = _localMetadata.Apply(trackIds, changes);
 
-                if (ok == trackIds.Count)
+                if (updated > 0)
                 {
-                    foreach (var row in changedRows)
-                        row.Commit();
-                    _logger.LogInformation("Saved {Tags} tags on {Ok}/{Total} tracks.", changedRows.Count, ok, trackIds.Count);
-                }
-                else
-                {
-                    _logger.LogWarning("Partial save: {Ok}/{Total} tracks updated.", ok, trackIds.Count);
+                    _original = Capture();
+                    _logger.LogInformation(
+                        "Saved {Tags} local tags on {Updated}/{Total} tracks.",
+                        changes.Count, updated, trackIds.Count);
                 }
             }
-            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while saving tags.");
+                _logger.LogError(ex, "Error saving local metadata.");
             }
             finally
             {
                 IsSaving = false;
                 NotifyHasChangesChanged();
-                OnPropertyChanged(nameof(HasAvailableTags));
+                OnPropertyChanged(nameof(DetailTitle));
             }
         }
+        #endregion
 
-        private void OnRowPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        #region Events
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
         {
-            if (e.PropertyName is nameof(TagRow.Value) or nameof(TagRow.HasChanges))
-                NotifyHasChangesChanged();
+            base.OnPropertyChanged(e);
+
+            if (e.PropertyName is nameof(HasChanges) or nameof(DetailTitle))
+                return;
+
+            NotifyHasChangesChanged();
         }
+
+        private void OnListChanged(object? sender, NotifyCollectionChangedEventArgs e)
+            => NotifyHasChangesChanged();
 
         private void NotifyHasChangesChanged()
         {
@@ -267,63 +332,31 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             CancelChangesCommand.NotifyCanExecuteChanged();
         }
 
-        private string? DetermineTitle()
+        #endregion
+
+
+        #region Models
+        private sealed record Snapshot(
+            string Title,
+            IReadOnlyList<string> Artists,
+            string Album,
+            IReadOnlyList<string> AlbumArtists,
+            IReadOnlyList<string> Genres,
+            string Year,
+            string TrackNumber,
+            string TrackCount,
+            string DiscNumber,
+            string DiscCount,
+            string Rating,
+            string PlayCount)
         {
-            if (!_workspace.IsSingleTrack)
-                return null;
-            var title = Rows.FirstOrDefault(r => r.Definition.Key == "TITLE");
-            if (title is null || title.IsNew || string.IsNullOrWhiteSpace(title.Original))
-                return null;
-            return title.Original;
+            public static Snapshot Empty { get; } = new(
+                string.Empty, [], string.Empty, [], [], string.Empty,
+                string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         }
-    }
+        private sealed record MergedList(bool IsMixed, IReadOnlyList<string> Values);
 
-    public partial class TagRow : ObservableObject
-    {
-        public TagDefinition Definition { get; }
-        public string Key => Definition.Key;
-        public string DisplayName => Definition.DisplayName;
-        public bool IsMultiValue => Definition.IsMultipleValue;
-        public MetadataType AutocompleteType => Definition.AutocompleteType;
-        public bool IsNew { get; private set; }
-        public string Placeholder { get; }
-
-        private string _original;
-        public string Original => _original;
-
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(HasChanges))]
-        public partial string Value { get; set; } = string.Empty;
-
-        public bool HasChanges => IsNew || !string.Equals(Value, _original, StringComparison.Ordinal);
-
-        private TagRow(TagDefinition definition, string original, string placeholder, bool isNew)
-        {
-            Definition = definition;
-            _original = original;
-            Placeholder = placeholder;
-            IsNew = isNew;
-            Value = isNew ? string.Empty : original;
-        }
-
-        public static TagRow FromValue(TagDefinition definition, string value)
-            => new(definition, value, string.Empty, false);
-        public static TagRow FromMixed(TagDefinition definition, string mixedPlaceholder)
-            => new(definition, string.Empty, mixedPlaceholder, false);
-        public static TagRow New(TagDefinition definition)
-            => new(definition, string.Empty, string.Empty, true);
-        public void Reset()
-        {
-            if (IsNew)
-                return;
-            Value = _original;
-        }
-        public void Commit()
-        {
-            _original = Value;
-            IsNew = false;
-            OnPropertyChanged(nameof(HasChanges));
-        }
+        #endregion
     }
 }
 

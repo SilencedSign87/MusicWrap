@@ -6,29 +6,92 @@
         xmlns:views="clr-namespace:MusicWrap.UI.Features.Metadata.Views"
         xmlns:vm="clr-namespace:MusicWrap.UI.ViewModels"
         xmlns:nav="clr-namespace:MusicWrap.UI.Shared.Controls.Navigation"
+        xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
+        xmlns:mdvm="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
+        xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
         mc:Ignorable="d"
         ResizeMode="NoResize"
         Icon="/Resources/icon.ico"
         d:Background="#080808"
         d:Foreground="White"
         d:DataContext="{d:DesignInstance Type=vm:InformationWindowViewModel}"
-        Title="{Binding DisplayTitle}" Height="650" Width="500">
-    <Grid RowDefinitions="*">
-        <nav:ShellTabControl Grid.Row="0"
-                             SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
-                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <nav:ShellTabItem Icon="&#xEDA2;" IconSize="20" Spacing="8" Text="General" Orientation="Vertical" MinWidth="50">
-                <views:MetadataGeneralView DataContext="{Binding General}"/>
-            </nav:ShellTabItem>
-            <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" Orientation="Vertical" MinWidth="50">
-                <views:MetadataEditorView DataContext="{Binding Fields }"/>
-            </nav:ShellTabItem>
-            <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" Orientation="Vertical" MinWidth="50">
-                <views:MetadataArtworkEditorView DataContext="{Binding Artwork}"/>
-            </nav:ShellTabItem>
-            <nav:ShellTabItem Icon="&#xEC4F;" IconSize="20" Spacing="8" Text="Lyrics" Orientation="Vertical" MinWidth="50">
-                <views:MetadataLyricsEditorView DataContext="{Binding Lyrics}"/>
-            </nav:ShellTabItem>
-        </nav:ShellTabControl>
+        Title="{Binding DisplayTitle}" 
+        d:Width="600"
+        d:Height="700"
+        >
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="100" 
+                  ResizeBorderThickness="{x:Static SystemParameters.WindowResizeBorderThickness}"
+                  UseAeroCaptionButtons="False"
+                  GlassFrameThickness="-1"/>
+    </WindowChrome.WindowChrome>
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type mdvm:MetadataGeneralViewmodel}">
+            <views:MetadataGeneralView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type mdvm:MetadataEditorViewmodel}">
+            <views:MetadataEditorView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type mdvm:MetadataArtworkEditorViewmodel}">
+            <views:MetadataArtworkEditorView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type mdvm:MetadataLyricsEditorViewmodel}">
+            <views:MetadataLyricsEditorView/>
+        </DataTemplate>
+    </Window.Resources>
+    <Grid RowDefinitions="100,4,*">
+
+        <Border
+            Grid.Row="0" 
+            Background="{DynamicResource BackgroundLayer}"
+            BorderThickness="0,0,0,1"
+            BorderBrush="{DynamicResource StrokeSurface}"
+            >
+
+            <Grid 
+            ColumnDefinitions="100,8,*,Auto" 
+                RowDefinitions="*,Auto"
+            >
+                <controls:ImageContainer 
+                    Source="{Binding PreviewArtworkPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=100}"
+                    Grid.Column="0" 
+                    Grid.Row="0"
+                    Grid.RowSpan="2"
+                    Height="90"
+                    Width="90"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    RenderOptions.BitmapScalingMode="Linear"
+                    CornerRadius="4"
+                    />
+                <StackPanel Grid.Column="2" Grid.Row="0" Margin="0,8,0,0">
+                    <TextBlock Text="{Binding Title }" FontSize="16" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Subtitle }" FontSize="13" />
+                </StackPanel>
+                <StackPanel Grid.Column="3" Grid.Row="0">
+                    <controls:AppButton 
+                        x:Name="CloseButton"
+                        Style="{DynamicResource CloseTitleButton}"
+                        Icon="&#xE711;"
+                        Click="CloseButton_Click"
+                        
+                        />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3">
+                    <nav:ShellTabControl
+                        SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}"
+                        WindowChrome.IsHitTestVisibleInChrome="True"
+                        VerticalAlignment="Bottom"
+                        HorizontalAlignment="Left"
+                        >
+                        <nav:ShellTabItem Icon="&#xEDA2;" IconSize="20" Spacing="8" Text="General" TabIndex="0"/>
+                        <nav:ShellTabItem Icon="&#xE8EC;" IconSize="20" Spacing="8" Text="Tags" TabIndex="1"/>
+                        <nav:ShellTabItem Icon="&#xE8B9;" IconSize="20" Spacing="8" Text="Artworks" TabIndex="2"/>
+                        <nav:ShellTabItem Icon="&#xEC4F;" IconSize="20" Spacing="8" Text="Lyrics" TabIndex="3"/>
+                    </nav:ShellTabControl>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <ContentControl Grid.Row="2" Content="{Binding SelectedTab}"/>
     </Grid>
 </Window>

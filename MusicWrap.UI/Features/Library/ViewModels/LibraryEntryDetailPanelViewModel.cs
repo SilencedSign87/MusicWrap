@@ -17,10 +17,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
     public partial class LibraryEntryDetailPanelViewModel : ObservableObject, IDisposable
     {
         private readonly LibraryWorkspace _workspace;
-        private readonly IServiceProvider _serviceProvider;
         private readonly ILibraryService _libraryCache;
         private readonly MusicPlayerService _musicPlayerService;
-        private readonly IwindowsImageService _imageService;
         private int _headerStatsRequestId;
         private bool _disposed;
 
@@ -39,15 +37,12 @@ namespace MusicWrap.UI.Features.Library.ViewModels
              LibraryWorkspace workspace,
             ILibraryService libraryCache,
             MusicPlayerService musicPlayerService,
-            IwindowsImageService imageService,
             IServiceProvider serviceProvider
             )
         {
             _workspace = workspace;
-            _serviceProvider = serviceProvider;
             _libraryCache = libraryCache;
             _musicPlayerService = musicPlayerService;
-            _imageService = imageService;
 
             AlbumEntriesViewModel = serviceProvider.GetRequiredService<LibraryEntryAlbumViewModel>();
             TracksViewModel = serviceProvider.GetRequiredService<LibraryEntryTracksViewModel>();
@@ -132,25 +127,29 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         [RelayCommand]
         private void PlayAllTracks()
         {
-            var trackIds = TracksViewModel?.AllTrackIds;
-            if (trackIds is null || trackIds.Count == 0)
+            if (_workspace.SelectedEntry is null) return;
+            var trackIds = _libraryCache.GetTrackIdsForEntry(_workspace.SelectedEntry);
+            if (trackIds is null || trackIds.Length == 0)
                 return;
-            if (_musicPlayerService.IsShuffleEnabled)
-                _musicPlayerService.ToggleShuffle();
             _musicPlayerService.SetQueue(trackIds);
+            if (_musicPlayerService.IsShuffleEnabled)
+                _musicPlayerService.SetShuffle(false);
+
             _musicPlayerService.PlayIndex(0);
+
         }
         [RelayCommand]
         private void ShuffleAllTracks()
         {
-            var trackIds = TracksViewModel?.AllTrackIds;
-            if (trackIds is null || trackIds.Count == 0)
+            if (_workspace.SelectedEntry is null) return;
+            var trackIds = _libraryCache.GetTrackIdsForEntry(_workspace.SelectedEntry);
+            if (trackIds is null || trackIds.Length == 0)
                 return;
             _musicPlayerService.SetQueue(trackIds);
-            if (!_musicPlayerService.IsShuffleEnabled)
-                _musicPlayerService.ToggleShuffle();
-            _musicPlayerService.PlayIndex(0);
+            if (_musicPlayerService.IsShuffleEnabled)
+                _musicPlayerService.SetShuffle(true);
 
+            _musicPlayerService.PlayIndex(0);
         }
 
         #endregion

@@ -34,6 +34,7 @@
     <UserControl.Resources>
         <SolidColorBrush x:Key="BackdropTint" Color="#000000" Opacity="0.25"/>
         <SolidColorBrush x:Key="ControlForeground" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.8"/>
+        <SolidColorBrush x:Key="ArtworkBorderBrush" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.25"/>
         <SolidColorBrush x:Key="ControlHoverForeground" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.1"/>
 
         <Style x:Key="PlayerButton" TargetType="Button">
@@ -95,7 +96,7 @@
                         Source="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:900}"
                         CornerRadius="12"
                         BorderThickness="1"
-                        BorderBrush="{DynamicResource StrokeSurface}"
+                        BorderBrush="{StaticResource ArtworkBorderBrush}"
                         SnapsToDevicePixels="True" 
                         />
                     <TextBlock 
