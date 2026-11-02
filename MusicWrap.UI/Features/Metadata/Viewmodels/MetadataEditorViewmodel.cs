@@ -51,59 +51,22 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         public ObservableCollection<string> AlbumArtists { get; } = [];
         public ObservableCollection<string> Genres { get; } = [];
 
+        [ObservableProperty] public partial string TitlePlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string AlbumPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string YearPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string TrackNumberPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string TrackCountPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string DiscNumberPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string DiscCountPlaceholder { get; set; } = string.Empty;
         [ObservableProperty] public partial string ArtistsPlaceholder { get; set; } = string.Empty;
         [ObservableProperty] public partial string AlbumArtistsPlaceholder { get; set; } = string.Empty;
         [ObservableProperty] public partial string GenresPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string RatingPlaceholder { get; set; } = string.Empty;
+        [ObservableProperty] public partial string PlayCountPlaceholder { get; set; } = string.Empty;
 
         [ObservableProperty] public partial IReadOnlyList<string> ArtistSuggestions { get; set; } = [];
         [ObservableProperty] public partial IReadOnlyList<string> AlbumArtistSuggestions { get; set; } = [];
         [ObservableProperty] public partial IReadOnlyList<string> GenreSuggestions { get; set; } = [];
-
-        //[ObservableProperty]
-        //public partial bool IsLoading { get; set; }
-
-        //[ObservableProperty]
-        //[NotifyPropertyChangedFor(nameof(DetailTitle))]
-        //public partial string Title { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string Album { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string Year { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string TrackNumber { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string TrackCount { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string DiscNumber { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string DiscCount { get; set; } = string.Empty;
-
-        //public ObservableCollection<string> Artists { get; set; } = [];
-        //public ObservableCollection<string> AlbumArtists { get; set; } = [];
-        //public ObservableCollection<string> Genres { get; set; } = [];
-
-        //[ObservableProperty]
-        //public partial string ArtistsPlaceholder { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string AlbumArtistsPlaceholder { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial string GenresPlaceholder { get; set; } = string.Empty;
-
-        //[ObservableProperty]
-        //public partial IReadOnlyList<string> ArtistSuggestions { get; set; } = [];
-
-        //[ObservableProperty]
-        //public partial IReadOnlyList<string> GenreSuggestions { get; set; } = [];
-
-        //public string? DetailTitle => _workspace.IsSingleTrack ? Title : null;
 
         #endregion
 
@@ -136,15 +99,15 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                     .Select(t => (Track: t, Album: _libraryService.GetAlbumById(t.AlbumId)))
                     .ToArray();
 
-                Title = Scalar(snapshots, LocalTagKey.Title);
-                Album = Scalar(snapshots, LocalTagKey.Album);
-                Year = Scalar(snapshots, LocalTagKey.Year);
-                TrackNumber = Scalar(snapshots, LocalTagKey.TrackNumber);
-                TrackCount = Scalar(snapshots, LocalTagKey.TrackCount);
-                DiscNumber = Scalar(snapshots, LocalTagKey.DiscNumber);
-                DiscCount = Scalar(snapshots, LocalTagKey.DiscCount);
-                Rating = Scalar(snapshots, LocalTagKey.Rating);
-                PlayCount = Scalar(snapshots, LocalTagKey.PlayCount);
+                Title = Scalar(snapshots, LocalTagKey.Title, (p) => TitlePlaceholder = p);
+                Album = Scalar(snapshots, LocalTagKey.Album, (p) => AlbumPlaceholder = p);
+                Year = Scalar(snapshots, LocalTagKey.Year, (p) => YearPlaceholder = p);
+                TrackNumber = Scalar(snapshots, LocalTagKey.TrackNumber, (p) => TrackNumberPlaceholder = p);
+                TrackCount = Scalar(snapshots, LocalTagKey.TrackCount, (p) => TrackCountPlaceholder = p);
+                DiscNumber = Scalar(snapshots, LocalTagKey.DiscNumber, (p) => DiscNumberPlaceholder = p);
+                DiscCount = Scalar(snapshots, LocalTagKey.DiscCount, (p) => DiscCountPlaceholder = p);
+                Rating = Scalar(snapshots, LocalTagKey.Rating, (p) => RatingPlaceholder = p);
+                PlayCount = Scalar(snapshots, LocalTagKey.PlayCount, (p) => PlayCountPlaceholder = p);
 
                 FillList(Artists, snapshots, LocalTagKey.Artist, p => ArtistsPlaceholder = p);
                 FillList(AlbumArtists, snapshots, LocalTagKey.AlbumArtist, p => AlbumArtistsPlaceholder = p);
@@ -168,7 +131,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             }
         }
 
-        private string Scalar(IReadOnlyList<(Track Track, Album? Album)> snapshots, LocalTagKey key)
+        private string Scalar(IReadOnlyList<(Track Track, Album? Album)> snapshots, LocalTagKey key, Action<string> setPlaceholder)
         {
             if (snapshots.Count == 0)
                 return string.Empty;
@@ -178,7 +141,10 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             for (int i = 1; i < snapshots.Count; i++)
             {
                 if (!string.Equals(value, First(snapshots[i], key), StringComparison.OrdinalIgnoreCase))
+                {
+                    setPlaceholder(MultipleValuesString);
                     return string.Empty;
+                }
             }
 
             return value;
