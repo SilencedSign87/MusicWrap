@@ -9,6 +9,7 @@ using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Windows;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {
@@ -30,6 +31,10 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             _logger = logger;
             _autocomplete = autocomplete;
             _localMetadata = localMetadata;
+
+            Artists.CollectionChanged += OnListChanged;
+            AlbumArtists.CollectionChanged += OnListChanged;
+            Genres.CollectionChanged += OnListChanged;
         }
 
         #region Properties
@@ -65,6 +70,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         [ObservableProperty] public partial string PlayCountPlaceholder { get; set; } = string.Empty;
 
         [ObservableProperty] public partial IReadOnlyList<string> ArtistSuggestions { get; set; } = [];
+        [ObservableProperty] public partial IReadOnlyList<string> AlbumSuggestions { get; set; } = [];
         [ObservableProperty] public partial IReadOnlyList<string> AlbumArtistSuggestions { get; set; } = [];
         [ObservableProperty] public partial IReadOnlyList<string> GenreSuggestions { get; set; } = [];
 
@@ -113,6 +119,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                 FillList(AlbumArtists, snapshots, LocalTagKey.AlbumArtist, p => AlbumArtistsPlaceholder = p);
                 FillList(Genres, snapshots, LocalTagKey.Genre, p => GenresPlaceholder = p);
 
+                AlbumSuggestions = _autocomplete.GetAllValues(MetadataType.AlbumTitle);
                 ArtistSuggestions = _autocomplete.GetAllValues(MetadataType.ArtistName);
                 AlbumArtistSuggestions = ArtistSuggestions;
                 GenreSuggestions = _autocomplete.GetAllValues(MetadataType.GenreName);
@@ -262,10 +269,12 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                     _logger.LogInformation(
                         "Saved {Tags} local tags on {Updated}/{Total} tracks.",
                         changes.Count, updated, trackIds.Count);
+                    MessageBox.Show("Changes saved correctly", "Metadata editor", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)
             {
+                MessageBox.Show("Error saving metadata", "Metadata editor", MessageBoxButton.OK, MessageBoxImage.Error);
                 _logger.LogError(ex, "Error saving local metadata.");
             }
             finally

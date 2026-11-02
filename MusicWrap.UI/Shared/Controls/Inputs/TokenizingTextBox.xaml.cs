@@ -397,7 +397,7 @@ namespace MusicWrap.UI.Controls
                     .ToArray();
 
             SuggestionsList.ItemsSource = matches;
-            SuggestionsList.SelectedIndex = -1;
+            SuggestionsList.SelectedIndex = -1; 
 
             IsSuggestionListOpen = !IsReadOnly && matches.Length > 0;
 

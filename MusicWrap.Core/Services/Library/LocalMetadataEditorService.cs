@@ -77,12 +77,8 @@ namespace MusicWrap.Core.Services.Library
                 return 0;
 
             foreach (var track in tracks)
-            {
-                var album = _library.GetAlbumById(track.AlbumId);
-
-                foreach (var change in changes)
-                    ApplyChange(change, track, album);
-            }
+                ApplyChangesToTrack(track, changes);
+            
 
             _library.RefreshLibrary();
             _saveCoordinator.Enqueue(SaveKind.Library);
@@ -91,7 +87,55 @@ namespace MusicWrap.Core.Services.Library
             return tracks.Count;
         }
 
-        private void ApplyChange(LocalTagChange change, Track track, Album? album)
+        private void ApplyChangesToTrack(Track track, IReadOnlyList<LocalTagChange> changes)
+        {
+            var album = _library.GetAlbumById(track.AlbumId);
+
+            var albumName = album?.Title ?? "Unknown Album";
+            var albumArtistIds = album?.ArtistIds ?? [];
+            var year = album?.Year ?? 0;
+
+            var albumChange = changes.FirstOrDefault(c => c.Key == LocalTagKey.Album);
+            var albumArtistChange = changes.FirstOrDefault(c => c.Key == LocalTagKey.AlbumArtist);
+            var yearChange = changes.FirstOrDefault(c => c.Key == LocalTagKey.Year);
+
+            if (albumChange is not null)
+                albumName = First(albumChange.Values);
+
+            if (albumArtistChange is not null)
+                albumArtistIds = _indexer.GetOrCreateArtistIds(albumArtistChange.Values);
+
+            if (yearChange is not null)
+                year = ParseInt(yearChange.Values);
+
+            bool albumChanged =
+                albumChange is not null ||
+                albumArtistChange is not null ||
+                yearChange is not null;
+
+            if (albumChanged)
+                track.AlbumId = _indexer.GetOrCreateAlbumForMetadata(
+                    albumName,
+                    albumArtistIds,
+                    year,
+                    track.ArtistIds,
+                    track.CoverId
+                    );
+
+            foreach (var change in changes)
+            {
+                if (change.Key is LocalTagKey.Album
+                    or LocalTagKey.AlbumArtist
+                    or LocalTagKey.Year)
+                {
+                    continue;
+                }
+
+                ApplyTrackChange(change, track);
+            }
+        }
+
+        private void ApplyTrackChange(LocalTagChange change, Track track)
         {
             var values = change.Values;
 
@@ -131,21 +175,6 @@ namespace MusicWrap.Core.Services.Library
 
                 case LocalTagKey.PlayCount:
                     track.PlayCount = ParseInt(values);
-                    break;
-
-                case LocalTagKey.Album:
-                    if (album is null) break;
-                    album.Title = First(values);
-                    break;
-
-                case LocalTagKey.AlbumArtist:
-                    if (album is null) break;
-                    album.ArtistIds = _indexer.GetOrCreateArtistIds(values);
-                    break;
-
-                case LocalTagKey.Year:
-                    if (album is null) break;
-                    album.Year = ParseInt(values);
                     break;
             }
         }

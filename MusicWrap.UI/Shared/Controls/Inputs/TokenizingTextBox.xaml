@@ -8,6 +8,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="48" d:DesignWidth="200"
              Focusable="False"
+             x:Name="Root"
              >
     <UserControl.Resources>
         <DataTemplate x:Key="DefaultTokenTemplate">
@@ -61,8 +62,8 @@
                         MinWidth="100"
                         Height="26"
                         VerticalAlignment="Center"
-                        PlaceholderText="{Binding PlaceholderText, RelativeSource={RelativeSource AncestorType={x:Type local:TokenizingTextBox}}}"
-                        Text="{Binding Text, RelativeSource={RelativeSource AncestorType={x:Type local:TokenizingTextBox}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
+                        Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         EnterPressed="Input_EnterPressed"
                         TextChanged="Input_TextChanged"/>
                 </local:TokenizingPanel>
@@ -74,24 +75,23 @@
            Placement="Bottom"
            StaysOpen="False"
            AllowsTransparency="True"
-           IsOpen="{Binding IsSuggestionListOpen,
-               RelativeSource={RelativeSource AncestorType={x:Type local:TokenizingTextBox}},
-               Mode=TwoWay}">
-
+           IsOpen="{Binding IsSuggestionListOpen, ElementName=Root, Mode=TwoWay}">
             <Border MinWidth="220"
-                MaxHeight="260"
-                Background="{DynamicResource BackgroundFloating}"
-                BorderBrush="{DynamicResource StrokeFloating}"
-                BorderThickness="1"
-                CornerRadius="8">
+                    MaxHeight="260"
+                    Background="{DynamicResource BackgroundFloating}"
+                    BorderBrush="{DynamicResource StrokeFloating}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    >
                      <!--ItemsSource="{Binding AutocompleteSource,
                          RelativeSource={RelativeSource AncestorType={x:Type local:TokenizingTextBox}}}"-->
                 <ListBox x:Name="SuggestionsList"
-                     DisplayMemberPath="{Binding DisplayMemberPath,
-                         RelativeSource={RelativeSource AncestorType={x:Type local:TokenizingTextBox}}}"
-                     SelectionChanged="SuggestionsList_SelectionChanged"
-                     MouseDoubleClick="SuggestionsList_MouseDoubleClick"
-                     PreviewKeyDown="SuggestionsList_PreviewKeyDown"/>
+                         DisplayMemberPath="{Binding DisplayMemberPath, ElementName=Root}"
+                         SelectionChanged="SuggestionsList_SelectionChanged"
+                         MouseDoubleClick="SuggestionsList_MouseDoubleClick"
+                         PreviewKeyDown="SuggestionsList_PreviewKeyDown"
+                         Background="Transparent"
+                         />
             </Border>
         </Popup>
     </Grid>

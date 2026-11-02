@@ -1,0 +1,44 @@
+﻿<UserControl x:Class="MusicWrap.UI.Controls.AutosuggestTextBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MusicWrap.UI.Controls"
+             mc:Ignorable="d" 
+             x:Name="Root"
+             d:DesignHeight="32" d:DesignWidth="200">
+    <Grid>
+        <local:AppInput
+            x:Name="Input"
+            MinHeight="34"
+            Text="{Binding Text, ElementName=Root,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+            PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
+            TextChanged="Input_TextChanged"
+            />
+        <Popup
+            x:Name="SuggestionsPopup"
+            PlacementTarget="{Binding ElementName=Input}"
+            Placement="Bottom"
+            StaysOpen="False"
+            AllowsTransparency="True"
+            IsOpen="{Binding IsSuggestionsListOpen, ElementName=Root, Mode=TwoWay}"
+            >
+            <Border MinWidth="220"
+                MaxHeight="260"
+                Background="{DynamicResource BackgroundFloating}"
+                BorderBrush="{DynamicResource StrokeFloating}"
+                BorderThickness="1"
+                CornerRadius="8">
+                <ListBox
+                    x:Name="SuggestionsList"
+                    DisplayMemberPath="{Binding DisplayMemberPath ,ElementName=Root}"
+                    SelectionChanged="SuggestionsList_SelectionChanged"
+                    MouseDoubleClick="SuggestionsList_MouseDoubleClick"
+                    PreviewKeyDown="SuggestionsList_PreviewKeyDown"
+                    Background="Transparent"
+                    />
+            </Border>
+
+        </Popup>
+    </Grid>
+</UserControl>

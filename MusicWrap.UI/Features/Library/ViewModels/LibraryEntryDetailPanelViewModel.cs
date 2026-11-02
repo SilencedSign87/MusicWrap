@@ -133,7 +133,7 @@ namespace MusicWrap.UI.Features.Library.ViewModels
                 return;
             _musicPlayerService.SetQueue(trackIds);
             if (_musicPlayerService.IsShuffleEnabled)
-                _musicPlayerService.SetShuffle(false);
+                _musicPlayerService.ToggleShuffle();
 
             _musicPlayerService.PlayIndex(0);
 
@@ -146,8 +146,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
             if (trackIds is null || trackIds.Length == 0)
                 return;
             _musicPlayerService.SetQueue(trackIds);
-            if (_musicPlayerService.IsShuffleEnabled)
-                _musicPlayerService.SetShuffle(true);
+            if (!_musicPlayerService.IsShuffleEnabled)
+                _musicPlayerService.ToggleShuffle();
 
             _musicPlayerService.PlayIndex(0);
         }

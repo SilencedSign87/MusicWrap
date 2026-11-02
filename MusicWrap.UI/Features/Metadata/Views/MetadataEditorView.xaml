@@ -11,32 +11,7 @@
              d:DesignHeight="600" d:DesignWidth="500"
              d:DataContext="{d:DesignInstance Type=vm:MetadataEditorViewmodel}"
              >
-
-    <UserControl.Resources>
-        <SolidColorBrush x:Key="TagChangedForeground" Color="#6CCB5F"/>
-
-        <Style x:Key="TagInputStyle"
-               TargetType="controls:AppInput"
-               BasedOn="{StaticResource {x:Type controls:AppInput}}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding HasChanges}" Value="True">
-                    <Setter Property="Foreground" Value="{StaticResource TagChangedForeground}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-        <Style x:Key="TagAutocompleteInputStyle" TargetType="controls:AutocompleteMetadataInput">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding HasChanges}" Value="True">
-                    <Setter Property="Foreground" Value="{StaticResource TagChangedForeground}"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding HasChanges}" Value="False">
-                    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-    </UserControl.Resources>
-
+    
     <Grid RowDefinitions="Auto,*,48">
         <ProgressBar Grid.Row="0"
                      IsIndeterminate="True"
@@ -65,10 +40,15 @@
                                             />
 
                 <TextBlock Grid.Column="0" Grid.Row="4" Text="Album" Margin="0,8,0,8" VerticalAlignment="Center" TextAlignment="Right"/>
-                <controls:AppInput Grid.Column="2" Grid.Row="4" 
+                <!--<controls:AppInput Grid.Column="2" Grid.Row="4" 
                                    Text="{Binding Album, UpdateSourceTrigger=PropertyChanged}" 
                                    PlaceholderText="{Binding AlbumPlaceholder}"
-                                   />
+                                   />-->
+                <controls:AutosuggestTextBox Grid.Column="2" Grid.Row="4" 
+                                             Text="{Binding Album, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="{Binding AlbumPlaceholder}"
+                                             SuggestionsSource="{Binding AlbumSuggestions}"
+                                             />
 
                 <TextBlock Grid.Column="0" Grid.Row="6" Text="Album Artists" Margin="0,8,0,8" VerticalAlignment="Center" TextAlignment="Right"/>
                 <controls:TokenizingTextBox Grid.Column="2" Grid.Row="6"
@@ -129,8 +109,8 @@
                 <TextBlock Grid.Column="0" Grid.Row="18" Text="Play count" Margin="0,8,0,8" VerticalAlignment="Center" TextAlignment="Right"/>
                 <Grid Grid.Column="2" Grid.Row="18" ColumnDefinitions="*,8,Auto" Width="200" HorizontalAlignment="Left">
                     <controls:AppInput Grid.Column="0"
-                                       Text="{Binding Rating, UpdateSourceTrigger=PropertyChanged}"
-                                       PlaceholderText="{Binding RatingPlaceholder}"    
+                                       Text="{Binding PlayCount, UpdateSourceTrigger=PropertyChanged}"
+                                       PlaceholderText="{Binding PlayCountPlaceholder}"    
                                        />
                     <controls:AppButton Grid.Column="2" Style="{StaticResource DefaultButton}" Text="Reset" />
                 </Grid>

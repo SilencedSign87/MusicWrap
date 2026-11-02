@@ -54,7 +54,7 @@ namespace MusicWrap.Core.Services.Library
                 lock (_lock)
                 {
                     track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
-                    if(track is null || !System.IO.File.Exists(track.Path))
+                    if (track is null || !System.IO.File.Exists(track.Path))
                     {
                         return;
                     }
@@ -352,6 +352,39 @@ namespace MusicWrap.Core.Services.Library
                 ids[i] = GetOrCreateGenre(names[i]);
 
             return ids;
+        }
+        public int GetOrCreateAlbumForMetadata(string albumName, IReadOnlyList<int> albumArtistIds, int year, IReadOnlyList<int> trackArtistIds, int coverId = 0)
+        {
+            albumName = string.IsNullOrWhiteSpace(albumName)
+                ? "Unknown Album"
+                : albumName.Trim();
+
+            int[] artists = albumArtistIds.Count > 0
+                ? [.. albumArtistIds]
+                : [.. trackArtistIds];
+
+            lock (_lock)
+            {
+                var existing = _library.Albums.FirstOrDefault(album =>
+                    NormalizeKey(album.Title) == NormalizeKey(albumName) &&
+                    album.Year == year &&
+                    album.ArtistIds.SequenceEqual(artists));
+
+                if (existing is not null)
+                    return existing.Id;
+
+                var newAlbum = new Album
+                {
+                    Id = _library.GenerateAlbumId(),
+                    Title = albumName,
+                    ArtistIds = artists,
+                    Year = year,
+                    CoverId = coverId
+                };
+
+                _library.Albums.Add(newAlbum);
+                return newAlbum.Id;
+            }
         }
 
         #region  Internal
