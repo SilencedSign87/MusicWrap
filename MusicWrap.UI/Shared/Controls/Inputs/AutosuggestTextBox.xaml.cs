@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Windows.ApplicationModel.Background;
 
 namespace MusicWrap.UI.Controls
 {
@@ -15,6 +14,14 @@ namespace MusicWrap.UI.Controls
         public AutosuggestTextBox()
         {
             InitializeComponent();
+            Input.LostKeyboardFocus += Input_LostKeyboardFocus;
+        }
+
+        private void Input_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (SuggestionsList.IsKeyboardFocusWithin) return;
+
+            IsSuggestionsListOpen = false;
         }
 
         #region Dependency Properties
@@ -47,7 +54,7 @@ namespace MusicWrap.UI.Controls
             set { SetValue(TextProperty, value); }
         }
         public static readonly DependencyProperty TextProperty =
-            DependencyProperty.Register(nameof(Text), typeof(string), typeof(AutosuggestTextBox), 
+            DependencyProperty.Register(nameof(Text), typeof(string), typeof(AutosuggestTextBox),
                 new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnTextChanged));
         private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -138,6 +145,7 @@ namespace MusicWrap.UI.Controls
                 Input.Text,
                 AutosuggestTextChangedReason.UserInput
                 );
+
             RefreshSuggestions();
         }
 
@@ -195,7 +203,9 @@ namespace MusicWrap.UI.Controls
             SuggestionsList.ItemsSource = matches;
             SuggestionsList.SelectedIndex = -1;
 
-            IsSuggestionsListOpen = !IsReadonly && matches.Length > 0;
+            IsSuggestionsListOpen = !IsReadonly
+                && (Input?.IsKeyboardFocusWithin ?? false)
+                && matches.Length > 0;
         }
         private void RaiseTextChanged(string text, AutosuggestTextChangedReason reason)
         {

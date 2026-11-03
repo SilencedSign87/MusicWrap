@@ -36,14 +36,16 @@ namespace MusicWrap.Core.DI
             services.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
 
             // DataLayer
-            services.AddSingleton<ILibraryRepository, LibraryRepository>();
-            services.AddSingleton(sp => sp.GetRequiredService<ILibraryRepository>().Load());
-            services.AddSingleton<IPlaybackRepository, PlaybackRepository>();
-            services.AddSingleton(sp => sp.GetRequiredService<IPlaybackRepository>().Load());
-            services.AddSingleton<IUserSettingsRepository, UserSettingsRepository>();
-            services.AddSingleton(sp => sp.GetRequiredService<IUserSettingsRepository>().Load());
-            services.AddSingleton<IPlaylistRepository, PlaylistRepository>();
-            services.AddSingleton(sp => sp.GetRequiredService<IPlaylistRepository>().Load());
+            services.AddSingleton<LibraryRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<LibraryRepository>().Load());
+            services.AddSingleton<LyricsRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<LyricsRepository>().Load());
+            services.AddSingleton<PlaybackRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<PlaybackRepository>().Load());
+            services.AddSingleton<UserSettingsRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<UserSettingsRepository>().Load());
+            services.AddSingleton<PlaylistRepository>();
+            services.AddSingleton(sp => sp.GetRequiredService<PlaylistRepository>().Load());
             services.AddSingleton<ILibraryService, LibraryService>();
 
             // Core Services

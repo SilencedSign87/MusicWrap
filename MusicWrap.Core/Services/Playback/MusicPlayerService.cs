@@ -22,7 +22,7 @@ namespace MusicWrap.Core.Services.Playback
         private readonly MusicLibrary _library;
         private readonly AudioEngine _audioEngine;
         private readonly ILogger<MusicPlayerService> _logger;
-        private readonly IPlaybackRepository _playbackRepository;
+        private readonly PlaybackRepository _playbackRepository;
         private readonly IServiceProvider _serviceProvider;
         private readonly IUIDispatcher _dispatcher;
         private readonly MusicWrapSettings _userSettings;
@@ -168,7 +168,7 @@ namespace MusicWrap.Core.Services.Playback
             MusicLibrary library,
             IQueueManager queueManager,
             IQueueItemPlaybackResolver queueItemPlaybackResolver,
-            IPlaybackRepository playbackRepository,
+            PlaybackRepository playbackRepository,
             IServiceProvider serviceProvider,
             ILogger<MusicPlayerService> logger,
             IUIDispatcher dispatcher,

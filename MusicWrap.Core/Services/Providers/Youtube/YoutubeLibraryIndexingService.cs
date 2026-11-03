@@ -49,7 +49,6 @@ namespace MusicWrap.Core.Services.Providers.Youtube
         private static readonly HttpClient _httpClient = new();
 
         private readonly LibraryIndexer _libraryIndexer;
-        private readonly ILibraryRepository _libraryRepository;
         private readonly MusicLibrary _library;
         private readonly MusicWrapSettings _userSettings;
         private readonly ILogger _logger;
@@ -57,7 +56,6 @@ namespace MusicWrap.Core.Services.Providers.Youtube
 
         public YoutubeLibraryIndexingService(
             LibraryIndexer libraryIndexer,
-            ILibraryRepository libraryRepository,
             ILogger<YoutubeLibraryIndexingService> logger,
             MusicLibrary library,
             ISaveCoordinator saveCoordinator,
@@ -65,7 +63,6 @@ namespace MusicWrap.Core.Services.Providers.Youtube
         {
             _logger = logger;
             _libraryIndexer = libraryIndexer;
-            _libraryRepository = libraryRepository;
             _library = library;
             _userSettings = userSettings;
             _saveCoordinator = saveCoordinator;

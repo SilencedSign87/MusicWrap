@@ -19,9 +19,9 @@ namespace MusicWrap.UI.Features.Providers.Services
     {
         private readonly MusicLibrary _library;
         private readonly LibraryIndexer _indexer;
-        private readonly ILibraryRepository _repository;
+        private readonly LibraryRepository _repository;
         private readonly MusicWrapSettings _settings;
-        public YoutubeProviderService(MusicLibrary library, LibraryIndexer indexer, ILibraryRepository repository, MusicWrapSettings settings)
+        public YoutubeProviderService(MusicLibrary library, LibraryIndexer indexer, LibraryRepository repository, MusicWrapSettings settings)
         {
             _library = library;
             _indexer = indexer;

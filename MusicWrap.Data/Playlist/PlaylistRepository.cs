@@ -9,14 +9,7 @@ using System.Text;
 
 namespace MusicWrap.Data.Playlist
 {
-    public interface IPlaylistRepository
-    {
-        PlaylistData Load();
-        void Save(PlaylistData playlist);
-        void Clear();
-        void Backup();
-    }
-    public class PlaylistRepository : IPlaylistRepository, IRepository<PlaylistData>
+    public class PlaylistRepository : IRepository<PlaylistData>
     {
         public static readonly string PlaylistFile = System.IO.Path.Combine(MusicWrapDirectories.LibraryDirectory, "playlist.dat");
         public static readonly string PlaylistBackupFile = System.IO.Path.Combine(MusicWrapDirectories.LibraryDirectory, "playlist.bak");

@@ -8,9 +8,6 @@ using MusicWrap.Data.Playlist;
 using MusicWrap.Data.Playlist.Models;
 using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.Core.Saving
 {
@@ -21,6 +18,8 @@ namespace MusicWrap.Core.Saving
         private static readonly TimeSpan LibraryDebounce = TimeSpan.FromMilliseconds(3500);
         private static readonly TimeSpan CacheDebounce = TimeSpan.FromMilliseconds(2500);
         private static readonly TimeSpan PlaylistDebounce = TimeSpan.FromMilliseconds(2500);
+        private static readonly TimeSpan LyricsDebounce = TimeSpan.FromMilliseconds(2500);
+
         private static readonly TimeSpan WorkerTick = TimeSpan.FromMilliseconds(250);
 
         private readonly object _lock = new();
@@ -29,16 +28,18 @@ namespace MusicWrap.Core.Saving
         private readonly Task _worker;
 
         // Repository
-        private readonly ILibraryRepository _libraryRepo;
-        private readonly IPlaybackRepository _playbackRepo;
-        private readonly IUserSettingsRepository _settingsRepo;
-        private readonly IPlaylistRepository _playlistRepo;
+        private readonly LibraryRepository _libraryRepo;
+        private readonly PlaybackRepository _playbackRepo;
+        private readonly UserSettingsRepository _settingsRepo;
+        private readonly PlaylistRepository _playlistRepo;
+        private readonly LyricsRepository _lyricsRepo;
         private readonly ILibraryService _libraryService;
 
         // Entities
         private readonly MusicLibrary _library;
         private readonly MusicWrapSettings _userSettings;
         private readonly PlaylistData _playlistData;
+        private readonly LyricsData _lyricsData;
 
         private readonly MusicPlayerService _player;
 
@@ -49,26 +50,31 @@ namespace MusicWrap.Core.Saving
         private DateTime _nextLibraryUtc = DateTime.MinValue;
         private DateTime _nextCacheUtc = DateTime.MinValue;
         private DateTime _nextPlaylistUtc = DateTime.MinValue;
+        private DateTime _nextLyricsUtc = DateTime.MinValue;
 
         public SaveScheduler(
-            ILibraryRepository libraryRepo,
-        IPlaybackRepository playbackRepo,
-        IUserSettingsRepository settingsRepo,
-        IPlaylistRepository playlistRepo,
-        ILibraryService libraryCache,
-        MusicLibrary library,
-        MusicWrapSettings userSettings,
-        PlaylistData playlistData,
-        MusicPlayerService player)
+            LibraryRepository libraryRepo,
+            PlaybackRepository playbackRepo,
+            UserSettingsRepository settingsRepo,
+            PlaylistRepository playlistRepo,
+            LyricsRepository lyricsRepo,
+            ILibraryService libraryCache,
+            MusicLibrary library,
+            MusicWrapSettings userSettings,
+            PlaylistData playlistData,
+            LyricsData lyricsData,
+            MusicPlayerService player)
         {
             _libraryRepo = libraryRepo;
             _playbackRepo = playbackRepo;
             _settingsRepo = settingsRepo;
             _playlistRepo = playlistRepo;
+            _lyricsRepo = lyricsRepo;
             _libraryService = libraryCache;
             _library = library;
             _userSettings = userSettings;
             _playlistData = playlistData;
+            _lyricsData = lyricsData;
             _player = player;
 
             _worker = Task.Run(() => WorkerLoopAsync(_cts.Token));
@@ -88,6 +94,7 @@ namespace MusicWrap.Core.Saving
                 if ((kind & SaveKind.Library) != 0) _nextLibraryUtc = now + LibraryDebounce;
                 if ((kind & SaveKind.Cache) != 0) _nextCacheUtc = now + CacheDebounce;
                 if ((kind & SaveKind.Playlist) != 0) _nextPlaylistUtc = now + PlaylistDebounce;
+                if ((kind & SaveKind.Lyrics) != 0) _nextLyricsUtc = now + LyricsDebounce;
             }
         }
 
@@ -97,7 +104,7 @@ namespace MusicWrap.Core.Saving
             lock (_lock)
             {
                 toSave = _pending | SaveKind.Settings | SaveKind.Playback
-                   | SaveKind.Library | SaveKind.Cache | SaveKind.Playlist;
+                   | SaveKind.Library | SaveKind.Cache | SaveKind.Playlist | SaveKind.Lyrics;
 
                 _pending = SaveKind.None;
             }
@@ -151,6 +158,7 @@ namespace MusicWrap.Core.Saving
                 if ((_pending & SaveKind.Library) != 0 && nowUtc >= _nextLibraryUtc) { due |= SaveKind.Library; _pending &= ~SaveKind.Library; }
                 if ((_pending & SaveKind.Cache) != 0 && nowUtc >= _nextCacheUtc) { due |= SaveKind.Cache; _pending &= ~SaveKind.Cache; }
                 if ((_pending & SaveKind.Playlist) != 0 && nowUtc >= _nextPlaylistUtc) { due |= SaveKind.Playlist; _pending &= ~SaveKind.Playlist; }
+                if ((_pending & SaveKind.Lyrics) != 0 && nowUtc >= _nextLyricsUtc) { due |= SaveKind.Lyrics; _pending &= ~SaveKind.Lyrics; }
                 return due;
             }
         }
@@ -170,6 +178,8 @@ namespace MusicWrap.Core.Saving
                     try { _settingsRepo.Save(_userSettings); } catch { }
                 if ((kinds & SaveKind.Playlist) != 0)
                     try { _playlistRepo.Save(_playlistData); } catch { }
+                if ((kinds & SaveKind.Lyrics) != 0)
+                    try { _lyricsRepo.Save(_lyricsData); } catch { }
             }
             finally
             {

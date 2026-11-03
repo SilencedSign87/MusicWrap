@@ -7,15 +7,7 @@ using System.IO;
 
 namespace MusicWrap.Data.Player
 {
-    public interface IPlaybackRepository
-    {
-        PlaybackQueueSnapshot Load();
-        void Save(PlaybackQueueSnapshot snapshot);
-        void Clear();
-        void Backup();
-    }
-
-    public class PlaybackRepository : IPlaybackRepository, IRepository<PlaybackQueueSnapshot>
+    public class PlaybackRepository : IRepository<PlaybackQueueSnapshot>
     {
         private static readonly object _lock = new();
 

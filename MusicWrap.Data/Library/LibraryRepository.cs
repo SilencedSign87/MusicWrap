@@ -9,14 +9,7 @@ using System.Text;
 
 namespace MusicWrap.Data.Library
 {
-    public interface ILibraryRepository
-    {
-        MusicLibrary Load();
-        void Save(MusicLibrary library);
-        void Clear();
-        void Backup();
-    }
-    public class LibraryRepository : ILibraryRepository, IRepository<MusicLibrary>
+    public class LibraryRepository : IRepository<MusicLibrary>
     {
         public static readonly string LibraryFile = Path.Combine(MusicWrapDirectories.LibraryDirectory, "library.dat");
         public static readonly string BackupFile = Path.Combine(MusicWrapDirectories.LibraryDirectory, "library.bak");

@@ -7,15 +7,7 @@ using System.IO;
 
 namespace MusicWrap.Data.User
 {
-    public interface IUserSettingsRepository
-    {
-        MusicWrapSettings Load();
-        void Save(MusicWrapSettings settings);
-        void Clear();
-        void Backup();
-    }
-
-    public class UserSettingsRepository : IUserSettingsRepository, IRepository<MusicWrapSettings>
+    public class UserSettingsRepository : IRepository<MusicWrapSettings>
     {
         private static readonly object _lock = new();
 

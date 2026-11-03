@@ -13,6 +13,7 @@ namespace MusicWrap.Data.Infrastructure.Saving
         Library = 4,
         Cache = 8,
         Playlist = 16,
+        Lyrics = 32,
     }
 
 }
