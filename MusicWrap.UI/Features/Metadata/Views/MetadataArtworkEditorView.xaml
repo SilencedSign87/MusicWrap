@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              xmlns:vm="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
+             xmlns:art="clr-namespace:MusicWrap.Core.Services.Library;assembly=MusicWrap.Core"
              mc:Ignorable="d"
              x:Name="ArtworkEditorRoot"
              d:DataContext="{d:DesignInstance Type=vm:MetadataArtworkEditorViewmodel}"
@@ -16,7 +17,7 @@
 
         <!-- Artwork Render Template -->
         <DataTemplate x:Key="ArtworkRenderTemplate" DataType="vm:ArtworkEntry">
-            <controls:SquarePanel>
+            <controls:SquarePanel VerticalAlignment="Top">
                 <Grid>
                     <!-- 1 Artwork -->
                     <controls:ImageContainer
@@ -118,6 +119,7 @@
                             Grid.Column="0" 
                             SelectedItem="{Binding SelectionMode}"
                             ItemsSource="{Binding SelectionModes}"
+                            VerticalAlignment="Top"
                             >
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
@@ -128,15 +130,38 @@
 
                         <!-- SelectFile -->
                         <Border Grid.Column="3">
-                            <Grid ColumnDefinitions="*,8,Auto">
+                            <StackPanel>
 
-                                <controls:AppButton 
+                                <Grid ColumnDefinitions="*,8,Auto,Auto" Height="36">
+                                    <controls:AppButton 
                                     Grid.Column="2"
+                                    Grid.Row="0"
                                     Style="{StaticResource DefaultButton}"
                                     Icon="&#xE838;"
                                     Text="Select File..."
+                                    Command="{Binding SelectFileCommand}"
                                     />
-                            </Grid>
+                                    <controls:AppButton
+                                    Grid.Column="3"
+                                    Grid.Row="0"
+                                    Style="{StaticResource DefaultButton}"
+                                    Icon="&#xE711;"
+                                    Text="Cancel"
+                                    Command="{Binding ClearSelectionCommand}"
+                                    Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    Margin="4,0,0,0"
+                                    />
+
+
+                                </Grid>
+                                <TextBlock 
+                                    Margin="0,8,0,0"
+                                    Text="{Binding CurrentArtworkPath}"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Right"
+                                    Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    />
+                            </StackPanel>
                             <Border.Style>
                                 <Style TargetType="Border">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -150,9 +175,63 @@
                         </Border>
 
                         <!-- ExistingFile -->
-                        <ComboBox Grid.Column="2">
-                            <ComboBox.Style>
-                                <Style TargetType="ComboBox" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                        <Grid Grid.Column="2">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <controls:AppButton
+                                    Style="{StaticResource DefaultButton}"
+                                    Icon="&#xE711;"
+                                    Text="Remove selection"
+                                    Command="{Binding ClearSelectionCommand}"
+                                />
+                            </StackPanel>
+
+                            <StackPanel 
+                                Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}"
+                                        >
+                                <controls:AppInput 
+                                Height="32"
+                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                PlaceholderText="Search track or album artwork..."
+                                />
+
+                                <ListView
+                                Margin="0,4,0,0"
+                                MaxHeight="240"
+                                ItemsSource="{Binding Suggestions}"
+                                SelectedItem="{Binding PickedArtwork, Mode=TwoWay}"
+                                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                Visibility="{Binding HasSuggestions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate DataType="art:ArtworkOption">
+                                            <Grid Height="48" Margin="4" ColumnDefinitions="48,*" ToolTip="{Binding DisplayName}">
+                                                <controls:ImageContainer
+                                                Grid.Column="0"
+                                                Width="48" Height="48"
+                                                BorderThickness="1"
+                                                BorderBrush="{DynamicResource StrokeSurface}"
+                                                CornerRadius="4"
+                                                Source="{Binding FilePath,
+                                                                Converter={StaticResource PathToImageConverter},
+                                                                ConverterParameter=48}" />
+                                                <TextBlock
+                                                Grid.Column="1"
+                                                Margin="8,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Text="{Binding DisplayName}"
+                                                TextTrimming="CharacterEllipsis" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+
+                            <Grid.Style>
+                                <Style TargetType="Grid">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding SelectionMode}" Value="{x:Static vm:ArtworkSelectionMode.ExistingFile}">
@@ -160,9 +239,8 @@
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </ComboBox.Style>
-                        </ComboBox>
-
+                            </Grid.Style>
+                        </Grid>
                     </Grid>
 
                 </StackPanel>
@@ -170,18 +248,49 @@
         </DataTemplate>
 
     </UserControl.Resources>
+    <Grid RowDefinitions="*,48">
 
-    <StackPanel Margin="8">
-        <controls:SectionTitleSeparator Title="Album Artwork"/>
-        <ContentPresenter
+        <StackPanel Grid.Row="0" Margin="8,8,8,0">
+            <controls:SectionTitleSeparator Title="{Binding AlbumSectionTitle}"/>
+            <ContentPresenter
             Content="{Binding AlbumArtworkSource}"
             ContentTemplate="{StaticResource ArtworkEntryTemplate}"
             />
 
-        <controls:SectionTitleSeparator Title="Track Artwork" Margin="0,16,0,0" />
-        <ContentPresenter
+            <controls:SectionTitleSeparator Title="{Binding TrackSectionTitle}" Margin="0,16,0,0" />
+            <ContentPresenter
             Content="{Binding TrackArtworkSource}"
             ContentTemplate="{StaticResource ArtworkEntryTemplate}"
             />
-    </StackPanel>
+        </StackPanel>
+        <Border 
+            Grid.Row="1"
+            Padding="8"
+            Background="{DynamicResource BackgroundLayer}"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource StrokeSurface}"
+            >
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+
+                </StackPanel>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <controls:AppButton 
+                        Style="{StaticResource AccentButton}"
+                        Icon="&#xE74E;"
+                        Text="Save"
+                        Command="{Binding SaveChangesCommand}"
+                       />
+                    <controls:AppButton
+                        Style="{StaticResource DefaultButton}"
+                        Margin="8,0,0,0"
+                        Text="Cancel"
+                        Command="{Binding CancelChangesCommand}"
+                        />
+                </StackPanel>
+            </Grid>
+
+        </Border>
+    </Grid>
 </UserControl>

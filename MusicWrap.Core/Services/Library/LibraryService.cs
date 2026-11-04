@@ -41,6 +41,7 @@ namespace MusicWrap.Core.Services.Library
         void SaveToDisk();
         void ClearLibraryCache();
         void RefreshLibrary();
+        IReadOnlyList<ArtworkOption> GetArtworkOptions();
     }
     public class LibraryService : ILibraryService, IDisposable
     {
@@ -949,6 +950,40 @@ namespace MusicWrap.Core.Services.Library
         {
             _messenger.UnregisterAll(this);
         }
+
+        public IReadOnlyList<ArtworkOption> GetArtworkOptions()
+        {
+            if (_library.CoverAssets.Count == 0) return Array.Empty<ArtworkOption>();
+
+            var names = new Dictionary<int, HashSet<string>>();
+
+            void AddName(int coverId, string? name)
+            {
+                if (coverId == 0 || string.IsNullOrWhiteSpace(name)) return;
+                if (!names.TryGetValue(coverId, out var set))
+                    names[coverId] = set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                set.Add(name);
+            }
+
+            foreach (var track in _library.Tracks)
+            {
+                AddName(track.CoverId, track.Title);
+                if (track.AlbumId != 0 && _albumById.TryGetValue(track.AlbumId, out var album))
+                    AddName(track.CoverId, album.Title);
+            }
+
+            foreach (var album in _library.Albums)
+                AddName(album.CoverId, album.Title);
+
+            return _library.CoverAssets
+                .Select(c => new ArtworkOption
+                {
+                    Id = c.Id,
+                    FilePath = c.FileName,
+                    SearchableStrings = names.TryGetValue(c.Id, out var s) ? s.ToArray() : [],
+                })
+                .ToList();
+        }
         #endregion
     }
     public sealed class TrackRowItem
@@ -963,5 +998,20 @@ namespace MusicWrap.Core.Services.Library
         public string DurationText { get; init; } = "";
         public string? CoverAssetPath { get; init; }
         public string TrackNumberDisplay => TrackNumber > 0 ? TrackNumber.ToString() : "";
+    }
+    public sealed class ArtworkOption
+    {
+        public required int Id { get; init; }
+        public required string FilePath { get; init; }
+        public required IReadOnlyList<string> SearchableStrings { get; init; }
+        public string DisplayName => SearchableStrings.Count > 0 ? string.Join(", ", SearchableStrings.Take(3)) : FilePath;
+        public bool Matches(string? query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return true;
+            foreach (var s in SearchableStrings)
+                if (s.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
+        }
     }
 }
