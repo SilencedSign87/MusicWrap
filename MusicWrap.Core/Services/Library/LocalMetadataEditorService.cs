@@ -8,6 +8,13 @@ using System.Text;
 
 namespace MusicWrap.Core.Services.Library
 {
+    public enum LibraryEntity
+    {
+        Track,
+        Album,
+        Artist,
+        Lyrics
+    }
     public enum LocalTagKey
     {
         Title,
@@ -78,7 +85,7 @@ namespace MusicWrap.Core.Services.Library
 
             foreach (var track in tracks)
                 ApplyChangesToTrack(track, changes);
-            
+
 
             _library.RefreshLibrary();
             _saveCoordinator.Enqueue(SaveKind.Library);
@@ -86,6 +93,54 @@ namespace MusicWrap.Core.Services.Library
             _logger.LogInformation("Updated local metadata on {Count} tracks.", tracks.Count);
             return tracks.Count;
         }
+
+        public bool SetArtwork(LibraryEntity entity, IReadOnlyList<int> ids, string artworkPath)
+        {
+            var bytes = File.ReadAllBytes(artworkPath);
+            var mineType = LibraryIndexer.GetMimeTypeFromExtension(artworkPath);
+
+            var newCoverAsset = _indexer.GetOrCreateCoverAsset(bytes, mineType);
+
+            if (newCoverAsset == 0) return false;
+
+            return SetArtwork(entity, ids, newCoverAsset);
+        }
+
+        public bool SetArtwork(LibraryEntity entity, IReadOnlyList<int> ids, int coverAssetId)
+        {
+            if (_library.GetCoverAsset(coverAssetId) is not null)
+            {
+                bool result = false;
+                switch (entity)
+                {
+                    case LibraryEntity.Track:
+                        foreach (var id in ids)
+                        {
+                            var track = _library.GetTrackById(id);
+                            track?.CoverId = coverAssetId;
+                        }
+                        result = true;
+                        break;
+                    case LibraryEntity.Album:
+                        foreach (var id in ids)
+                        {
+                            var album = _library.GetAlbumById(id);
+                            album?.CoverId = coverAssetId;
+                        }
+                        result = true;
+                        break;
+                }
+                if (result)
+                {
+                    _library.RefreshLibrary();
+                    _saveCoordinator.Enqueue(SaveKind.Library);
+                }
+                return result;
+            }
+            return false;
+        }
+
+        #region Internal
 
         private void ApplyChangesToTrack(Track track, IReadOnlyList<LocalTagChange> changes)
         {
@@ -184,6 +239,6 @@ namespace MusicWrap.Core.Services.Library
 
         private static int ParseInt(IReadOnlyList<string> values)
             => values.Count > 0 && int.TryParse(values[0], out var parsed) ? parsed : 0;
-
+        #endregion
     }
 }

@@ -1,8 +1,8 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Windows;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using MusicWrap.Core.Services.Library;
-using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.ViewModels;
 
@@ -12,6 +12,9 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
     {
         private readonly ILibraryService _library;
         private readonly MetadataEditorWorkspace _workspace;
+        private readonly LocalMetadataEditorService _localMetadata;
+
+        private IReadOnlyList<int> CurrentAlbumIds { get; set; } = [];
 
         [ObservableProperty] public partial string AlbumSectionTitle { get; set; } = "Album Artwork";
         public ArtworkEntry AlbumArtworkSource { get; } = new();
@@ -22,10 +25,11 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         private bool CanSave => HasChanges;
         private bool CanCancel => HasChanges;
 
-        public MetadataArtworkEditorViewmodel(MetadataEditorWorkspace workspace, ILibraryService library)
+        public MetadataArtworkEditorViewmodel(MetadataEditorWorkspace workspace, ILibraryService library, LocalMetadataEditorService localMetadataEditorService)
         {
             _workspace = workspace;
             _library = library;
+            _localMetadata = localMetadataEditorService;
 
             AlbumArtworkSource.PropertyChanged += OnEntryChanged;
             TrackArtworkSource.PropertyChanged += OnEntryChanged;
@@ -35,7 +39,37 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         [RelayCommand(CanExecute = nameof(CanSave))]
         public void SaveChanges()
         {
-            // TODO
+            bool hasSomethingUpdate = false;
+            if (TrackArtworkSource.HasChanged)
+            {
+                if (TrackArtworkSource.SelectionMode == ArtworkSelectionMode.SelectFile)
+                {
+
+                    hasSomethingUpdate = hasSomethingUpdate || _localMetadata.SetArtwork(LibraryEntity.Track, _workspace.TrackIds, TrackArtworkSource.CurrentArtworkPath);
+                }
+                else if (TrackArtworkSource.SelectionMode == ArtworkSelectionMode.ExistingFile && TrackArtworkSource.SelectedCoverId is not null)
+                {
+                    hasSomethingUpdate = hasSomethingUpdate || _localMetadata.SetArtwork(LibraryEntity.Track, _workspace.TrackIds, coverAssetId: TrackArtworkSource.SelectedCoverId ?? 0);
+                }
+            }
+            if (AlbumArtworkSource.HasChanged)
+            {
+                if (AlbumArtworkSource.SelectionMode == ArtworkSelectionMode.SelectFile)
+                {
+                    hasSomethingUpdate = hasSomethingUpdate || _localMetadata.SetArtwork(LibraryEntity.Album, CurrentAlbumIds, AlbumArtworkSource.CurrentArtworkPath);
+                }
+                else if (AlbumArtworkSource.SelectionMode == ArtworkSelectionMode.ExistingFile && AlbumArtworkSource.SelectedCoverId is not null)
+                {
+                    hasSomethingUpdate = hasSomethingUpdate || _localMetadata.SetArtwork(LibraryEntity.Album, CurrentAlbumIds, coverAssetId: AlbumArtworkSource.SelectedCoverId ?? 0);
+                }
+            }
+
+            if (hasSomethingUpdate)
+            {
+
+                MessageBox.Show("Artwork Saved", "Metadata editor", MessageBoxButton.OK, MessageBoxImage.Information);
+                Load();
+            }
         }
 
         [RelayCommand(CanExecute = nameof(CanCancel))]
@@ -84,6 +118,9 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                 1 => "Album Artwork",
                 _ => $"Album Artwork • {albumIds.Count} albums",
             };
+
+            CurrentAlbumIds = [.. albumIds];
+
             foreach (var albumId in albumIds)
             {
                 var album = _library.GetAlbumById(albumId);

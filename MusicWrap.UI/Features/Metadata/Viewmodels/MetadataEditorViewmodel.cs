@@ -270,6 +270,8 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
                         "Saved {Tags} local tags on {Updated}/{Total} tracks.",
                         changes.Count, updated, trackIds.Count);
                     MessageBox.Show("Changes saved correctly", "Metadata editor", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Load();
+                    return;
                 }
             }
             catch (Exception ex)
