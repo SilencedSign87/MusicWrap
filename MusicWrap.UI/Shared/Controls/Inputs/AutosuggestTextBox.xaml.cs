@@ -149,6 +149,33 @@ namespace MusicWrap.UI.Controls
             RefreshSuggestions();
         }
 
+        private void Input_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Down:
+                    MoveNextSuggestion(1);
+                    e.Handled = true;
+                    break;
+                case Key.Up:
+                    MoveNextSuggestion(-1);
+                    e.Handled = true;
+                    break;
+                case Key.Escape:
+                    IsSuggestionsListOpen = false;
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        private void Input_EnterPressed(object sender, RoutedEventArgs e)
+        {
+            if (SuggestionsList.SelectedItem is object suggestion)
+            {
+                CommitSuggestion(suggestion);
+            }
+        }
+
         private void SuggestionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
@@ -186,6 +213,19 @@ namespace MusicWrap.UI.Controls
 
             Text = suggestionText;
             IsSuggestionsListOpen = false;
+        }
+
+        private void MoveNextSuggestion(int direction)
+        {
+            if (SuggestionsList.Items.Count == 0) return;
+
+            int newIndex = SuggestionsList.SelectedIndex + direction;
+
+            if (newIndex < 0) newIndex = SuggestionsList.Items.Count - 1;
+            else if (newIndex >= SuggestionsList.Items.Count) newIndex = 0;
+
+            SuggestionsList.SelectedIndex = newIndex;
+            SuggestionsList.ScrollIntoView(SuggestionsList.SelectedItem);
         }
         private void RefreshSuggestions()
         {

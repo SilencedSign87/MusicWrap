@@ -373,12 +373,6 @@ namespace MusicWrap.UI.Controls
                 Input.Text,
                 TokenizingTextChangedReason.UserInput);
 
-            //SuggestionsList.SelectedIndex = -1;
-
-            //IsSuggestionListOpen =
-            //    !IsReadOnly &&
-            //    !string.IsNullOrWhiteSpace(Input.Text) &&
-            //    SuggestionsList.HasItems;
             RefreshSuggestions();
         }
 
@@ -397,10 +391,38 @@ namespace MusicWrap.UI.Controls
                     .ToArray();
 
             SuggestionsList.ItemsSource = matches;
-            SuggestionsList.SelectedIndex = -1; 
+            SuggestionsList.SelectedIndex = -1;
 
             IsSuggestionListOpen = !IsReadOnly && matches.Length > 0;
 
+        }
+
+        private void Input_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Down:
+                    MoveSuggestionIndex(1);
+                    e.Handled = true;
+                    break;
+                case Key.Up:
+                    MoveSuggestionIndex(-1);
+                    e.Handled = true;
+                    break;
+                case Key.Escape:
+                    IsSuggestionListOpen = false;
+                    e.Handled = true;
+                    break;
+                case Key.Tab:
+                    if (IsSuggestionListOpen &&
+                        SuggestionsList.SelectedItem is object suggestion)
+                    {
+                        CommitSuggestion(suggestion);
+                        e.Handled = true;
+                    }
+                    break;
+                    // enter is handled by the Input_EnterPressed event
+            }
         }
 
         private void Input_EnterPressed(object sender, RoutedEventArgs e)
@@ -428,6 +450,22 @@ namespace MusicWrap.UI.Controls
                 this,
                 text,
                 reason));
+        }
+
+        private void MoveSuggestionIndex(int direction)
+        {
+            if (SuggestionsList is null || SuggestionsList.Items.Count == 0)
+                return;
+
+            int newIndex = SuggestionsList.SelectedIndex + direction;
+
+            if (newIndex < 0)
+                newIndex = SuggestionsList.Items.Count - 1;
+            else if (newIndex >= SuggestionsList.Items.Count)
+                newIndex = 0;
+
+            SuggestionsList.SelectedIndex = newIndex;
+            SuggestionsList.ScrollIntoView(SuggestionsList.SelectedItem);
         }
 
         private void SuggestionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)

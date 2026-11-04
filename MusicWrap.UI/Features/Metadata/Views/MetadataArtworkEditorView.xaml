@@ -8,102 +8,180 @@
              mc:Ignorable="d"
              x:Name="ArtworkEditorRoot"
              d:DataContext="{d:DesignInstance Type=vm:MetadataArtworkEditorViewmodel}"
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="8">
-        <ItemsControl 
-            ItemsSource="{Binding ArtworksViewSource.View, Mode=OneWay}"
-            ScrollViewer.CanContentScroll="True"
-            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-            ScrollViewer.VerticalScrollBarVisibility="Auto"
+             d:DesignHeight="600" d:DesignWidth="500"
+             d:Foreground="white"
+             d:Background="Black"
+             >
+    <UserControl.Resources>
 
-            VirtualizingPanel.IsVirtualizing="True"
-            VirtualizingPanel.IsVirtualizingWhenGrouping="True"
-            VirtualizingPanel.VirtualizationMode="Recycling"
-            VirtualizingPanel.ScrollUnit="Item"
-            VirtualizingPanel.CacheLength="2,2"
-            VirtualizingPanel.CacheLengthUnit="Page">
-            <ItemsControl.Template>
-                <ControlTemplate TargetType="{x:Type ItemsControl}">
-                    <ScrollViewer
-                        Padding="{TemplateBinding Padding}"
-                        HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
-                        VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
-                        CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}">
+        <!-- Artwork Render Template -->
+        <DataTemplate x:Key="ArtworkRenderTemplate" DataType="vm:ArtworkEntry">
+            <controls:SquarePanel>
+                <Grid>
+                    <!-- 1 Artwork -->
+                    <controls:ImageContainer
+                        Source="{Binding CurrentArtworkPath, Converter={StaticResource PathToImageConverter}, ConverterParameter=150}"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource StrokeSurface}"
+                        CornerRadius="4">
+                        <controls:ImageContainer.Style>
+                            <Style TargetType="controls:ImageContainer">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMultipleValues}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CurrentArtworkPath}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </controls:ImageContainer.Style>
+                    </controls:ImageContainer>
 
-                        <ItemsPresenter />
-                    </ScrollViewer>
-                </ControlTemplate>
-            </ItemsControl.Template>
-            <ItemsControl.GroupStyle>
-                <GroupStyle>
-                    <GroupStyle.HeaderTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,0,0,8">
-                                <controls:SectionTitleSeparator Title="{Binding Name}" />
-                            </Border>
-                        </DataTemplate>
-                    </GroupStyle.HeaderTemplate>
-                    <GroupStyle.ContainerStyle>
-                        <Style TargetType="{x:Type GroupItem}">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="{x:Type GroupItem}">
-                                        <StackPanel>
-                                            <ContentPresenter />
-                                            <ItemsPresenter/>
-                                        </StackPanel>
-                                    </ControlTemplate>
-                                </Setter.Value>
+                    <!-- Multiple artworks -->
+                    <Border
+                        Background="{DynamicResource BackgroundCard1}"
+                        CornerRadius="4"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource StrokeSurface}">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasMultipleValues}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="Multiple Values"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Opacity="0.5"/>
+                    </Border>
 
-                            </Setter>
-                        </Style>
-                    </GroupStyle.ContainerStyle>
-                </GroupStyle>
-            </ItemsControl.GroupStyle>
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <VirtualizingStackPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="vm:ArtworkEntry">
-                    <Grid ColumnDefinitions="100,*" Height="100" Margin="8,0,0,8">
-                        <Image
-                        Grid.Column="0"
-                        Source="{Binding CurrentFilePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=100}"
-                        Width="100"
-                        Height="100"
-                        Stretch="UniformToFill"
+                    <!-- fallback -->
+                    <Border
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource StrokeSurface}"
+                        CornerRadius="4">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding HasMultipleValues}" Value="False"/>
+                                            <Condition Binding="{Binding CurrentArtworkPath}" Value=""/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="No Artwork"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Opacity="0.5"/>
+                    </Border>
+                </Grid>
+            </controls:SquarePanel>
+        </DataTemplate>
+
+        <!-- ArtworkEntry Template -->
+        <DataTemplate x:Key="ArtworkEntryTemplate" DataType="vm:ArtworkEntry">
+            <Grid Margin="8" RowDefinitions="Auto,Auto">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <!-- Artwork -->
+                <ContentPresenter
+                    Grid.Column="0"
+                    Content="{Binding}"
+                    ContentTemplate="{StaticResource ArtworkRenderTemplate}"
+                    />
+
+                <StackPanel Grid.Column="2">
+                    <CheckBox
+                        Content="Edit Artwork"
+                        IsChecked="{Binding EditEnabled, Mode=TwoWay}"
+                        Margin="0,0,0,8"
                         />
-                        <StackPanel Grid.Column="1" Margin="8,0">
-                            <TextBlock Text="{Binding Title}" FontSize="14" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Text="Changed" 
-                                       FontSize="12"
-                                       Opacity="0.5"
-                                       Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Bottom">
+                    <Grid 
+                        ColumnDefinitions="Auto,4,*"
+                        Visibility="{Binding EditEnabled, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        >
+                        <ComboBox 
+                            Grid.Column="0" 
+                            SelectedItem="{Binding SelectionMode}"
+                            ItemsSource="{Binding SelectionModes}"
+                            >
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource EnumToDisplayNameConverter}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <!-- SelectFile -->
+                        <Border Grid.Column="3">
+                            <Grid ColumnDefinitions="*,8,Auto">
+
                                 <controls:AppButton 
-                                    Style="{DynamicResource DefaultButton}"
+                                    Grid.Column="2"
+                                    Style="{StaticResource DefaultButton}"
                                     Icon="&#xE838;"
-                                    Text="Change"
-                                    Command="{Binding ElementName=ArtworkEditorRoot, Path=DataContext.ChangeArtworkCommand}"
-                                    CommandParameter="{Binding}"
+                                    Text="Select File..."
                                     />
-                                <controls:AppButton
-                                    Style="{DynamicResource SubtleButton}"
-                                    Icon="&#xE777;"
-                                    Text="Restore"
-                                    Margin="8,0,0,0"
-                                    Visibility="{Binding HasChanged, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                    IsEnabled="{Binding HasChanged}"
-                                    Command="{Binding ElementName=ArtworkEditorRoot, Path=DataContext.RestoreArtworkCommand}"
-                                    CommandParameter="{Binding}"
-                                    />
-                            </StackPanel>
-                        </StackPanel>
+                            </Grid>
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectionMode}" Value="{x:Static vm:ArtworkSelectionMode.SelectFile}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+
+                        <!-- ExistingFile -->
+                        <ComboBox Grid.Column="2">
+                            <ComboBox.Style>
+                                <Style TargetType="ComboBox" BasedOn="{StaticResource DefaultComboBoxStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectionMode}" Value="{x:Static vm:ArtworkSelectionMode.ExistingFile}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ComboBox.Style>
+                        </ComboBox>
+
                     </Grid>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </Grid>
+
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <StackPanel Margin="8">
+        <controls:SectionTitleSeparator Title="Album Artwork"/>
+        <ContentPresenter
+            Content="{Binding AlbumArtworkSource}"
+            ContentTemplate="{StaticResource ArtworkEntryTemplate}"
+            />
+
+        <controls:SectionTitleSeparator Title="Track Artwork" Margin="0,16,0,0" />
+        <ContentPresenter
+            Content="{Binding TrackArtworkSource}"
+            ContentTemplate="{StaticResource ArtworkEntryTemplate}"
+            />
+    </StackPanel>
 </UserControl>

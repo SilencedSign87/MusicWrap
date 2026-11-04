@@ -65,6 +65,7 @@
                         PlaceholderText="{Binding PlaceholderText, ElementName=Root}"
                         Text="{Binding Text, ElementName=Root, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         EnterPressed="Input_EnterPressed"
+                        PreviewKeyDown="Input_PreviewKeyDown"
                         TextChanged="Input_TextChanged"/>
                 </local:TokenizingPanel>
             </ScrollViewer>
@@ -82,10 +83,10 @@
                     BorderBrush="{DynamicResource StrokeFloating}"
                     BorderThickness="1"
                     CornerRadius="8"
+                    Padding="4"
+                    Margin="1"
                     >
-                     <!--ItemsSource="{Binding AutocompleteSource,
-                         RelativeSource={RelativeSource AncestorType={x:Type local:TokenizingTextBox}}}"-->
-                <ListBox x:Name="SuggestionsList"
+                <ListView x:Name="SuggestionsList"
                          DisplayMemberPath="{Binding DisplayMemberPath, ElementName=Root}"
                          SelectionChanged="SuggestionsList_SelectionChanged"
                          MouseDoubleClick="SuggestionsList_MouseDoubleClick"

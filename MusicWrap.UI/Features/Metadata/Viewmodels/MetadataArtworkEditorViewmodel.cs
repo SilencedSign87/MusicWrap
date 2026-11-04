@@ -14,13 +14,10 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
     {
         private readonly ILibraryService _library;
         private readonly MetadataEditorWorkspace _workspace;
-        private readonly List<ArtworkEntry> _entries = [];
         private bool hasDialogOpen = false;
 
-        [ObservableProperty]
-        public partial CollectionViewSource ArtworksViewSource { get; set; } = new();
-
-        public bool HasChanges => _entries.Any(e => e.HasChanged);
+        [ObservableProperty] public partial ArtworkEntry AlbumArtworkSource { get; set; } = new();
+        [ObservableProperty] public partial ArtworkEntry TrackArtworkSource { get; set; } = new();
 
         public MetadataArtworkEditorViewmodel(MetadataEditorWorkspace workspace, ILibraryService library)
         {
@@ -36,16 +33,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             hasDialogOpen = true;
             try
             {
-                var openFileDialog = new OpenFileDialog
-                {
-                    Filter = "Image files (*.jpg, *.jpeg, *.png)|*.jpg;*.jpeg;*.png|All files (*.*)|*.*",
-                    Title = $"Select new artwork for {entry.Title}",
-                    Multiselect = false
-                };
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    entry.SetArtwork(openFileDialog.FileName);
-                }
+                // TODO
             }
             finally
             {
@@ -61,10 +49,13 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         #endregion
         public void Load()
         {
-            foreach (var e in _entries) e.PropertyChanged -= OnEntryPropertyChanged;
-            _entries.Clear();
+            // reset states
+            AlbumArtworkSource.HardClear();
+            TrackArtworkSource.HardClear();
 
+            var trackCoverIds = new HashSet<int>();
             var albumIds = new HashSet<int>();
+            var albumCoverIds = new HashSet<int>();
 
             foreach (var trackId in _workspace.TrackIds)
             {
@@ -73,19 +64,9 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
 
                 if (track.CoverId != 0 && _library.GetCoverAsset(track.CoverId) is { } cover)
                 {
-                    var entry = new ArtworkEntry
-                    {
-                        SortOrder = track.TrackNumber + track.Disk*100,
-                        Title = track.Title,
-                        CoverId = track.CoverId,
-                        TrackId = track.Id,
-                        CurrentFilePath = cover.FileName,
-                        OriginalFilePath = cover.FileName,
-                        Type = ArtworkType.Track
-                    };
-                    _entries.Add(entry);
-                    entry.PropertyChanged += OnEntryPropertyChanged;
+                    trackCoverIds.Add(track.CoverId);
                 }
+
                 if (track.AlbumId != 0) albumIds.Add(track.AlbumId);
             }
 
@@ -93,76 +74,121 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             {
                 var album = _library.GetAlbumById(albumId);
                 if (album is null || album.CoverId == 0) continue;
-                if (_library.GetCoverAsset(album.CoverId) is not { } albumCover) continue;
-                var entry = new ArtworkEntry
+
+                if (_library.GetCoverAsset(album.CoverId) is { } cover)
                 {
-                    Title = album.Title,
-                    CoverId = album.CoverId,
-                    AlbumId = album.Id,
-                    CurrentFilePath = albumCover.FileName,
-                    OriginalFilePath = albumCover.FileName,
-                    Type = ArtworkType.Album
-                };
-                _entries.Add(entry);
-                entry.PropertyChanged += OnEntryPropertyChanged;
+                    albumCoverIds.Add(album.CoverId);
+                }
             }
 
-            var viewSource = new CollectionViewSource { Source = _entries };
+            if (trackCoverIds.Count > 1) // multiple different track covers
+            {
+                TrackArtworkSource.HasMultipleValues = true;
+            }
+            else if (trackCoverIds.Count == 1) // 1 track cover
+            {
+                var coverId = trackCoverIds.First();
+                var cover = _library.GetCoverAsset(coverId);
+                if (cover is not null)
+                {
+                    TrackArtworkSource.OriginalArtworkId = cover.Id;
+                    TrackArtworkSource.OriginalArtworkPath = cover.FileName;
+                    TrackArtworkSource.CurrentArtworkPath = cover.FileName;
+                }
+            }
+            else // no track cover
+            {
+                TrackArtworkSource.OriginalArtworkId = null;
+                TrackArtworkSource.OriginalArtworkPath = string.Empty;
+                TrackArtworkSource.CurrentArtworkPath = string.Empty;
+            }
 
-            viewSource.GroupDescriptions.Add(
-                new PropertyGroupDescription(nameof(ArtworkEntry.Type)));
-
-            viewSource.SortDescriptions.Add(new SortDescription(nameof(ArtworkEntry.Type), ListSortDirection.Descending));
-            viewSource.SortDescriptions.Add(new SortDescription(nameof(ArtworkEntry.SortOrder), ListSortDirection.Ascending));
-
-            ArtworksViewSource = viewSource;
-        }
-
-        private void OnEntryPropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(ArtworkEntry.HasChanged))
-                OnPropertyChanged(nameof(HasChanges));
+            if (albumCoverIds.Count > 1) // multiple different album covers
+            {
+                AlbumArtworkSource.HasMultipleValues = true;
+            }
+            else if (albumCoverIds.Count == 1) // 1 album cover
+            {
+                var coverId = albumCoverIds.First();
+                var cover = _library.GetCoverAsset(coverId);
+                if (cover is not null)
+                {
+                    AlbumArtworkSource.OriginalArtworkId = cover.Id;
+                    AlbumArtworkSource.OriginalArtworkPath = cover.FileName;
+                    AlbumArtworkSource.CurrentArtworkPath = cover.FileName;
+                }
+            }
+            else // no album cover
+            {
+                AlbumArtworkSource.OriginalArtworkId = null;
+                AlbumArtworkSource.OriginalArtworkPath = string.Empty;
+                AlbumArtworkSource.CurrentArtworkPath = string.Empty;
+            }
         }
     }
 
-    public class ArtworkEntry : ObservableClass
+    public partial class ArtworkEntry : ObservableObject
     {
-        private string _currentFilePath = string.Empty;
-        private bool _hasChanged = false;
-        public int? TrackId { get; set; } = 0;
-        public int? AlbumId { get; set; } = 0;
-        public int CoverId { get; set; } = 0;
-        public int SortOrder { get; set; } = 0;
-        public string OriginalFilePath { get; set; } = string.Empty;
-        public string CurrentFilePath
-        {
-            get { return _currentFilePath; }
-            set
-            { SetProperty(ref _currentFilePath, value); }
-        }
-        public bool HasChanged
-        {
-            get { return _hasChanged; }
-            set { SetProperty(ref _hasChanged, value); }
-        }
-        public string Title { get; set; } = string.Empty;
-        public ArtworkType Type { get; set; } = ArtworkType.Track;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasChanged))]
+        public partial int? OriginalArtworkId { get; set; } = null;
 
-        public void SetArtwork(string newFilePath)
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasChanged))]
+        public partial string OriginalArtworkPath { get; set; } = string.Empty;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasChanged))]
+        public partial string CurrentArtworkPath { get; set; } = string.Empty;
+
+        [ObservableProperty] public partial bool EditEnabled { get; set; } = false;
+        [ObservableProperty] public partial ArtworkSelectionMode SelectionMode { get; set; } = ArtworkSelectionMode.SelectFile;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasChanged))]
+        public partial int? SelectedCoverId { get; set; } = null;
+
+        [ObservableProperty] public partial bool HasMultipleValues { get; set; } = false;
+
+        public List<ArtworkSelectionMode> SelectionModes { get; } = [ArtworkSelectionMode.SelectFile, ArtworkSelectionMode.ExistingFile];
+
+        public bool HasChanged => EditEnabled && SelectionMode switch
         {
-            CurrentFilePath = newFilePath;
-            HasChanged = true;
+            ArtworkSelectionMode.SelectFile => !string.Equals(OriginalArtworkPath, CurrentArtworkPath, StringComparison.OrdinalIgnoreCase),
+            ArtworkSelectionMode.ExistingFile => SelectedCoverId != null && SelectedCoverId != OriginalArtworkId,
+            _ => false
+        };
+
+        [RelayCommand]
+        public void EnableEdit()
+        {
+            EditEnabled = true;
         }
+
+        [RelayCommand]
         public void RestoreOriginal()
         {
-            CurrentFilePath = OriginalFilePath;
-            HasChanged = false;
+            EditEnabled = false;
+            CurrentArtworkPath = OriginalArtworkPath;
+            SelectedCoverId = OriginalArtworkId;
         }
+
+        public void HardClear()
+        {
+            OriginalArtworkId = null;
+            OriginalArtworkPath = string.Empty;
+            CurrentArtworkPath = string.Empty;
+            SelectedCoverId = null;
+            EditEnabled = false;
+            SelectionMode = 0;
+            HasMultipleValues = false;
+        }
+
     }
 
-    public enum ArtworkType
+    public enum ArtworkSelectionMode
     {
-        Track,
-        Album
+        SelectFile = 0,
+        ExistingFile = 1
     }
 }

@@ -70,6 +70,7 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="ContentSite" Property="Opacity" Value="1"/>
                             <Setter TargetName="Root" Property="Background" Value="{DynamicResource BackgroundControlHover}"/>
+                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource StrokeSurface}"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="ContentSite" Property="Opacity" Value="1"/>
