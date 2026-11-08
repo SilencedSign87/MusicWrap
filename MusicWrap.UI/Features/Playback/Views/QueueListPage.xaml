@@ -29,7 +29,7 @@
             <RowDefinition Height="1"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Padding="0,0,0,4">
+        <Border Grid.Row="0" Padding="0,4">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <controls:AppButton
                     Style="{StaticResource queueButtonStyle}" 

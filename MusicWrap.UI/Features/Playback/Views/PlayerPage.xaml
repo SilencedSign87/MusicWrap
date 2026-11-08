@@ -11,8 +11,16 @@
              d:DesignHeight="40" 
              d:DesignWidth="1200"
              d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
-             Foreground="{DynamicResource TextPrimaryBrush}"
              >
+    <UserControl.Style>
+        <Style TargetType="UserControl">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <SolidColorBrush Color="{Binding CurrentTrackDominantColorHex}" Opacity="0.2"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Style>
     <UserControl.Resources>
         <Style x:Key="PlayerButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -28,14 +36,6 @@
         </Style>
     </UserControl.Resources>
     <Border>
-        <Border.Background>
-            <ImageBrush
-                ImageSource="{Binding CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:300}"
-                Stretch="UniformToFill"
-                Opacity="0.2"
-                />
-        </Border.Background>
-        
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />

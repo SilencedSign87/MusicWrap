@@ -53,22 +53,6 @@
                         ToolTip="Shuffle" 
                         Command="{Binding ShuffleAllTracksCommand}"
                         />
-                    <contros:AppDropdownButton
-                        Style="{StaticResource SubtleButton}"
-                        Icon="&#xE712;"
-                        IconFontSize="13"
-                        Height="26"
-                        Width="26"
-                        Padding="0"
-                        ToolTip="More" 
-                        ShowIndicator="False"
-                        Command="{Binding ShuffleAllTracksCommand}">
-                        <contros:AppDropdownButton.Menu>
-                            <ContextMenu>
-                                <MenuItem Icon="{ex:Icon Glyph=E70F}" Header="Edit"/>
-                            </ContextMenu>
-                        </contros:AppDropdownButton.Menu>
-                    </contros:AppDropdownButton>
                 </StackPanel>
 
             </Grid>

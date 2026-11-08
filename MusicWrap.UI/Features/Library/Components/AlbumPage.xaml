@@ -13,9 +13,6 @@
              d:DataContext="{d:DesignInstance Type=vm:LibraryEntryAlbumViewModel}"
              d:DesignHeight="200" d:DesignWidth="160"
              Cursor="Hand">
-    <UserControl.Resources>
-        <converters:PathToImageConverter x:Key="PathToImageConverter"/>
-    </UserControl.Resources>
     <!-- Renders an album -->
     <Border 
         x:Name="RootBorder"
