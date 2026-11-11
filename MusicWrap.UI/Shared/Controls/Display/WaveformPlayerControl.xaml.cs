@@ -160,11 +160,8 @@ namespace MusicWrap.UI.Controls
         }
         private void OnServiceWaveformDataChanged(object? sender, float[] e)
         {
-            Dispatcher.Invoke(() =>
-            {
-                _waveformData = e.Length > 0 ? e : Array.Empty<float>();
-                DrawWaveform();
-            });
+            _waveformData = e.Length > 0 ? e : Array.Empty<float>();
+            DrawWaveform();
         }
         private void OnServiceTrackChanged(object? sender, string e)
         {

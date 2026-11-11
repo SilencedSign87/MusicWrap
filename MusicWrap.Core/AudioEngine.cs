@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using ManagedBass;
 using ManagedBass.Mix;
-using NetVips;
 
 
 #if WINDOWS

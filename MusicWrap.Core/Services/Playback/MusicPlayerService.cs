@@ -93,7 +93,7 @@ namespace MusicWrap.Core.Services.Playback
         private readonly LinkedList<int> _waveformCacheLru = [];
         private readonly object _waveformCacheLock = new object();
         private int _waveformVersion = 0;
-        private static readonly SemaphoreSlim _waveformThrottle = new(2);
+        private static readonly SemaphoreSlim _waveformThrottle = new(1);
 
         private double _trackedPositon = 0.0;
         private DateTime _trackedPositionUtc = DateTime.MinValue;
@@ -811,9 +811,9 @@ namespace MusicWrap.Core.Services.Playback
             if (!_isTransitioningTrack)
             {
                 _dispatcher.Invoke(() => TrackChanged?.Invoke(this, trackRef));
+                BeginWaveformPipeline(track);
             }
 
-            BeginWaveformPipeline(track);
         }
 
         public void ChangeOutputDevice(int deviceIndex)
@@ -1013,6 +1013,7 @@ namespace MusicWrap.Core.Services.Playback
 
         private void StartPlaybackOfCurrent(bool autoplay = true)
         {
+
             var item = _queue.CurrentItem;
 
             if (item == null)
@@ -1061,8 +1062,9 @@ namespace MusicWrap.Core.Services.Playback
                 FreeStream(previousStream);
             }
 
+            bool prepareOk = _audioEngine.PrepareTrack(_currentStream, requestedSampleRate);
 
-            if (!_audioEngine.PrepareTrack(_currentStream, requestedSampleRate))
+            if (!prepareOk)
             {
                 _logger.LogError("Failed to prepare track for playback");
                 _errorCount++;
@@ -1216,6 +1218,7 @@ namespace MusicWrap.Core.Services.Playback
         }
         private int AcquireNextStream(PlaybackQueueItem item)
         {
+
             lock (_audioStateLock)
             {
                 if (_preloadedStream != 0 && _preloadedQueueItem is not null && ReferenceEquals(_preloadedQueueItem, item))
@@ -1232,12 +1235,14 @@ namespace MusicWrap.Core.Services.Playback
                 return 0;
             }
 
-            return resolved.Kind switch
+            int stream = resolved.Kind switch
             {
                 PlaybackSourceKind.LocalFile => _audioEngine.CreateDecodeStream(resolved.Input),
                 PlaybackSourceKind.RemoteUrl => _audioEngine.CreateDecodeStreamFromUrl(resolved.Input),
                 _ => 0
             };
+
+            return stream;
         }
 
         private void InstallStreamOnMixer(PlaybackQueueItem item, int stream)
@@ -1503,7 +1508,6 @@ namespace MusicWrap.Core.Services.Playback
         private void PublishWaveformIfCurrent(int trackId, int requestVersion, float[] data)
         {
             if (trackId <= 0) return;
-
 
             _dispatcher.Invoke(() =>
             {
