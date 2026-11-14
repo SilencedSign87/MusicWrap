@@ -4,13 +4,10 @@ using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Shell.ViewModel;
 using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Runtime.Intrinsics.Arm;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.Shell.Windows
 {

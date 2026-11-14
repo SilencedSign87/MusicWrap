@@ -32,7 +32,8 @@
             <!-- Album Cover -->
             <controls:SquarePanel Grid.Row="0">
                 <controls:ImageContainer
-                     Source="{Binding CoverImage}"
+                    Source="{Binding CoverImage}"
+                    CornerRadius="4"
                     />
             </controls:SquarePanel>
             <!-- Album Info -->

@@ -1,3 +1,4 @@
+using Acornima;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Helpers;
@@ -78,7 +79,13 @@ namespace MusicWrap.UI.Controls
             nameof(UsePlaceholderWaveform),
             typeof(bool),
             typeof(WaveformPlayerControl),
-            new PropertyMetadata(false));
+            new FrameworkPropertyMetadata(false, OnUsePlaceholderWaveformChanged));
+
+        private static void OnUsePlaceholderWaveformChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((WaveformPlayerControl)d).RefreshWaveformMode();
+        }
+
         public bool UsePlaceholderWaveform
         {
             get => (bool)GetValue(UsePlaceholderWaveformProperty);
@@ -94,12 +101,9 @@ namespace MusicWrap.UI.Controls
             _musicService.PositionChanged += OnServicePositionChanged;
             _musicService.TrackChanged += OnServiceTrackChanged;
             _musicService.PlaybackStateChanged += OnServicePlaybackStateChanged;
+            _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
 
-            if (!UsePlaceholderWaveform)
-            {
-                _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
-                _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
-            }
+            _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
 
             _duration = _musicService.Duration;
             _isPlaying = _musicService.IsPlaying;
@@ -117,11 +121,10 @@ namespace MusicWrap.UI.Controls
             _musicService.PositionChanged -= OnServicePositionChanged;
             _musicService.TrackChanged -= OnServiceTrackChanged;
             _musicService.PlaybackStateChanged -= OnServicePlaybackStateChanged;
+            _musicService.WaveformDataChanged -= OnServiceWaveformDataChanged;
+
 
             _waveformData = Array.Empty<float>();
-
-            if (!UsePlaceholderWaveform)
-                _musicService.WaveformDataChanged -= OnServiceWaveformDataChanged;
 
         }
 
@@ -161,16 +164,16 @@ namespace MusicWrap.UI.Controls
         private void OnServiceWaveformDataChanged(object? sender, float[] e)
         {
             _waveformData = e.Length > 0 ? e : Array.Empty<float>();
+
+            if (UsePlaceholderWaveform) return;
+
             DrawWaveform();
         }
         private void OnServiceTrackChanged(object? sender, string e)
         {
             Dispatcher.Invoke(() =>
             {
-                if (!UsePlaceholderWaveform)
-                {
-                    _waveformData = _musicService.CurrentWaveformData;
-                }
+                _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>();
                 _position = 0;
                 _duration = _musicService.Duration;
                 SyncBaseline();
@@ -200,6 +203,13 @@ namespace MusicWrap.UI.Controls
         }
 
         #region Rendering
+        private void RefreshWaveformMode()
+        {
+            if (!IsLoaded) return;
+
+            DrawWaveform();
+            UpdateProgressVisual(_position);
+        }
 
         private void DrawWaveform()
         {
@@ -460,7 +470,7 @@ namespace MusicWrap.UI.Controls
         #endregion
 
         #region Loaded / Sizing
-        private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
+        private void WaveformContainer_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             DrawWaveform();
             UpdateProgressVisual(_position);

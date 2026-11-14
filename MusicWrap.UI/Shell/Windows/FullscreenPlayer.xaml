@@ -95,10 +95,10 @@
                         Height="640" 
                         Source="{Binding PlayerViewModel.CurrentTrackImagePath, Converter={StaticResource PathToImageConverter}, ConverterParameter=original:900}"
                         CornerRadius="12"
-                        BorderThickness="1"
-                        BorderBrush="{StaticResource ArtworkBorderBrush}"
+                        BorderThickness="0"
                         SnapsToDevicePixels="True" 
                         />
+
                     <TextBlock 
                         Text="{Binding PlayerViewModel.CurrentTrackTitle}" 
                         TextAlignment="Center" 
@@ -120,20 +120,31 @@
                         <Run Text="{Binding PlayerViewModel.CurrentTrackAlbum}" />
                     </TextBlock>
                     <Grid x:Name="Mediacontrols" RowDefinitions="*,*" ColumnDefinitions="*" Margin="0,28,0,0" MaxWidth="400">
-                        <Grid Grid.Row="0" ColumnDefinitions="auto,*,auto">
+                        <Grid Grid.Row="0" ColumnDefinitions="auto,*,auto" Height="24">
                             <TextBlock 
                                 Grid.Column="0" 
                                 Text="{Binding FormattedPosition, ElementName=ProgressBar, Mode=OneWay}" 
                                 FontSize="16" 
                                 Opacity="0.9"
                                 />
+
                             <controls:WaveformPlayerControl
                                 x:Name="ProgressBar"
                                 Grid.Column="1"
-                                Height="8"
-                                Margin="8,0"
-                                UsePlaceholderWaveform="True"
-                                />
+                                UsePlaceholderWaveform="{Binding UseWaveformPlayer, Converter={StaticResource InverseBoolConverter}}"
+                                >
+                                <controls:WaveformPlayerControl.Style>
+                                    <Style TargetType="controls:WaveformPlayerControl">
+                                        <Setter Property="Height" Value="8" />
+                                        <Setter Property="Margin" Value="8,0" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding UseWaveformPlayer}" Value="True">
+                                                <Setter Property="Height" Value="24" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </controls:WaveformPlayerControl.Style>
+                            </controls:WaveformPlayerControl>
                             <TextBlock 
                                 Grid.Column="2" 
                                 Text="{Binding FormattedDuration, ElementName=ProgressBar, Mode=OneWay}" 
@@ -147,11 +158,12 @@
                                 <controls:AppMenuItem 
                                     Icon="{ex:Icon Glyph=E712, FontSize=14}" 
                                     Height="40" Width="40">
-                                    <controls:AppMenuItem 
-                                        Icon="{ex:Icon Glyph=&#xE90F;}" 
-                                        Header="Properties" 
-                                        Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"
+                                    <controls:AppMenuItem
+                                        Icon="{ex:Icon Glyph=E8BA}"
                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                        Header="Waveform Player"
+                                        IsCheckable="True"
+                                        IsChecked="{Binding UseWaveformPlayer}"
                                         />
                                     <controls:AppMenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer" Foreground="{DynamicResource TextPrimaryBrush}">
                                         <controls:AppMenuItem Header="Off" IsCheckable="True" 
@@ -208,6 +220,13 @@
                                             IsChecked="{Binding ActivePanel, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Queue}"
                                             />
                                     </controls:AppMenuItem>
+                                    <Separator/>
+                                    <controls:AppMenuItem 
+                                        Icon="{ex:Icon Glyph=&#xE90F;}" 
+                                        Header="Properties" 
+                                        Command="{Binding PlayerViewModel.OpenPropertiesOfCurrentTrackCommand}"
+                                        Foreground="{DynamicResource TextPrimaryBrush}"
+                                        />
                                 </controls:AppMenuItem>
                             </controls:AppMenu>
 
@@ -312,7 +331,7 @@
                     ToolTip="Exit fullscreen"
                     Icon="&#xE73F;"
                     IconFontSize="20"
-                    Opacity="0.5"
+                    Opacity="0.75"
                 />
             </Grid>
 
