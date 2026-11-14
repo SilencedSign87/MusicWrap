@@ -92,7 +92,7 @@ namespace MusicWrap.UI.Shell.Windows
         {
             VolumePopup.IsOpen = true;
         }
- 
+
     }
 }
 

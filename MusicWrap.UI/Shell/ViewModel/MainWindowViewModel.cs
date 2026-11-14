@@ -1,18 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Features.Library.Views;
-using MusicWrap.UI.Features.Playback.Views;
-using MusicWrap.UI.Features.Playlist.Views;
-using MusicWrap.UI.Features.Providers.Views;
 using MusicWrap.UI.Shared.Services;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 
 namespace MusicWrap.UI.Shell.ViewModel
 {

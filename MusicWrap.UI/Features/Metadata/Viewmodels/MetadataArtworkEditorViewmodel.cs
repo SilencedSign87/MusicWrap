@@ -1,10 +1,10 @@
-﻿using System.Windows;
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.ViewModels;
+using System.Windows;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {

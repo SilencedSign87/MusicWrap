@@ -71,7 +71,7 @@ namespace MusicWrap.UI.Shell.Windows
 
             var slide = new DoubleAnimation(_sidebarSlide.X, restingX, SidebarDuration)
             {
-                EasingFunction = new CubicEase { EasingMode = isSidePanelVisible ? EasingMode.EaseOut : EasingMode.EaseIn},
+                EasingFunction = new CubicEase { EasingMode = isSidePanelVisible ? EasingMode.EaseOut : EasingMode.EaseIn },
                 FillBehavior = FillBehavior.HoldEnd
             };
 

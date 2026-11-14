@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MusicWrap.Core.DI;
 using MusicWrap.Core.Saving;
-using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Features.Activity.Viewmodel;
 using MusicWrap.UI.Features.Library.Services;
@@ -28,7 +27,6 @@ using MusicWrap.UI.Shell.ViewModel;
 using MusicWrap.UI.Shell.Windows;
 using MusicWrap.UI.ViewModels;
 using Serilog;
-using System.Windows;
 
 namespace MusicWrap.UI.Bootstrap;
 

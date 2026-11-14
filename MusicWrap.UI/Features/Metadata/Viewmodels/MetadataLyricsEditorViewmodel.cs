@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Lyrics;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.ViewModels;
@@ -49,7 +48,8 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             if (success)
             {
                 MessageBox.Show("Lyrics saved successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }else
+            }
+            else
             {
                 MessageBox.Show("Failed to save lyrics.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }

@@ -1,22 +1,11 @@
-using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace MusicWrap.UI.Shell.Tray
 {

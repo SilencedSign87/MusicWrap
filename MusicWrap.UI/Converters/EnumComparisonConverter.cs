@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+﻿using System.Globalization;
 using System.Windows.Data;
 
 namespace MusicWrap.UI.Converters
@@ -20,7 +17,7 @@ namespace MusicWrap.UI.Converters
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null || parameter == null) return Binding.DoNothing;
-            
+
             if (value is bool isChecked && isChecked)
             {
                 return Enum.Parse(targetType, parameter.ToString()!);

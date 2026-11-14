@@ -1,14 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Windows;
-using MusicWrap.UI.Services;
-using MusicWrap.Core.Services.Playback;
 using ManagedBass;
-using MusicWrap.Data.Library.Models;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.Data.Helpers;
 using MusicWrap.Core.Services.Contracts;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Helpers;
+using MusicWrap.Data.Library.Models;
+using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
+using System.Windows;
 
 namespace MusicWrap.UI.ViewModels
 {

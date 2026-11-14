@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Threading;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.UI.Bootstrap
 {

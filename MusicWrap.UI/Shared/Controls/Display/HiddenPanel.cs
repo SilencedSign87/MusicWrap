@@ -43,7 +43,7 @@ namespace MusicWrap.UI.Controls
                 child.IsHitTestVisible = false;
             }
         }
-         private static void FadeTo(UIElement child, double opacity)
+        private static void FadeTo(UIElement child, double opacity)
         {
             child.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(opacity, FadeDuration));
         }

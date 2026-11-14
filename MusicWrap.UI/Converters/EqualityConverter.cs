@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.Windows.Data;
 
@@ -9,7 +8,7 @@ namespace MusicWrap.UI.Converters
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             if (values.Length != 2) return false;
-            
+
             return values[0]?.Equals(values[1]) ?? false;
         }
 

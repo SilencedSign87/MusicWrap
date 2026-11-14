@@ -1,9 +1,6 @@
-using MusicWrap.Core.Metadata;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
+using MusicWrap.Core.Metadata;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

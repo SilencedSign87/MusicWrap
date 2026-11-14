@@ -1,15 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
-using MusicWrap.UI.Services;
-using MusicWrap.UI.Shared.Services;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.Shared.Services
 {

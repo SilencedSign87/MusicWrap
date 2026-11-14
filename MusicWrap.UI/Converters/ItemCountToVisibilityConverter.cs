@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+﻿using System.Globalization;
 using System.Windows.Data;
 
 namespace MusicWrap.UI.Converters
@@ -19,7 +16,8 @@ namespace MusicWrap.UI.Converters
                     return val > 0 ? "Collapsed" : "Visible";
                 }
                 return "Visible";
-            }else
+            }
+            else
             {
                 if (value is null)
                     return "Collapsed";

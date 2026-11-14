@@ -2,7 +2,6 @@
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playlists;
 using MusicWrap.Core.Threading;
-using MusicWrap.Data.Playlist.Models;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;

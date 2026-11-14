@@ -117,7 +117,7 @@ namespace MusicWrap.UI.Controls
         {
             var raw = ExtractRawBands(magnitudes);
             var gated = ApplyGate(raw);
-            
+
             var boosted = ApplyZoneBoost(gated);
             SmoothBands(boosted);
             var display = ApplyGamma(_smoothed);
@@ -298,7 +298,7 @@ namespace MusicWrap.UI.Controls
             }
         }
 
-        private readonly struct BandMapping(float centerHz,InterpolatedSample left, InterpolatedSample center, InterpolatedSample right)
+        private readonly struct BandMapping(float centerHz, InterpolatedSample left, InterpolatedSample center, InterpolatedSample right)
         {
             public readonly float CenterHz = centerHz;
             public readonly InterpolatedSample Left = left;

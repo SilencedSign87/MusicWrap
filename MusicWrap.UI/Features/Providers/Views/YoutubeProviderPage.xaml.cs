@@ -1,10 +1,10 @@
+using MusicWrap.Core.Services.Search;
 using MusicWrap.UI.Features.Providers.ViewModels;
+using MusicWrap.UI.Shared.Services;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using MusicWrap.UI.Shared.Services;
-using MusicWrap.Core.Services.Search;
 
 namespace MusicWrap.UI.Features.Providers.Views
 {
@@ -233,7 +233,7 @@ namespace MusicWrap.UI.Features.Providers.Views
 
         private async void ShowTracks_Click(object sender, RoutedEventArgs e)
         {
-            if(sender is FrameworkElement { DataContext: YoutubeDetailGroupNode group })
+            if (sender is FrameworkElement { DataContext: YoutubeDetailGroupNode group })
             {
                 await _viewModel.LoadTracksAsync(group);
             }

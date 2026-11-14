@@ -1,11 +1,9 @@
-using MusicWrap.UI.Shell.Tray;
-using System.Drawing;
-using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.ViewModels;
 using MusicWrap.Core.Threading;
-using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Shell.Tray;
+using MusicWrap.UI.ViewModels;
+using System.Windows;
 
 namespace MusicWrap.UI.Services
 {

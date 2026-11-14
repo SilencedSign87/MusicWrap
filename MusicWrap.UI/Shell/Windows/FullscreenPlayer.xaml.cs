@@ -51,8 +51,8 @@ namespace MusicWrap.UI.Shell.Windows
             DataContext = viewmodel;
             //viewmodel.PropertyChanged += OnViewmodelPropertyChanged;
 
-            SizeChanged += (_, _) =>ApplyProgress();
-            
+            SizeChanged += (_, _) => ApplyProgress();
+
         }
 
         #region Dependency Properties

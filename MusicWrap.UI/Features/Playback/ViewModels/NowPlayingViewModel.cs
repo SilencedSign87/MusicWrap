@@ -11,7 +11,6 @@ using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {

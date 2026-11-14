@@ -11,10 +11,10 @@ public sealed partial class TemporaryArtist : ObservableObject
     /// Unique temporary ID for this artist session.
     /// </summary>
     public required string Id { get; init; }
-    
+
     [ObservableProperty]
     private string name = string.Empty;
-    
+
     /// <summary>
     /// Optional: if linked to an existing library artist
     /// </summary>

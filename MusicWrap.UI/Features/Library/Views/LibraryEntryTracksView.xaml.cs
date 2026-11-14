@@ -1,8 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
-using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Features.Library.ViewModels;
 using MusicWrap.UI.Shared.Services;
 using System.Windows;
 using System.Windows.Controls;

@@ -1,9 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Media.TextFormatting;
 
 namespace MusicWrap.UI.Shared.Controls.Navigation
 {
@@ -18,8 +16,8 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                 new PropertyMetadata(null, OnIconChanged));
 
         public static readonly DependencyProperty TextProperty =
-            DependencyProperty.Register(nameof(Text), typeof(string), typeof(ShellTabItem), 
-                new PropertyMetadata(null, OnTextChanged) );
+            DependencyProperty.Register(nameof(Text), typeof(string), typeof(ShellTabItem),
+                new PropertyMetadata(null, OnTextChanged));
 
         public static readonly DependencyProperty OrientationProperty =
             DependencyProperty.Register(nameof(Orientation), typeof(Orientation), typeof(ShellTabItem),
@@ -79,7 +77,7 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
 
         public ShellTabItem()
         {
-            _panel = new StackPanel {Orientation = Orientation.Horizontal };
+            _panel = new StackPanel { Orientation = Orientation.Horizontal };
             Header = _panel;
             Loaded += ShellTabItem_Loaded;
         }
@@ -137,10 +135,11 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
         private void RefreshIcon()
         {
             if (_panel is null) return;
-            
+
             bool hasIcon = !string.IsNullOrEmpty(Icon);
 
-            if (hasIcon && _iconBlock is null) {
+            if (hasIcon && _iconBlock is null)
+            {
                 _iconBlock = new TextBlock
                 {
                     FontFamily = new FontFamily("Segoe Fluent Icons"),
@@ -148,7 +147,8 @@ namespace MusicWrap.UI.Shared.Controls.Navigation
                 };
                 _iconBlock.SetBinding(TextBlock.TextProperty, new Binding(nameof(Icon)) { Source = this });
                 _panel.Children.Insert(0, _iconBlock);
-            }else if (!hasIcon && _iconBlock is not null)
+            }
+            else if (!hasIcon && _iconBlock is not null)
             {
                 _panel.Children.Remove(_iconBlock);
                 _iconBlock = null;

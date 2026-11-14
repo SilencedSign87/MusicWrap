@@ -1,11 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.Features.Playback.Views;
 using MusicWrap.UI.Features.Settings.Views;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows.Controls;
 
 namespace MusicWrap.UI.Features.Settings.ViewModels

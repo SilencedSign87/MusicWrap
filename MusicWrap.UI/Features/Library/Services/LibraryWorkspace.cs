@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Data.User.Models;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 
 namespace MusicWrap.UI.Features.Library.Services
 {
@@ -164,13 +163,13 @@ namespace MusicWrap.UI.Features.Library.Services
                 EntryListAscending = saved.EntryListAscending;
                 TrackSortMode = (TrackSortMode)saved.TrackSortModeValue;
                 SortAscending = saved.TrackSortAscending;
-                
+
                 SelectedEntry = saved.SelectedEntryId is int id
                     ? entries.FirstOrDefault(e => e.Id == id)
                     : null;
 
                 SelectedEntry ??= entries.FirstOrDefault();
-                
+
                 if (SelectedEntry is not null && saved.SelectedTabKeyValue is int tabKey)
                 {
                     var targetTab = Tabs.FirstOrDefault(t => (int)t.Key == tabKey);

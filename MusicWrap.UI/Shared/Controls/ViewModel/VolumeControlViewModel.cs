@@ -1,9 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Playback;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.UI.Shared.Controls.ViewModel
 {

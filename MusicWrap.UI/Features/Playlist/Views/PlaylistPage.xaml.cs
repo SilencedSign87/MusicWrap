@@ -1,10 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Controls.Models;
-using MusicWrap.UI.Services;
 using MusicWrap.UI.Features.Playlist.ViewModels;
+using MusicWrap.UI.Shared.Services;
 using System.Windows;
 using System.Windows.Controls;
-using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Playlist.Views
 {

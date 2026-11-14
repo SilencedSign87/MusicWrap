@@ -2,10 +2,6 @@
 using MusicWrap.Core.Threading;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
-using NetVips;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 
 namespace MusicWrap.UI.Shared.Services

@@ -1,4 +1,3 @@
-using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Shared.Services;

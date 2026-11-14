@@ -1,20 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Features.Metadata.Viewmodels;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using TagLib.Riff;
 
 namespace MusicWrap.UI.Shell.Dialogs
 {

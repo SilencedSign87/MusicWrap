@@ -1,15 +1,10 @@
+using ManagedBass;
 using Microsoft.Extensions.DependencyInjection;
-using MusicWrap.UI.Controls.Models;
+using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Features.Library.ViewModels;
+using MusicWrap.UI.Shared.Services;
 using System.Windows;
 using System.Windows.Controls;
-using ManagedBass;
-using System.IO;
-using System.Diagnostics;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Services.Contracts;
-using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Library.Views
 {

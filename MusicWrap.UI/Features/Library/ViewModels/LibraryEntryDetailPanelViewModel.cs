@@ -5,10 +5,7 @@ using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Helpers;
-using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Features.Library.Services;
-using MusicWrap.UI.Services;
-using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace MusicWrap.UI.Features.Library.ViewModels

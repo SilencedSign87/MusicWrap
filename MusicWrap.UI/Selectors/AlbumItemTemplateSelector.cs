@@ -13,7 +13,7 @@ namespace MusicWrap.UI.Selectors
         {
             if (item is LibraryViewModel.AlbumData)
                 return AlbumTemplate;
-            
+
             if (item is LibraryViewModel.TrackListPlaceholder)
                 return TrackListTemplate;
 

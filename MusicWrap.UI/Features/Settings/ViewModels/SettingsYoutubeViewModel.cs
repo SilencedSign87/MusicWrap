@@ -10,7 +10,7 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
     public partial class SettingsYoutubeViewModel : ObservableObject
     {
         [ObservableProperty] private bool _useCustomFfmpegPath;
-        [ObservableProperty] private string _customFfmpegPath = string.Empty; 
+        [ObservableProperty] private string _customFfmpegPath = string.Empty;
         [ObservableProperty] private List<string> _supportedFormats = Enum.GetNames(typeof(SuportedFFMpegAudioFormat)).ToList();
         [ObservableProperty] private string _selectedFormat;
 

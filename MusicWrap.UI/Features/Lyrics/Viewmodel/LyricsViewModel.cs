@@ -21,15 +21,15 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
 
         private bool _disposed;
 
-        [ObservableProperty, NotifyPropertyChangedFor(nameof(Lines))] 
+        [ObservableProperty, NotifyPropertyChangedFor(nameof(Lines))]
         public partial ParsedLyrics? Lyrics { get; set; }
 
         [ObservableProperty, NotifyPropertyChangedFor(nameof(CanSeek))]
         public partial int ActiveIndex { get; set; } = -1;
-        [ObservableProperty] 
+        [ObservableProperty]
         public partial bool HasLyrics { get; set; }
 
-        [ObservableProperty, NotifyPropertyChangedFor(nameof(CanSeek))] 
+        [ObservableProperty, NotifyPropertyChangedFor(nameof(CanSeek))]
         public partial bool HasSyncedLyrics { get; set; }
 
         public bool CanSeek => HasSyncedLyrics && Lyrics != null && Lyrics.Lines.Count > 0;

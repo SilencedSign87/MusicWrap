@@ -1,13 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.UI.Shared.Controls.ViewModel;
-using MusicWrap.UI.ViewModels;
-using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Threading;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace MusicWrap.UI.Controls
 {

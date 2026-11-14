@@ -1,13 +1,13 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core.Sources.Contracts;
-using MusicWrap.Core.Services.Providers.Youtube;
-using MusicWrap.UI.Models;
-using System.Windows;
-using MusicWrap.Core.Services.Library;
-using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Core.Saving;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Providers.Youtube;
+using MusicWrap.Core.Sources.Contracts;
+using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.UI.Models;
+using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace MusicWrap.UI.ViewModels;
 
@@ -40,13 +40,13 @@ public sealed partial class IndexingViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<StagedArtworkNode> stagedArtworks = [];
-    
+
     [ObservableProperty]
     private ObservableCollection<TemporaryArtist> temporaryArtists = [];
-    
+
     [ObservableProperty]
     private ObservableCollection<TemporaryAlbum> temporaryAlbums = [];
-    
+
     [ObservableProperty]
     private StagedTrackNode? selectedTrack;
 
@@ -91,10 +91,10 @@ public sealed partial class IndexingViewModel : ObservableObject
 
     [ObservableProperty]
     private double indexingProgressMaximum = 1;
-    
+
     partial void OnSelectedTrackChanged(StagedTrackNode? value)
     {
-        
+
     }
 
     partial void OnSelectedTitleValueChanged(string value)
@@ -252,7 +252,7 @@ public sealed partial class IndexingViewModel : ObservableObject
 
         UpdateSelectionEditors();
     }
-    
+
     /// <summary>
     /// Add a new temporary artist.
     /// </summary>
@@ -267,7 +267,7 @@ public sealed partial class IndexingViewModel : ObservableObject
         };
         TemporaryArtists.Add(artist);
     }
-    
+
     /// <summary>
     /// Add a new temporary album.
     /// </summary>
@@ -282,7 +282,7 @@ public sealed partial class IndexingViewModel : ObservableObject
         };
         TemporaryAlbums.Add(album);
     }
-    
+
     /// <summary>
     /// Update all tracks using an artist name to a new artist name.
     /// </summary>
@@ -296,7 +296,7 @@ public sealed partial class IndexingViewModel : ObservableObject
             }
         }
     }
-    
+
     /// <summary>
     /// Update all tracks using an album to update album metadata.
     /// </summary>
@@ -312,7 +312,7 @@ public sealed partial class IndexingViewModel : ObservableObject
             }
         }
     }
-    
+
     /// <summary>
     /// Batch add staged tracks (e.g., from YouTube search results).
     /// </summary>
@@ -348,7 +348,7 @@ public sealed partial class IndexingViewModel : ObservableObject
 
         return true;
     }
-    
+
     /// <summary>
     /// Remove a track from staging.
     /// </summary>
@@ -383,7 +383,7 @@ public sealed partial class IndexingViewModel : ObservableObject
             RemoveStagedTrack(track);
         }
     }
-    
+
     /// <summary>
     /// Remove a temporary artist and update tracks.
     /// </summary>
@@ -391,7 +391,7 @@ public sealed partial class IndexingViewModel : ObservableObject
     private void RemoveTemporaryArtist(TemporaryArtist artist)
     {
         TemporaryArtists.Remove(artist);
-        
+
         // Clear artist reference from tracks
         foreach (var track in StagedTracks)
         {
@@ -401,7 +401,7 @@ public sealed partial class IndexingViewModel : ObservableObject
             }
         }
     }
-    
+
     /// <summary>
     /// Remove a temporary album and update tracks.
     /// </summary>
@@ -409,7 +409,7 @@ public sealed partial class IndexingViewModel : ObservableObject
     private void RemoveTemporaryAlbum(TemporaryAlbum album)
     {
         TemporaryAlbums.Remove(album);
-        
+
         // Clear album reference from tracks
         foreach (var track in StagedTracks)
         {

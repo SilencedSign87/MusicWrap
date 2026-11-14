@@ -1,13 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core.Services.Playback;
 using ManagedBass;
+using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows.Forms;
 
 namespace MusicWrap.UI.ViewModels
 {

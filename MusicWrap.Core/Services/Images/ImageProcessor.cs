@@ -309,8 +309,8 @@ namespace MusicWrap.Core.Services.Images
 
         public class KmeansResult
         {
-            public ImageColorKmeans.Cluster[] Clusters { get; set; }
-            public ColorExtractionResult Result { get; set; }
+            public required ImageColorKmeans.Cluster[] Clusters { get; set; }
+            public required ColorExtractionResult Result { get; set; }
         }
 
         private static byte[] GetRgbBytes(Image image)

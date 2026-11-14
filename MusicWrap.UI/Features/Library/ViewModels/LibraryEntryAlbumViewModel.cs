@@ -3,11 +3,10 @@ using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Library.Models;
 using MusicWrap.Core.Services.Search;
+using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
 using System.Collections.ObjectModel;
-using MusicWrap.UI.Features.Library.Services;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
-using System.Diagnostics;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
 {
@@ -205,8 +204,8 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         {
             if (_expandedAlbumId is not { } id) return;
 
-            var row = GridRows.FirstOrDefault(r=>r.Albums.Any(a => a.Id == id));
-            if(row is null)
+            var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == id));
+            if (row is null)
             {
                 _expandedAlbumId = null;
                 DetachExpandedRow();

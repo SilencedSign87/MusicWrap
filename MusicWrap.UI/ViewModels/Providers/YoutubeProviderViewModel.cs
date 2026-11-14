@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using MusicWrap.Core.Sources.Contracts;
 using MusicWrap.UI.Models;
-using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 

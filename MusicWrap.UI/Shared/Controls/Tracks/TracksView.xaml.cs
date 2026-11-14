@@ -1,15 +1,14 @@
 using ManagedBass;
 using Microsoft.Extensions.DependencyInjection;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Data;
 using ICommand = System.Windows.Input.ICommand;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Library;
-using System.Diagnostics;
 
 namespace MusicWrap.UI.Controls.Models
 {

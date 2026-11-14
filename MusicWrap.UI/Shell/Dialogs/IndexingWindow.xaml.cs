@@ -1,7 +1,7 @@
+using MusicWrap.UI.Models;
+using MusicWrap.UI.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
-using MusicWrap.UI.ViewModels;
-using MusicWrap.UI.Models;
 
 namespace MusicWrap.UI.Shell.Dialogs;
 

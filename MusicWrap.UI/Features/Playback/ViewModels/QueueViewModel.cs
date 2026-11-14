@@ -1,14 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MusicWrap.Core.Services.Library;
+using MusicWrap.Core.Services.Playback;
 using MusicWrap.UI.Controls.Models;
 using MusicWrap.UI.Services;
+using MusicWrap.UI.Shared.Services;
 using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
-using MusicWrap.Core.Services.Playback;
-using MusicWrap.Core.Services.Library;
-using System.Diagnostics;
-using MusicWrap.Core.Services.Playlists;
-using MusicWrap.UI.Shared.Services;
 
 namespace MusicWrap.UI.Features.Playback.ViewModels
 {

@@ -1,19 +1,15 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using MusicWrap.Core.Services.Contracts;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
-using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.Helpers;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Services;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
-using System.Text;
-using MusicWrap.Core.Services.Contracts;
 
 namespace MusicWrap.UI.ViewModels
 {

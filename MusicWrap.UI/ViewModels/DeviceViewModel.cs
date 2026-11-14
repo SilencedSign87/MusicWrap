@@ -1,14 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Playback;
-using MusicWrap.Data.Infrastructure.Saving;
-using MusicWrap.Data.User;
 using MusicWrap.Data.User.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Xml.Serialization;
 
 namespace MusicWrap.UI.ViewModels
 {
@@ -98,7 +90,7 @@ namespace MusicWrap.UI.ViewModels
         partial void OnPreferredDeviceChanged(DeviceDefinition? value)
         {
             if (!_hasInitialize) return;
-            if(value is not null && _player.CurrentDeviceIndex != value.Index)
+            if (value is not null && _player.CurrentDeviceIndex != value.Index)
             {
                 _player.ChangeOutputDevice(value.Index);
             }

@@ -1,10 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
-using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 using System.Windows.Interop;
 
@@ -136,7 +133,7 @@ namespace MusicWrap.UI.Shared.Services
         {
             int id = Interlocked.Increment(ref _nextId);
             var entry = new RegisteredHotkey(id, modifiers, key, callback);
-            
+
             RegisterOnCurrentWindow(entry);
             _hotkeys.Add(entry);
             _logger.LogDebug("Hotkey registered (id={Id}, mod=0x{Mod:X}, key=0x{Key:X})", id, modifiers, key);

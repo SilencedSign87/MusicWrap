@@ -1,8 +1,5 @@
-using MusicWrap.UI.Features.Playback.Views;
-using MusicWrap.UI.Features.Settings.Views;
 using MusicWrap.UI.Features.Settings.ViewModels;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace MusicWrap.UI.Shell.Dialogs
 {
@@ -14,7 +11,7 @@ namespace MusicWrap.UI.Shell.Dialogs
         public SettingsWindow(SettingsIndexViewModel viewModel)
         {
             InitializeComponent();
-            
+
             DataContext = viewModel;
         }
 

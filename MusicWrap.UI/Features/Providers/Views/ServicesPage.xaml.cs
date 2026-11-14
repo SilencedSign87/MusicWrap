@@ -1,5 +1,4 @@
 using MusicWrap.UI.Features.Providers.ViewModels;
-using System.Windows;
 using System.Windows.Controls;
 
 namespace MusicWrap.UI.Features.Providers.Views

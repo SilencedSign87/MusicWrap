@@ -1,5 +1,4 @@
-﻿using MusicWrap.Core.Saving;
-using MusicWrap.Core.Services.Playback;
+﻿using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Shared.Services;
@@ -122,7 +121,7 @@ namespace MusicWrap.UI.Shell.Windows
         {
             if (WindowState == WindowState.Maximized)
                 WindowState = WindowState.Normal;
-            
+
             ResizeMode = ResizeMode.NoResize;
             SizeToContent = SizeToContent.Manual;
             Topmost = false;

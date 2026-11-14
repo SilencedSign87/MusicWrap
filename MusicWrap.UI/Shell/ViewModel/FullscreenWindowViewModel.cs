@@ -1,12 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Data.User.Models;
-using MusicWrap.UI.Features.Playback.ViewModels;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 
 namespace MusicWrap.UI.Shell.ViewModel
@@ -129,7 +125,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         #region Internal
         private void SyncSettings()
         {
-            if(!_isInitialized) return;
+            if (!_isInitialized) return;
 
             _settings.FullScreen.UseWaveformPlayer = UseWaveformPlayer;
             _settings.FullScreen.BlurEffect = BackdropBlur;

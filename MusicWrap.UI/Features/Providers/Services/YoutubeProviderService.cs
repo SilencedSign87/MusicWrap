@@ -1,13 +1,9 @@
 using MusicWrap.Core.Services.Library;
-using MusicWrap.Core.Sources.Providers.Youtube;
 using MusicWrap.Data.Infrastructure;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
 using MusicWrap.Data.User.Models;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace MusicWrap.UI.Features.Providers.Services
 {
@@ -33,17 +29,17 @@ namespace MusicWrap.UI.Features.Providers.Services
         {
             int applied = 0;
             string cacheDir = Path.Combine(MusicWrapDirectories.CacheDirectory, "YoutubeAudio");
-            if (!Directory.Exists(cacheDir)) 
+            if (!Directory.Exists(cacheDir))
                 return Task.FromResult(0);
-            if (string.IsNullOrWhiteSpace(_settings.Youtube.YoutubeLibraryRootPath)||!Directory.Exists(_settings.Youtube.YoutubeLibraryRootPath)) 
+            if (string.IsNullOrWhiteSpace(_settings.Youtube.YoutubeLibraryRootPath) || !Directory.Exists(_settings.Youtube.YoutubeLibraryRootPath))
                 return Task.FromResult(0);
 
-            foreach(var track in _library.Tracks.Where(t=>t.Origin == TrackOrigin.Youtube && !string.IsNullOrWhiteSpace(t.ExternalId)))
+            foreach (var track in _library.Tracks.Where(t => t.Origin == TrackOrigin.Youtube && !string.IsNullOrWhiteSpace(t.ExternalId)))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 string? cacheFile = ResolveCachedAudioPath(cacheDir, track.ExternalId!);
-                if (!File.Exists(cacheFile)) 
+                if (!File.Exists(cacheFile))
                     continue;
 
                 string extension = Path.GetExtension(cacheFile);
