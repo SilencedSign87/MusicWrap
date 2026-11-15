@@ -30,7 +30,7 @@ namespace MusicWrap.UI.Converters
                     if (!hexColor.StartsWith("#"))
                         hexColor = "#" + hexColor;
 
-                    var color = (Color)ColorConverter.ConvertFromString(hexColor);
+                    var color = (Color)System.Windows.Media.ColorConverter.ConvertFromString(hexColor);
                     var brush = new SolidColorBrush(color);
                     brush.Freeze();
                     return brush;

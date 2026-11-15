@@ -36,7 +36,7 @@ foreach (var file in files)
     Console.WriteLine($"Processing: {file}");
 
     var imageBytes = await File.ReadAllBytesAsync(file);
-    var output = extractor.ExecuteKmeans(imageBytes);
+    var output = extractor.ExecuteKmeans(imageBytes, 8, 100, 87);
 
     results.Add((Path.GetFileName(file), imageBytes, output));
 }
@@ -53,6 +53,10 @@ var html = $$"""
                 <h2>Original</h2>
                 <h3>{{r.File}}</h3>
                 <img src="data:image/png;base64,{{Convert.ToBase64String(r.bytes)}}" style="max-width:400px;max-height:400px">
+                <h3>Rescale 64px</h3>
+                <div>
+                    <img src="data:image/png;base64,{{Convert.ToBase64String(r.Result.ScaledImageBytes)}}" style="width:400px;height:400px; image-rendering:pixelated">
+                </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px">
                 <h2>Colors</h2>

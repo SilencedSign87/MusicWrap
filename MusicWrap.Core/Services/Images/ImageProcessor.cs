@@ -260,19 +260,19 @@ namespace MusicWrap.Core.Services.Images
             }
         }
 
-        public ColorExtractionResult ExtractColorsKmeans(Image sample)
+        public ColorExtractionResult ExtractColorsKmeans(
+            Image sample,
+            int k = 8,
+            int maxIterations = 100,
+            int seed = 87)
         {
-            var clusters = ImageColorKmeans.Run(GetRgbBytes(sample), k: 2, maxIterations: 100, seed: 87);
-            var dominant = clusters[0].Center;
-            var highlight = clusters[1].Center;
+            var clusters = ImageColorKmeans.Run(
+             GetRgbBytes(sample),
+             k,
+             maxIterations,
+             seed);
 
-            return new ColorExtractionResult
-            {
-                DominantColorHex = RgbToHex((byte)dominant.X, (byte)dominant.Y, (byte)dominant.Z),
-                DominantForegroundHex = GetContrastColor((byte)dominant.X, (byte)dominant.Y, (byte)dominant.Z),
-                HighlightColorHex = RgbToHex((byte)highlight.X, (byte)highlight.Y, (byte)highlight.Z),
-                HighlightForegroundHex = GetContrastColor((byte)highlight.X, (byte)highlight.Y, (byte)highlight.Z)
-            };
+            return CreateColorExtractionResult(clusters);
         }
 
         /// <summary>
@@ -280,35 +280,28 @@ namespace MusicWrap.Core.Services.Images
         /// </summary>
         /// <param name="imageBytes"></param>
         /// <returns></returns>
-        public KmeansResult ExecuteKmeans(byte[] imageBytes)
+        public KmeansResult ExecuteKmeans(byte[] imageBytes, int k = 8, int maxIterations = 100, int seed = 87)
         {
-            var image = Image.NewFromBuffer(imageBytes);
-            image = ResizeSquare(image, ColorSampleSize);
+            using var source = Image.NewFromBuffer(imageBytes);
+            using var image = ResizeSquare(source, ColorSampleSize);
 
-            // only 2 clusters: dominant and highlight
-            var clusters = ImageColorKmeans.Run(GetRgbBytes(image), k: 2, maxIterations: 100, seed: 87);
-            int total = clusters.Sum(c => c.Count);
-
-            var dominant = clusters[0].Center;
-            var highlight = clusters[1].Center;
-
-            var result = new ColorExtractionResult
-            {
-                DominantColorHex = RgbToHex((byte)dominant.X, (byte)dominant.Y, (byte)dominant.Z),
-                DominantForegroundHex = GetContrastColor((byte)dominant.X, (byte)dominant.Y, (byte)dominant.Z),
-                HighlightColorHex = RgbToHex((byte)highlight.X, (byte)highlight.Y, (byte)highlight.Z),
-                HighlightForegroundHex = GetContrastColor((byte)highlight.X, (byte)highlight.Y, (byte)highlight.Z)
-            };
+            var clusters = ImageColorKmeans.Run(
+                GetRgbBytes(image),
+                k,
+                maxIterations,
+                seed);
 
             return new KmeansResult
             {
+                ScaledImageBytes = image.PngsaveBuffer(),
                 Clusters = clusters,
-                Result = result
+                Result = CreateColorExtractionResult(clusters)
             };
         }
 
         public class KmeansResult
         {
+            public required byte[] ScaledImageBytes { get; set; }
             public required ImageColorKmeans.Cluster[] Clusters { get; set; }
             public required ColorExtractionResult Result { get; set; }
         }
@@ -342,6 +335,79 @@ namespace MusicWrap.Core.Services.Images
 
             return rgb;
         }
+
+        private static ColorExtractionResult CreateColorExtractionResult(ImageColorKmeans.Cluster[] clusters)
+        {
+            if (clusters.Length == 0)
+                return ColorExtractionResult.Default;
+
+            var dominant = clusters
+                .OrderByDescending(c => c.Count)
+                .First();
+
+            int totalPixels = clusters.Sum(c => c.Count);
+
+            var dominantLuminance = CalculateLuminance(
+                (byte)dominant.Center.X,
+                (byte)dominant.Center.Y,
+                (byte)dominant.Center.Z);
+            var contrastedCandidated = clusters
+                .Where(c =>
+                {
+                    if (c.Count < totalPixels * 0.01) return false;
+                    if (Vector3.DistanceSquared(c.Center, dominant.Center) < 100f) return false;
+
+                    var luminance = CalculateLuminance(
+                        (byte)c.Center.X,
+                        (byte)c.Center.Y,
+                        (byte)c.Center.Z);
+
+                    var contrast = CalculateContrastRatio(dominantLuminance, luminance);
+                    return contrast >= 1.5;
+                }).ToArray();
+
+            var cantidates = contrastedCandidated.Length > 0
+            ? contrastedCandidated
+            : [.. clusters
+                .Where(c =>
+                    c.Count >= totalPixels * 0.01 &&
+                    Vector3.DistanceSquared(c.Center, dominant.Center) >= 100f)];
+
+
+            var highlight = cantidates
+            .OrderByDescending(c =>
+            {
+                var color = c.Center;
+
+                var hsv = RgbToHsv((byte)color.X, (byte)color.Y, (byte)color.Z);
+                var luminance = CalculateLuminance((byte)color.X, (byte)color.Y, (byte)color.Z);
+                var contrast = CalculateContrastRatio(dominantLuminance, luminance);
+
+                var frequency = (double)c.Count / totalPixels;
+
+                return contrast
+                * (0.5 + hsv.S * 0.5)
+                * Math.Pow(frequency, 0.25);
+            }).FirstOrDefault();
+
+            if (highlight.Count == 0)
+                highlight = dominant;
+
+            return new ColorExtractionResult
+            {
+                DominantColorHex = ToHex(dominant.Center),
+                DominantForegroundHex = ToForeground(dominant.Center),
+
+                HighlightColorHex = ToHex(highlight.Center),
+                HighlightForegroundHex = ToForeground(highlight.Center)
+            };
+        }
+        private static string ToHex(System.Numerics.Vector3 color) =>
+            RgbToHex((byte)color.X, (byte)color.Y, (byte)color.Z);
+
+        private static string ToForeground(System.Numerics.Vector3 color) =>
+            GetContrastColor((byte)color.X, (byte)color.Y, (byte)color.Z);
+
         #endregion
     }
 

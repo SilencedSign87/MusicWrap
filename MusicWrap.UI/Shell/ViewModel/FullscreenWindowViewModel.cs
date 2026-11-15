@@ -16,7 +16,8 @@ namespace MusicWrap.UI.Shell.ViewModel
         public PlayerViewModel PlayerViewModel { get; private set; }
         private bool _isInitialized = false;
 
-
+        [ObservableProperty]
+        public partial bool TintForeground { get; set; } = false;
         [ObservableProperty]
         public partial bool BackdropBlur { get; set; } = true;
         [ObservableProperty]
@@ -42,6 +43,7 @@ namespace MusicWrap.UI.Shell.ViewModel
             _settings = settings;
             _windowManager = windowManager;
 
+            TintForeground = settings.FullScreen.TintForeground;
             UseWaveformPlayer = settings.FullScreen.UseWaveformPlayer;
             BackdropBlur = settings.FullScreen.BlurEffect;
             ActivePanel = settings.FullScreen.ActivePanel;
@@ -118,6 +120,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         #region Partials
         partial void OnActivePanelChanged(FullscreenPlayerPanel value) => SyncSettings();
         partial void OnBackdropBlurChanged(bool value) => SyncSettings();
+        partial void OnTintForegroundChanged(bool value) => SyncSettings();
         partial void OnUseWaveformPlayerChanged(bool value) => SyncSettings();
         partial void OnPreferredSpectrumTypeChanged(SpectrumType value) => SyncSettings();
         partial void OnPreferredVisualizerChanged(PreferredVisualizer value) => SyncSettings();
@@ -127,6 +130,7 @@ namespace MusicWrap.UI.Shell.ViewModel
         {
             if (!_isInitialized) return;
 
+            _settings.FullScreen.TintForeground = TintForeground;
             _settings.FullScreen.UseWaveformPlayer = UseWaveformPlayer;
             _settings.FullScreen.BlurEffect = BackdropBlur;
             _settings.FullScreen.ActivePanel = ActivePanel;
