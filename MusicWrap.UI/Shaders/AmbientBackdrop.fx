@@ -6,13 +6,12 @@ float4 OverlayColor : register(c2); // x = red, y = green, z = blue, w = alpha
 
 static const float TAU = 6.28318530718;
 
-float2 field(float2 p, float ph)
+float2 field(float2 p, float a)
 {
-    float a = ph * TAU;
-
-    float2 f;
+    float2 f;   
     f.x = sin(p.y * 4.0 + a * 1.0 + sin(p.x * 3.0 + a * 2.0));
     f.y = cos(p.x * 4.0 - a * 1.0 + cos(p.y * 3.0 - a * 2.0));
+    
     return f;
 }
 
@@ -24,11 +23,17 @@ float4 main(float2 uv : TEXCOORD) : COLOR
 
     float2 p = uv - 0.5;
 
-    float2 w1 = field(p * 1.3, ph);
+    float2 w1 = field(
+        p * 1.3, 
+        a);
 
-    float2 w2 = field(p * 1.8 + w1 * 0.6 + float2(1.7, 9.2), ph);
+    float2 w2 = field(
+        p * 1.8 + w1 * 0.6 + float2(1.7, 9.2),
+        a);
 
-    float2 w3 = field(p * 2.6 + w2 * 0.5 + float2(8.3, 2.8), ph + 0.33);
+    float2 w3 = field(
+        p * 2.6 + w2 * 0.5 + float2(8.3, 2.8),
+        a + TAU * 0.33);
 
     float mask = 0.5 + 0.5 * sin(p.x * 2.5 + p.y * 2.0 + a * 1.0 + w1.x);
     mask = lerp(0.35, 1.0, mask);

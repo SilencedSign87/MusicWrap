@@ -19,7 +19,7 @@
              d:Height="1080"
              >
     <UserControl.Foreground>
-        <SolidColorBrush Opacity="0.8">
+        <SolidColorBrush Opacity="1">
             <SolidColorBrush.Color>
                 <MultiBinding Converter="{StaticResource ConditionalColorConverter}">
                     <Binding Path="TintForeground" />
@@ -33,7 +33,7 @@
         <SolidColorBrush Color="{Binding PlayerViewModel.CurrentTrackDominantColorHex}"/>
     </UserControl.Background>
     <UserControl.Resources>
-        <SolidColorBrush x:Key="ControlForeground" Opacity="0.8">
+        <SolidColorBrush x:Key="ControlForeground" Opacity="0.9">
             <SolidColorBrush.Color>
                 <MultiBinding Converter="{StaticResource ConditionalColorConverter}">
                     <Binding Path="TintForeground" />
@@ -42,16 +42,7 @@
                 </MultiBinding>
             </SolidColorBrush.Color>
         </SolidColorBrush>
-        <SolidColorBrush x:Key="ArtworkBorderBrush" Opacity="0.25">
-            <SolidColorBrush.Color>
-                <MultiBinding Converter="{StaticResource ConditionalColorConverter}">
-                    <Binding Path="TintForeground" />
-                    <Binding Path="PlayerViewModel.CurrentTrackHighlightColorHex"/>
-                    <Binding Path="PlayerViewModel.CurrentTackDominantForegroundColorHex"/>
-                </MultiBinding>
-            </SolidColorBrush.Color>
-        </SolidColorBrush>
-        <SolidColorBrush x:Key="ControlHoverForeground" Opacity="0.1">
+        <SolidColorBrush x:Key="ControlHoverForeground" Opacity="0.2">
             <SolidColorBrush.Color>
                 <MultiBinding Converter="{StaticResource ConditionalColorConverter}">
                     <Binding Path="TintForeground" />
@@ -111,9 +102,9 @@
                     <ImageBrush
                         ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath,
                         Converter={StaticResource PathToImageConverter},
-                        ConverterParameter=blur:1080}"
+                        ConverterParameter=blur:480}"
                         Stretch="UniformToFill"
-                        RenderOptions.BitmapScalingMode="HighQuality"
+                        RenderOptions.BitmapScalingMode="LowQuality"
                         AlignmentX="Center"
                         AlignmentY="Center"
                         />
