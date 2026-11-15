@@ -64,10 +64,12 @@
         <Grid Grid.Row="1" x:Name="ContentContainer">
             
         </Grid>
-        <Border Grid.Row="2">
-            
+        <Border Grid.Row="2"
+                BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource StrokeDivider}"
+                >
             <controls:SpectrumVisualizerControl 
-                Height="60"
+                Height="90"
                 BarCount="64"
                 Opacity="0.5"
                 Foreground="{DynamicResource TextPrimaryBrush}"

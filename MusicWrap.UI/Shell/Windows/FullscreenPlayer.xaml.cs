@@ -1,6 +1,7 @@
 ﻿using MusicWrap.Data.User.Models;
 using MusicWrap.UI.Features.Lyrics.View;
 using MusicWrap.UI.Features.Playback.Views;
+using MusicWrap.UI.Shaders;
 using MusicWrap.UI.Shell.ViewModel;
 using MusicWrap.UI.ViewModels;
 using System.ComponentModel;
@@ -31,7 +32,9 @@ namespace MusicWrap.UI.Shell.Windows
             PanelContainer.RenderTransform = _panelSlide;
 
             QueueListPage = queueListPage;
-            QueueListPage.Margin = new Thickness(0, 52, 0, 36);
+            QueueListPage.Margin = new Thickness(0, 52, 52, 52);
+            QueueListPage.ShowToolbar = false;
+
             LyricsView = new LyricsView
             {
                 FontSize = 36,
@@ -233,6 +236,8 @@ namespace MusicWrap.UI.Shell.Windows
             LyricsView.LyricsStateChanged -= LyricsControl_LyricsStateChanged;
             LyricsView.LyricsStateChanged += LyricsControl_LyricsStateChanged;
 
+            FluidShader.StartAnimation();
+
             ApplyPanelState(animate: false);
             ApplyProgress();
             ScaleUIElements();
@@ -244,6 +249,8 @@ namespace MusicWrap.UI.Shell.Windows
                 vm.PlayerViewModel.PropertyChanged -= OnPlayerViewModelPropertyChanged;
                 vm.PropertyChanged -= OnViewmodelPropertyChanged;
             }
+
+            FluidShader.StopAnimation();
 
             LyricsView.LyricsStateChanged -= LyricsControl_LyricsStateChanged;
         }

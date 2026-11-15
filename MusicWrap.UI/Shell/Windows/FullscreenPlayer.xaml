@@ -8,6 +8,7 @@
              xmlns:lyrics="clr-namespace:MusicWrap.UI.Features.Lyrics.View"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              xmlns:vm="clr-namespace:MusicWrap.UI.Shell.ViewModel"
+             xmlns:shaders="clr-namespace:MusicWrap.UI.Shaders"
              xmlns:converters="clr-namespace:MusicWrap.UI.Converters"
              mc:Ignorable="d"
              x:Name="RootFullScreenWindow"
@@ -20,17 +21,6 @@
     <UserControl.Foreground>
         <SolidColorBrush Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.8"/>
     </UserControl.Foreground>
-    <UserControl.Background>
-        <ImageBrush
-             ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath,
-            Converter={StaticResource PathToImageConverter},
-            ConverterParameter=blur:1080}"
-            Stretch="UniformToFill"
-            RenderOptions.BitmapScalingMode="HighQuality"
-            AlignmentX="Center"
-            AlignmentY="Center"
-            />
-    </UserControl.Background>
     <UserControl.Resources>
         <SolidColorBrush x:Key="BackdropTint" Color="#000000" Opacity="0.25"/>
         <SolidColorBrush x:Key="ControlForeground" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.8"/>
@@ -71,6 +61,33 @@
     </UserControl.Resources>
     <!-- MainContent -->
     <Grid x:Name="BackdropRoot" ClipToBounds="True">
+        <!-- Background -->
+        <Grid x:Name="BackgropRoot" ClipToBounds="True" IsEnabled="False" IsHitTestVisible="False">
+            <Border
+                x:Name="AmbientBackdrop"
+                Panel.ZIndex="0"
+                ClipToBounds="True"
+                >
+                <Border.Background>
+                    <ImageBrush
+                        ImageSource="{Binding PlayerViewModel.CurrentTrackImagePath,
+                        Converter={StaticResource PathToImageConverter},
+                        ConverterParameter=blur:1080}"
+                        Stretch="UniformToFill"
+                        RenderOptions.BitmapScalingMode="HighQuality"
+                        AlignmentX="Center"
+                        AlignmentY="Center"
+                        />
+                </Border.Background>
+                <Border.Effect>
+                    <shaders:FluidBackdropEffect
+                        x:Name="FluidShader"
+                        Strength="1.0"
+                        />
+                </Border.Effect>
+            </Border>
+
+        </Grid>
 
         <Grid x:Name="MainContentGrid">
             <Grid 
