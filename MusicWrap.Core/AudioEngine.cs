@@ -345,7 +345,7 @@ namespace MusicWrap.Core
             return Bass.CreateStream(filePath, 0, 0, BassFlags.Default);
         }
 
-        public static async Task<float[]> GetWaveFromDataAsync(string filePath, int dataPoints = 2000)
+        public static async Task<float[]> GetWaveFromDataAsync(string filePath, int dataPoints = 2000, CancellationToken ct = default)
         {
             if (dataPoints <= 0) dataPoints = 1;
 
@@ -377,12 +377,14 @@ namespace MusicWrap.Core
 
                     for (int i = 0; i < dataPoints; i++)
                     {
+                        ct.ThrowIfCancellationRequested();
+
                         long pos = (long)((i + 0.5) * lengthBytes / dataPoints);
 
                         pos = Math.Clamp(pos, 0, maxSeek);
 
                         if (!Bass.ChannelSetPosition(stream, pos, PositionFlags.Decode))
-                            return ReadSequentialWaveform(stream, lengthBytes, dataPoints); // fallback
+                            return ReadSequentialWaveform(stream, lengthBytes, dataPoints, ct); // fallback
 
                         int bytesRead = Bass.ChannelGetData(stream, buffer, (int)windowBytes);
 
@@ -410,7 +412,7 @@ namespace MusicWrap.Core
             });
         }
 
-        private static float[] ReadSequentialWaveform(int stream, long lengthBytes, int dataPoints)
+        private static float[] ReadSequentialWaveform(int stream, long lengthBytes, int dataPoints, CancellationToken ct)
         {
             Bass.ChannelSetPosition(stream, 0, PositionFlags.Decode);
 
@@ -423,6 +425,8 @@ namespace MusicWrap.Core
 
             for (int i = 0; i < dataPoints; i++)
             {
+                ct.ThrowIfCancellationRequested();
+                
                 int bytesRead = Bass.ChannelGetData(stream, buffer, (int)bytesPerChunk);
                 if (bytesRead <= 0) break;
 

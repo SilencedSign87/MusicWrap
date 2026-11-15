@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using ManagedBass;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -86,6 +87,18 @@ namespace MusicWrap.Core.Services.Playback
 
 
         // Waveform
+        private readonly Channel<WaveformRequest> _waveformRequests = Channel.CreateUnbounded<WaveformRequest>();
+        private readonly CancellationTokenSource _waveformWorkerCancellation = new();
+        private readonly Task _waveformWorker;
+        private CancellationTokenSource? _currentWaveformCancellation;
+
+        private sealed record WaveformRequest(
+            Track track,
+            int RequestVersion,
+            CancellationToken CancellationToken
+        );
+
+
         private const int MaxWaveformCacheEntries = 32;
         private const int WaveformDataPoints = 1000;
         private readonly Dictionary<int, float[]> _waveformCache = [];
@@ -93,7 +106,6 @@ namespace MusicWrap.Core.Services.Playback
         private readonly LinkedList<int> _waveformCacheLru = [];
         private readonly object _waveformCacheLock = new object();
         private int _waveformVersion = 0;
-        private static readonly SemaphoreSlim _waveformThrottle = new(1);
 
         private double _trackedPositon = 0.0;
         private DateTime _trackedPositionUtc = DateTime.MinValue;
@@ -188,6 +200,8 @@ namespace MusicWrap.Core.Services.Playback
 
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
+
+            _waveformWorker = Task.Run(ProcessWaveformRequestsAsync);
 
             _queue.QueueChanged += QueueOnQueueChanged;
             _queue.CurrentChanged += QueueOnCurrentChanged;
@@ -1372,10 +1386,10 @@ namespace MusicWrap.Core.Services.Playback
                 if (nextItem.LibraryId.HasValue)
                 {
                     var track = _library.Tracks.FirstOrDefault(t => t.Id == nextItem.LibraryId.Value);
-                    if (track != null)
-                    {
-                        await PreloadWaveformCacheAsync(track);
-                    }
+                    // if (track != null)
+                    // {
+                    //     await PreloadWaveformCacheAsync(track);
+                    // }
                 }
             }
             catch (Exception ex)
@@ -1410,45 +1424,18 @@ namespace MusicWrap.Core.Services.Playback
                 return;
             }
 
-            _ = Task.Run(async () =>
-            {
-                await _waveformThrottle.WaitAsync();
-                try
-                {
+            var cancellation = new CancellationTokenSource();
 
-                    var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
-                    if (waveform.Length == 0)
-                    {
-                        waveform = CreateFallbackWaveForm(WaveformDataPoints);
-                    }
-                    CacheWaveform(track.Id, waveform);
-                    PublishWaveformIfCurrent(track.Id, requestVersion, waveform);
-                }
-                finally
-                {
-                    _waveformThrottle.Release();
-                }
-            });
+            _currentWaveformCancellation?.Cancel();
+            _currentWaveformCancellation?.Dispose();
+            _currentWaveformCancellation = cancellation;
+
+            _waveformRequests.Writer.TryWrite(
+                new WaveformRequest(track, requestVersion, cancellation.Token)
+            );
+         
         }
-        private async Task PreloadWaveformCacheAsync(Track track)
-        {
-            if (TryGetWaveformFromCache(track.Id, out _)) return; // Already cached
-
-            await _waveformThrottle.WaitAsync();
-
-            try
-            {
-                if (TryGetWaveformFromCache(track.Id, out _)) return; // Just in case
-
-                var waveform = await AudioEngine.GetWaveFromDataAsync(track.Path, WaveformDataPoints);
-                if (waveform.Length == 0) return;
-                CacheWaveform(track.Id, waveform);
-            }
-            finally
-            {
-                _waveformThrottle.Release();
-            }
-        }
+       
         private bool TryGetWaveformFromCache(int trackId, out float[]? data)
         {
             lock (_waveformCacheLock)
@@ -1519,6 +1506,47 @@ namespace MusicWrap.Core.Services.Playback
                 WaveformDataChanged?.Invoke(this, data);
 
             });
+        }
+        private async Task ProcessWaveformRequestsAsync()
+        {
+            try
+            {
+                await foreach(var request in _waveformRequests.Reader.ReadAllAsync(_waveformWorkerCancellation.Token))
+                {
+                    try
+                    {
+                        var waveform = await AudioEngine.GetWaveFromDataAsync(
+                            request.track.Path,
+                            WaveformDataPoints,
+                            request.CancellationToken
+                        );
+
+                        if (waveform.Length == 0)
+                        {
+                            waveform = CreateFallbackWaveForm(WaveformDataPoints);
+                        }
+
+                        CacheWaveform(request.track.Id, waveform);
+
+                        PublishWaveformIfCurrent(request.track.Id, request.RequestVersion, waveform);
+                    }catch (OperationCanceledException)
+                    {
+                        // Ignore cancellation
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error processing waveform request for track {TrackId}", request.track.Id);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in waveform processing task");
+            }
         }
         private static float[] CreateFallbackWaveForm(int points = 2000)
         {
@@ -1631,6 +1659,15 @@ namespace MusicWrap.Core.Services.Playback
                 _waveformCacheNodes.Clear();
                 _waveformCacheLru.Clear();
             }
+            _currentWaveformCancellation?.Cancel();
+            _waveformWorkerCancellation.Cancel();
+            _waveformRequests.Writer.TryComplete();
+
+            try
+            {
+                _waveformWorker.GetAwaiter().GetResult();
+            }catch(OperationCanceledException){}
+
             _audioEngine.Dispose();
         }
     }
