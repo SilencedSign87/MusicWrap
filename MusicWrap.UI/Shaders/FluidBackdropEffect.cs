@@ -80,7 +80,8 @@ namespace MusicWrap.UI.Shaders
 
         public void StartAnimation()
         {
-            double randomDuration = new Random().NextDouble() * 20 + 20;  // [20-40]
+            double randomDuration = new Random().NextDouble() * 20 + 20;
+
             BeginAnimation(
                 TimeProperty,
                 new DoubleAnimation

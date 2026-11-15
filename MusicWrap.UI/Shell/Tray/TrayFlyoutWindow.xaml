@@ -21,36 +21,20 @@
         d:DataContext="{d:DesignInstance Type=vm:PlayerViewModel}"
         >
     <Window.Background>
-        <ImageBrush 
-            ImageSource="{Binding CurrentTrackImagePath , Converter={StaticResource PathToImageConverter}, ConverterParameter=blur:350}" 
-            RenderOptions.BitmapScalingMode="HighQuality"
-            Stretch="UniformToFill"
-            AlignmentX="Center"
-            AlignmentY="Center"
+        <SolidColorBrush
+            Color="{Binding CurrentTrackDominantColorHex}"
             />
     </Window.Background>
     <Window.Resources>
         <Style x:Key="TrackHighlightCardStyle" TargetType="Border">
-            <Setter Property="Background">
-                <Setter.Value>
-                    <SolidColorBrush Color="#FFFFFF" Opacity="0.1"/>
-                </Setter.Value>
-            </Setter>
+            
             <Setter Property="BorderThickness" Value="0,1,0,0" />
             <Setter Property="BorderBrush">
                 <Setter.Value>
                     <SolidColorBrush Color="{Binding ElementName=RootWindow, Path=Foreground.Color}" Opacity="0.2"/>
                 </Setter.Value>
             </Setter>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding ElementName=RootWindow, Path=Foreground, Converter={StaticResource ForegroundIsLightConverter}}" Value="True">
-                    <Setter Property="Background">
-                        <Setter.Value>
-                            <SolidColorBrush Color="#000000" Opacity="0.1"/>
-                        </Setter.Value>
-                    </Setter>
-                </DataTrigger>
-            </Style.Triggers>
+            
         </Style>
         <Style x:Key="FlyoutTrayButton" TargetType="Button" BasedOn="{StaticResource TransparentButton}">
             <Setter Property="Width" Value="32"/>
@@ -76,12 +60,6 @@
         Opacity="1" 
         RowDefinitions="*,Auto,Auto"
         >
-        <Grid.Background>
-            <SolidColorBrush
-                Color="{Binding CurrentTrackDominantColorHex}"
-                Opacity="0.7"
-                />
-        </Grid.Background>
         <Grid.RenderTransform>
             <TranslateTransform x:Name="RootTranslate"/>
         </Grid.RenderTransform>
@@ -99,31 +77,34 @@
 
             <StackPanel Grid.Column="1" Margin="0,8,8,0">
                 <TextBlock 
-                    FontSize="13" 
+                    FontSize="14" 
                     TextTrimming="WordEllipsis"
                     Text="{Binding CurrentTrackTitle}"
                     FontWeight="Medium"
                     />
                 <TextBlock 
-                    FontSize="11" 
+                    FontSize="12" 
                     TextTrimming="WordEllipsis"
                     Text="{Binding CurrentTrackAlbum}" 
+                    FontWeight="Light"
                     Margin="0,2"
                     />
                 <TextBlock 
-                    FontSize="10"
+                    FontSize="11"
                     TextTrimming="WordEllipsis"
                     Text="{Binding CurrentTrackArtists}" 
+                    FontWeight="Light"
                     />
             </StackPanel>
         </Grid>
-        <Border Padding="16,2,16,8" Grid.Row="1">
-            <Grid ColumnDefinitions="Auto,12,*,12,Auto">
+        <Border Padding="12,2,12,8" Grid.Row="1">
+            <Grid ColumnDefinitions="24,4,*,4,24">
                 <TextBlock 
                     Grid.Column="0" 
-                    FontSize="10"
-                    FontWeight="Normal"
+                    FontSize="11"
+                    FontWeight="Light"
                     VerticalAlignment="Center"
+                    HorizontalAlignment="Left"
                     Text="{Binding FormattedPosition ,ElementName=TrayWaveForm, Mode=OneWay}"
                     />
                 <controls:WaveformPlayerControl
@@ -136,9 +117,10 @@
                     />
                 <TextBlock 
                     Grid.Column="4"
-                    FontSize="10"
-                    FontWeight="Normal"
+                    FontSize="11"
+                    FontWeight="Light"
                     VerticalAlignment="Center"
+                    HorizontalAlignment="Right"
                     Text="{Binding FormattedDuration ,ElementName=TrayWaveForm, Mode=OneWay}"
                     />
             </Grid>
