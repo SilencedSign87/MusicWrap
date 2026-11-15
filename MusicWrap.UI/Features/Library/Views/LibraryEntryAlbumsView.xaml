@@ -125,7 +125,12 @@
                                             AlignmentY="Center"
                                             Stretch="UniformToFill"/>
                             </Border.Background>
-                            <Border CornerRadius="4">
+                            <Border 
+                                CornerRadius="4"
+                                    >
+                                <Border.Background>
+                                    <SolidColorBrush Color="{Binding ExpandedDominantColor}" Opacity="0.75"/>
+                                </Border.Background>
                                 <Grid Margin="8" >
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>

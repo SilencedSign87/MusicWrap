@@ -76,10 +76,15 @@
         Opacity="1" 
         RowDefinitions="*,Auto,Auto"
         >
+        <Grid.Background>
+            <SolidColorBrush
+                Color="{Binding CurrentTrackDominantColorHex}"
+                Opacity="0.7"
+                />
+        </Grid.Background>
         <Grid.RenderTransform>
             <TranslateTransform x:Name="RootTranslate"/>
         </Grid.RenderTransform>
-
 
         <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
             <controls:SquarePanel Grid.Column="0">

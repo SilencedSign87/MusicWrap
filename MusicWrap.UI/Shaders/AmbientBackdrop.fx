@@ -2,6 +2,7 @@ sampler2D Input : register(s0);
 
 float4 Time : register(c0); // x = fase in [0,1)
 float4 Strength : register(c1); // x = intensity
+float4 OverlayColor : register(c2); // x = red, y = green, z = blue, w = alpha
 
 static const float TAU = 6.28318530718;
 
@@ -34,14 +35,11 @@ float4 main(float2 uv : TEXCOORD) : COLOR
 
     float2 distortion = (w2 * 0.045 + w3 * 0.018) * mask;
 
-    float2 duv = uv + distortion * k;
-
-    duv = clamp(duv, 0.001, 0.999);
+    float2 duv = clamp(uv + distortion * k , 0.001, 0.999);
 
     float4 color = tex2D(Input, duv);
     
-    //float glow = (sin(w1.x * 2.0 + w2.y * 2.0 + a) * 0.5 + 0.5) * 0.06 - 0.03;
-    //color.rgb += glow * k;
+    color.rgb = lerp(color.rgb, OverlayColor.rgb, OverlayColor.a);
 
     return color;
 }

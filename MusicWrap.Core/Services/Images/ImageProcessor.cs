@@ -20,7 +20,7 @@ namespace MusicWrap.Core.Services.Images
         private const int ColorSampleSize = 64;
 
         // blurred background blending factors
-        private const float DominantColorFactor = 0.7f;
+        private const float DominantColorFactor = 0.0f;
         private const float ImageColorFactor = 1f - DominantColorFactor;
 
         public ColorExtractionResult ProcessPipeline(byte[] imageBytes, string fileName)
@@ -41,9 +41,9 @@ namespace MusicWrap.Core.Services.Images
             using var small = ResizeToCover(medium, SmallCoverSize);
             SaveImage(small, GetPath(MusicWrapDirectories.SmallImageDirectory, fileName));
 
-            using var colorSample = ResizeSquare(image, ColorSampleSize);
+            //using var colorSample = ResizeSquare(image, ColorSampleSize);
 
-            var colors = ExtractColorsKmeans(colorSample);
+            var colors = ExtractColorsKmeans(small);
 
             using var blur = CreateBlurredBackground(image, colors.DominantColorHex);
             SaveImage(blur, GetPath(MusicWrapDirectories.BlurImageDirectory, fileName));

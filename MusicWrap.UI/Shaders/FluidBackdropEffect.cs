@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
 
@@ -39,6 +36,20 @@ namespace MusicWrap.UI.Shaders
                     1.0,
                     PixelShaderConstantCallback(1)));
 
+        public static readonly DependencyProperty OverlayColorProperty = DependencyProperty.Register(
+            nameof(OverlayColor),
+            typeof(Color),
+            typeof(FluidBackdropEffect),
+            new UIPropertyMetadata(
+                Colors.Transparent,
+                PixelShaderConstantCallback(2)));
+
+        public Color OverlayColor
+        {
+            get => (Color)GetValue(OverlayColorProperty);
+            set => SetValue(OverlayColorProperty, value);
+        }
+
         public Brush Input
         {
             get => (Brush)GetValue(InputProperty);
@@ -64,6 +75,7 @@ namespace MusicWrap.UI.Shaders
             UpdateShaderValue(InputProperty);
             UpdateShaderValue(TimeProperty);
             UpdateShaderValue(StrengthProperty);
+            UpdateShaderValue(OverlayColorProperty);
         }
 
         public void StartAnimation()

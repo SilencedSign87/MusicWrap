@@ -26,6 +26,7 @@
             <converters:SelectedAlbumBackgroundConverter x:Key="SelectedAlbumBackgroundConverter"/>
             <converters:BoolToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:ForegroundIsLightConverter x:Key="ForegroundIsLightConverter"/>
+            <converters:InverseColorConverter x:Key="InverseColorConverter"/>
             <converters:TabStringToVisibilityConverter x:Key="TabStringToVisibilityConverter"/>
             <converters:ItemCountToVisibilityConverter x:Key="ItemCountToVisibilityConverter"/>
             <converters:EnumToDisplayNameConverter x:Key="EnumToDisplayNameConverter"/>

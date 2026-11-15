@@ -21,8 +21,10 @@
     <UserControl.Foreground>
         <SolidColorBrush Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.8"/>
     </UserControl.Foreground>
+    <UserControl.Background>
+        <SolidColorBrush Color="{Binding PlayerViewModel.CurrentTrackDominantColorHex}"/>
+    </UserControl.Background>
     <UserControl.Resources>
-        <SolidColorBrush x:Key="BackdropTint" Color="#000000" Opacity="0.25"/>
         <SolidColorBrush x:Key="ControlForeground" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.8"/>
         <SolidColorBrush x:Key="ArtworkBorderBrush" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.25"/>
         <SolidColorBrush x:Key="ControlHoverForeground" Color="{Binding PlayerViewModel.CurrentTackDominantForegroundColorHex}" Opacity="0.1"/>
@@ -62,7 +64,12 @@
     <!-- MainContent -->
     <Grid x:Name="BackdropRoot" ClipToBounds="True">
         <!-- Background -->
-        <Grid x:Name="BackgropRoot" ClipToBounds="True" IsEnabled="False" IsHitTestVisible="False">
+        <Grid x:Name="BackgropRoot" 
+              ClipToBounds="True" 
+              IsEnabled="False" 
+              IsHitTestVisible="False"
+              Visibility="{Binding BackdropBlur, Converter={StaticResource BooleanToVisibilityConverter}}"
+              >
             <Border
                 x:Name="AmbientBackdrop"
                 Panel.ZIndex="0"
@@ -83,10 +90,13 @@
                     <shaders:FluidBackdropEffect
                         x:Name="FluidShader"
                         Strength="1.0"
+                        OverlayColor="{
+                            Binding PlayerViewModel.CurrentTackDominantForegroundColorHex, 
+                            Converter={StaticResource InverseColorConverter}, 
+                            ConverterParameter=0.3}"
                         />
                 </Border.Effect>
             </Border>
-
         </Grid>
 
         <Grid x:Name="MainContentGrid">
@@ -176,12 +186,24 @@
                                     Icon="{ex:Icon Glyph=E712, FontSize=14}" 
                                     Height="40" Width="40">
                                     <controls:AppMenuItem
-                                        Icon="{ex:Icon Glyph=E8BA}"
-                                        Foreground="{DynamicResource TextPrimaryBrush}"
-                                        Header="Waveform Player"
-                                        IsCheckable="True"
-                                        IsChecked="{Binding UseWaveformPlayer}"
-                                        />
+                                        Icon="{ex:Icon Glyph=E790}"
+                                        Header="Appearance"
+                                        >
+                                        <controls:AppMenuItem
+                                            Icon="{ex:Icon Glyph=E8BA}"
+                                            Foreground="{DynamicResource TextPrimaryBrush}"
+                                            Header="Waveform progressbar"
+                                            IsCheckable="True"
+                                            IsChecked="{Binding UseWaveformPlayer}"
+                                            />
+                                        <controls:AppMenuItem
+                                            Icon="{ex:Icon Glyph=F4A5}"
+                                            Foreground="{DynamicResource TextPrimaryBrush}"
+                                            Header="Artwork blur"
+                                            IsCheckable="True"
+                                            IsChecked="{Binding BackdropBlur}"
+                                            />
+                                    </controls:AppMenuItem>
                                     <controls:AppMenuItem Icon="{ex:Icon Glyph=&#xF61F;}" Header="Visualizer" Foreground="{DynamicResource TextPrimaryBrush}">
                                         <controls:AppMenuItem Header="Off" IsCheckable="True" 
                                             Command="{Binding SetVisualizerCommand}"
