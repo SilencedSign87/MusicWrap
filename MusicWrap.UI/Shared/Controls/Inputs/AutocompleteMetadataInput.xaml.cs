@@ -156,13 +156,13 @@ namespace MusicWrap.UI.Controls
             set => SetValue(PlaceholderTextProperty, value);
         }
 
-        public static readonly DependencyProperty ForegroundProperty =
+        public static readonly new DependencyProperty ForegroundProperty =
                    DependencyProperty.Register(
                        nameof(Foreground),
                        typeof(Brush),
                        typeof(AutocompleteMetadataInput),
                        new FrameworkPropertyMetadata(null, OnForegroundForwarded));
-        public Brush Foreground
+        public new Brush Foreground
         {
             get => (Brush)GetValue(ForegroundProperty);
             set => SetValue(ForegroundProperty, value);

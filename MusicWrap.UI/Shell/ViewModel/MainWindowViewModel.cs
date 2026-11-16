@@ -25,8 +25,6 @@ namespace MusicWrap.UI.Shell.ViewModel
         public string SidebarTooltip
             => IsSidePanelVisible ? "Hide Sidebar" : "Show Sidebar";
 
-        private bool _disposed = false;
-
         public MainPlayerViewModel(MusicPlayerService playerService, WindowManagerService manager, MusicWrapSettings userSettings)
         {
             _playerService = playerService;

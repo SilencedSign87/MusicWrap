@@ -13,7 +13,6 @@ namespace MusicWrap.UI.Controls
     {
         private bool _isRebuilding;
         private bool _isSynchronizingText;
-        private bool _isUserInput;
         private const int MaxSuggestions = 50;
 
 
