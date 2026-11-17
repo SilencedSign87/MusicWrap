@@ -23,7 +23,7 @@
     <Border
         x:Name="BorderWindow"
         >
-        <Grid RowDefinitions="Auto,*,40">
+        <Grid RowDefinitions="Auto,*,42">
             <!--Titlebar-->
             <Grid Grid.Row="0" Margin="0,0,144,0">
                 <Grid.ColumnDefinitions>

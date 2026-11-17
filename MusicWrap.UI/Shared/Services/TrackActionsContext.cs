@@ -67,6 +67,11 @@ namespace MusicWrap.UI.Services
             var indices = _musicPlayerService.GetPlaybackIndices(selectedTrackIds);
             _musicPlayerService.AddIndicesToNext(indices);
         }
+        public void RemoveFromLibrary(IReadOnlyList<int> selectedTrackIds)
+        {
+            if (selectedTrackIds.Count == 0) return;
+            _libraryService.RemoveTracks(selectedTrackIds);
+        }
         public void ShowTrackInformationDialog(IReadOnlyList<int> selectedTrackIds)
         {
             if (selectedTrackIds.Count == 0)

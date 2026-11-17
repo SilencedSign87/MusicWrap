@@ -14,6 +14,8 @@
              >
     <UserControl.Style>
         <Style TargetType="UserControl">
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource StrokeSurface}"/>
             <Setter Property="Background">
                 <Setter.Value>
                     <SolidColorBrush Color="{Binding CurrentTrackDominantColorHex}" Opacity="0.2"/>

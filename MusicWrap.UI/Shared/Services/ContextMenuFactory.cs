@@ -19,6 +19,7 @@ namespace MusicWrap.UI.Shared.Services
         ShowInExplorer = 1 << 5,
         RemoveFromQueue = 1 << 6,
         MoveToLast = 1 << 7,
+        RemoveFromLibrary = 1 << 8,
 
         Standard = Playback | AddToQueue | AddToPlaylist | TrackProperties | ShowInExplorer,
         Queue = QueuePlayback | AddToPlaylist | RemoveFromQueue | MoveToLast,
@@ -85,6 +86,11 @@ namespace MusicWrap.UI.Shared.Services
                 menu.Items.Add(new Separator());
                 foreach (var extra in extras)
                     menu.Items.Add(new MenuItem { Header = extra.Header, Icon = Icon(extra.IconGlyph), Command = extra.Command, CommandParameter = extra.CommandParameter });
+            }
+
+            if (type.HasFlag(ContextMenuType.RemoveFromLibrary))
+            {
+                Add(menu.Items, "Remove from library", "\uE738", () => WithSelection(getSelectedIds, _actions.RemoveFromLibrary));
             }
 
             if (type.HasFlag(ContextMenuType.TrackProperties))

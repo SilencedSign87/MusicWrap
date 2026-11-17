@@ -6,6 +6,7 @@ using MusicWrap.Core.Services.Search;
 using MusicWrap.UI.Features.Library.Services;
 using MusicWrap.UI.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using static MusicWrap.UI.Features.Library.ViewModels.LibraryViewModel;
 
 namespace MusicWrap.UI.Features.Library.ViewModels
@@ -72,11 +73,10 @@ namespace MusicWrap.UI.Features.Library.ViewModels
         #region Public
         public void ExpandAlbum(int albumId)
         {
-            //var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
             if (_expandedAlbumId == albumId) { CollapseAlbum(); return; }
             CollapseAlbum();
             var row = GridRows.FirstOrDefault(r => r.Albums.Any(a => a.Id == albumId));
-
+            
             if (row is null) return;
 
             _expandedTracks = CreateTracksViewModel(row, albumId);

@@ -78,6 +78,7 @@ namespace MusicWrap.Core
             Bass.NetTimeOut = 7000;
             Bass.NetReadTimeOut = 7000;
             Bass.NetPreBuffer = 0;
+            Bass.AsyncFileBufferLength = 512 * 1024; // 512 KB
 
 #if WINDOWS
             int bassDevice = IsWasapiMode() ? 0 : deviceIndex;
@@ -248,7 +249,7 @@ namespace MusicWrap.Core
 
         public int CreateDecodeStream(string filePath)
         {
-            return Bass.CreateStream(filePath, 0, 0, BassFlags.Decode | BassFlags.Float);
+            return Bass.CreateStream(filePath, 0, 0, BassFlags.Decode | BassFlags.Float | BassFlags.AsyncFile);
         }
 
         public int CreateDecodeStreamFromUrl(string url)
@@ -342,74 +343,130 @@ namespace MusicWrap.Core
         public int CreateStream(string filePath)
         {
             if (!_isInitialized) throw new InvalidOperationException("Audio engine not initialized.");
-            return Bass.CreateStream(filePath, 0, 0, BassFlags.Default);
+            return Bass.CreateStream(
+                filePath, 
+                0, 
+                0, 
+                BassFlags.AsyncFile);
         }
 
-        public static async Task<float[]> GetWaveFromDataAsync(string filePath, int dataPoints = 2000, CancellationToken ct = default)
+        public static Task<float[]> GetWaveFromDataAsync(string filePath, int dataPoints = 2000, CancellationToken ct = default)
         {
             if (dataPoints <= 0) dataPoints = 1;
 
-            return await Task.Run(() =>
+            return Task.Factory.StartNew(() =>
             {
-                int stream = Bass.CreateStream(filePath, 0, 0, BassFlags.Decode | BassFlags.Float);
+                Thread.CurrentThread.Priority = ThreadPriority.Lowest;
 
-                if (stream == 0)
+                return ExtractWaveformSequential(
+                    filePath,
+                    dataPoints,
+                    ct);
+
+            },
+            ct,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
+        }
+
+        private static float[] ExtractWaveformSequential(string filePath, int dataPoints, CancellationToken ct)
+        {
+            int stream = Bass.CreateStream(filePath,0,0, BassFlags.Decode | BassFlags.Float | BassFlags.AsyncFile);
+
+            if (stream == 0)
+                return [];
+
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                if (!Bass.ChannelGetInfo(stream, out var info))
                     return [];
 
-                try
+                int channels = info.Channels;
+
+                if (channels <= 0)
+                    return [];
+
+                long lengthBytes = Bass.ChannelGetLength(stream);
+
+                if (lengthBytes <= 0)
+                    return [];
+
+                // decode 
+                long totalFrames = lengthBytes / ( sizeof(float) * channels);
+
+                if (totalFrames <= 0)
+                    return [];
+
+                double[] sumSquares = new double[dataPoints];
+                long[] sampleCounts = new long[dataPoints];
+
+                const int BufferBytes = 64 * 1024; // 64 KB
+
+                int bufferFloats = (BufferBytes / sizeof(float) / channels) * channels;
+
+                float[] buffer = new float[bufferFloats];
+
+                long processedFrames = 0;
+
+                while (true)
                 {
-                    long lengthBytes = Bass.ChannelGetLength(stream);
-                    if (lengthBytes <= 0) return [];
+                    ct.ThrowIfCancellationRequested();
 
-                    long segmentBytes = Math.Max(lengthBytes / dataPoints, 4);
+                    int bytesRead = Bass.ChannelGetData(stream, buffer, buffer.Length * sizeof(float));
 
-                    long windowBytes = Math.Clamp(
-                        Bass.ChannelSeconds2Bytes(stream, WaveformSampleWindowSeconds),
-                        4,
-                        segmentBytes
-                        );
+                    if (bytesRead <= 0)
+                        break;
 
-                    int floatsPerWindow = (int)(windowBytes / 4);
-                    float[] buffer = new float[floatsPerWindow];
-                    float[] waveform = new float[dataPoints];
+                    int floatsRead = bytesRead / sizeof(float);
+                    int framesRead = floatsRead / channels;
 
-                    long maxSeek = Math.Max(lengthBytes - windowBytes, 0);
-
-                    for (int i = 0; i < dataPoints; i++)
+                    for (int frame = 0; frame < framesRead; frame++)
                     {
-                        ct.ThrowIfCancellationRequested();
+                        int bucket = (int)Math.Min(
+                                (processedFrames * dataPoints) / totalFrames,
+                                dataPoints - 1
+                            );
 
-                        long pos = (long)((i + 0.5) * lengthBytes / dataPoints);
+                        double frameEnergy = 0;
 
-                        pos = Math.Clamp(pos, 0, maxSeek);
+                        int offset = frame * channels;
 
-                        if (!Bass.ChannelSetPosition(stream, pos, PositionFlags.Decode))
-                            return ReadSequentialWaveform(stream, lengthBytes, dataPoints, ct); // fallback
+                        for(int channel = 0; channel < channels; channel++)
+                        {
+                            float sample = buffer[offset + channel];
+                            frameEnergy += sample * sample;
+                        }
 
-                        int bytesRead = Bass.ChannelGetData(stream, buffer, (int)windowBytes);
+                        sumSquares[bucket] += frameEnergy / channels;
+                        sampleCounts[bucket]++;
 
-                        if (bytesRead <= 0) continue;
-
-                        int floatsRead = bytesRead / 4;
-                        double sumSq = 0;
-                        for (int j = 0; j < floatsRead; j++)
-                            sumSq += buffer[j] * buffer[j];
-
-                        waveform[i] = floatsRead > 0
-                            ? (float)Math.Sqrt(sumSq / floatsRead)
-                            : 0f;
+                        processedFrames++;
                     }
-
-                    NormalizeWaveform(waveform);
-
-                    return waveform;
                 }
-                finally
+
+                ct.ThrowIfCancellationRequested();
+
+                float[] waveform = new float[dataPoints];
+
+                for (int i = 0; i < dataPoints; i++)
                 {
-                    if (stream != 0)
-                        Bass.StreamFree(stream);
+                    if (sampleCounts[i] > 0)
+                    {
+                        waveform[i] = (float)Math.Sqrt(
+                            sumSquares[i] / sampleCounts[i]);
+                    }
                 }
-            });
+
+                NormalizeWaveform(waveform);
+
+                return waveform;
+            }
+            finally
+            {
+                Bass.StreamFree(stream);
+            }
         }
 
         private static float[] ReadSequentialWaveform(int stream, long lengthBytes, int dataPoints, CancellationToken ct)

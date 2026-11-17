@@ -22,7 +22,7 @@ namespace MusicWrap.UI.Features.Library.Views
             _musicPlayerService = App.Services.GetRequiredService<MusicPlayerService>();
             var menuFactory = App.Services.GetRequiredService<ContextMenuFactory>();
 
-            AlbumTracksView.ContextMenu = menuFactory.Create(AlbumTracksView, ContextMenuType.Standard);
+            AlbumTracksView.ContextMenu = menuFactory.Create(AlbumTracksView, ContextMenuType.Standard | ContextMenuType.RemoveFromLibrary);
 
             Loaded += AlbumTracksPage_Loaded;
             Unloaded += AlbumTracksPage_Unloaded;

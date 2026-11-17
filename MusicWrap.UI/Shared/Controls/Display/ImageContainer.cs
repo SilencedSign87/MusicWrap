@@ -81,8 +81,6 @@ namespace MusicWrap.UI.Controls
                 return new Size(0, 0);
             }
 
-            Debug.WriteLine($"MeasureOverride: availableSize={availableSize}, Source={Source.Width}x{Source.Height}");
-
             var sourceSize = new Size(Source.Width, Source.Height);
 
             return CollapseToAxis switch

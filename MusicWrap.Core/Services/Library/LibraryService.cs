@@ -42,6 +42,7 @@ namespace MusicWrap.Core.Services.Library
         void ClearLibraryCache();
         void RefreshLibrary();
         IReadOnlyList<ArtworkOption> GetArtworkOptions();
+        void RemoveTracks(IReadOnlyList<int> selectedTrackIds);
     }
     public class LibraryService : ILibraryService, IDisposable
     {
@@ -200,6 +201,26 @@ namespace MusicWrap.Core.Services.Library
                 _albumDurationById[albumId] = durationSeconds;
                 return durationSeconds;
             }
+        }
+
+        public void RemoveTracks(IReadOnlyList<int> selectedTrackIds)
+        {
+            if (selectedTrackIds.Count == 0) return;
+            
+            var tracksToRemove = _library.Tracks.Where(t => selectedTrackIds.Contains(t.Id)).ToList();
+            var affectedAlbums = tracksToRemove.Select(t => t.AlbumId).Distinct().ToList();
+
+            _library.Tracks.RemoveAll(t => selectedTrackIds.Contains(t.Id));
+            // check if any albums are now empty and remove them
+            foreach (var albumId in affectedAlbums)
+            {
+                if (!_library.Tracks.Any(t => t.AlbumId == albumId))
+                {
+                    _library.Albums.RemoveAll(a => a.Id == albumId);
+                }
+            }
+
+           RefreshLibrary();
         }
 
         public void SaveToDisk()
@@ -983,7 +1004,7 @@ namespace MusicWrap.Core.Services.Library
                     SearchableStrings = names.TryGetValue(c.Id, out var s) ? s.ToArray() : [],
                 })
                 .ToList();
-        }
+        }       
         #endregion
     }
     public sealed class TrackRowItem
