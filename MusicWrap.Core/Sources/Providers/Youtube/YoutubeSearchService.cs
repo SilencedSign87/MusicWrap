@@ -397,22 +397,30 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
 
     private async Task<IReadOnlyList<YoutubeSearchItem>> SearchTracksAsync(string query, CancellationToken cancellationToken)
     {
-        var all = await _ytmClient.SearchAsync(query, SearchCategory.Songs)
-            .FetchItemsAsync(0, 100, cancellationToken);
+        try
+        {
+            var all = await _ytmClient.SearchAsync(query, SearchCategory.Songs)
+                .FetchItemsAsync(0, 100, cancellationToken);
 
-        return all
-            .OfType<SongSearchResult>()
-            .Select(s => new YoutubeSearchItem
-            {
-                Kind = YoutubeSearchKind.Song,
-                Id = s.Id ?? string.Empty,
-                Title = s.Name,
-                Subtitle = BuildSongSubtitle(s),
-                ThumbnailUrl = SelectThumbnailUrls(s.Thumbnails).LowRes,
-                ThumbnailHighResUrl = SelectThumbnailUrls(s.Thumbnails).HighRes
-            })
-            .Where(i => !string.IsNullOrWhiteSpace(i.Id))
-            .ToArray();
+            return [.. all
+                .OfType<SongSearchResult>()
+                .Select(s => new YoutubeSearchItem
+                {
+                    Kind = YoutubeSearchKind.Song,
+                    Id = s.Id ?? string.Empty,
+                    Title = s.Name,
+                    Subtitle = BuildSongSubtitle(s),
+                    ThumbnailUrl = SelectThumbnailUrls(s.Thumbnails).LowRes,
+                    ThumbnailHighResUrl = SelectThumbnailUrls(s.Thumbnails).HighRes
+                })
+                .Where(i => !string.IsNullOrWhiteSpace(i.Id))];
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, "Failed to search tracks for query: {Query}", query);
+            return [];
+        }
+
     }
 
     private async Task<IReadOnlyList<YoutubeSearchItem>> SearchVideosAsync(string query, CancellationToken cancellationToken)
@@ -599,7 +607,7 @@ public sealed class YoutubeSearchService : IYoutubeSearchService
         {
             return [];
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get artist info for artistId: {ArtistId}", artistItem.Id);
             return [];

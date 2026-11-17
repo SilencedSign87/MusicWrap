@@ -185,7 +185,7 @@
 
                     </TabItem>
                     <TabItem x:Name="LyricsTab" Style="{StaticResource SubtleTabItem}" Header="Lyrics">
-                        <lrc:LyricsView AllowScroll="True" AllowSeek="True" FontSize="13" LyricsPadding="12,18" />
+                        <lrc:LyricsView AllowScroll="True" AllowSeek="True" FontSize="13" LyricsPadding="12" />
                     </TabItem>
                     <TabItem x:Name="LibraryTab" Style="{StaticResource SubtleTabItem}" Header="Library">
 

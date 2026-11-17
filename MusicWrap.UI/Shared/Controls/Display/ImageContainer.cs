@@ -1,6 +1,8 @@
-﻿using System.Windows;
+﻿using System.Diagnostics;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MusicWrap.UI.Controls
 {
@@ -14,7 +16,8 @@ namespace MusicWrap.UI.Controls
                 new FrameworkPropertyMetadata(
                     null,
                     FrameworkPropertyMetadataOptions.AffectsMeasure |
-                    FrameworkPropertyMetadataOptions.AffectsRender));
+                    FrameworkPropertyMetadataOptions.AffectsRender
+                    ));
 
         public ImageSource? Source
         {
@@ -52,16 +55,45 @@ namespace MusicWrap.UI.Controls
             set => SetValue(StretchProperty, value);
         }
 
+        public static readonly DependencyProperty CollapseToAxisProperty =
+            DependencyProperty.Register(
+                nameof(CollapseToAxis),
+                typeof(ImageCollapseAxis),
+                typeof(ImageContainer),
+                new FrameworkPropertyMetadata(
+                    ImageCollapseAxis.None,
+                    FrameworkPropertyMetadataOptions.AffectsMeasure |
+                    FrameworkPropertyMetadataOptions.AffectsRender));
+
+        public ImageCollapseAxis CollapseToAxis
+        {
+            get => (ImageCollapseAxis)GetValue(CollapseToAxisProperty);
+            set => SetValue(CollapseToAxisProperty, value);
+        }
+        #region Callbacks
+
+        #endregion
+        #region Life Cycle
         protected override Size MeasureOverride(Size availableSize)
         {
-            if (Source is null)
+            if (Source is null || Source.Width <= 1 || Source.Height <= 1)
+            {
                 return new Size(0, 0);
+            }
 
-            var size = new Size(Source.Width, Source.Height);
+            Debug.WriteLine($"MeasureOverride: availableSize={availableSize}, Source={Source.Width}x{Source.Height}");
 
-            return new Size(
-                Math.Min(size.Width, availableSize.Width),
-                Math.Min(size.Height, availableSize.Height));
+            var sourceSize = new Size(Source.Width, Source.Height);
+
+            return CollapseToAxis switch
+            {
+                ImageCollapseAxis.Horizontal => MessureFromWidth(sourceSize, availableSize),
+                ImageCollapseAxis.Vertical => MesureFromHeight(sourceSize, availableSize),
+                _ => new Size(
+                    Math.Min(sourceSize.Width, availableSize.Width),
+                    Math.Min(sourceSize.Height, availableSize.Height)
+                )
+            };
         }
 
         protected override void OnRender(DrawingContext dc)
@@ -161,5 +193,43 @@ namespace MusicWrap.UI.Controls
 
             dc.DrawGeometry(null, pen, borderGeometry);
         }
+        #endregion
+        #region Internal
+        private static Size MessureFromWidth(Size sourceSize, Size availableSize)
+        {
+            var width = Math.Min(sourceSize.Width, availableSize.Width);
+            var height = width * sourceSize.Height / sourceSize.Width;
+
+            if (!double.IsInfinity(availableSize.Height) &&
+                height > availableSize.Height)
+            {
+                height = availableSize.Height;
+                width = height * sourceSize.Width / sourceSize.Height;
+            }
+
+            return new Size(width, height);
+        }
+        private static Size MesureFromHeight(Size sourceSize, Size availableSize)
+        {
+            var height = Math.Min(sourceSize.Height, availableSize.Height);
+            var width = height * sourceSize.Width / sourceSize.Height;
+
+            if (!double.IsInfinity(availableSize.Width) &&
+                width > availableSize.Width)
+            {
+                width = availableSize.Width;
+                height = width * sourceSize.Height / sourceSize.Width;
+            }
+
+            return new Size(width, height);
+        }
+        #endregion
+    }
+
+    public enum ImageCollapseAxis
+    {
+        None,
+        Horizontal,
+        Vertical
     }
 }

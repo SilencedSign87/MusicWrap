@@ -237,8 +237,6 @@ namespace MusicWrap.UI.Shell.Windows
             LyricsView.LyricsStateChanged -= LyricsControl_LyricsStateChanged;
             LyricsView.LyricsStateChanged += LyricsControl_LyricsStateChanged;
 
-            FluidShader.StartAnimation();
-
             ApplyPanelState(animate: false);
             ApplyProgress();
             ScaleUIElements();
@@ -250,8 +248,6 @@ namespace MusicWrap.UI.Shell.Windows
                 vm.PlayerViewModel.PropertyChanged -= OnPlayerViewModelPropertyChanged;
                 vm.PropertyChanged -= OnViewmodelPropertyChanged;
             }
-
-            FluidShader.StopAnimation();
 
             LyricsView.LyricsStateChanged -= LyricsControl_LyricsStateChanged;
         }
@@ -277,6 +273,20 @@ namespace MusicWrap.UI.Shell.Windows
         private void VolumeButton_Click(object sender, RoutedEventArgs e)
         {
             VolumePopup.IsOpen = true;
+        }
+
+        private void BackgropRoot_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (sender is not FrameworkElement backdrop) return;
+            if (backdrop.Visibility == Visibility.Visible)
+            {
+                FluidShader.StartAnimation();
+
+            }
+            else
+            {
+                FluidShader.StopAnimation();
+            }
         }
     }
 }

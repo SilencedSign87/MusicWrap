@@ -92,6 +92,7 @@
               IsEnabled="False" 
               IsHitTestVisible="False"
               Visibility="{Binding BackdropBlur, Converter={StaticResource BooleanToVisibilityConverter}}"
+              IsVisibleChanged="BackgropRoot_IsVisibleChanged"
               >
             <Border
                 x:Name="AmbientBackdrop"
@@ -136,7 +137,6 @@
                     Orientation="Vertical"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Margin="0,64,0,0"
                     MaxWidth="700"
                     >
                     <controls:ImageContainer 
@@ -155,21 +155,23 @@
                         FontSize="22" 
                         FontWeight="SemiBold" 
                         TextWrapping="NoWrap"
+                        TextTrimming="CharacterEllipsis"
                         MaxWidth="600"
-                        Margin="0,36,0,4"
+                        Margin="0,24,0,4"
                         />
                     <TextBlock 
                         TextAlignment="Center" 
                         FontSize="20" 
                         FontWeight="SemiBold" 
                         TextWrapping="NoWrap"
+                        TextTrimming="CharacterEllipsis"
                         Opacity="0.5"
                         MaxWidth="600">
                         <Run Text="{Binding PlayerViewModel.CurrentTrackArtists }" />
                         <Run Text="·" />
                         <Run Text="{Binding PlayerViewModel.CurrentTrackAlbum}" />
                     </TextBlock>
-                    <Grid x:Name="Mediacontrols" RowDefinitions="*,*" ColumnDefinitions="*" Margin="0,28,0,0" MaxWidth="400">
+                    <Grid x:Name="Mediacontrols" RowDefinitions="*,*" ColumnDefinitions="*" Margin="0,24,0,0" MaxWidth="400">
                         <Grid Grid.Row="0" ColumnDefinitions="auto,*,auto" Height="24">
                             <TextBlock 
                                 Grid.Column="0" 
@@ -228,7 +230,7 @@
                                             />
                                         <controls:AppMenuItem
                                             Icon="{ex:Icon Glyph=E771}"
-                                            Header="Tint foreground"
+                                            Header="Tint interface"
                                             IsCheckable="True"
                                             IsChecked="{Binding TintForeground}"
                                             />
