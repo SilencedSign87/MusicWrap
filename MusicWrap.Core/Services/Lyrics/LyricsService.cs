@@ -21,7 +21,7 @@ namespace MusicWrap.Core.Services.Lyrics
         #region Public Methods
         public List<Data.Library.Models.Lyrics> LoadLyricsByTrackId(int id)
         {
-            var lyrics = _libraryLyrics.Lyrics.FindAll(x => x.TrackId == id).OrderByDescending(x => x.Original).ThenByDescending(x => x.Type).ToList();
+            var lyrics = _libraryLyrics.Lyrics.FindAll(x => x.TrackId == id).OrderByDescending(x => x.Default).ThenByDescending(x => x.Type).ToList();
             return lyrics;
         }
         #endregion

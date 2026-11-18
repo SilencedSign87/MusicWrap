@@ -180,7 +180,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
         [ObservableProperty] public partial IReadOnlyList<ArtworkOption> Suggestions { get; set; } = [];
         [ObservableProperty] public partial ArtworkOption? PickedArtwork { get; set; }
-        [ObservableProperty] public partial bool HasSuggestions { get; set; }
+        [ObservableProperty] public partial bool HasSuggestions { get; set; } 
 
 
 

@@ -9,10 +9,5 @@ namespace MusicWrap.UI.Features.Metadata.Views
         {
             InitializeComponent();
         }
-
-        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-
-        }
     }
 }

@@ -8,20 +8,20 @@ namespace MusicWrap.Data.Library.Models
         [Key(0)] public int Id;
         [Key(1)] public required int TrackId;
         [Key(2)] public required string Language;
-        [Key(3)] public required bool Original;
+        [Key(3)] public required bool Default;
         [Key(4)] public required LyricsType Type;
         [Key(5)] public required LyricsOrigin Origin;
-        [Key(6)] public required string Provider;
+        [Key(6)] public required string Provider; // filepath or url
 
         [Key(10)] public required string? LyricsText;
     }
 
     public enum LyricsOrigin
     {
-        user,
-        embedded,
-        file,
-        network
+        Manual,
+        Embedded,
+        File,
+        Network
     }
     public enum LyricsType
     {

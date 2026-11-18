@@ -7,42 +7,223 @@
              xmlns:vm ="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
              xmlns:models="clr-namespace:MusicWrap.Data.Library.Models;assembly=MusicWrap.Data"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
+             x:Name="RootLyricsEditor"
              mc:Ignorable="d"
              d:Foreground="White"
              d:DesignHeight="650" d:DesignWidth="500"
-             PreviewKeyDown="UserControl_PreviewKeyDown"
              d:DataContext="{d:DesignInstance Type=vm:MetadataLyricsEditorViewmodel}"
              >
     <UserControl.Resources>
-        <DataTemplate x:Key="LyricsCardTemplate" DataType="{x:Type models:Lyrics}">
-            <Border 
-                Margin="8,2"
-                CornerRadius="4"
-                Padding="4"
-                Background="{DynamicResource BackgroundCard1}" 
-                BorderBrush="{DynamicResource StrokeLayerCard}" 
-                BorderThickness="1">
-                <Grid ColumnDefinitions="*,12,Auto">
-                    <TextBlock Text="{Binding Language}" Grid.Column="0" />
-                    <TextBlock Text="&#xE76C;" Grid.Column="2" VerticalAlignment="Center" FontFamily="Segoe Fluent Icons"/>
-                </Grid>
-            </Border>
+        <DataTemplate x:Key="LyricsEntryTemplate" DataType="{x:Type vm:LyricsEntryViewModel}">
+            <Grid Margin="0,0,0,8">
+                <!-- Editor/New -->
+                <Border
+                    x:Name="EntryCard"
+                    Background="{DynamicResource BackgroundLayer}" Padding="8" CornerRadius="4" Margin="8,0">
+                    <Grid x:Name="Editor" Margin="8,4" RowDefinitions="Auto,8,*">
+                        <!-- Header -->
+                        <Grid Grid.Row="0" ColumnDefinitions="120,3,*,12,Auto">
+                            <ComboBox
+                                Grid.Column="0"
+                                SelectedItem="{Binding Origin}"
+                                ItemsSource="{Binding ElementName=RootLyricsEditor, Path=DataContext.Origins}"
+                                Width="120">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <controls:AppInput 
+                                Grid.Column="2"
+                                Text="{Binding Language, UpdateSourceTrigger=PropertyChanged}"
+                                Height="32"
+                                PlaceholderText="Language (EN, ES, etc.) or a Tag"/>
+
+                            <controls:AppButton
+                                Grid.Column="4"
+                                Style="{StaticResource DefaultButton}"
+                                Icon="&#xE74D;"
+                                Padding="0"
+                                Width="32"
+                                Height="32"
+                                HorizontalAlignment="Right"
+                                IsEnabled="{Binding CanDelete}"
+                                Command="{Binding ElementName=RootLyricsEditor, Path=DataContext.DeleteEntryCommand}"
+                                CommandParameter="{Binding}"
+                                    />
+                        </Grid>
+                        <Grid
+                            Grid.Row="2"
+                            x:Name="SourceArea"
+                            >
+                            <!-- User Origin -->
+                            <TextBox 
+                                x:Name="UserEditor"
+                                Style="{DynamicResource TransparentTextInput}"
+                                BorderBrush="{DynamicResource StrokeSurface}"
+                                BorderThickness="1"
+                                Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}"
+                                AcceptsReturn="True" 
+                                TextWrapping="Wrap" 
+                                Height="120"
+                                />
+
+                            <!-- Embedded Origin-->
+                            <Border x:Name="EmbeddedPanel" Visibility="Collapsed"
+                                    Background="{DynamicResource BackgroundCard1}"
+                                    BorderBrush="{DynamicResource StrokeLayerCard}"
+                                    BorderThickness="1" CornerRadius="4" Padding="12">
+                                <TextBlock TextWrapping="Wrap"
+                                   Text="The lyrics will be extracted from the music file." />
+                            </Border>
+
+                            <!-- File -->
+                            <StackPanel x:Name="FilePanel" Visibility="Collapsed">
+                                <controls:AppButton
+                                    Icon="&#xE8E5;"
+                                    Text="Select file"
+                                    Height="36"
+                                    Style="{StaticResource DefaultButton}"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding SelectExternalFileCommand}" />
+                                <TextBlock Text="{Binding Provider}"
+                                           Margin="8,6,8,0"
+                                           FontSize="13"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <!-- Network -->
+                            <StackPanel x:Name="NetworkPanel" Visibility="Collapsed">
+                                <controls:AppInput
+                                    Text="{Binding Provider, UpdateSourceTrigger=PropertyChanged}"
+                                    Height="36"
+                                    PlaceholderText="https://..." />
+                            </StackPanel>
+
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- Multiple -->
+                <Border x:Name="MultiplePanel"
+                        Visibility="Collapsed"
+                        HorizontalAlignment="Center"
+                        Background="{DynamicResource BackgroundLayer}"
+                        Padding="8" CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock Text="&#xF571;" FontFamily="Segoe Fluent Icons"
+                           FontSize="24" TextAlignment="Center" Margin="0,0,0,8" />
+                        <TextBlock Text="Multiple values" TextAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- To Delete -->
+                <Border x:Name="DeletePanel" Visibility="Collapsed"
+                        Background="{DynamicResource BackgroundLayer}"
+                        Padding="8" CornerRadius="4" Margin="8,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="Will be deleted on save"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <controls:AppButton
+                            Text="Undo"
+                            Height="32"
+                            Style="{StaticResource TransparentButton}"
+                            Command="{Binding DataContext.DeleteEntryCommand,
+                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <DataTemplate.Triggers>
+                <!-- Estado multiple -->
+                <DataTrigger Binding="{Binding State}" Value="{x:Static vm:LyricsEntryState.Multiple}">
+                    <Setter TargetName="EntryCard" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="MultiplePanel" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+
+                <!-- Marcada para borrar -->
+                <DataTrigger Binding="{Binding PendingDelete}" Value="True">
+                    <Setter TargetName="EntryCard" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="DeletePanel" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+
+                <!-- Origen embedded -->
+                <DataTrigger Binding="{Binding Origin}" Value="{x:Static models:LyricsOrigin.Embedded}">
+                    <Setter TargetName="UserEditor" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="EmbeddedPanel" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+
+                <!-- Origen file -->
+                <DataTrigger Binding="{Binding Origin}" Value="{x:Static models:LyricsOrigin.File}">
+                    <Setter TargetName="UserEditor" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="FilePanel" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+
+                <!-- Origen network -->
+                <DataTrigger Binding="{Binding Origin}" Value="{x:Static models:LyricsOrigin.Network}">
+                    <Setter TargetName="UserEditor" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="NetworkPanel" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </UserControl.Resources>
-    <ScrollViewer 
-        HorizontalScrollBarVisibility="Disabled"
-        VerticalScrollBarVisibility="Auto"
-        Padding="8"
-        >
-        <StackPanel>
-            <controls:SectionTitleSeparator Title="Original" Margin="0,0,0,5" />
-            <ContentPresenter 
+
+    <Grid RowDefinitions="*,48">
+        <ScrollViewer 
+            Grid.Row="0"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            Padding="8"
+            >
+            <StackPanel>
+                <controls:SectionTitleSeparator Title="Original" Margin="0,0,0,8" />
+
+                <ContentPresenter 
                 Content="{Binding DefaultLyrics}" 
-                ContentTemplate="{StaticResource LyricsCardTemplate}" 
-                Visibility="{Binding DefaultLyrics, Converter={StaticResource NullToCollapseConverter}}"
+                ContentTemplate="{StaticResource LyricsEntryTemplate}"
                 />
-            <controls:SectionTitleSeparator Title="Translations" />
-            <ItemsControl ItemsSource="{Binding LyricsVariants}" ItemTemplate="{StaticResource LyricsCardTemplate}" />
-        </StackPanel>
-    </ScrollViewer>
+
+                <controls:SectionTitleSeparator Title="Translations"  Margin="0,8,0,12"/>
+
+                <ItemsControl 
+                ItemsSource="{Binding LyricsVariants}"
+                ItemTemplate="{StaticResource LyricsEntryTemplate}" 
+                />
+
+                <controls:AppButton
+                Icon="&#xE710;"
+                Text="Add Translation"
+                Height="42"
+                Style="{StaticResource TransparentButton}"
+                Command="{Binding AddTranslationCommand}"
+                />
+
+            </StackPanel>
+        </ScrollViewer>
+        <Border 
+            Grid.Row="1"
+            Padding="8"
+            Background="{DynamicResource BackgroundLayer}"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource StrokeSurface}"
+            >
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <controls:AppButton 
+                    Style="{StaticResource AccentButton}"
+                    Icon="&#xE74E;"
+                    Text="Save"
+                    Command="{Binding SaveChangesCommand}"
+                    />
+                <controls:AppButton
+                    Style="{StaticResource DefaultButton}"
+                    Margin="8,0,0,0"
+                    Text="Cancel"
+                    Command="{Binding CancelChangesCommand}"
+                    />
+            </StackPanel>
+            
+        </Border>
+    </Grid>
 </UserControl>
