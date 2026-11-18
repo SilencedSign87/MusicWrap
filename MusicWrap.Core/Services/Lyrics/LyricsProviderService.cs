@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.Core.Services.Lyrics
 {

@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:controls="clr-namespace:MusicWrap.UI.Controls"
              xmlns:vm ="clr-namespace:MusicWrap.UI.Features.Metadata.Viewmodels"
+             xmlns:models="clr-namespace:MusicWrap.Data.Library.Models;assembly=MusicWrap.Data"
              xmlns:ex="clr-namespace:MusicWrap.UI.Helpers"
              mc:Ignorable="d"
              d:Foreground="White"
@@ -12,47 +13,36 @@
              PreviewKeyDown="UserControl_PreviewKeyDown"
              d:DataContext="{d:DesignInstance Type=vm:MetadataLyricsEditorViewmodel}"
              >
-    <Grid x:Name="LyricsGridRoot" RowDefinitions="Auto,*" >
-        <Border x:Name="Toolbar" Grid.Row="0" Background="{DynamicResource BackgroundFloating}" BorderThickness="1" BorderBrush="{DynamicResource BackgroundFloating}" Margin="8,0,8,8" CornerRadius="2" >
-            <Border.Effect>
-                <DropShadowEffect Color="Black" Direction="270" ShadowDepth="1" BlurRadius="8" Opacity="0.5"/>
-            </Border.Effect>
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="42,8">
-                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Save" Icon="&#xE74E;" Command="{Binding SaveLyricsCommand}" />
-                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Import" Icon="&#xE8B5;" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
-                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Add paragraph" Icon="&#xE751;" />
-                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Remove paragraph" Icon="&#xE750;" />
-                    <Border Style="{DynamicResource VerticalSeparator}" Width="2" Margin="4" />
-                    <controls:AppButton Grid.Column="0" Style="{StaticResource SubtleButton}" ToolTip="Rewind" Icon="&#xEB9E;" />
-                    <controls:AppButton Grid.Column="4" Style="{StaticResource SubtleButton}" ToolTip="Add timestamp" Icon="&#xECC8;" />
-                    <controls:AppButton Grid.Column="4" Style="{StaticResource SubtleButton}" ToolTip="Remove timestamp" Icon="&#xECC9;" />
-                </StackPanel>
-                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
-                    <controls:WaveformPlayerControl 
-                        UsePlaceholderWaveform="True"
-                        />
-                </Grid>
-            </Grid>
-        </Border>
-        <Grid Grid.Row="1">
-            <TextBox
-                Grid.Row="1"
-                Text="{Binding RawLyrics}"
-                Margin="4"
-                Style="{DynamicResource TransparentTextInput}"
-                BorderBrush="{DynamicResource StrokeSurface}"
-                BorderThickness="1"
-                AcceptsReturn="True"
-                AcceptsTab="True"
-                TextWrapping="NoWrap"
-                VerticalScrollBarVisibility="Auto"
-                HorizontalScrollBarVisibility="Auto"
-                FontSize="12"
+    <UserControl.Resources>
+        <DataTemplate x:Key="LyricsCardTemplate" DataType="{x:Type models:Lyrics}">
+            <Border 
+                Margin="8,2"
+                CornerRadius="4"
                 Padding="4"
+                Background="{DynamicResource BackgroundCard1}" 
+                BorderBrush="{DynamicResource StrokeLayerCard}" 
+                BorderThickness="1">
+                <Grid ColumnDefinitions="*,12,Auto">
+                    <TextBlock Text="{Binding Language}" Grid.Column="0" />
+                    <TextBlock Text="&#xE76C;" Grid.Column="2" VerticalAlignment="Center" FontFamily="Segoe Fluent Icons"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+    <ScrollViewer 
+        HorizontalScrollBarVisibility="Disabled"
+        VerticalScrollBarVisibility="Auto"
+        Padding="8"
+        >
+        <StackPanel>
+            <controls:SectionTitleSeparator Title="Original" Margin="0,0,0,5" />
+            <ContentPresenter 
+                Content="{Binding DefaultLyrics}" 
+                ContentTemplate="{StaticResource LyricsCardTemplate}" 
+                Visibility="{Binding DefaultLyrics, Converter={StaticResource NullToCollapseConverter}}"
                 />
-        </Grid>
-    </Grid>
+            <controls:SectionTitleSeparator Title="Translations" />
+            <ItemsControl ItemsSource="{Binding LyricsVariants}" ItemTemplate="{StaticResource LyricsCardTemplate}" />
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

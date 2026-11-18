@@ -22,9 +22,6 @@ using MusicWrap.Data.Library;
 using MusicWrap.Data.Player;
 using MusicWrap.Data.Playlist;
 using MusicWrap.Data.User;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MusicWrap.Core.DI
 {
@@ -64,6 +61,7 @@ namespace MusicWrap.Core.DI
             services.AddSingleton<ISearchQueryProvider, SearchService>(
                 sp => sp.GetRequiredService<SearchService>());
             services.AddSingleton<LyricsProviderService>();
+            services.AddSingleton<LyricsService>();
 
             // Providers
             services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();

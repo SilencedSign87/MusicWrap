@@ -1,63 +1,85 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Lyrics;
+using MusicWrap.Data.Library.Models;
 using MusicWrap.UI.Features.Metadata.Services;
 using MusicWrap.UI.ViewModels;
+using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {
     public partial class MetadataLyricsEditorViewmodel : ObservableObject, IMetadataEditorTabViewmodel
     {
-
-        [ObservableProperty]
-        public partial string RawLyrics { get; set; } = string.Empty;
-
-        [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(SaveLyricsCommand))]
-        public partial bool IsEnabled { get; set; } = false;
-
-        private readonly LyricsProviderService _lyricsProvider;
+        private readonly LyricsService _lyricsService;
         private readonly MetadataEditorWorkspace _workspace;
-        public MetadataLyricsEditorViewmodel(LyricsProviderService lyricsProvider, MetadataEditorWorkspace workspace)
+
+        [ObservableProperty]
+        public partial MusicWrap.Data.Library.Models.Lyrics? DefaultLyrics { get; set; }
+
+        [ObservableProperty]
+        public partial bool HasMultipleDefaultLyrics { get; set; } = false;
+
+        [ObservableProperty]
+        public partial bool HasMultipleVariations { get; set; } = false;
+
+        public ObservableCollection<MusicWrap.Data.Library.Models.Lyrics> LyricsVariants { get; } = [];
+
+
+
+        public MetadataLyricsEditorViewmodel(LyricsService lyricsService, MetadataEditorWorkspace workspace)
         {
-            _lyricsProvider = lyricsProvider;
+            _lyricsService = lyricsService;
             _workspace = workspace;
         }
+
         public void Load()
         {
-            if (_workspace.IsSingleTrack)
+            DefaultLyrics = null;
+            LyricsVariants.Clear();
+            HasMultipleDefaultLyrics = false;
+            HasMultipleVariations = false;
+
+            var DefaultLyricsSet = new HashSet<MusicWrap.Data.Library.Models.Lyrics>();
+            var VariationsByTackId = new Dictionary<int, MusicWrap.Data.Library.Models.Lyrics>();
+
+
+            foreach (var trackId in _workspace.TrackIds)
             {
-                var lyrics = _lyricsProvider.GetLyricsForTrackId(_workspace.TrackIds[0]);
-                RawLyrics = lyrics.RawText;
-                IsEnabled = true;
+                var trackLyrics = _lyricsService.LoadLyricsByTrackId(trackId);
+
+                var defaultLyrics = trackLyrics.FirstOrDefault(x => x.Original);
+
+                if (defaultLyrics is not null)
+                {
+                    DefaultLyricsSet.Add(defaultLyrics);
+                }
+
+                var variations = trackLyrics.Where(x => !x.Original).ToList();
+
+                if (variations.Count > 0)
+                {
+                    foreach (var variation in variations)
+                    {
+                        VariationsByTackId.TryAdd(variation.Id, variation);
+                    }
+                }
+
+            }
+
+            // TODO: Better way of detecting multiple variations per track.
+            if (DefaultLyricsSet.Count > 1)
+            {
+                HasMultipleDefaultLyrics = true;
             }
             else
             {
-                RawLyrics = "Multiple Tracks Detected....";
-                IsEnabled = false;
+                DefaultLyrics = DefaultLyricsSet.FirstOrDefault();
             }
         }
 
         #region Relay Commands
-        [RelayCommand(CanExecute = nameof(CanSaveLyrics))]
-        private async Task SaveLyrics()
-        {
-            var trackId = _workspace.TrackIds[0];
-            var success = await _lyricsProvider.EmbedLyricsAsync(trackId, RawLyrics);
-            if (success)
-            {
-                MessageBox.Show("Lyrics saved successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show("Failed to save lyrics.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        private bool CanSaveLyrics()
-        {
-            return IsEnabled;
-        }
+
         #endregion
     }
 }
