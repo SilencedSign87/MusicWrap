@@ -78,7 +78,7 @@ namespace MusicWrap.UI.Services
             {
                 return;
             }
-            _windowManager.LaunchInformationWindow(selectedTrackIds.ToList());
+            _windowManager.LaunchInformationWindow(selectedTrackIds);
         }
         public void ShowInFileExplorer(IReadOnlyList<int> selectedTrackIds)
         {

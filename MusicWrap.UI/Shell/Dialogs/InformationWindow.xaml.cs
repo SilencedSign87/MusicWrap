@@ -32,7 +32,7 @@ namespace MusicWrap.UI.Shell.Dialogs
             Win32Helper.DwnSetWindowLong(hwnd, Win32Helper.GWL_STYLE, style);
         }
 
-        public void Initialize(List<int> trackIds) => (DataContext as InformationWindowViewModel)?.LoadTracks(trackIds);
+        public void Initialize(IReadOnlyList<int> trackIds) => (DataContext as InformationWindowViewModel)?.LoadTracks(trackIds);
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {

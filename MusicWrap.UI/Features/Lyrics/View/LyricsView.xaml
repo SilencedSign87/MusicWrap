@@ -117,6 +117,13 @@
                         ToolTip="Sync lyrics"
                         Click="HandleResumeFollow"
                         />
+                    <Separator Margin="1,0" />
+                    <controls:AppButton
+                        Style="{DynamicResource SubtleButton}"
+                        Icon="&#xEF60;"
+                        ToolTip="Editor"
+                        Command="{Binding OpenLyricsEditorForCurrentCommand}"
+                        />
                 </StackPanel>
             </Border>
         </controls:HiddenPanel>

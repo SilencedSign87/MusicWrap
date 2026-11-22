@@ -43,7 +43,8 @@ namespace MusicWrap.UI.Shell.Windows
                 ShowToolbar = false,
                 LyricsAligment = TextAlignment.Left,
                 Visibility = Visibility.Collapsed,
-                Margin= new Thickness(0,52,52,0)
+                Margin = new Thickness(0, 52, 52, 0),
+                BlurLyrics = true
             };
 
             QueueListPage.Visibility = Visibility.Collapsed;

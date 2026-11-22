@@ -75,6 +75,7 @@ namespace MusicWrap.UI.Shell.Controls
                 LyricsAligment = TextAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Stretch,
                 LyricsPadding = new Thickness(12),
+                LyricsVerticalAlignment = LyricsVerticalAlignment.Top
             };
         }
     }

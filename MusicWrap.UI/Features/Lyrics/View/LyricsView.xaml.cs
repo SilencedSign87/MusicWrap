@@ -13,6 +13,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
 {
     public partial class LyricsView : UserControl
     {
+        private const float VerticalLyricsMarginPercent = 0.2f;
         private bool _followLyrics = true;
         private readonly LyricsViewModel _viewModel;
         private readonly BlurEffect _textBlurEffect = new() { Radius = 4 };
@@ -41,6 +42,20 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
         public static readonly DependencyProperty ShowToolbarProperty =
             DependencyProperty.Register(nameof(ShowToolbar), typeof(bool), typeof(LyricsView), new PropertyMetadata(true));
+
+
+
+        public bool BlurLyrics
+        {
+            get { return (bool)GetValue(BlurLyricsProperty); }
+            set { SetValue(BlurLyricsProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for BlurLyrics.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty BlurLyricsProperty =
+            DependencyProperty.Register(nameof(BlurLyrics), typeof(bool), typeof(LyricsView), new PropertyMetadata(false));
+
+
 
         public bool AllowScroll
         {
@@ -87,13 +102,29 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
 
 
+        public LyricsVerticalAlignment LyricsVerticalAlignment
+        {
+            get { return (LyricsVerticalAlignment)GetValue(LyricsVerticalAlignmentProperty); }
+            set { SetValue(LyricsVerticalAlignmentProperty, value); }
+        }
+
+        public static readonly DependencyProperty LyricsVerticalAlignmentProperty =
+            DependencyProperty.Register(nameof(LyricsVerticalAlignment), typeof(LyricsVerticalAlignment), typeof(LyricsView), new PropertyMetadata(LyricsVerticalAlignment.Center, OnLyricsAlignmentPropertyChanged));
+
+        private static void OnLyricsAlignmentPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is LyricsView lyricsView)
+            {
+                lyricsView.AlignLyrics();
+            }
+        }
+
         #endregion
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             _viewModel.PropertyChanged += OnViewmodelPropertyChanged;
         }
-
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
@@ -129,7 +160,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
 
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Loaded,
-                new Action(() => CenterActiveLine()));
+                new Action(() => AlignLyrics()));
         }
         private void OnLyricsChanged()
         {
@@ -142,7 +173,7 @@ namespace MusicWrap.UI.Features.Lyrics.View
                 {
                     UpdateSpacers();
                     UpdateLineOpacities();
-                    CenterActiveLine();
+                    AlignLyrics();
                 }));
         }
         private void UpdateSpacers()
@@ -197,10 +228,67 @@ namespace MusicWrap.UI.Features.Lyrics.View
         {
             _followLyrics = true;
 
-            CenterActiveLine();
+            AlignLyrics();
             UpdateLineOpacities();
         }
         #region Rendering
+        private void AlignLyrics(bool animate = true)
+        {
+            switch (LyricsVerticalAlignment)
+            {
+                case LyricsVerticalAlignment.Top:
+                    TopActiveLine(animate);
+                    break;
+                case LyricsVerticalAlignment.Center:
+                    CenterActiveLine(animate);
+                    break;
+            }
+        }
+        private void TopActiveLine(bool animate = true)
+        {
+            if (!_followLyrics)
+                return;
+            if (_viewModel == null)
+                return;
+            if (!IsVisible || !LyricsScrollViewer.IsVisible) return;
+            if (LyricsScrollViewer.ViewportHeight <= 0)
+                return;
+            var index = _viewModel.ActiveIndex;
+            if (index < 0 || index >= LyricsItems.Items.Count)
+                return;
+            if (LyricsItems.ItemContainerGenerator
+                    .ContainerFromIndex(index) is not FrameworkElement container)
+            {
+                return;
+            }
+            if (container.ActualHeight <= 0)
+            {
+                return;
+            }
+            var transform =
+                container.TransformToAncestor(
+                    LyricsScrollViewer);
+
+            var position =
+                transform.Transform(new Point(0, 0));
+
+            var margin = LyricsScrollViewer.ViewportHeight * VerticalLyricsMarginPercent;
+
+            var targetOffset =
+                LyricsScrollViewer.VerticalOffset +
+                position.Y - margin;
+
+            var maxOffset =
+                LyricsScrollViewer.ScrollableHeight;
+
+            targetOffset =
+                Math.Clamp(
+                    targetOffset,
+                    0,
+                    maxOffset);
+
+            AnimateScrollTo(targetOffset, animate);
+        }
         private void CenterActiveLine(bool animate = true)
         {
             if (!_followLyrics)
@@ -273,7 +361,8 @@ namespace MusicWrap.UI.Features.Lyrics.View
                     .ContainerFromIndex(i) is FrameworkElement container)
                 {
                     container.Opacity = i == activeIdx ? 1.0 : 0.3;
-                    container.Effect = _followLyrics ? (i == activeIdx ? null : _textBlurEffect) : null;
+                    if (BlurLyrics)
+                        container.Effect = _followLyrics ? (i == activeIdx ? null : _textBlurEffect) : null;
                 }
             }
         }
@@ -338,10 +427,15 @@ namespace MusicWrap.UI.Features.Lyrics.View
                 {
                     UpdateSpacers();
                     UpdateLineOpacities();
-                    CenterActiveLine(animate);
+                    AlignLyrics(animate);
                 }));
 
         }
+    }
+    public enum LyricsVerticalAlignment
+    {
+        Top,
+        Center
     }
     public class LyricsStateChangedEventArgs : EventArgs
     {

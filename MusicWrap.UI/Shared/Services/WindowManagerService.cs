@@ -81,7 +81,7 @@ namespace MusicWrap.UI.Shared.Services
                 return;
             }
         }
-        public void LaunchInformationWindow(List<int> trackIds)
+        public void LaunchInformationWindow(IReadOnlyList<int> trackIds)
         {
             if (trackIds is null || trackIds.Count == 0 || IsShuttingDown || CurrentWindow is null) return;
 

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Core.Services.Lyrics;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
+using MusicWrap.UI.Services;
 using System.Windows.Threading;
 
 namespace MusicWrap.UI.Features.Lyrics.Viewmodel
@@ -12,6 +13,7 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
         private readonly LyricsProviderService _provider;
         private readonly MusicPlayerService _player;
         private readonly IUIDispatcher _dispatcher;
+        private readonly TrackActionService _trackActionService;
         // lyrics sync state
         private readonly DispatcherTimer _scheduler;
         private double _lastEnginePosition;
@@ -34,13 +36,14 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
 
         public bool CanSeek => HasSyncedLyrics && Lyrics != null && Lyrics.Lines.Count > 0;
 
-        public IReadOnlyList<LyricLine> Lines => Lyrics?.Lines ?? Array.Empty<LyricLine>();
+        public IReadOnlyList<LyricLine> Lines => Lyrics?.Lines ?? [];
 
-        public LyricsViewModel(LyricsProviderService provider, MusicPlayerService player, IUIDispatcher dispatcher)
+        public LyricsViewModel(LyricsProviderService provider, MusicPlayerService player, TrackActionService trackActionService, IUIDispatcher dispatcher)
         {
             _provider = provider;
             _player = player;
             _dispatcher = dispatcher;
+            _trackActionService = trackActionService;
             _scheduler = new DispatcherTimer { Interval = TimeSpan.FromMicroseconds(100) };
             _scheduler.Tick += OnSchedulerTick; ;
             _provider.LyricsChanged += OnLyricsChanged;
@@ -152,6 +155,15 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
             _provider.Invalidate();
             var p = await _provider.GetCurrentAsync();
             Apply(p);
+        }
+        [RelayCommand]
+        private void OpenLyricsEditorForCurrent()
+        {
+            var currentTrack = _player.CurrentTrackId;
+            if (currentTrack > 0)
+            {
+                _trackActionService.ShowTrackInformationDialog([currentTrack]);
+            }
         }
         #endregion
         public void Dispose()
