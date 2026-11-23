@@ -7,7 +7,7 @@ using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.Library;
 using MusicWrap.Data.Library.Models;
-
+using System.Diagnostics;
 using lyricsModel = MusicWrap.Data.Library.Models.Lyrics;
 
 namespace MusicWrap.Core.Services.Lyrics
@@ -20,7 +20,6 @@ namespace MusicWrap.Core.Services.Lyrics
         private readonly ILogger<LyricsProviderService> _logger;
         private readonly LyricsData _lyricsLibrary;
         private readonly ISaveCoordinator _saveCoordinator;
-        private readonly IMessenger _messenger;
 
 
         private readonly SemaphoreSlim _gate = new(1, 1);
@@ -32,14 +31,15 @@ namespace MusicWrap.Core.Services.Lyrics
         private bool _disposed;
 
         public ParsedLyrics Current => _current;
-        public event EventHandler<ParsedLyrics>? LyricsChanged;
+
+        // public event EventHandler<ParsedLyrics>? LyricsChanged;
+
         public LyricsProviderService(
-            MusicPlayerService player, 
-            ILibraryService library, 
-            ILogger<LyricsProviderService> logger, 
-            MetadataEditorService metadataEditorService, 
-            LyricsData lyrics, 
-            IMessenger messenger,
+            MusicPlayerService player,
+            ILibraryService library,
+            ILogger<LyricsProviderService> logger,
+            MetadataEditorService metadataEditorService,
+            LyricsData lyrics,
             ISaveCoordinator saveCoordinator)
         {
             _player = player;
@@ -48,36 +48,43 @@ namespace MusicWrap.Core.Services.Lyrics
             _metadataEditorService = metadataEditorService;
             _lyricsLibrary = lyrics;
             _saveCoordinator = saveCoordinator;
-            _messenger = messenger;
-
-            _player.TrackChanged += OnTrackChanged;
         }
-        private void OnTrackChanged(object? sender, string e) => _ = GetCurrentAsync();
 
-        public async Task<ParsedLyrics> GetCurrentAsync(CancellationToken ct = default)
+        public async Task<TrackLyricsResult> GetCurrentAsync(CancellationToken ct = default)
         {
             int trackId = _player.CurrentTrackId;
 
-            if (trackId <= 0) return UpdateCache(ParsedLyrics.Empty, -1, "", -1);
+            if (trackId <= 0)
+            {
+                UpdateCache(ParsedLyrics.Empty, -1, "", -1);
+                return TrackLyricsResult.Empty;
+            }
 
             var track = _library.GetTrackById(trackId);
             string path = track?.Path ?? _player.CurrentTrackPath;
             long ticks = track?.LastWriteTime ?? 0;
 
-            // cache check
-            if (trackId == _cachedTrackId && path == _cachedPath && ticks == _cachedTicks) return _current;
+            if (IsCacheHit(trackId, path, ticks))
+                return BuildResult(trackId);
+
 
             await _gate.WaitAsync(ct);
             try
             {
+                // just in case
+                if (IsCacheHit(trackId, path, ticks))
+                    return BuildResult(trackId);
+
                 var parsed = await LoadIndexedLyricsAsync(trackId, path, ct);
 
                 if (!parsed.HasContent)
                 {
+
                     var externalPath = await SearchLyricFileForTrack(path, ct);
 
                     if (!string.IsNullOrEmpty(externalPath))
                     {
+
                         var raw = await ReadExternalFileAsync(externalPath, ct);
 
                         if (!string.IsNullOrWhiteSpace(raw))
@@ -100,10 +107,12 @@ namespace MusicWrap.Core.Services.Lyrics
 
                 if (!parsed.HasContent)
                 {
+
                     var raw = await ReadEmbeddedLyricsAsync(path, ct);
 
                     if (!string.IsNullOrWhiteSpace(raw))
                     {
+
                         parsed = LyricsParser.Parse(raw, LyricsSource.Embedded);
 
                         RegisterLyricsForTrack(
@@ -118,12 +127,17 @@ namespace MusicWrap.Core.Services.Lyrics
                     }
                 }
 
-                return UpdateCache(parsed, trackId, path, ticks);
+
+                // saves parsed lyrics in _current.
+                UpdateCache(parsed, trackId, path, ticks);
             }
             finally
             {
                 _gate.Release();
             }
+
+            return BuildResult(trackId);
+
         }
 
         public async Task<string> SearchLyricFileForTrack(string trackPath, CancellationToken ct = default)
@@ -200,18 +214,38 @@ namespace MusicWrap.Core.Services.Lyrics
         }
         public lyricsModel? GetSelectedLyrics(int trackId)
         {
-            if (!_lyricsLibrary.TrackSelectedLyrics.TryGetValue(trackId, out var lyricsId))
-                return null;
+            if (_lyricsLibrary.TrackSelectedLyrics.TryGetValue(trackId, out var lyricsId))
+            {
+                var selected = _lyricsLibrary.Lyrics.FirstOrDefault(l =>
+                    l.Id == lyricsId && l.TrackId == trackId);
 
-            return _lyricsLibrary.Lyrics.FirstOrDefault(l => l.Id == lyricsId);
+                if (selected is not null)
+                    return selected;
+
+                _lyricsLibrary.TrackSelectedLyrics.Remove(trackId);
+            }
+
+            var defaultLyrics = _lyricsLibrary.Lyrics
+                .FirstOrDefault(l => l.TrackId == trackId && l.Default);
+
+            if (defaultLyrics is not null)
+                _lyricsLibrary.TrackSelectedLyrics[trackId] = defaultLyrics.Id;
+
+            return defaultLyrics;
         }
 
         public void SelectLyrics(int trackId, int lyricsId)
         {
+
             var selected = _lyricsLibrary.Lyrics.FirstOrDefault(l =>
                 l.Id == lyricsId && l.TrackId == trackId);
 
             if (selected is null) return;
+            // check if already selected
+            if (selected.Default &&
+                _lyricsLibrary.TrackSelectedLyrics.TryGetValue(trackId, out var current) &&
+                current == lyricsId)
+                return;
 
             foreach (var lyrics in _lyricsLibrary.Lyrics.Where(l => l.TrackId == trackId))
                 lyrics.Default = false;
@@ -221,36 +255,46 @@ namespace MusicWrap.Core.Services.Lyrics
             _saveCoordinator.Enqueue(SaveKind.Lyrics);
             Invalidate();
 
-            _messenger.Send(new TrackLyricsChangedMessage(trackId, LyricsChangeType.SelectionChanged));
         }
 
         public List<lyricsModel> LoadLyricsByTrackId(int id)
         {
-            var lyrics = _lyricsLibrary.Lyrics.FindAll(x => x.TrackId == id).OrderByDescending(x => x.Default).ThenByDescending(x => x.Type).ToList();
+            var lyrics = _lyricsLibrary.Lyrics
+                .FindAll(x => x.TrackId == id)
+                .OrderByDescending(x => x.Default)
+                .ThenByDescending(x => x.Type)
+                .ToList();
+
             return lyrics;
         }
 
         public void Invalidate() { _cachedTrackId = -1; }
+
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
-            _player.TrackChanged -= OnTrackChanged;
+            //_player.TrackChanged -= OnTrackChanged;
             _gate.Dispose();
         }
 
         #region Internal
+
+        private bool IsCacheHit(int id, string path, long ticks) =>
+            id == _cachedTrackId && path == _cachedPath && ticks == _cachedTicks;
+
+        private TrackLyricsResult BuildResult(int trackId) =>
+            new(_current, LoadLyricsByTrackId(trackId), GetSelectedLyrics(trackId));
 
         private async Task<ParsedLyrics> LoadIndexedLyricsAsync(int trackId, string trackPath, CancellationToken ct = default)
         {
             if (!_lyricsLibrary.TrackSelectedLyrics.TryGetValue(trackId, out var lyricsId))
                 return ParsedLyrics.Empty;
 
-            var entry = _lyricsLibrary.Lyrics.FirstOrDefault(l => l.Id == lyricsId);
+            var entry = _lyricsLibrary.Lyrics.FirstOrDefault(l => l.Id == lyricsId && l.TrackId == trackId);
             if (entry is null)
             {
                 _lyricsLibrary.TrackSelectedLyrics.Remove(trackId);
-                _messenger.Send(new TrackLyricsChangedMessage(trackId, LyricsChangeType.SelectionChanged));
                 return ParsedLyrics.Empty;
             }
 
@@ -305,11 +349,11 @@ namespace MusicWrap.Core.Services.Lyrics
             _cachedPath = path;
             _cachedTicks = ticks;
             _current = p;
-            LyricsChanged?.Invoke(this, p);
+
             return p;
         }
 
-        private bool RegisterLyricsForTrack(int trackId, string tag, LyricsType type, LyricsOrigin origin, string provider, bool makeDefault = false, string? userEditedLyrics = null)
+        private void RegisterLyricsForTrack(int trackId, string tag, LyricsType type, LyricsOrigin origin, string provider, bool makeDefault = false, string? userEditedLyrics = null)
         {
             var existing = _lyricsLibrary.Lyrics.FirstOrDefault(l => l.TrackId == trackId && l.Provider == provider && l.Origin == origin);
 
@@ -320,8 +364,9 @@ namespace MusicWrap.Core.Services.Lyrics
                 existing.Type = type;
                 existing.LyricsText = userEditedLyrics;
 
-                return true;
+                return;
             }
+
 
             var newLyrics = new lyricsModel
             {
@@ -337,17 +382,24 @@ namespace MusicWrap.Core.Services.Lyrics
 
             if (makeDefault)
             {
-                var trackLyrics = _lyricsLibrary.Lyrics.Where(l => l.TrackId == trackId).ToList();
                 foreach (var lyrics in _lyricsLibrary.Lyrics.Where(l => l.TrackId == trackId))
                     lyrics.Default = false;
             }
 
             _lyricsLibrary.Lyrics.Add(newLyrics);
             _lyricsLibrary.TrackSelectedLyrics[trackId] = newLyrics.Id;
-            _messenger.Send(new TrackLyricsChangedMessage(trackId, LyricsChangeType.EntryAdded));
-            return true;
         }
 
         #endregion
     }
+    #region Models
+    public sealed record TrackLyricsResult(
+        ParsedLyrics ParsedLyrics,
+        IReadOnlyList<lyricsModel> AvailableLyrics,
+        lyricsModel? ActiveLyrics
+    )
+    {
+        public static TrackLyricsResult Empty => new(ParsedLyrics.Empty, Array.Empty<lyricsModel>(), null);
+    }
+    #endregion
 }

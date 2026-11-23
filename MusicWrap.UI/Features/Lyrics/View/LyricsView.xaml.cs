@@ -2,6 +2,7 @@
 using MusicWrap.Core.Services.Lyrics;
 using MusicWrap.UI.Features.Lyrics.Viewmodel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -146,8 +147,24 @@ namespace MusicWrap.UI.Features.Lyrics.View
                 case nameof(LyricsViewModel.HasSyncedLyrics):
                     RaiseLyricsStateChanged();
                     break;
+                case nameof(LyricsViewModel.AvailableLyrics):
+                    RefreshVariantsCombobox();
+                    break;
             }
         }
+
+        private void RefreshVariantsCombobox()
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, new Action(() =>
+            {
+                var template = LyricsVariantCombobox.Template;
+                LyricsVariantCombobox.Template = null;
+                LyricsVariantCombobox.ApplyTemplate();
+                LyricsVariantCombobox.Template = template;
+                LyricsVariantCombobox.Items.Refresh();
+            }));
+        }
+
         private void RaiseLyricsStateChanged()
         {
             LyricsStateChanged?.Invoke(this, new LyricsStateChangedEventArgs(HasLyrics, HasSyncedLyrics, _viewModel?.Lyrics));

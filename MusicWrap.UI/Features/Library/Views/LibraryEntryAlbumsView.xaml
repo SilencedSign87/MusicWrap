@@ -96,9 +96,11 @@
                                                         <ControlTemplate TargetType="Button">
                                                             <Border Background="{TemplateBinding Background}"
                                                                     BorderBrush="{TemplateBinding BorderBrush}"
-                                                                    BorderThickness="{TemplateBinding BorderThickness}">
-                                                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                                    >
+                                                                <ContentPresenter 
+                                                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"              
+                                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                                             </Border>
                                                         </ControlTemplate>
                                                     </Setter.Value>
@@ -163,10 +165,11 @@
                                                                 CornerRadius="14"
                                                                 Width="{TemplateBinding Width}"
                                                                 Height="{TemplateBinding Height}"
-                                                                Padding="0"
                                                                 Background="{TemplateBinding Background}"
                                                                 BorderBrush="{TemplateBinding BorderBrush}"
-                                                                BorderThickness="{TemplateBinding BorderThickness}">
+                                                                BorderThickness="{TemplateBinding BorderThickness}"
+                                                                Padding="0"
+                                                                >
                                                                 <ContentPresenter HorizontalAlignment="Center"
                                                                                   VerticalAlignment="Center"/>
                                                             </Border>

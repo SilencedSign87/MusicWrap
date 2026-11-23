@@ -7,6 +7,7 @@ using MusicWrap.Core.Services.Playback;
 using MusicWrap.Core.Threading;
 using MusicWrap.UI.Services;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Windows.Threading;
 
 using LyricsModel = MusicWrap.Data.Library.Models.Lyrics;
@@ -19,7 +20,6 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
         private readonly MusicPlayerService _player;
         private readonly IUIDispatcher _dispatcher;
         private readonly TrackActionService _trackActionService;
-        private readonly IMessenger _messenger;
 
         // lyrics sync state
         private readonly DispatcherTimer _scheduler;
@@ -27,6 +27,12 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
         private DateTime _lastEngineAtUtc = DateTime.MinValue;
         private double _duration;
         private bool _isPlaying;
+
+        // Versioning state
+        private bool _suppressSelection;
+        private int _appliedSelectionId;
+        private int _loadVersion;
+
 
         private bool _disposed;
 
@@ -43,35 +49,23 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
 
         [ObservableProperty]
         public partial LyricsModel? SelectedLyrics { get; set; } = null;
-        public ObservableCollection<LyricsModel> AvailableLyrics { get; } = [];
+
+        [ObservableProperty]
+        public partial IReadOnlyList<LyricsModel> AvailableLyrics { get; set; } = [];
 
         public bool CanSeek => HasSyncedLyrics && Lyrics != null && Lyrics.Lines.Count > 0;
 
         public IReadOnlyList<LyricLine> Lines => Lyrics?.Lines ?? [];
 
-        public LyricsViewModel(LyricsProviderService provider, MusicPlayerService player, TrackActionService trackActionService, IUIDispatcher dispatcher, IMessenger messenger)
+        public LyricsViewModel(LyricsProviderService provider, MusicPlayerService player, TrackActionService trackActionService, IUIDispatcher dispatcher)
         {
             _provider = provider;
             _player = player;
             _dispatcher = dispatcher;
             _trackActionService = trackActionService;
-            _messenger = messenger;
 
-            _messenger.Register<TrackLyricsChangedMessage>(
-                this,
-                (recipient, message) => _dispatcher.Invoke(() =>
-                {
-                    if (message.TrackId != _player.CurrentTrackId && message.ChangeType != LyricsChangeType.SelectionChanged)
-                        return;
-
-                    RefreshAvailableLyrics();
-                    _provider.Invalidate();
-                    _ = LoadAsync();
-                }));
-
-            _scheduler = new DispatcherTimer { Interval = TimeSpan.FromMicroseconds(100) };
+            _scheduler = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
             _scheduler.Tick += OnSchedulerTick; ;
-            _provider.LyricsChanged += OnLyricsChanged;
             _player.PositionChanged += OnPositionChanged;
             _player.TrackChanged += OnTrackChanged;
             _player.PlaybackStateChanged += OnPlaybackStateChanged;
@@ -81,7 +75,6 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
             SyncBaseline();
 
             _ = LoadAsync();
-            RefreshAvailableLyrics();
         }
         public void SeekToIndex(int index)
         {
@@ -99,9 +92,7 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
         private async Task Refresh()
         {
             _provider.Invalidate();
-            var p = await _provider.GetCurrentAsync();
-            RefreshAvailableLyrics();
-            Apply(p);
+            await LoadAsync();
         }
         [RelayCommand]
         private void OpenLyricsEditorForCurrent()
@@ -118,16 +109,26 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
 
         private async Task LoadAsync()
         {
-            var p = await _provider.GetCurrentAsync();
-            _dispatcher.Invoke(() => Apply(p));
+            var version = ++_loadVersion;
+            var result = await _provider.GetCurrentAsync();
+
+            _dispatcher.Invoke(() =>
+            {
+                if (version != _loadVersion || _disposed) return;
+
+                Apply(result);
+            });
         }
-        private void OnLyricsChanged(object? s, ParsedLyrics e) => _dispatcher.Invoke(() => Apply(e));
-        private void OnTrackChanged(object? s, string e) => _dispatcher.Invoke(() =>
+
+        private void OnTrackChanged(object? s, string e) => _dispatcher.Invoke(async () =>
         {
-            _duration = _player.Duration;
-            SyncBaseline();
-            ScheduleNext();
-            RefreshAvailableLyrics();
+            _dispatcher.Invoke(() =>
+            {
+                _duration = _player.Duration;
+                SyncBaseline();
+                ScheduleNext();
+            });
+            _ = LoadAsync();
         });
         private void OnPositionChanged(object? s, double pos) => _dispatcher.Invoke(() =>
         {
@@ -158,15 +159,37 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
             var elapsed = (DateTime.UtcNow - _lastEngineAtUtc).TotalSeconds;
             return Math.Clamp(_lastEnginePosition + elapsed, 0, _duration > 0 ? _duration : double.MaxValue);
         }
-        private void Apply(ParsedLyrics p)
+        private void Apply(TrackLyricsResult result)
         {
-            Lyrics = p;
-            HasLyrics = p.HasContent;
-            HasSyncedLyrics = p.IsSynced;
-            ActiveIndex = -1;
-            SyncBaseline();
-            UpdateActiveIndexImmediate();
-            ScheduleNext();
+            _suppressSelection = true;
+            try
+            {
+                // Update the available lyrics list, only if it has changed
+                if (!AvailableLyrics.SequenceEqual(result.AvailableLyrics))
+                {
+                    Debug.WriteLine($"AvailableLyrics changed. Count: {result.AvailableLyrics.Count}");
+                    AvailableLyrics = [.. result.AvailableLyrics];
+                }
+
+                // Update the selected lyrics
+                _appliedSelectionId = result.ActiveLyrics?.Id ?? 0;
+                SelectedLyrics = result.ActiveLyrics;
+
+                // update the parsed lyrics
+                var p = result.ParsedLyrics;
+                Lyrics = p;
+                HasLyrics = p.HasContent;
+                HasSyncedLyrics = p.IsSynced;
+                ActiveIndex = -1;
+                SyncBaseline();
+                UpdateActiveIndexImmediate();
+                ScheduleNext();
+            }
+            finally
+            {
+                _suppressSelection = false;
+            }
+           
         }
         private void UpdateActiveIndexImmediate()
         {
@@ -198,20 +221,13 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
             UpdateActiveIndexImmediate();
             ScheduleNext();
         }
-        private void RefreshAvailableLyrics()
-        {
-            AvailableLyrics.Clear();
-            foreach (var lyrics in _provider.LoadLyricsByTrackId(_player.CurrentTrackId))
-                AvailableLyrics.Add(lyrics);
-
-            SelectedLyrics = _provider.GetSelectedLyrics(_player.CurrentTrackId);
-        }
 
         #endregion
         #region Partials
         partial void OnSelectedLyricsChanged(LyricsModel? value)
         {
-            if (value is null) return;
+            if (_suppressSelection) return;
+            if (value is null || value.Id == _appliedSelectionId) return;
 
             _provider.SelectLyrics(_player.CurrentTrackId, value.Id);
             _ = LoadAsync();
@@ -220,13 +236,13 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
         public void Dispose()
         {
             if (_disposed) return;
+            _loadVersion++;
             _disposed = true;
-            _scheduler.Stop(); _scheduler.Tick -= OnSchedulerTick;
-            _provider.LyricsChanged -= OnLyricsChanged;
+            _scheduler.Stop(); _scheduler.Tick -= OnSchedulerTick; 
             _player.PositionChanged -= OnPositionChanged;
             _player.TrackChanged -= OnTrackChanged;
             _player.PlaybackStateChanged -= OnPlaybackStateChanged;
-            _messenger.UnregisterAll(this);
+            //_messenger.UnregisterAll(this);
         }
     }
 }

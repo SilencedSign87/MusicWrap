@@ -127,9 +127,11 @@
                         Orientation="Horizontal"
                                 >
                         <ComboBox
+                            x:Name="LyricsVariantCombobox"
+                            Visibility="{Binding AvailableLyrics.Count, Converter={StaticResource ItemCountToVisibilityConverter}}"
                             ItemsSource="{Binding AvailableLyrics}"
                             SelectedItem="{Binding SelectedLyrics, Mode=TwoWay}"
-                            MaxWidth="120"
+                            MaxWidth="140"
                             >
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
