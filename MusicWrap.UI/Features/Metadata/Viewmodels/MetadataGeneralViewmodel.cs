@@ -9,6 +9,7 @@ using MusicWrap.UI.Services;
 using MusicWrap.UI.ViewModels;
 using System.Collections.ObjectModel;
 using System.IO;
+using TagLib;
 
 namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {
@@ -120,19 +121,58 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
         {
             var rows = new List<FileData>();
             AddFileInfoRows(rows, filepath);
-            if (file.Properties is { } props)
-            {
-                AddRow(rows, "Duration", FormatHelpers.FormatDuration(props.Duration));
-                AddRow(rows, "Codec", props.Codecs.Select(c => c.Description).ToArray());
-                AddRow(rows, "Bitrate", props.AudioBitrate > 0 ? FormatHelpers.FormatBitrate(props.AudioBitrate) : null);
-                AddRow(rows, "Sample Rate", props.AudioSampleRate > 0 ? FormatHelpers.FormatSampleRate(props.AudioSampleRate) : null);
-                AddRow(rows, "Bit Depth", props.BitsPerSample > 0 ? FormatHelpers.FormatBitDepth(props.BitsPerSample) : null);
-                AddRow(rows, "Channels", props.AudioChannels > 0 ? FormatHelpers.FormatChannels(props.AudioChannels) : null);
-            }
-            AddRow(rows, "Health", file.PossiblyCorrupt ? "Possibly Corrupt" : null);
 
+            TagLib.Properties? props = null;
+            try
+            {
+                props = file.Properties;
+            }
+            catch { }
+
+            if (props is not null)
+            {
+                TryAddRow(rows, "Duration", () => FormatHelpers.FormatDuration(props.Duration));
+                TryAddRow(rows, "Bitrate", () => props.AudioBitrate > 0 ? FormatHelpers.FormatBitrate(props.AudioBitrate) : null);
+                TryAddRow(rows, "Sample Rate", () => props.AudioSampleRate > 0 ? FormatHelpers.FormatSampleRate(props.AudioSampleRate) : null);
+                TryAddRow(rows, "Bit Depth", () => props.BitsPerSample > 0 ? FormatHelpers.FormatBitDepth(props.BitsPerSample) : null);
+                TryAddRow(rows, "Channels", () => props.AudioChannels > 0 ? FormatHelpers.FormatChannels(props.AudioChannels) : null);
+                AddRow(rows, "Codec", ReadCodecs(props));
+            }
+
+            AddRow(rows, "Health", file.PossiblyCorrupt ? "Possibly Corrupt" : null);
             return rows;
+
         }
+
+        private static string[] ReadCodecs(Properties props)
+        {
+            try
+            {
+                return [.. props.Codecs
+                    .OfType<TagLib.ICodec>()
+                    .Select(SafeDescription)
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .Select(d => d!)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)];
+            }
+            catch
+            {
+                return [];
+            }
+        }
+        private static string? SafeDescription(TagLib.ICodec codec)
+        {
+            try { return codec.Description; }
+            catch { return null; }
+        }
+
+
+        private static void TryAddRow(List<FileData> rows, string label, Func<string?> read)
+        {
+            try { AddRow(rows, label, read()); }
+            catch { }
+        }
+
         public static List<FileData> Merge(IReadOnlyList<IReadOnlyList<FileData>> perTrackRows)
         {
             if (perTrackRows.Count == 0)
