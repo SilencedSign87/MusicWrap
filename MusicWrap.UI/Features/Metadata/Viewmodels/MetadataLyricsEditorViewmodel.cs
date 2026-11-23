@@ -14,7 +14,7 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
 {
     public partial class MetadataLyricsEditorViewmodel : ObservableObject, IMetadataEditorTabViewmodel
     {
-        private readonly LyricsService _lyricsService;
+        private readonly LyricsProviderService _lyricsService;
         private readonly MetadataEditorWorkspace _workspace;
 
         [ObservableProperty]
@@ -29,10 +29,10 @@ namespace MusicWrap.UI.Features.Metadata.Viewmodels
             DefaultLyrics.CanSave || LyricsVariants.Any(v => v.CanSave);
 
 
-        public MetadataLyricsEditorViewmodel(LyricsService lyricsService, MetadataEditorWorkspace workspace)
+        public MetadataLyricsEditorViewmodel(MetadataEditorWorkspace workspace, LyricsProviderService lyricsProvider)
         {
-            _lyricsService = lyricsService;
             _workspace = workspace;
+            _lyricsService = lyricsProvider;
 
             DefaultLyrics.PropertyChanged -= OnEntryChanged;
             DefaultLyrics.PropertyChanged += OnEntryChanged;

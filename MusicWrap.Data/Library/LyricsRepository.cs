@@ -11,7 +11,10 @@ namespace MusicWrap.Data.Library
     [MessagePackObject]
     public class LyricsData
     {
+        // lyrics list
         [Key(0)] public List<Lyrics> Lyrics = [];
+        // selected lyrics for each track
+        [Key(1)] public Dictionary<int, int> TrackSelectedLyrics = [];
 
         [Key(999)] public int Version;
 
@@ -75,6 +78,7 @@ namespace MusicWrap.Data.Library
             return new LyricsData
             {
                 Lyrics = [],
+                TrackSelectedLyrics = [],
                 Version = 1,
             };
         }

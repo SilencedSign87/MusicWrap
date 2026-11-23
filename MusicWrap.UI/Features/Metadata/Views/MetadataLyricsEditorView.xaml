@@ -38,7 +38,22 @@
                                 Grid.Column="2"
                                 Text="{Binding Language, UpdateSourceTrigger=PropertyChanged}"
                                 Height="32"
-                                PlaceholderText="Language (EN, ES, etc.) or a Tag"/>
+                                PlaceholderText="Language or a Tag"
+                                >
+                                <controls:AppInput.BeforeContent>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE932;"
+                                                   FontFamily="Segoe Fluent Icons"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                                   VerticalAlignment="Center"
+                                                   ToolTip="Tag"
+                                                   Margin="0,0,4,0"
+                                                   />
+                                        <TextBlock Text="Tag" Margin="0,0,8,0"/>
+                                        <Separator />
+                                    </StackPanel>
+                                </controls:AppInput.BeforeContent>
+                            </controls:AppInput>
 
                             <controls:AppButton
                                 Grid.Column="4"
@@ -223,7 +238,7 @@
                     Command="{Binding CancelChangesCommand}"
                     />
             </StackPanel>
-            
+
         </Border>
     </Grid>
 </UserControl>

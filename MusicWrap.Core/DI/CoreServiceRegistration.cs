@@ -61,7 +61,6 @@ namespace MusicWrap.Core.DI
             services.AddSingleton<ISearchQueryProvider, SearchService>(
                 sp => sp.GetRequiredService<SearchService>());
             services.AddSingleton<LyricsProviderService>();
-            services.AddSingleton<LyricsService>();
 
             // Providers
             services.AddTransient<IQueueItemPlaybackResolver, QueueItemPlaybackResolver>();

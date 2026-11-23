@@ -178,8 +178,8 @@ namespace MusicWrap.UI.Features.Lyrics.View
         }
         private void UpdateSpacers()
         {
-            var height =
-            LyricsScrollViewer.ViewportHeight / 2.0;
+
+            var height = LyricsVerticalAlignment == LyricsVerticalAlignment.Center ? LyricsScrollViewer.ViewportHeight / 2.0 : LyricsScrollViewer.ViewportHeight * VerticalLyricsMarginPercent;
 
             if (height <= 0)
                 return;

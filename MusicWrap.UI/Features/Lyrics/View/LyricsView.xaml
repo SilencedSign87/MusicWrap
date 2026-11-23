@@ -104,27 +104,54 @@
                 Padding="2" 
                 Margin="2"
                 CornerRadius="4">
-                <StackPanel Orientation="Horizontal" Height="32">
-                    <controls:AppButton
+                <Grid ColumnDefinitions="*,16,Auto" Height="32">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" >
+                        <controls:AppButton
                             Style="{DynamicResource SubtleButton}"
                             Icon="&#xE72C;"
+                            IsSquare="True"
                             ToolTip="Refresh"
                             Command="{Binding RefreshCommand}"
                             />
-                    <controls:AppButton
-                        Style="{DynamicResource SubtleButton}"
-                        Icon="&#xE768;"
-                        ToolTip="Sync lyrics"
-                        Click="HandleResumeFollow"
-                        />
-                    <Separator Margin="1,0" />
-                    <controls:AppButton
-                        Style="{DynamicResource SubtleButton}"
-                        Icon="&#xEF60;"
-                        ToolTip="Editor"
-                        Command="{Binding OpenLyricsEditorForCurrentCommand}"
-                        />
-                </StackPanel>
+                        <controls:AppButton
+                            Style="{DynamicResource SubtleButton}"
+                            Icon="&#xE768;"
+                            IsSquare="True"
+                            ToolTip="Sync lyrics"
+                            Click="HandleResumeFollow"
+                            />
+                    </StackPanel>
+                    
+                    <StackPanel 
+                        Grid.Column="2"
+                        Orientation="Horizontal"
+                                >
+                        <ComboBox
+                            ItemsSource="{Binding AvailableLyrics}"
+                            SelectedItem="{Binding SelectedLyrics, Mode=TwoWay}"
+                            MaxWidth="120"
+                            >
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock FontSize="11" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis">
+                                        <Run Text="{Binding Language}" />
+                                        <Run Text=" • " />
+                                        <Run Text="{Binding Origin, Converter={StaticResource EnumToDisplayNameConverter}}" />
+                                        <Run Text=" • " />
+                                        <Run Text="{Binding Type, Converter={StaticResource EnumToDisplayNameConverter}}" />
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <controls:AppButton
+                            Style="{DynamicResource SubtleButton}"
+                            Icon="&#xEF60;"
+                            IsSquare="True"
+                            ToolTip="Editor"
+                            Command="{Binding OpenLyricsEditorForCurrentCommand}"
+                            />
+                    </StackPanel>
+                </Grid>
             </Border>
         </controls:HiddenPanel>
     </Grid>

@@ -1,6 +1,14 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.Logging;
+using MusicWrap.Core.Messages;
+using MusicWrap.Core.Saving;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
+using MusicWrap.Data.Infrastructure.Saving;
+using MusicWrap.Data.Library;
+using MusicWrap.Data.Library.Models;
+
+using lyricsModel = MusicWrap.Data.Library.Models.Lyrics;
 
 namespace MusicWrap.Core.Services.Lyrics
 {
@@ -10,7 +18,13 @@ namespace MusicWrap.Core.Services.Lyrics
         private readonly ILibraryService _library;
         private readonly MetadataEditorService _metadataEditorService;
         private readonly ILogger<LyricsProviderService> _logger;
+        private readonly LyricsData _lyricsLibrary;
+        private readonly ISaveCoordinator _saveCoordinator;
+        private readonly IMessenger _messenger;
+
+
         private readonly SemaphoreSlim _gate = new(1, 1);
+
         private ParsedLyrics _current = ParsedLyrics.Empty;
         private int _cachedTrackId = -1;
         private string _cachedPath = "";
@@ -19,12 +33,23 @@ namespace MusicWrap.Core.Services.Lyrics
 
         public ParsedLyrics Current => _current;
         public event EventHandler<ParsedLyrics>? LyricsChanged;
-        public LyricsProviderService(MusicPlayerService player, ILibraryService library, ILogger<LyricsProviderService> logger, MetadataEditorService metadataEditorService)
+        public LyricsProviderService(
+            MusicPlayerService player, 
+            ILibraryService library, 
+            ILogger<LyricsProviderService> logger, 
+            MetadataEditorService metadataEditorService, 
+            LyricsData lyrics, 
+            IMessenger messenger,
+            ISaveCoordinator saveCoordinator)
         {
             _player = player;
             _library = library;
             _logger = logger;
             _metadataEditorService = metadataEditorService;
+            _lyricsLibrary = lyrics;
+            _saveCoordinator = saveCoordinator;
+            _messenger = messenger;
+
             _player.TrackChanged += OnTrackChanged;
         }
         private void OnTrackChanged(object? sender, string e) => _ = GetCurrentAsync();
@@ -45,32 +70,54 @@ namespace MusicWrap.Core.Services.Lyrics
             await _gate.WaitAsync(ct);
             try
             {
-                if (trackId == _cachedTrackId && path == _cachedPath && ticks == _cachedTicks) return _current;
+                var parsed = await LoadIndexedLyricsAsync(trackId, path, ct);
 
-                string? raw = null;
-                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                if (!parsed.HasContent)
                 {
-                    raw = await Task.Run(() =>
-                    {
-                        try
-                        {
-                            using var f = TagLib.File.Create(path);
-                            return f.Tag.Lyrics;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "Failed to read lyrics from file {Path}", path);
-                            return null;
-                        }
-                    }, ct);
+                    var externalPath = await SearchLyricFileForTrack(path, ct);
 
-                    if (string.IsNullOrWhiteSpace(raw))
+                    if (!string.IsNullOrEmpty(externalPath))
                     {
-                        raw = await SearchLyricFileForTrack(path, ct);
+                        var raw = await ReadExternalFileAsync(externalPath, ct);
+
+                        if (!string.IsNullOrWhiteSpace(raw))
+                        {
+                            parsed = LyricsParser.Parse(raw, LyricsSource.External);
+
+                            RegisterLyricsForTrack(
+                                trackId,
+                                tag: "Original",
+                                type: parsed.IsSynced ? LyricsType.synced : LyricsType.plain,
+                                origin: LyricsOrigin.File,
+                                provider: externalPath,
+                                makeDefault: true
+                                );
+
+                            _saveCoordinator.Enqueue(SaveKind.Lyrics);
+                        }
                     }
-
                 }
-                var parsed = LyricsParser.Parse(raw, LyricsSource.Embedded);
+
+                if (!parsed.HasContent)
+                {
+                    var raw = await ReadEmbeddedLyricsAsync(path, ct);
+
+                    if (!string.IsNullOrWhiteSpace(raw))
+                    {
+                        parsed = LyricsParser.Parse(raw, LyricsSource.Embedded);
+
+                        RegisterLyricsForTrack(
+                            trackId,
+                            tag: "Original",
+                            type: parsed.IsSynced ? LyricsType.synced : LyricsType.plain,
+                            origin: LyricsOrigin.Embedded,
+                            provider: path,
+                            makeDefault: true
+                            );
+                        _saveCoordinator.Enqueue(SaveKind.Lyrics);
+                    }
+                }
+
                 return UpdateCache(parsed, trackId, path, ticks);
             }
             finally
@@ -122,15 +169,7 @@ namespace MusicWrap.Core.Services.Lyrics
 
             if (best is null) return string.Empty;
 
-            try
-            {
-                return await File.ReadAllTextAsync(best, ct);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                _logger.LogWarning(ex, "Failed to read lyric file {Path}", best);
-                return string.Empty;
-            }
+            return best;
 
         }
 
@@ -159,6 +198,106 @@ namespace MusicWrap.Core.Services.Lyrics
 
             return success;
         }
+        public lyricsModel? GetSelectedLyrics(int trackId)
+        {
+            if (!_lyricsLibrary.TrackSelectedLyrics.TryGetValue(trackId, out var lyricsId))
+                return null;
+
+            return _lyricsLibrary.Lyrics.FirstOrDefault(l => l.Id == lyricsId);
+        }
+
+        public void SelectLyrics(int trackId, int lyricsId)
+        {
+            var selected = _lyricsLibrary.Lyrics.FirstOrDefault(l =>
+                l.Id == lyricsId && l.TrackId == trackId);
+
+            if (selected is null) return;
+
+            foreach (var lyrics in _lyricsLibrary.Lyrics.Where(l => l.TrackId == trackId))
+                lyrics.Default = false;
+
+            selected.Default = true;
+            _lyricsLibrary.TrackSelectedLyrics[trackId] = selected.Id;
+            _saveCoordinator.Enqueue(SaveKind.Lyrics);
+            Invalidate();
+
+            _messenger.Send(new TrackLyricsChangedMessage(trackId, LyricsChangeType.SelectionChanged));
+        }
+
+        public List<lyricsModel> LoadLyricsByTrackId(int id)
+        {
+            var lyrics = _lyricsLibrary.Lyrics.FindAll(x => x.TrackId == id).OrderByDescending(x => x.Default).ThenByDescending(x => x.Type).ToList();
+            return lyrics;
+        }
+
+        public void Invalidate() { _cachedTrackId = -1; }
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _player.TrackChanged -= OnTrackChanged;
+            _gate.Dispose();
+        }
+
+        #region Internal
+
+        private async Task<ParsedLyrics> LoadIndexedLyricsAsync(int trackId, string trackPath, CancellationToken ct = default)
+        {
+            if (!_lyricsLibrary.TrackSelectedLyrics.TryGetValue(trackId, out var lyricsId))
+                return ParsedLyrics.Empty;
+
+            var entry = _lyricsLibrary.Lyrics.FirstOrDefault(l => l.Id == lyricsId);
+            if (entry is null)
+            {
+                _lyricsLibrary.TrackSelectedLyrics.Remove(trackId);
+                _messenger.Send(new TrackLyricsChangedMessage(trackId, LyricsChangeType.SelectionChanged));
+                return ParsedLyrics.Empty;
+            }
+
+            string? raw = entry.Origin switch
+            {
+                LyricsOrigin.Manual => entry.LyricsText,
+                LyricsOrigin.File => await ReadExternalFileAsync(entry.Provider, ct),
+                LyricsOrigin.Embedded => await ReadEmbeddedLyricsAsync(trackPath, ct),
+                _ => null
+            };
+
+            if (string.IsNullOrWhiteSpace(raw))
+                return ParsedLyrics.Empty;
+
+            var source = entry.Origin switch
+            {
+                LyricsOrigin.File => LyricsSource.External,
+                LyricsOrigin.Embedded => LyricsSource.Embedded,
+                _ => LyricsSource.None
+            };
+
+            return LyricsParser.Parse(raw, source);
+        }
+
+        private async Task<string?> ReadExternalFileAsync(string trackPath, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(trackPath)) return null;
+            if (!File.Exists(trackPath)) return null;
+            return await File.ReadAllTextAsync(trackPath, ct);
+        }
+
+        private async Task<string?> ReadEmbeddedLyricsAsync(string trackPath, CancellationToken ct)
+        {
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    using var f = TagLib.File.Create(trackPath);
+                    return f.Tag.Lyrics;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to read lyrics from file {Path}", trackPath);
+                    return null;
+                }
+            }, ct);
+        }
 
         private ParsedLyrics UpdateCache(ParsedLyrics p, int id, string path, long ticks)
         {
@@ -169,13 +308,46 @@ namespace MusicWrap.Core.Services.Lyrics
             LyricsChanged?.Invoke(this, p);
             return p;
         }
-        public void Invalidate() { _cachedTrackId = -1; }
-        public void Dispose()
+
+        private bool RegisterLyricsForTrack(int trackId, string tag, LyricsType type, LyricsOrigin origin, string provider, bool makeDefault = false, string? userEditedLyrics = null)
         {
-            if (_disposed) return;
-            _disposed = true;
-            _player.TrackChanged -= OnTrackChanged;
-            _gate.Dispose();
+            var existing = _lyricsLibrary.Lyrics.FirstOrDefault(l => l.TrackId == trackId && l.Provider == provider && l.Origin == origin);
+
+            if (existing is not null)
+            {
+                existing.Default = makeDefault;
+                existing.Language = tag;
+                existing.Type = type;
+                existing.LyricsText = userEditedLyrics;
+
+                return true;
+            }
+
+            var newLyrics = new lyricsModel
+            {
+                Id = _lyricsLibrary.GenerateLyricsId(),
+                TrackId = trackId,
+                Default = makeDefault,
+                Language = tag,
+                Origin = origin,
+                Type = type,
+                Provider = provider,
+                LyricsText = origin == LyricsOrigin.Manual ? userEditedLyrics : null,
+            };
+
+            if (makeDefault)
+            {
+                var trackLyrics = _lyricsLibrary.Lyrics.Where(l => l.TrackId == trackId).ToList();
+                foreach (var lyrics in _lyricsLibrary.Lyrics.Where(l => l.TrackId == trackId))
+                    lyrics.Default = false;
+            }
+
+            _lyricsLibrary.Lyrics.Add(newLyrics);
+            _lyricsLibrary.TrackSelectedLyrics[trackId] = newLyrics.Id;
+            _messenger.Send(new TrackLyricsChangedMessage(trackId, LyricsChangeType.EntryAdded));
+            return true;
         }
+
+        #endregion
     }
 }
