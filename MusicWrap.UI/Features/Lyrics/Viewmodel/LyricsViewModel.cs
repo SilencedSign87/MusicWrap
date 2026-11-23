@@ -100,7 +100,7 @@ namespace MusicWrap.UI.Features.Lyrics.Viewmodel
             var currentTrack = _player.CurrentTrackId;
             if (currentTrack > 0)
             {
-                _trackActionService.ShowTrackInformationDialog([currentTrack]);
+                _trackActionService.ShowTrackInformationDialog([currentTrack],3);
             }
         }
         #endregion

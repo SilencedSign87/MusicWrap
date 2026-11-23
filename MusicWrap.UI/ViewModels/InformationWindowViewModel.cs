@@ -78,6 +78,11 @@ namespace MusicWrap.UI.ViewModels
                 PreviewArtworkPath = null;
             }
         }
+
+        public void SetTab(int index)
+        {
+            SelectedTabIndex = index;
+        }
     }
     public interface IMetadataEditorTabViewmodel : INotifyPropertyChanged
     {

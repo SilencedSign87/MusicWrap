@@ -72,13 +72,13 @@ namespace MusicWrap.UI.Services
             if (selectedTrackIds.Count == 0) return;
             _libraryService.RemoveTracks(selectedTrackIds);
         }
-        public void ShowTrackInformationDialog(IReadOnlyList<int> selectedTrackIds)
+        public void ShowTrackInformationDialog(IReadOnlyList<int> selectedTrackIds, int initialTab = 0)
         {
             if (selectedTrackIds.Count == 0)
             {
                 return;
             }
-            _windowManager.LaunchInformationWindow(selectedTrackIds);
+            _windowManager.LaunchInformationWindow(selectedTrackIds, initialTab);
         }
         public void ShowInFileExplorer(IReadOnlyList<int> selectedTrackIds)
         {

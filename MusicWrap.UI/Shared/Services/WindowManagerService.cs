@@ -7,6 +7,7 @@ using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shell.Dialogs;
 using MusicWrap.UI.Shell.Windows;
+using MusicWrap.UI.ViewModels;
 using System.Windows;
 
 namespace MusicWrap.UI.Shared.Services
@@ -81,7 +82,7 @@ namespace MusicWrap.UI.Shared.Services
                 return;
             }
         }
-        public void LaunchInformationWindow(IReadOnlyList<int> trackIds)
+        public void LaunchInformationWindow(IReadOnlyList<int> trackIds, int initialTab = 0)
         {
             if (trackIds is null || trackIds.Count == 0 || IsShuttingDown || CurrentWindow is null) return;
 
@@ -89,6 +90,10 @@ namespace MusicWrap.UI.Shared.Services
             {
                 w.Initialize(trackIds);
                 w.Activate();
+                if (w.DataContext is InformationWindowViewModel viewModel)
+                {
+                    viewModel.SetTab(initialTab);
+                }
                 return;
             }
 
@@ -106,6 +111,10 @@ namespace MusicWrap.UI.Shared.Services
             _metadataEditorScope = scope;
 
             window.Initialize(trackIds);
+            if (window.DataContext is InformationWindowViewModel vm)
+            {
+                vm.SetTab(initialTab);
+            }
             WindowHelper.LauchFromParent(CurrentWindow, window, false);
 
         }

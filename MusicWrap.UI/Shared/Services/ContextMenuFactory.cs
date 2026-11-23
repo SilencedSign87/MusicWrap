@@ -97,7 +97,7 @@ namespace MusicWrap.UI.Shared.Services
             {
                 if (menu.Items.Count > 0)
                     menu.Items.Add(new Separator());
-                Add(menu.Items, "Properties", "\uE90F", () => WithSelection(getSelectedIds, _actions.ShowTrackInformationDialog));
+                Add(menu.Items, "Properties", "\uE90F", () => WithSelection(getSelectedIds, (t) => _actions.ShowTrackInformationDialog(t, 0)));
             }
 
             if (type.HasFlag(ContextMenuType.ShowInExplorer))
