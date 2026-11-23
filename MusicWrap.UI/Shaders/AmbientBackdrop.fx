@@ -5,7 +5,22 @@ float4 Time : register(c0);
 float4 Strength : register(c1);
 float4 OverlayColor : register(c2);
 
+// x = Tint opacity
+// y = Saturation
+// z = Contrast
+// w = Noise intensity
+float4 Parameters : register(c3);
+
 static const float TAU = 6.28318530718;
+
+// random noise
+float random(float2 uv)
+{
+    return frac(
+        sin(dot(uv, float2(12.9898, 78.233))) *
+        43758.5453
+    );
+}
 
 // Global flow
 
@@ -219,12 +234,32 @@ float4 main(float2 uv : TEXCOORD) : COLOR
     // Final artwork sample.
     float4 color = tex2D(Input, finalUV);
 
-    // Album color overlay.
+    // saturation
+    float luminance = dot(
+        color.rgb,
+        float3(0.2126, 0.7152, 0.0722)
+    );
+
+    color.rgb = lerp(
+        luminance.xxx,
+        color.rgb,
+        Parameters.y
+    );
+    
+    // contrast
+    color.rgb = (color.rgb - 0.5) * Parameters.z + 0.5;
+    
+    // acrylic tint
     color.rgb = lerp(
         color.rgb,
         OverlayColor.rgb,
-        OverlayColor.a
+        Parameters.x
     );
+    
+    // film grain
+    float noise = random(uv) - 0.5;
 
-    return color;
+    color.rgb += noise * Parameters.w;
+
+    return saturate(color);
 }

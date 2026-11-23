@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Effects;
+using System.Windows.Media.Media3D;
 
 namespace MusicWrap.UI.Shaders
 {
@@ -44,6 +45,24 @@ namespace MusicWrap.UI.Shaders
                 Colors.Transparent,
                 PixelShaderConstantCallback(2)));
 
+        public static readonly DependencyProperty ParametersProperty =
+            DependencyProperty.Register(
+            nameof(Parameters),
+            typeof(Point4D),
+            typeof(FluidBackdropEffect),
+            new UIPropertyMetadata(
+                // x = Tint opacity
+                // y = Saturation
+                // z = Contrast
+                // w = Noise intensity
+                new Point4D(
+                    0.35, 
+                    0.85, 
+                    1.08, 
+                    0.025
+                    ),
+                PixelShaderConstantCallback(3)));
+
         public Color OverlayColor
         {
             get => (Color)GetValue(OverlayColorProperty);
@@ -68,6 +87,13 @@ namespace MusicWrap.UI.Shaders
             set => SetValue(StrengthProperty, value);
         }
 
+        public Point4D Parameters
+        {
+            get => (Point4D)GetValue(ParametersProperty);
+            set => SetValue(ParametersProperty, value);
+        }
+
+
         public FluidBackdropEffect()
         {
             PixelShader = Shader;
@@ -76,6 +102,7 @@ namespace MusicWrap.UI.Shaders
             UpdateShaderValue(TimeProperty);
             UpdateShaderValue(StrengthProperty);
             UpdateShaderValue(OverlayColorProperty);
+            UpdateShaderValue(ParametersProperty);
         }
 
         public void StartAnimation()
