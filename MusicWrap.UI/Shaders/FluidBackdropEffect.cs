@@ -123,6 +123,21 @@ namespace MusicWrap.UI.Shaders
             set => SetValue(TintLuminosityProperty, value);
         }
 
+        public static readonly DependencyProperty SeedsProperty =
+            DependencyProperty.Register(
+                nameof(Seeds),
+                typeof(Point4D),
+                typeof(FluidBackdropEffect),
+                new UIPropertyMetadata(
+                    // random seeds
+                    new Point4D(0.0, 0.0, 0.0, 0.0),
+                    PixelShaderConstantCallback(5)));
+
+        public Point4D Seeds
+        {
+            get => (Point4D)GetValue(SeedsProperty);
+            set => SetValue(SeedsProperty, value);
+        }
 
         #endregion
 
@@ -136,16 +151,27 @@ namespace MusicWrap.UI.Shaders
             UpdateShaderValue(StrengthProperty);
             UpdateShaderValue(OverlayColorProperty);
             UpdateShaderValue(ParametersProperty);
+            UpdateShaderValue(TintLuminosityProperty);
+            UpdateShaderValue(SeedsProperty);
         }
 
         public void StartAnimation()
         {
             double duration;
+            Point4D seeds;
 
             lock (Random)
             {
-                duration = Random.NextDouble() * 20.0 + 20.0;
+                duration = Random.NextDouble() * 30.0 + 20.0;
+
+                seeds = new Point4D(
+                    Random.NextDouble(),
+                    Random.NextDouble(),
+                    Random.NextDouble(),
+                    0.0);
             }
+
+            SetCurrentValue(SeedsProperty, seeds);
 
             BeginAnimation(
                 TimeProperty,

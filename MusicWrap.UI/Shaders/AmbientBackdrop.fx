@@ -18,6 +18,9 @@ float4 Parameters : register(c3);
 // x = Tint opacity
 float4 TintLuminosity : register(c4);
 
+// random seeds
+float4 Seeds : register(c5);
+
 static const float TAU = 6.28318530718;
 
 float2 flowField(float2 p, float t)
@@ -68,15 +71,16 @@ float2 globalFlow(float2 uv, float t)
         warp * 0.025;
 }
 
-float2 rotatingDisc(float2 uv, float t, float saturation)
+float2 rotatingDisc(float2 uv, float t, float saturation, float3 seed)
 {
-    float2 center = float2(-0.55, 0.38);
+    float2 center = float2(-0.55, 0.38) + (seed.xy - 0.5) * 0.30;
 
     float2 q = uv - center;
     q.y *= 0.72;
 
-    float s = sin(t);
-    float c = cos(t);
+    float phase = seed.z * TAU;
+    float s = sin(t + phase);
+    float c = cos(t + phase);
 
     float2 rotated;
 
@@ -129,26 +133,28 @@ float2 blobFlow(
     return (radial + tangent) * influence * 0.20;
 }
 
-float2 localBlobs(float2 uv, float t)
+float2 localBlobs(float2 uv, float t, float3 seed)
 {
+    float3 sp = seed * TAU;
+    
     float2 c1 = float2(
-        0.50 + 0.65 * sin(t + 0.7),
-        0.50 + 0.58 * cos(t * 2.0 + 1.3)
+        0.50 + 0.65 * sin(t + 0.7 + sp.x),
+        0.50 + 0.58 * cos(t * 2.0 + 1.3 + sp.y)
     );
 
     float2 c2 = float2(
-        0.50 + 0.58 * cos(t * 2.0 + 2.8),
-        0.50 + 0.65 * sin(t * 3.0 + 0.4)
+        0.50 + 0.58 * cos(t * 2.0 + 2.8 + sp.y),
+        0.50 + 0.65 * sin(t * 3.0 + 0.4 + sp.z)
     );
 
     float2 c3 = float2(
-        0.50 + 0.65 * sin(t * 3.0 + 4.1),
-        0.50 + 0.58 * cos(t + 3.2)
+        0.50 + 0.65 * sin(t * 3.0 + 4.1 + sp.z),
+        0.50 + 0.58 * cos(t + 3.2 + sp.x)
     );
 
-    float r1 = 0.42 + 0.09 * sin(t * 2.0 + 0.3);
-    float r2 = 0.48 + 0.10 * cos(t * 3.0 + 1.7);
-    float r3 = 0.40 + 0.09 * sin(t * 2.0 + 3.1);
+    float r1 = 0.42 + 0.09 * sin(t * 2.0 + 0.3 + sp.x);
+    float r2 = 0.48 + 0.10 * cos(t * 3.0 + 1.7 + sp.y);
+    float r3 = 0.40 + 0.09 * sin(t * 2.0 + 3.1 + sp.z);
 
     float2 result = 0;
 
@@ -194,11 +200,12 @@ float4 main(float2 uv : TEXCOORD) : COLOR
     
     float saturation = maxColor - minColor;
 
-    
+    float3 seed = Seeds.xyz;
+
     float2 displacement =
         globalFlow(uv, t) +
-        rotatingDisc(uv, t, saturation) +
-        localBlobs(uv, t);
+        rotatingDisc(uv, t, saturation, seed) +
+        localBlobs(uv, t, seed);
 
     float2 finalUV = clamp(
         uv + displacement * k,
