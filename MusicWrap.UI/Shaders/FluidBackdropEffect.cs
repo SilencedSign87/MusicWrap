@@ -103,6 +103,27 @@ namespace MusicWrap.UI.Shaders
             set => SetValue(ParametersProperty, value);
         }
 
+        public static readonly DependencyProperty TintLuminosityProperty =
+            DependencyProperty.Register(
+                nameof(TintLuminosity),
+                typeof(Point4D),
+                typeof(FluidBackdropEffect),
+                new UIPropertyMetadata(
+                    // x = tint luminosity opacity
+                    new Point4D(
+                        0.25,
+                        0.0,
+                        0.0,
+                        0.0),
+                    PixelShaderConstantCallback(4)));
+
+        public Point4D TintLuminosity
+        {
+            get => (Point4D)GetValue(TintLuminosityProperty);
+            set => SetValue(TintLuminosityProperty, value);
+        }
+
+
         #endregion
 
 

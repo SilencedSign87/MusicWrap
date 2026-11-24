@@ -15,6 +15,9 @@ float4 OverlayColor : register(c2);
 // w = Noise intensity
 float4 Parameters : register(c3);
 
+// x = Tint opacity
+float4 TintLuminosity : register(c4);
+
 static const float TAU = 6.28318530718;
 
 float2 flowField(float2 p, float t)
@@ -165,6 +168,12 @@ float random(float2 uv)
     );
 }
 
+float3 ClampHsvValue(float3 rgb, float minV, float maxV)
+{
+    float v = max(rgb.r, max(rgb.g, rgb.b));
+    float nv = clamp(v, minV, maxV);
+    return (v > 1e-5) ? rgb * (nv / v) : nv.xxx;
+}
 
 float4 main(float2 uv : TEXCOORD) : COLOR
 {
@@ -217,6 +226,15 @@ float4 main(float2 uv : TEXCOORD) : COLOR
     color = (
         color - 0.5
     ) * Parameters.z + 0.5;
+    
+    // Luminosity adjustment
+    
+    float3 lumColor = ClampHsvValue(OverlayColor.rgb, 0.125, 0.965);
+    color = lerp(
+        color,
+        lumColor,
+        TintLuminosity.x
+    );
     
     // Acrylic tint
 
