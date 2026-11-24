@@ -1,8 +1,12 @@
 
 sampler2D Input : register(s0);
 
+// x = time 0..1
 float4 Time : register(c0);
+
+// x = distortion strength
 float4 Strength : register(c1);
+
 float4 OverlayColor : register(c2);
 
 // x = Tint opacity
@@ -12,17 +16,6 @@ float4 OverlayColor : register(c2);
 float4 Parameters : register(c3);
 
 static const float TAU = 6.28318530718;
-
-// random noise
-float random(float2 uv)
-{
-    return frac(
-        sin(dot(uv, float2(12.9898, 78.233))) *
-        43758.5453
-    );
-}
-
-// Global flow
 
 float2 flowField(float2 p, float t)
 {
@@ -40,8 +33,6 @@ float2 flowField(float2 p, float t)
 
     return f;
 }
-
-// Global domain warp
 
 float2 globalFlow(float2 uv, float t)
 {
@@ -74,18 +65,13 @@ float2 globalFlow(float2 uv, float t)
         warp * 0.025;
 }
 
-// Rotating disc
-
 float2 rotatingDisc(float2 uv, float t, float saturation)
 {
-    // Center deliberately outside the visible area.
     float2 center = float2(-0.55, 0.38);
 
-    // Elliptical disc geometry.
     float2 q = uv - center;
     q.y *= 0.72;
 
-    // One complete revolution per animation cycle.
     float s = sin(t);
     float c = cos(t);
 
@@ -98,10 +84,8 @@ float2 rotatingDisc(float2 uv, float t, float saturation)
 
     float2 rotatedUV = center + rotated;
 
-    // Saturated regions react more strongly.
     float saturationWeight = saturate(saturation * 1.8);
 
-    // Smooth spatial influence from the external center.
     float radialWeight = exp(
         -dot(q, q) * 0.28
     );
@@ -116,17 +100,6 @@ float2 rotatingDisc(float2 uv, float t, float saturation)
         rotatedUV,
         weight
     ) - uv;
-}
-
-// Local moving blobs
-
-float blobInfluence(float2 uv, float2 center, float radius)
-{
-    float2 d = uv - center;
-
-    return exp(
-        -dot(d, d) / (radius * radius)
-    );
 }
 
 float2 blobFlow(
@@ -145,7 +118,6 @@ float2 blobFlow(
     );
 
     float radialMotion = sin(t * 2.0 + phase);
-
     float rotationalMotion = cos(t * 3.0 + phase);
 
     float2 radial = d * radialMotion * 0.45;
@@ -156,9 +128,6 @@ float2 blobFlow(
 
 float2 localBlobs(float2 uv, float t)
 {
-    // Independent trajectories.
-    // All temporal frequencies are integers.
-
     float2 c1 = float2(
         0.50 + 0.65 * sin(t + 0.7),
         0.50 + 0.58 * cos(t * 2.0 + 1.3)
@@ -188,42 +157,39 @@ float2 localBlobs(float2 uv, float t)
 }
 
 
+float random(float2 uv)
+{
+    return frac(
+        sin(dot(uv, float2(12.9898, 78.233))) *
+        43758.5453
+    );
+}
+
+
 float4 main(float2 uv : TEXCOORD) : COLOR
 {
     float t = Time.x * TAU;
     float k = Strength.x;
-
-    // Initial sample for saturation analysis.
+    
     float4 original = tex2D(Input, uv);
-
+    
     float maxColor = max(
         original.r,
         max(original.g, original.b)
     );
-
+    
     float minColor = min(
         original.r,
         min(original.g, original.b)
     );
-
+    
     float saturation = maxColor - minColor;
 
-    // Combine independent displacement layers
-
-    float2 global = globalFlow(uv, t);
-
-    float2 disc = rotatingDisc(
-        uv,
-        t,
-        saturation
-    );
-
-    float2 blobs = localBlobs(uv, t);
-
+    
     float2 displacement =
-        global +
-        disc +
-        blobs;
+        globalFlow(uv, t) +
+        rotatingDisc(uv, t, saturation) +
+        localBlobs(uv, t);
 
     float2 finalUV = clamp(
         uv + displacement * k,
@@ -231,35 +197,43 @@ float4 main(float2 uv : TEXCOORD) : COLOR
         0.999
     );
 
-    // Final artwork sample.
-    float4 color = tex2D(Input, finalUV);
+    float3 color = tex2D(Input, finalUV).rgb;
 
-    // saturation
+    // Saturation
+
     float luminance = dot(
-        color.rgb,
+        color,
         float3(0.2126, 0.7152, 0.0722)
     );
 
-    color.rgb = lerp(
+    color = lerp(
         luminance.xxx,
-        color.rgb,
+        color,
         Parameters.y
     );
+
+    // Contrast
     
-    // contrast
-    color.rgb = (color.rgb - 0.5) * Parameters.z + 0.5;
+    color = (
+        color - 0.5
+    ) * Parameters.z + 0.5;
     
-    // acrylic tint
-    color.rgb = lerp(
-        color.rgb,
+    // Acrylic tint
+
+    color = lerp(
+        color,
         OverlayColor.rgb,
         Parameters.x
     );
-    
-    // film grain
+
+    // Film grain
+
     float noise = random(uv) - 0.5;
 
-    color.rgb += noise * Parameters.w;
+    color += noise * Parameters.w;
 
-    return saturate(color);
+    return float4(
+        saturate(color),
+        1.0
+    );
 }

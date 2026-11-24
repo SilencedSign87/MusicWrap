@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace MusicWrap.UI.Shell.Windows
 {
@@ -28,7 +29,6 @@ namespace MusicWrap.UI.Shell.Windows
         public FullScreenWindow(FullscreenWindowViewModel viewmodel, QueueListPage queueListPage)
         {
             InitializeComponent();
-
             PanelContainer.RenderTransform = _panelSlide;
 
             QueueListPage = queueListPage;
@@ -276,18 +276,28 @@ namespace MusicWrap.UI.Shell.Windows
             VolumePopup.IsOpen = true;
         }
 
+        private int _shaderRevealVersion;
+
         private void BackgropRoot_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (sender is not FrameworkElement backdrop) return;
-            if (backdrop.Visibility == Visibility.Visible)
-            {
-                FluidShader.StartAnimation();
 
-            }
-            else
+            int version = ++_shaderRevealVersion;
+
+            if (backdrop.Visibility != Visibility.Visible)
             {
                 FluidShader.StopAnimation();
+                AmbientBackdrop.Visibility = Visibility.Collapsed;
+                return;
             }
+            Dispatcher.InvokeAsync(() =>
+           {
+               if (version != _shaderRevealVersion) return;
+               if (!backdrop.IsVisible) return;
+
+               AmbientBackdrop.Visibility = Visibility.Visible;
+               FluidShader.StartAnimation();
+           }, DispatcherPriority.ContextIdle);
         }
     }
 }

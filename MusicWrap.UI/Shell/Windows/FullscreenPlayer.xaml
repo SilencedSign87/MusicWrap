@@ -98,6 +98,7 @@
                 x:Name="AmbientBackdrop"
                 Panel.ZIndex="0"
                 ClipToBounds="True"
+                Visibility="Collapsed"
                 >
                 <Border.Background>
                     <ImageBrush
@@ -113,11 +114,9 @@
                 <Border.Effect>
                     <shaders:FluidBackdropEffect
                         x:Name="FluidShader"
-                        Strength="1.0"
                         OverlayColor="{
                             Binding PlayerViewModel.CurrentTrackDominantColorHex, 
-                            Converter={StaticResource HexToColorConverter}, 
-                            ConverterParameter=0.5}"
+                            Converter={StaticResource HexToColorConverter}}"
                         />
                 </Border.Effect>
             </Border>

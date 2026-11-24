@@ -28,8 +28,8 @@ namespace MusicWrap.UI.Controls
         private static readonly float AttackAlpha = 1f - MathF.Exp(-1f / (deltaSeconds * AttackSeconds));
         private static readonly float ReleaseAlpha = 1f - MathF.Exp(-1f / (deltaSeconds * ReleaseSeconds));
 
-        private static SpectrumPipeline _spectrumPipeline = null!;
-        private static CenteredSpectrumPipeline _centeredPipeline = null!;
+        private readonly SpectrumPipeline _spectrumPipeline;
+        private readonly CenteredSpectrumPipeline _centeredPipeline;
         private int _samplerate = 44100;
         private int _currentFFTSize = 16384;
 
@@ -43,8 +43,13 @@ namespace MusicWrap.UI.Controls
 
             _musicService = App.Services.GetRequiredService<MusicPlayerService>();
 
-            _spectrumPipeline ??= new SpectrumPipeline(new SpectrumPipelineConfig { SampleRate = _samplerate, BinCount = _currentFFTSize });
-            _centeredPipeline ??= new CenteredSpectrumPipeline(new CenteredSpectrumPipelineConfig
+            _spectrumPipeline = new SpectrumPipeline(new SpectrumPipelineConfig
+            {
+                SampleRate = _samplerate,
+                BinCount = _currentFFTSize,
+                BandCount = BarCount
+            });
+            _centeredPipeline = new CenteredSpectrumPipeline(new CenteredSpectrumPipelineConfig
             {
                 SampleRate = _samplerate,
                 FftSize = _currentFFTSize,
@@ -78,8 +83,8 @@ namespace MusicWrap.UI.Controls
         {
             if (d is SpectrumVisualizerControl widget)
             {
-                _spectrumPipeline?.SetBandCount((int)e.NewValue);
-                _centeredPipeline?.SetBandCount((int)e.NewValue);
+                widget._spectrumPipeline?.SetBandCount((int)e.NewValue);
+                widget._centeredPipeline?.SetBandCount((int)e.NewValue);
                 widget.ReinitArrays();
             }
         }

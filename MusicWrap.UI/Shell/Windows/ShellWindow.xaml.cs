@@ -48,6 +48,13 @@ namespace MusicWrap.UI.Shell.Windows
         public void ApplyMode(PlayerMode mode)
         {
             CaptureCurrentModeBounds();
+
+            bool modeChanging = mode != CurrentMode;
+            if (modeChanging)
+            {
+                ContentHost.Visibility = Visibility.Hidden;
+            }
+
             CurrentMode = mode;
 
             switch (CurrentMode)
@@ -66,6 +73,12 @@ namespace MusicWrap.UI.Shell.Windows
                     break;
             }
             if (_isInitializing) _isInitializing = false;
+
+            if (modeChanging)
+                Dispatcher.InvokeAsync(
+                    () => ContentHost.Visibility = Visibility.Visible,
+                    System.Windows.Threading.DispatcherPriority.Loaded
+                );
 
         }
         public void SetContent(UIElement content)

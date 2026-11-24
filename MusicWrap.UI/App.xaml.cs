@@ -18,6 +18,21 @@ namespace MusicWrap.UI
         private const string SingleInstanceMutexName = "MusicWrap.SingleInstance";
         public static IServiceProvider Services { get; private set; } = default!;
 
+        public App()
+        {
+            DispatcherUnhandledException += (_, e) =>
+            {
+                Log.Fatal(e.Exception, "Unhandled dispatcher exception");
+                Log.CloseAndFlush();
+            };
+
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                Log.Fatal(e.ExceptionObject as Exception, "Unhandled AppDomain exception");
+                Log.CloseAndFlush();
+            };
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             SetDropDownMenuToBeRightAligned();
