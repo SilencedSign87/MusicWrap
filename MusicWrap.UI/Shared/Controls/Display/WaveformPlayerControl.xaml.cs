@@ -34,6 +34,13 @@ namespace MusicWrap.UI.Controls
 
         private UIElement? _dragCaptureElement;
 
+        private CancellationTokenSource? _waveformCts;
+        private int _loadedTrackId;
+        private int _loadedPoints;
+        private int _requestedTrackId;
+        private int _requestedPoints;
+
+
         public WaveformPlayerControl()
         {
             InitializeComponent();
@@ -67,30 +74,54 @@ namespace MusicWrap.UI.Controls
             typeof(WaveformPlayerControl),
             new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
+
+
+        public int WavePoints
+        {
+            get { return (int)GetValue(WavePointsProperty); }
+            set { SetValue(WavePointsProperty, value); }
+        }
+
+        public static readonly DependencyProperty WavePointsProperty =
+            DependencyProperty.Register(nameof(WavePoints), typeof(int), typeof(WaveformPlayerControl), new PropertyMetadata(0, OnWaveformSourceChanged));
+
+
+        public WaveformPlayerRenderMode RenderMode
+        {
+            get { return (WaveformPlayerRenderMode)GetValue(RenderModeProperty); }
+            set { SetValue(RenderModeProperty, value); }
+        }
+
+        public static readonly DependencyProperty RenderModeProperty =
+            DependencyProperty.Register(nameof(RenderMode), typeof(WaveformPlayerRenderMode), typeof(WaveformPlayerControl), new PropertyMetadata(WaveformPlayerRenderMode.Continuous, OnWaveformSourceChanged));
+
+
+
+        public bool MirrorRender
+        {
+            get { return (bool)GetValue(MirrorRenderProperty); }
+            set { SetValue(MirrorRenderProperty, value); }
+        }
+
+        public static readonly DependencyProperty MirrorRenderProperty =
+            DependencyProperty.Register(nameof(MirrorRender), typeof(bool), typeof(WaveformPlayerControl), new PropertyMetadata(true, OnVisualChanged));
+
+
+
         public string? DominantColorHex
         {
             get => (string?)GetValue(DominantColorHexProperty);
             set => SetValue(DominantColorHexProperty, value);
         }
 
-        public static readonly DependencyProperty UsePlaceholderWaveformProperty =
-            DependencyProperty.Register(
-            nameof(UsePlaceholderWaveform),
-            typeof(bool),
-            typeof(WaveformPlayerControl),
-            new FrameworkPropertyMetadata(false, OnUsePlaceholderWaveformChanged));
-
-        private static void OnUsePlaceholderWaveformChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        private static void OnWaveformSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) => ((WaveformPlayerControl)d).Refreshwaveform();
+        private static void OnVisualChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((WaveformPlayerControl)d).RefreshWaveformMode();
+            var control = (WaveformPlayerControl)d;
+            if (!control.IsLoaded) return;
+            control.DrawWaveform();
+            control.UpdateProgressVisual(control._position);
         }
-
-        public bool UsePlaceholderWaveform
-        {
-            get => (bool)GetValue(UsePlaceholderWaveformProperty);
-            set => SetValue(UsePlaceholderWaveformProperty, value);
-        }
-
         #endregion
 
         #region Lifecycle
@@ -100,15 +131,12 @@ namespace MusicWrap.UI.Controls
             _musicService.PositionChanged += OnServicePositionChanged;
             _musicService.TrackChanged += OnServiceTrackChanged;
             _musicService.PlaybackStateChanged += OnServicePlaybackStateChanged;
-            _musicService.WaveformDataChanged += OnServiceWaveformDataChanged;
-
-            _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>(); // initial load
 
             _duration = _musicService.Duration;
             _isPlaying = _musicService.IsPlaying;
             SyncBaseline();
 
-            DrawWaveform();
+            Refreshwaveform();
             UpdateProgressVisual(_position);
             UpdateFormattedDuration();
             _positionTimer.Start();
@@ -120,11 +148,12 @@ namespace MusicWrap.UI.Controls
             _musicService.PositionChanged -= OnServicePositionChanged;
             _musicService.TrackChanged -= OnServiceTrackChanged;
             _musicService.PlaybackStateChanged -= OnServicePlaybackStateChanged;
-            _musicService.WaveformDataChanged -= OnServiceWaveformDataChanged;
 
 
-            _waveformData = Array.Empty<float>();
-
+            CancelWaveformRequest();
+            _waveformData = [];
+            _loadedTrackId = 0;
+            _loadedPoints = 0;
         }
 
         private void _positionTimer_Tick(object? sender, EventArgs e)
@@ -160,28 +189,104 @@ namespace MusicWrap.UI.Controls
                 }
             });
         }
-        private void OnServiceWaveformDataChanged(object? sender, float[] e)
-        {
-            _waveformData = e.Length > 0 ? e : Array.Empty<float>();
-
-            if (UsePlaceholderWaveform) return;
-
-            DrawWaveform();
-        }
         private void OnServiceTrackChanged(object? sender, string e)
         {
             Dispatcher.Invoke(() =>
             {
-                _waveformData = _musicService.CurrentWaveformData ?? Array.Empty<float>();
                 _position = 0;
                 _duration = _musicService.Duration;
                 SyncBaseline();
-                DrawWaveform();
+
+                _waveformData = [];
+                _loadedTrackId = 0;
+                _loadedPoints = 0;
+
+                Refreshwaveform();
                 UpdateProgressVisual(0);
                 UpdateFormattedPosition(0);
                 UpdateFormattedDuration();
             });
         }
+        private void Refreshwaveform()
+        {
+            if (!IsLoaded) return;
+
+            int trackId = _musicService.CurrentTrackId;
+            int points = WavePoints;
+
+            bool wantsWave =
+                RenderMode != WaveformPlayerRenderMode.None &&
+                points > 0 &&
+                trackId > 0;
+
+            if (!wantsWave)
+            {
+                CancelWaveformRequest();
+                _waveformData = [];
+                _loadedTrackId = 0;
+                _loadedPoints = 0;
+                DrawWaveform();
+                return;
+            }
+
+            if (_waveformData.Length > 0 &&
+                _loadedTrackId == trackId &&
+                _loadedPoints == points)
+            {
+                DrawWaveform();
+                return;
+            }
+
+            if (_waveformCts is not null &&
+                _requestedTrackId == trackId &&
+                _requestedPoints == points)
+            {
+                return;
+            }
+
+            CancelWaveformRequest();
+
+            // instant fallback
+            _waveformData = CreateFlatWaveform(points);
+            _loadedTrackId = 0;
+            _loadedPoints = 0;
+            DrawWaveform();
+
+            // request new waveform
+            var cts = new CancellationTokenSource();
+            _waveformCts = cts;
+            _requestedTrackId = trackId;
+            _requestedPoints = points;
+
+            _ = LoadWaveformAsync(trackId, points, cts);
+        }
+        private async Task LoadWaveformAsync(int trackId, int points, CancellationTokenSource cts)
+        {
+            try
+            {
+                var data = await _musicService.GetWaveformAsync(trackId, points, cts.Token);
+
+                if (cts.Token.IsCancellationRequested || trackId != _musicService.CurrentTrackId)
+                    return;
+
+                _waveformData = data;
+                _loadedTrackId = trackId;
+                _loadedPoints = points;
+                DrawWaveform();
+            }
+            catch (OperationCanceledException)
+            {
+
+            }
+            finally
+            {
+                if (ReferenceEquals(_waveformCts, cts))
+                    _waveformCts = null;
+
+                cts.Dispose();
+            }
+        }
+
         private void OnServicePlaybackStateChanged(object? sender, ManagedBass.PlaybackState state)
         {
             Dispatcher.Invoke(() =>
@@ -200,63 +305,161 @@ namespace MusicWrap.UI.Controls
             _lastEnginePositionAtUTC = DateTime.UtcNow;
             _position = _lastEnginePosition;
         }
+        private void CancelWaveformRequest()
+        {
+            var cts = _waveformCts;
+            _waveformCts = null;
+            if (cts is null) return;
+
+            cts.Cancel();
+            cts.Dispose();
+        }
 
         #region Rendering
-        private void RefreshWaveformMode()
-        {
-            if (!IsLoaded) return;
-
-            DrawWaveform();
-            UpdateProgressVisual(_position);
-        }
 
         private void DrawWaveform()
         {
-            if (UsePlaceholderWaveform)
-            {
-                DrawPlaceholderTrack();
-                return;
-            }
             double width = WaveformContainer.ActualWidth;
             double height = WaveformContainer.ActualHeight;
 
-            if (_waveformData == null || _waveformData.Length == 0 || width == 0 || height == 0)
+            if (width <= 0 || height <= 0)
+                return;
+
+            if (RenderMode == WaveformPlayerRenderMode.None)
             {
-                PathBackground.Data = null;
-                PathForeground.Data = null;
+                var track = BuildPillGeometry(width, height);
+                PathBackground.Data = track;
+                PathForeground.Data = track;
+                UpdateProgressVisual(_position);
+                return;
+            }
+
+            Geometry? geometry = RenderMode switch
+            {
+                WaveformPlayerRenderMode.Continuous => BuildContinuousGeometry(width, height),
+                WaveformPlayerRenderMode.Discrete => BuildDiscreteGeometry(width, height),
+                _ => null,
+            };
+
+            PathBackground.Data = geometry;
+            PathForeground.Data = geometry;
+
+            if (geometry is null)
+            {
                 PositionThumb.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            double midY = height / 2;
-            double maxAmplitude = midY;
+            UpdateProgressVisual(_position);
 
-            StreamGeometry geometry = new StreamGeometry();
-            using (StreamGeometryContext ctx = geometry.Open())
+        }
+
+        private Geometry BuildPillGeometry(double width, double height)
+        {
+            var geometry = new RectangleGeometry(
+                    new Rect(0, 0, width, height),
+                    height / 2,
+                    height / 2);
+
+            geometry.Freeze();
+            return geometry;
+        }
+
+        private Geometry? BuildDiscreteGeometry(double width, double height)
+        {
+            var data = _waveformData;
+            int count = data.Length;
+            if (count == 0) return null;
+
+            double slot = width / count;
+            double barWidth = Math.Max(1.0, slot * 0.6);
+            double offset = (slot - barWidth) / 2;
+            double baseY = MirrorRender ? height / 2 : height;
+            double maxAmplitude = MirrorRender ? height / 2 : height;
+
+            var geometry = new StreamGeometry();
+
+            using (var ctx = geometry.Open())
             {
-                ctx.BeginFigure(new Point(0, midY), true, true);
-
-
-                for (int i = 0; i < _waveformData.Length; i++)
+                for (int i = 0; i < count; i++)
                 {
-                    double x = (i / (double)(_waveformData.Length - 1)) * width;
-                    double amplitude = Math.Max(_waveformData[i] * maxAmplitude, 0.5);
-                    ctx.LineTo(new Point(x, midY - amplitude), true, false);
-                }
+                    double x = i * slot + offset;
+                    double amp = Math.Max(data[i] * maxAmplitude, 0.5);
 
-                for (int i = _waveformData.Length - 1; i >= 0; i--)
-                {
-                    double x = (i / (double)(_waveformData.Length - 1)) * width;
-                    double amplitude = Math.Max(_waveformData[i] * maxAmplitude, 0.5);
-                    ctx.LineTo(new Point(x, midY + amplitude), true, false);
+                    if (MirrorRender)
+                    {
+                        ctx.BeginFigure(new Point(x, baseY - amp), true, true);
+                        ctx.LineTo(new Point(x + barWidth, baseY - amp), true, false);
+                        ctx.LineTo(new Point(x + barWidth, baseY + amp), true, false);
+                        ctx.LineTo(new Point(x, baseY + amp), true, false);
+                    }
+                    else
+                    {
+                        ctx.BeginFigure(new Point(x, baseY), true, true);
+                        ctx.LineTo(new Point(x + barWidth, baseY), true, false);
+                        ctx.LineTo(new Point(x + barWidth, baseY - amp), true, false);
+                        ctx.LineTo(new Point(x, baseY - amp), true, false);
+                    }
                 }
             }
 
             geometry.Freeze();
-            PathBackground.Data = geometry;
-            PathForeground.Data = geometry;
+            return geometry;
+        }
 
-            UpdateProgressVisual(_position);
+        private Geometry? BuildContinuousGeometry(double width, double height)
+        {
+            var data = _waveformData;
+            int count = data.Length;
+            if (count == 0) return null;
+
+            double baseY = MirrorRender ? height / 2 : height;
+            double maxAmplitude = MirrorRender ? height / 2 : height;
+
+            if (count == 1)
+            {
+                double amp = Math.Max(data[0] * maxAmplitude, 0.5);
+                var single = MirrorRender
+                    ? new RectangleGeometry(new Rect(0, baseY - amp, width, amp * 2))
+                    : new RectangleGeometry(new Rect(0, baseY - amp, width, amp));
+                single.Freeze();
+                return single;
+            }
+
+            double step = width / (count - 1);
+            var geometry = new StreamGeometry();
+
+            using (var ctx = geometry.Open())
+            {
+                ctx.BeginFigure(new Point(0, baseY), true, true);
+
+                for (int i = 0; i < count; i++)
+                {
+                    double x = i * step;
+                    double amp = Math.Max(data[i] * maxAmplitude, 0.5);
+                    ctx.LineTo(new Point(x, baseY - amp), true, false);
+                }
+
+                if (MirrorRender)
+                {
+                    for (int i = count - 1; i >= 0; i--)
+                    {
+                        double x = i * step;
+                        double amp = Math.Max(data[i] * maxAmplitude, 0.5);
+                        ctx.LineTo(new Point(x, baseY + amp), true, false);
+                    }
+                }
+            }
+
+            geometry.Freeze();
+            return geometry;
+        }
+
+        private static float[] CreateFlatWaveform(int points)
+        {
+            var data = new float[points];
+            Array.Fill(data, 0.5f);
+            return data;
         }
 
         private void UpdateProgressVisual(double currentPosition)
@@ -283,26 +486,6 @@ namespace MusicWrap.UI.Controls
             PositionThumb.Visibility = Visibility.Visible;
         }
 
-        private void DrawPlaceholderTrack()
-        {
-            double width = WaveformContainer.ActualWidth;
-            double height = WaveformContainer.ActualHeight;
-            if (width <= 0 || height <= 0) return;
-
-            double midY = height / 2;
-            var track = new RectangleGeometry(
-                new Rect(
-                    0,
-                    midY - (height / 2),
-                    width,
-                    height),
-                height / 2,
-                height / 2);
-            PathBackground.Data = track;
-            PathForeground.Data = track;
-            UpdateProgressVisual(_position);
-
-        }
         #endregion
 
         #region Mouse Events
@@ -494,6 +677,14 @@ namespace MusicWrap.UI.Controls
         #endregion
 
     }
+    #region Models
+    public enum WaveformPlayerRenderMode
+    {
+        None, // 0
+        Discrete, // 1
+        Continuous, // 2
+    }
+    #endregion
 }
 
 

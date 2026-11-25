@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Controls;
 using MusicWrap.UI.Shared.Services;
 using MusicWrap.UI.ViewModels;
 using System.Windows;
@@ -21,7 +22,9 @@ namespace MusicWrap.UI.Shell.ViewModel
         [ObservableProperty]
         public partial bool BackdropBlur { get; set; } = true;
         [ObservableProperty]
-        public partial bool UseWaveformPlayer { get; set; } = true;
+        public partial WaveformPlayerRenderMode WaveformMode { get; set; } = WaveformPlayerRenderMode.Continuous;
+        [ObservableProperty]
+        public partial bool MirrorWaveformMode { get; set; } = true;
         [ObservableProperty]
         [NotifyCanExecuteChangedFor(nameof(SetPanelCommand))]
         public partial FullscreenPlayerPanel ActivePanel { get; set; } = FullscreenPlayerPanel.None;
@@ -44,7 +47,8 @@ namespace MusicWrap.UI.Shell.ViewModel
             _windowManager = windowManager;
 
             TintForeground = settings.FullScreen.TintForeground;
-            UseWaveformPlayer = settings.FullScreen.UseWaveformPlayer;
+            WaveformMode = settings.FullScreen.WaveformRenderMode == 0 ? WaveformPlayerRenderMode.None : (settings.FullScreen.WaveformRenderMode == 1 ? WaveformPlayerRenderMode.Discrete : WaveformPlayerRenderMode.Continuous);
+            MirrorWaveformMode = settings.FullScreen.WaveformMirrored;
             BackdropBlur = settings.FullScreen.BlurEffect;
             ActivePanel = settings.FullScreen.ActivePanel;
             PreferredVisualizer = settings.FullScreen.PreferredVisualizer;
@@ -121,7 +125,8 @@ namespace MusicWrap.UI.Shell.ViewModel
         partial void OnActivePanelChanged(FullscreenPlayerPanel value) => SyncSettings();
         partial void OnBackdropBlurChanged(bool value) => SyncSettings();
         partial void OnTintForegroundChanged(bool value) => SyncSettings();
-        partial void OnUseWaveformPlayerChanged(bool value) => SyncSettings();
+        partial void OnWaveformModeChanged(WaveformPlayerRenderMode value) => SyncSettings();
+        partial void OnMirrorWaveformModeChanged(bool value) => SyncSettings();
         partial void OnPreferredSpectrumTypeChanged(SpectrumType value) => SyncSettings();
         partial void OnPreferredVisualizerChanged(PreferredVisualizer value) => SyncSettings();
         #endregion
@@ -131,7 +136,8 @@ namespace MusicWrap.UI.Shell.ViewModel
             if (!_isInitialized) return;
 
             _settings.FullScreen.TintForeground = TintForeground;
-            _settings.FullScreen.UseWaveformPlayer = UseWaveformPlayer;
+            _settings.FullScreen.WaveformRenderMode = WaveformMode == WaveformPlayerRenderMode.None ? 0 : (WaveformMode == WaveformPlayerRenderMode.Discrete ? 1 : 2);
+            _settings.FullScreen.WaveformMirrored = MirrorWaveformMode;
             _settings.FullScreen.BlurEffect = BackdropBlur;
             _settings.FullScreen.ActivePanel = ActivePanel;
             _settings.FullScreen.PreferredVisualizer = PreferredVisualizer;

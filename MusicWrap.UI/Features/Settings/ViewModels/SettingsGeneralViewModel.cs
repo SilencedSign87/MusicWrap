@@ -5,6 +5,7 @@ using MusicWrap.Core.Services.Activity;
 using MusicWrap.Core.Services.Library;
 using MusicWrap.Data.Infrastructure.Saving;
 using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Controls;
 using MusicWrap.UI.Helpers;
 using MusicWrap.UI.Shared.Services;
 using System.Diagnostics;
@@ -25,8 +26,9 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         [ObservableProperty] private bool _useCustomFfmpegPath;
         [ObservableProperty] private string _customFfmpegPath = string.Empty;
         [ObservableProperty] private TrayPopupPosition _trayPopupPosition;
-
         [ObservableProperty] private ThemePreference _selectedTheme;
+        [ObservableProperty] private WaveformPlayerRenderMode _playerProgressRenderMode;
+        [ObservableProperty] private bool _playerProgressRenderMirror;
 
 
         public string WallpaperPath { get; } = string.Empty;
@@ -86,6 +88,9 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
             TrayPopupPosition = _settings.TrayPopupPosition;
             SelectedTheme = _settings.AppThemePreference;
             StartupBehavior = _settings.StartupBehavior;
+
+            PlayerProgressRenderMode = _settings.PlayerProgressRenderMode == 0 ? WaveformPlayerRenderMode.None : _settings.PlayerProgressRenderMode == 1 ? WaveformPlayerRenderMode.Discrete : WaveformPlayerRenderMode.Continuous;
+            PlayerProgressRenderMirror = _settings.PlayerProgressRenderMirror;
         }
         #endregion
 
@@ -141,6 +146,16 @@ namespace MusicWrap.UI.Features.Settings.ViewModels
         partial void OnStartupBehaviorChanged(StartupBehavior value)
         {
             _settings.StartupBehavior = value;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+        partial void OnPlayerProgressRenderMirrorChanged(bool value)
+        {
+            _settings.PlayerProgressRenderMirror = value;
+            _saveCoordinator.Enqueue(SaveKind.Settings);
+        }
+        partial void OnPlayerProgressRenderModeChanged(WaveformPlayerRenderMode value)
+        {
+            _settings.PlayerProgressRenderMode = value == WaveformPlayerRenderMode.None ? 0 : value == WaveformPlayerRenderMode.Discrete ? 1 : 2;
             _saveCoordinator.Enqueue(SaveKind.Settings);
         }
         #endregion

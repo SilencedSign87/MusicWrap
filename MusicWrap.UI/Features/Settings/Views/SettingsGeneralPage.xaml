@@ -14,20 +14,40 @@
 
 
         <StackPanel Margin="16">
-            <controls:SectionTitleSeparator Title="App theme" IconGlyph="&#xE790;" Margin="0,0,0,12"/>
+            <controls:SectionTitleSeparator Title="Appearance" IconGlyph="&#xE790;" Margin="0,0,0,12"/>
+            <Label Content="Theme" Margin="0,0,0,8"/>
             <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
-                <RadioButton GroupName="theme" 
+                <RadioButton 
                  Content="System" 
                  Margin="8,0"
                  IsChecked="{Binding SelectedTheme, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=System}"/>
-                <RadioButton GroupName="theme" 
+                <RadioButton 
                  Content="Light" 
                  Margin="8,0"
                  IsChecked="{Binding SelectedTheme, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Light}"/>
-                <RadioButton GroupName="theme" 
+                <RadioButton 
                  Content="Dark" 
                  Margin="8,0"
                  IsChecked="{Binding SelectedTheme, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Dark}"/>
+            </StackPanel>
+            <Label Content="Player progress bar" Margin="0,0,0,8"/>
+            <StackPanel Margin="0,0,0,16" Orientation="Horizontal">
+                <RadioButton  
+                             Content="Normal" 
+                             Margin="8,0"
+                             IsChecked="{Binding PlayerProgressRenderMode, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"/>
+                <RadioButton  
+                             Content="Bars" 
+                             Margin="8,0"
+                             IsChecked="{Binding PlayerProgressRenderMode, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Discrete}"/>
+                <RadioButton  
+                             Content="Solid" 
+                             Margin="8,0"
+                             IsChecked="{Binding PlayerProgressRenderMode, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Continuous}"/>
+                <CheckBox
+                    Content="Mirror waveform"
+                    IsChecked="{Binding PlayerProgressRenderMirror, Mode=TwoWay}"
+                    />
             </StackPanel>
             <controls:SectionTitleSeparator Title="App behavior" IconGlyph="&#xEB3B;" Margin="0,8"/>
 
@@ -43,18 +63,18 @@
                  IsChecked="{Binding MinimizeToTray, Mode=TwoWay}"/>
             </StackPanel>
 
-            <controls:SectionTitleSeparator Title="App startup" IconGlyph="&#xE7E8;" Margin="0,8"/>
+            <Label Content="App startup" Margin="0,0,0,8"/>
 
             <StackPanel Orientation="Vertical" Margin="0,0,0,16">
-                <RadioButton GroupName="startup" Content="Restore queue, current track, position and playback" Margin="8,0"
+                <RadioButton Content="Restore queue, current track, position and playback" Margin="8,0"
                  IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestorePlayback}"/>
-                <RadioButton GroupName="startup" Content="Restore queue, current track and position" Margin="8,0"
+                <RadioButton Content="Restore queue, current track and position" Margin="8,0"
                  IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestorePosition}"/>
-                <RadioButton GroupName="startup" Content="Restore queue and current track" Margin="8,0"
+                <RadioButton Content="Restore queue and current track" Margin="8,0"
                  IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestoreQueueAndIndexOnly}"/>
-                <RadioButton GroupName="startup" Content="Restore queue" Margin="8,0"
+                <RadioButton Content="Restore queue" Margin="8,0"
                  IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=RestoreQueueOnly}"/>
-                <RadioButton GroupName="startup" Content="Nothing" Margin="8,0"
+                <RadioButton Content="Nothing" Margin="8,0"
                  IsChecked="{Binding StartupBehavior, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=StartClean}"/>
             </StackPanel>
             <controls:SectionTitleSeparator Title="Tray popup" IconGlyph="&#xE770;" Margin="0,8"/>

@@ -352,7 +352,8 @@ namespace MusicWrap.Core
 
         public static Task<float[]> GetWaveFromDataAsync(string filePath, int dataPoints = 2000, CancellationToken ct = default)
         {
-            if (dataPoints <= 0) dataPoints = 1;
+            if (dataPoints <= 0)
+                return Task.FromResult(Array.Empty<float>());
 
             return Task.Factory.StartNew(() =>
             {

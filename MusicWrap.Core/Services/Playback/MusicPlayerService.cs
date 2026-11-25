@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using ManagedBass;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -37,8 +36,6 @@ namespace MusicWrap.Core.Services.Playback
 
         private int _currentStream;
         private double _selectedTrackDuration;
-        private float[] _currentWaveform = Array.Empty<float>();
-
         private int _preloadedStream = 0;
         private PlaybackQueueItem? _preloadedQueueItem;
         private readonly SyncProcedure _preloadSync;
@@ -77,7 +74,6 @@ namespace MusicWrap.Core.Services.Playback
         public bool IsPaused => _playbackState == PlaybackState.Paused;
         public double CurrentPosition => _currentStream != 0 ? GetEffectivePosition() : 0.0;
         public double Duration => _currentStream != 0 ? _currentTrackDuration : _selectedTrackDuration;
-        public float[] CurrentWaveformData => _currentWaveform;
 
         private double _currentTrackDuration;
 
@@ -87,28 +83,29 @@ namespace MusicWrap.Core.Services.Playback
 
 
         // Waveform
-        private readonly Channel<WaveformRequest> _waveformRequests = Channel.CreateUnbounded<WaveformRequest>();
-        private readonly CancellationTokenSource _waveformWorkerCancellation = new();
-        private readonly Task _waveformWorker;
-        private CancellationTokenSource? _currentWaveformCancellation;
+        private const int MaxWaveformCacheEntries = 64;
+        private const int MaxWaveformDataPoints = 8000;
+
+        private readonly record struct WaveformCacheKey(int TrackId, int DataPoints);
+
+        private readonly Dictionary<WaveformCacheKey, float[]> _waveformCache = [];
+        private readonly Dictionary<WaveformCacheKey, LinkedListNode<WaveformCacheKey>> _waveformCacheNodes = [];
+        private readonly LinkedList<WaveformCacheKey> _waveformCacheLru = [];
+        private readonly Dictionary<WaveformCacheKey, Lazy<Task<float[]>>> _waveformTasks = [];
+        private readonly object _waveformCacheLock = new();
+        private readonly CancellationTokenSource _waveformLifetime = new();
 
         private sealed record WaveformRequest(
-            Track track,
-            int RequestVersion,
-            CancellationToken CancellationToken
-        );
+           Track Track,
+           int DataPoints,
+           int RequestVersion,
+           CancellationToken CancellationToken
+       );
 
-
-        private const int MaxWaveformCacheEntries = 32;
-        private const int WaveformDataPoints = 1000;
-        private readonly Dictionary<int, float[]> _waveformCache = [];
-        private readonly Dictionary<int, LinkedListNode<int>> _waveformCacheNodes = [];
-        private readonly LinkedList<int> _waveformCacheLru = [];
-        private readonly object _waveformCacheLock = new object();
-        private int _waveformVersion = 0;
 
         private double _trackedPositon = 0.0;
         private DateTime _trackedPositionUtc = DateTime.MinValue;
+
 
         public float Volume
         {
@@ -200,8 +197,6 @@ namespace MusicWrap.Core.Services.Playback
 
             _endCallback = OnTrackEndedInternal;
             _preloadSync = OnPreloadSync;
-
-            _waveformWorker = Task.Run(ProcessWaveformRequestsAsync);
 
             _queue.QueueChanged += QueueOnQueueChanged;
             _queue.CurrentChanged += QueueOnCurrentChanged;
@@ -319,7 +314,6 @@ namespace MusicWrap.Core.Services.Playback
         public event EventHandler<int[]>? QueueChanged;
         public event EventHandler<int>? DeviceIndexChanged;
         public event EventHandler<SampleRateChangedEventArgs>? SampleRateChanged;
-        public event EventHandler<float[]>? WaveformDataChanged;
         public event EventHandler<OutputMode>? OutputModeChanged;
         public event EventHandler<float>? VolumeChanged;
         public event EventHandler<bool>? ShuffleStateChanged;
@@ -414,7 +408,7 @@ namespace MusicWrap.Core.Services.Playback
                     _preloadedStream = 0;
                     _preloadedQueueItem = null;
                 }
-                if (currentStream != 0) _audioEngine.DetachTrack(_currentStream);
+                if (currentStream != 0) _audioEngine.DetachTrack(currentStream);
                 FreeStream(currentStream);
                 _currentTrackDuration = 0.0;
                 FreeStream(preloadedStream);
@@ -785,14 +779,12 @@ namespace MusicWrap.Core.Services.Playback
             if (item == null)
             {
                 _selectedTrackDuration = 0;
-                _currentWaveform = Array.Empty<float>();
 
                 if (!_isTransitioningTrack)
                 {
                     _dispatcher.Invoke(() =>
                     {
                         TrackChanged?.Invoke(this, string.Empty);
-                        WaveformDataChanged?.Invoke(this, Array.Empty<float>());
                     });
                 }
                 return;
@@ -807,14 +799,12 @@ namespace MusicWrap.Core.Services.Playback
             if (track == null)
             {
                 _selectedTrackDuration = 0;
-                _currentWaveform = CreateFallbackWaveForm(WaveformDataPoints);
 
                 if (!_isTransitioningTrack)
                 {
                     _dispatcher.Invoke(() =>
                     {
                         TrackChanged?.Invoke(this, item.DisplayTitle ?? item.Source);
-                        WaveformDataChanged?.Invoke(this, _currentWaveform);
                     });
                 }
                 return;
@@ -825,7 +815,6 @@ namespace MusicWrap.Core.Services.Playback
             if (!_isTransitioningTrack)
             {
                 _dispatcher.Invoke(() => TrackChanged?.Invoke(this, trackRef));
-                BeginWaveformPipeline(track);
             }
 
         }
@@ -1120,15 +1109,7 @@ namespace MusicWrap.Core.Services.Playback
                 QueueChanged?.Invoke(this, snapshot);
                 PositionChanged?.Invoke(this, 0.0);
             });
-            if (track != null)
-            {
-                BeginWaveformPipeline(track);
-            }
-            else
-            {
-                _currentWaveform = CreateFallbackWaveForm(WaveformDataPoints);
-                _dispatcher.Invoke(() => WaveformDataChanged?.Invoke(this, _currentWaveform));
-            }
+
             _errorCount = 0; // Reset error count on successful playback
             EnqueueSave(SaveKind.Playback);
         }
@@ -1297,7 +1278,7 @@ namespace MusicWrap.Core.Services.Playback
                         PreferedSampleRate = CurrentSampleRate,
                         EffectiveSampleRate = effectiveSampleRate
                     });
-                    TrackChanged?.Invoke(this, item.Source);
+                    //TrackChanged?.Invoke(this, item.Source);
                     QueueChanged?.Invoke(this, CreateQueueSnapshot());
                     PositionChanged?.Invoke(this, 0.0);
                 });
@@ -1382,15 +1363,6 @@ namespace MusicWrap.Core.Services.Playback
                     _preloadedStream = nextStream;
                     _preloadedQueueItem = nextItem;
                 }
-
-                if (nextItem.LibraryId.HasValue)
-                {
-                    var track = _library.Tracks.FirstOrDefault(t => t.Id == nextItem.LibraryId.Value);
-                    // if (track != null)
-                    // {
-                    //     await PreloadWaveformCacheAsync(track);
-                    // }
-                }
             }
             catch (Exception ex)
             {
@@ -1412,77 +1384,102 @@ namespace MusicWrap.Core.Services.Playback
                 ? Array.Empty<int>()
                 : _queue.Items.Select(item => item.LibraryId ?? 0).ToArray();
         }
-        private void BeginWaveformPipeline(Track track)
+
+        public async Task<float[]> GetWaveformAsync(int trackId, int dataPoints, CancellationToken ct = default)
         {
-            int requestVersion = Interlocked.Increment(ref _waveformVersion);
-            // inmidiate fallback
-            PublishWaveformIfCurrent(track.Id, requestVersion, CreateFallbackWaveForm(WaveformDataPoints));
+            dataPoints = dataPoints <= 0 ? 0 : Math.Clamp(dataPoints, 1, MaxWaveformDataPoints);
 
-            if (TryGetWaveformFromCache(track.Id, out var cached))
-            {
-                PublishWaveformIfCurrent(track.Id, requestVersion, cached ?? Array.Empty<float>());
-                return;
-            }
+            if (trackId <= 0 || dataPoints <= 0)
+                return [];
 
-            var cancellation = new CancellationTokenSource();
+            var track = _library.Tracks.FirstOrDefault(t => t.Id == trackId);
+            if (track is null || string.IsNullOrWhiteSpace(track.Path))
+                return [];
 
-            _currentWaveformCancellation?.Cancel();
-            _currentWaveformCancellation?.Dispose();
-            _currentWaveformCancellation = cancellation;
+            var task = GetOrStartWaveformDecode(track.Id, track.Path, dataPoints);
 
-            _waveformRequests.Writer.TryWrite(
-                new WaveformRequest(track, requestVersion, cancellation.Token)
-            );
-         
+            return await task.WaitAsync(ct).ConfigureAwait(false);
         }
-       
-        private bool TryGetWaveformFromCache(int trackId, out float[]? data)
+
+        private Task<float[]> GetOrStartWaveformDecode(int trackId, string path, int dataPoints)
         {
-            lock (_waveformCacheLock)
-            {
-                if (!_waveformCache.TryGetValue(trackId, out data))
-                {
-                    return false;
-                }
-                TouchWaveformCacheEntry(trackId);
-                return true;
-            }
-        }
-        private void CacheWaveform(int trackId, float[] data)
-        {
-            if (trackId <= 0 || data.Length == 0) return;
+            var key = new WaveformCacheKey(trackId, dataPoints);
 
             lock (_waveformCacheLock)
             {
-                _waveformCache[trackId] = data;
-                if (!_waveformCacheNodes.ContainsKey(trackId))
+                if (_waveformCache.TryGetValue(key, out var cached))
                 {
-                    var node = _waveformCacheLru.AddLast(trackId);
-                    _waveformCacheNodes[trackId] = node;
+                    TouchWaveformCacheEntry(key);
+                    return Task.FromResult(cached);
                 }
+
+                if (_waveformTasks.TryGetValue(key, out var running))
+                    return running.Value;
+
+                var lazy = new Lazy<Task<float[]>>(
+                    () => DecodeWaveformAsync(key, path),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+
+                _waveformTasks[key] = lazy;
+                return lazy.Value;
+            }
+        }
+
+        private async Task<float[]> DecodeWaveformAsync(WaveformCacheKey key, string path)
+        {
+            try
+            {
+                var data = await AudioEngine
+                    .GetWaveFromDataAsync(path, key.DataPoints, _waveformLifetime.Token)
+                    .ConfigureAwait(false);
+
+                if (data.Length == 0)
+                    return [];
+
+                CacheWaveform(key.TrackId, key.DataPoints, data);
+                return data;
+            }
+            finally
+            {
+                lock (_waveformCacheLock)
+                {
+                    _waveformTasks.Remove(key);
+                }
+            }
+        }
+
+        private void CacheWaveform(int trackId, int dataPoints, float[] data)
+        {
+            if (trackId <= 0 || dataPoints <= 0 || data.Length == 0) return;
+
+            var key = new WaveformCacheKey(trackId, dataPoints);
+
+            lock (_waveformCacheLock)
+            {
+                _waveformCache[key] = data;
+
+                if (!_waveformCacheNodes.ContainsKey(key))
+                    _waveformCacheNodes[key] = _waveformCacheLru.AddLast(key);
                 else
-                {
-                    TouchWaveformCacheEntry(trackId);
-                }
+                    TouchWaveformCacheEntry(key);
 
                 while (_waveformCache.Count > MaxWaveformCacheEntries)
                 {
                     var oldest = _waveformCacheLru.First;
                     if (oldest is null) break;
 
-                    int evictedTrackId = oldest.Value;
                     _waveformCacheLru.RemoveFirst();
-                    _waveformCacheNodes.Remove(evictedTrackId);
-                    _waveformCache.Remove(evictedTrackId);
+                    _waveformCacheNodes.Remove(oldest.Value);
+                    _waveformCache.Remove(oldest.Value);
                 }
             }
+
         }
-        private void TouchWaveformCacheEntry(int trackId)
+        private void TouchWaveformCacheEntry(WaveformCacheKey key)
         {
-            if (!_waveformCacheNodes.TryGetValue(trackId, out var node))
+            if (!_waveformCacheNodes.TryGetValue(key, out var node))
             {
-                node = _waveformCacheLru.AddLast(trackId);
-                _waveformCacheNodes[trackId] = node;
+                _waveformCacheNodes[key] = _waveformCacheLru.AddLast(key);
                 return;
             }
 
@@ -1491,68 +1488,6 @@ namespace MusicWrap.Core.Services.Playback
                 _waveformCacheLru.Remove(node);
                 _waveformCacheLru.AddLast(node);
             }
-        }
-        private void PublishWaveformIfCurrent(int trackId, int requestVersion, float[] data)
-        {
-            if (trackId <= 0) return;
-
-            _dispatcher.Invoke(() =>
-            {
-                if (requestVersion != Volatile.Read(ref _waveformVersion)) return; // Stale request, ignore
-
-                if (CurrentTrackId != trackId) return; // Not current track anymore, ignore
-
-                _currentWaveform = data;
-                WaveformDataChanged?.Invoke(this, data);
-
-            });
-        }
-        private async Task ProcessWaveformRequestsAsync()
-        {
-            try
-            {
-                await foreach(var request in _waveformRequests.Reader.ReadAllAsync(_waveformWorkerCancellation.Token))
-                {
-                    try
-                    {
-                        var waveform = await AudioEngine.GetWaveFromDataAsync(
-                            request.track.Path,
-                            WaveformDataPoints,
-                            request.CancellationToken
-                        );
-
-                        if (waveform.Length == 0)
-                        {
-                            waveform = CreateFallbackWaveForm(WaveformDataPoints);
-                        }
-
-                        CacheWaveform(request.track.Id, waveform);
-
-                        PublishWaveformIfCurrent(request.track.Id, request.RequestVersion, waveform);
-                    }catch (OperationCanceledException)
-                    {
-                        // Ignore cancellation
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing waveform request for track {TrackId}", request.track.Id);
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in waveform processing task");
-            }
-        }
-        private static float[] CreateFallbackWaveForm(int points = 2000)
-        {
-            var data = new float[points];
-            Array.Fill(data, 1f);
-            return data;
         }
         private double GetEffectivePosition()
         {
@@ -1653,20 +1588,17 @@ namespace MusicWrap.Core.Services.Playback
 
             Stop(true);
 
+            _waveformLifetime.Cancel();
+
             lock (_waveformCacheLock)
             {
                 _waveformCache.Clear();
                 _waveformCacheNodes.Clear();
                 _waveformCacheLru.Clear();
+                _waveformTasks.Clear();
             }
-            _currentWaveformCancellation?.Cancel();
-            _waveformWorkerCancellation.Cancel();
-            _waveformRequests.Writer.TryComplete();
 
-            try
-            {
-                _waveformWorker.GetAwaiter().GetResult();
-            }catch(OperationCanceledException){}
+            _waveformLifetime.Dispose();
 
             _audioEngine.Dispose();
         }

@@ -110,7 +110,8 @@
                 <controls:WaveformPlayerControl
                     x:Name="TrayWaveForm"
                     Grid.Column="2"
-                    UsePlaceholderWaveform="True"
+                    RenderMode="None"
+                    WavePoints="0"
                     VerticalAlignment="Center"
                     HorizontalAlignment="Stretch"
                     Height="6"

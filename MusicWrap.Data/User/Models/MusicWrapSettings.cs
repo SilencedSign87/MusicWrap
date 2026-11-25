@@ -26,6 +26,23 @@ namespace MusicWrap.Data.User.Models
         [Key(12)] public ThemePreference AppThemePreference { get; set; } = ThemePreference.System;
         [Key(13)] public WindowBoundsState MainPlayerBounds { get; set; } = new WindowBoundsState();
         [Key(14)] public WindowBoundsState CompactPlayerBounds { get; set; } = new WindowBoundsState();
+        private int _playerProgressRenderMode = 2;
+
+        [Key(15)]
+        public int PlayerProgressRenderMode
+        {
+            get => _playerProgressRenderMode;
+            set => SetProperty(ref _playerProgressRenderMode, value);
+        }
+
+        private bool _playerProgressRenderMirror = true;
+
+        [Key(16)]
+        public bool PlayerProgressRenderMirror
+        {
+            get => _playerProgressRenderMirror;
+            set => SetProperty(ref _playerProgressRenderMirror, value);
+        }
 
         [Key(100)] public DateTime SavedAtUtc { get; set; } = DateTime.UtcNow;
     }

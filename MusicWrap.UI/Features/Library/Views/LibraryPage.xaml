@@ -151,11 +151,11 @@
                     </GroupStyle>
                 </ListView.GroupStyle>
                 <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
+                    <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Height" Value="auto"/>
-                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Padding" Value="1,0"/>
                         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     </Style>
                 </ListView.ItemContainerStyle>
@@ -198,13 +198,6 @@
                                 </Grid>
                             </Grid>
                         </Border>
-                        <DataTemplate.Triggers>
-                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListViewItem}, Path=IsSelected}" Value="True">
-                                <Setter TargetName="RootBorderItem"
-                                    Property="Background"
-                                    Value="{DynamicResource BackgroundLayerAlt}"/>
-                            </DataTrigger>
-                        </DataTemplate.Triggers>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

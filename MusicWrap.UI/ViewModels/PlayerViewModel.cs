@@ -6,6 +6,8 @@ using MusicWrap.Core.Services.Library;
 using MusicWrap.Core.Services.Playback;
 using MusicWrap.Data.Helpers;
 using MusicWrap.Data.Library.Models;
+using MusicWrap.Data.User.Models;
+using MusicWrap.UI.Controls;
 using MusicWrap.UI.Services;
 using MusicWrap.UI.Shared.Services;
 using System.Windows;
@@ -18,6 +20,7 @@ namespace MusicWrap.UI.ViewModels
         private readonly MusicPlayerService _playerService;
         private readonly ILibraryService _libraryService;
         private readonly WindowManagerService _windowManagerService;
+        private readonly MusicWrapSettings _settings;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(PlayPauseIcon))]
@@ -54,45 +57,72 @@ namespace MusicWrap.UI.ViewModels
         [ObservableProperty]
         private string currentTrackAlbum = CommonStrings.UnknownAlbum;
         [ObservableProperty]
-        private string currentTrackArtists = "";
+        private string currentTrackArtists = string.Empty;
         [ObservableProperty]
-        private string currentTrackImagePath = "";
+        private string currentTrackImagePath = string.Empty;
         [ObservableProperty]
         private string? currentTrackDominantColorHex;
         [ObservableProperty]
         private string? currentTackDominantForegroundColorHex;
         [ObservableProperty]
         private string? currentTrackHighlightColorHex;
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(PlayerDataPoints))]
+        private WaveformPlayerRenderMode playerProgressRenderMode = WaveformPlayerRenderMode.Continuous;
+        [ObservableProperty]
+        private bool playerProgressRenderMirror = true;
 
 
         //[ObservableProperty] 
         public string PlayPauseIcon => IsPlaying ? "\ue769" : "\ue768";
 
-        private string ArtworkPath = "";
+        public int PlayerDataPoints => PlayerProgressRenderMode switch
+        {
+            WaveformPlayerRenderMode.None => 0,
+            WaveformPlayerRenderMode.Discrete => 200,
+            WaveformPlayerRenderMode.Continuous => 700,
+            _ => 700
+        };
 
-        private readonly IwindowsImageService _imageService;
 
-        public PlayerViewModel(MusicPlayerService service, ILibraryService libraryService, IwindowsImageService imageService, WindowManagerService windowManagerService)
+        public PlayerViewModel(MusicPlayerService service, ILibraryService libraryService, WindowManagerService windowManagerService, MusicWrapSettings settings)
         {
             _playerService = service;
             _libraryService = libraryService;
-            _imageService = imageService;
             _windowManagerService = windowManagerService;
-
+            _settings = settings;
 
             // Subscribe to player events
             _playerService.PlaybackStateChanged += OnPlaybackStateChanged;
             _playerService.TrackChanged += OnTrackChanged;
             _playerService.ShuffleStateChanged += _playerService_ShuffleStateChanged;
 
+            // listen settings changes
+            _settings.PropertyChanged += _settings_PropertyChanged;
+
             // Load initial states
             SelectedRepeatMode = _playerService.RepeatMode;
+            PlayerProgressRenderMode = _settings.PlayerProgressRenderMode == 0 ? WaveformPlayerRenderMode.None : _settings.PlayerProgressRenderMode == 1 ? WaveformPlayerRenderMode.Discrete : WaveformPlayerRenderMode.Continuous;
+            PlayerProgressRenderMirror = _settings.PlayerProgressRenderMirror;
 
             UpdateCurrentTrackInfo();
 
             // Initialize state
             IsPlaying = _playerService.IsPlaying;
             IsShuffleEnabled = _playerService.IsShuffleEnabled;
+        }
+
+        private void _settings_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            switch(e.PropertyName)
+            {
+                case nameof(MusicWrapSettings.PlayerProgressRenderMode):
+                    PlayerProgressRenderMode = _settings.PlayerProgressRenderMode == 0 ? WaveformPlayerRenderMode.None : _settings.PlayerProgressRenderMode == 1 ? WaveformPlayerRenderMode.Discrete : WaveformPlayerRenderMode.Continuous;
+                    break;
+                case nameof(MusicWrapSettings.PlayerProgressRenderMirror):
+                    PlayerProgressRenderMirror = _settings.PlayerProgressRenderMirror;
+                    break;
+            }
         }
 
         private void _playerService_ShuffleStateChanged(object? sender, bool enabled)
@@ -243,7 +273,6 @@ namespace MusicWrap.UI.ViewModels
                 if (coverAsset != null)
                 {
                     CurrentTrackImagePath = coverAsset.FileName;
-                    ArtworkPath = _imageService.ResolvePath(coverAsset.FileName, ImageVariant.Original) ?? string.Empty;
                     CurrentTrackDominantColorHex = coverAsset.DominantColorHex;
                     CurrentTrackHighlightColorHex = coverAsset.HighlightColorHex;
                     CurrentTackDominantForegroundColorHex = coverAsset.DominantForegroundHex;
@@ -251,7 +280,6 @@ namespace MusicWrap.UI.ViewModels
                 else
                 {
                     CurrentTrackImagePath = string.Empty;
-                    ArtworkPath = string.Empty;
                     CurrentTrackDominantColorHex = CommonColors.DominantColorFallback;
                     CurrentTrackHighlightColorHex = CommonColors.HighlightColorFallback;
                     CurrentTackDominantForegroundColorHex = CommonColors.ForegroundOnFallback;
@@ -278,7 +306,6 @@ namespace MusicWrap.UI.ViewModels
             CurrentTrackDominantColorHex = CommonColors.DominantColorFallback;
             CurrentTrackHighlightColorHex = CommonColors.HighlightColorFallback;
             CurrentTackDominantForegroundColorHex = CommonColors.ForegroundOnFallback;
-            ArtworkPath = string.Empty;
         }
 
         public void Dispose()
@@ -289,6 +316,7 @@ namespace MusicWrap.UI.ViewModels
             _playerService.PlaybackStateChanged -= OnPlaybackStateChanged;
             _playerService.TrackChanged -= OnTrackChanged;
             _playerService.ShuffleStateChanged -= _playerService_ShuffleStateChanged;
+            _settings.PropertyChanged -= _settings_PropertyChanged;
         }
     }
 }

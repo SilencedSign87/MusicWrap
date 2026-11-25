@@ -71,10 +71,23 @@
                 <controls:WaveformPlayerControl
                     x:Name="WaveformPlayer"
                     Margin="8,0"
-                    Height="36"
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Center"
-                    />
+                    WavePoints="{Binding PlayerDataPoints, Mode=OneWay}"
+                    RenderMode="{Binding PlayerProgressRenderMode, Mode=OneWay}"
+                    MirrorRender="{Binding PlayerProgressRenderMirror, Mode=OneWay}"
+                    >
+                    <controls:WaveformPlayerControl.Style>
+                        <Style TargetType="controls:WaveformPlayerControl">
+                            <Setter Property="Height" Value="36" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PlayerProgressRenderMode}" Value="{x:Static controls:WaveformPlayerRenderMode.None}">
+                                    <Setter Property="Height" Value="10" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </controls:WaveformPlayerControl.Style>
+                </controls:WaveformPlayerControl>
             </Grid>
 
             <Grid Grid.Column="2">

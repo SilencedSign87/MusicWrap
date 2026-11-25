@@ -182,16 +182,18 @@
                             <controls:WaveformPlayerControl
                                 x:Name="ProgressBar"
                                 Grid.Column="1"
-                                UsePlaceholderWaveform="{Binding UseWaveformPlayer, Converter={StaticResource InverseBoolConverter}}"
+                                RenderMode="{Binding WaveformMode}"
+                                MirrorRender="{Binding MirrorWaveformMode}"
+                                WavePoints="100"
                                 >
                                 <controls:WaveformPlayerControl.Style>
                                     <Style TargetType="controls:WaveformPlayerControl">
-                                        <Setter Property="Height" Value="8" />
+                                        <Setter Property="Height" Value="24" />
                                         <Setter Property="Margin" Value="8,0" />
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding UseWaveformPlayer}" Value="True">
-                                                <Setter Property="Height" Value="24" />
-                                            </DataTrigger>
+                                                <DataTrigger Binding="{Binding WaveformMode}" Value="{x:Static controls:WaveformPlayerRenderMode.None}">
+                                                    <Setter Property="Height" Value="8" />
+                                                </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </controls:WaveformPlayerControl.Style>
@@ -217,10 +219,29 @@
                                         >
                                         <controls:AppMenuItem
                                             Icon="{ex:Icon Glyph=E8BA}"
-                                            Header="Waveform progressbar"
-                                            IsCheckable="True"
-                                            IsChecked="{Binding UseWaveformPlayer}"
-                                            />
+                                            Header="Progressbar">
+                                            <controls:AppMenuItem
+                                                Header="Normal"
+                                                IsCheckable="True"
+                                                IsChecked="{Binding WaveformMode, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=None}"
+                                                />
+                                            <controls:AppMenuItem
+                                                Header="Bars"
+                                                IsCheckable="True"
+                                                IsChecked="{Binding WaveformMode, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Discrete}"
+                                                />
+                                            <controls:AppMenuItem
+                                                Header="Solid"
+                                                IsCheckable="True"
+                                                IsChecked="{Binding WaveformMode, Converter={StaticResource EnumComparisonConverter}, ConverterParameter=Continuous}"
+                                                />
+                                            <Separator/>
+                                            <controls:AppMenuItem
+                                                Header="Mirror waveform"
+                                                IsCheckable="True"
+                                                IsChecked="{Binding MirrorWaveformMode}"
+                                                />
+                                        </controls:AppMenuItem>
                                         <controls:AppMenuItem
                                             Icon="{ex:Icon Glyph=F4A5}"
                                             Header="Artwork blur"
