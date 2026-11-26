@@ -55,7 +55,7 @@ namespace MusicWrap.UI.Shaders
                 nameof(Strength),
                 typeof(double),
                 typeof(FluidBackdropEffect),
-                new UIPropertyMetadata(1.0, PixelShaderConstantCallback(1)));
+                new UIPropertyMetadata(0.65, PixelShaderConstantCallback(1)));
 
         public double Strength
         {
@@ -64,63 +64,45 @@ namespace MusicWrap.UI.Shaders
         }
 
 
-        public static readonly DependencyProperty OverlayColorProperty =
+
+        public static readonly DependencyProperty TintColorProperty =
             DependencyProperty.Register(
-                nameof(OverlayColor),
+                nameof(TintColor),
                 typeof(Color),
                 typeof(FluidBackdropEffect),
                 new UIPropertyMetadata(
                     Colors.Transparent,
                     PixelShaderConstantCallback(2)));
 
-        public Color OverlayColor
+        public Color TintColor
         {
-            get => (Color)GetValue(OverlayColorProperty);
-            set => SetValue(OverlayColorProperty, value);
+            get => (Color)GetValue(TintColorProperty);
+            set => SetValue(TintColorProperty, value);
         }
 
 
-        public static readonly DependencyProperty ParametersProperty =
+
+        public static readonly DependencyProperty AcrylicParametersProperty =
             DependencyProperty.Register(
-                nameof(Parameters),
+                nameof(AcrylicParameters),
                 typeof(Point4D),
                 typeof(FluidBackdropEffect),
                 new UIPropertyMetadata(
                     // x = Tint opacity
-                    // y = Saturation
-                    // z = Contrast
-                    // w = Noise intensity
+                    // y = Tint luminosity opacity
+                    // z = 1: use TintLuminosityOpacity, 0: auto
+                    // w = Global Opacity of the noise
                     new Point4D(
-                        0.50,
-                        1.20,
-                        1.10,
-                        0.025),
+                        0.145,
+                        0.775,
+                        0.0,
+                        0.05),
                     PixelShaderConstantCallback(3)));
 
-        public Point4D Parameters
+        public Point4D AcrylicParameters
         {
-            get => (Point4D)GetValue(ParametersProperty);
-            set => SetValue(ParametersProperty, value);
-        }
-
-        public static readonly DependencyProperty TintLuminosityProperty =
-            DependencyProperty.Register(
-                nameof(TintLuminosity),
-                typeof(Point4D),
-                typeof(FluidBackdropEffect),
-                new UIPropertyMetadata(
-                    // x = tint luminosity opacity
-                    new Point4D(
-                        0.25,
-                        0.0,
-                        0.0,
-                        0.0),
-                    PixelShaderConstantCallback(4)));
-
-        public Point4D TintLuminosity
-        {
-            get => (Point4D)GetValue(TintLuminosityProperty);
-            set => SetValue(TintLuminosityProperty, value);
+            get => (Point4D)GetValue(AcrylicParametersProperty);
+            set => SetValue(AcrylicParametersProperty, value);
         }
 
         public static readonly DependencyProperty SeedsProperty =
@@ -131,7 +113,7 @@ namespace MusicWrap.UI.Shaders
                 new UIPropertyMetadata(
                     // random seeds
                     new Point4D(0.0, 0.0, 0.0, 0.0),
-                    PixelShaderConstantCallback(5)));
+                    PixelShaderConstantCallback(4)));
 
         public Point4D Seeds
         {
@@ -149,9 +131,8 @@ namespace MusicWrap.UI.Shaders
             UpdateShaderValue(InputProperty);
             UpdateShaderValue(TimeProperty);
             UpdateShaderValue(StrengthProperty);
-            UpdateShaderValue(OverlayColorProperty);
-            UpdateShaderValue(ParametersProperty);
-            UpdateShaderValue(TintLuminosityProperty);
+            UpdateShaderValue(TintColorProperty);
+            UpdateShaderValue(AcrylicParametersProperty);
             UpdateShaderValue(SeedsProperty);
         }
 
@@ -162,7 +143,7 @@ namespace MusicWrap.UI.Shaders
 
             lock (Random)
             {
-                duration = Random.NextDouble() * 30.0 + 20.0;
+                duration = Random.NextDouble() * 30.0 + 30.0;
 
                 seeds = new Point4D(
                     Random.NextDouble(),
@@ -180,7 +161,8 @@ namespace MusicWrap.UI.Shaders
                     From = 0.0,
                     To = 1.0,
                     Duration = TimeSpan.FromSeconds(duration),
-                    RepeatBehavior = RepeatBehavior.Forever
+                    RepeatBehavior = RepeatBehavior.Forever,
+                    AutoReverse = true
                 },
                 HandoffBehavior.SnapshotAndReplace);
         }

@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 
 namespace MusicWrap.UI.Shell.Windows
@@ -299,5 +300,28 @@ namespace MusicWrap.UI.Shell.Windows
                FluidShader.StartAnimation();
            }, DispatcherPriority.ContextIdle);
         }
+
+        //private void ShaderSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        //{
+        //    // Durante InitializeComponent algunos campos aún no existen; los defaults ya coinciden.
+        //    if (FluidShader is null || SldStrength is null || SldTint is null || SldLum is null || SldNoise is null)
+        //        return;
+
+        //    FluidShader.Strength = SldStrength.Value;
+        //    FluidShader.AcrylicParameters = new Point4D(
+        //        SldTint.Value,
+        //        SldLum.Value,
+        //        1.0,              // z = usar luminosidad explícita
+        //        SldNoise.Value);
+        //}
+
+        //private void ShaderDebugPrint_Click(object sender, RoutedEventArgs e)
+        //{
+        //    System.Diagnostics.Debug.WriteLine(
+        //        $"Strength={FluidShader.Strength:F3} " +
+        //        $"Tint={FluidShader.AcrylicParameters.X:F3} " +
+        //        $"Lum={FluidShader.AcrylicParameters.Y:F3} " +
+        //        $"Noise={FluidShader.AcrylicParameters.W:F3}");
+        //}
     }
 }

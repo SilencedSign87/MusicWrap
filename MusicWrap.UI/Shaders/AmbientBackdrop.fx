@@ -7,19 +7,16 @@ float4 Time : register(c0);
 // x = distortion strength
 float4 Strength : register(c1);
 
-float4 OverlayColor : register(c2);
+float4 TintColor : register(c2);
 
 // x = Tint opacity
-// y = Saturation
-// z = Contrast
-// w = Noise intensity
-float4 Parameters : register(c3);
-
-// x = Tint opacity
-float4 TintLuminosity : register(c4);
+// y = Tint luminosity opacity
+// z = 1: use TintLuminosityOpacity, 0: auto
+// w = Global Opacity of the noise
+float4 AcrylicParameters : register(c3);
 
 // random seeds
-float4 Seeds : register(c5);
+float4 Seeds : register(c4);
 
 static const float TAU = 6.28318530718;
 
@@ -181,6 +178,122 @@ float3 ClampHsvValue(float3 rgb, float minV, float maxV)
     return (v > 1e-5) ? rgb * (nv / v) : nv.xxx;
 }
 
+float Lum(float3 c)
+{
+    return dot(c, float3(0.30, 0.59, 0.11));
+}
+
+// Ajusta el color para que su luminosidad quede dentro del gamut RGB.
+float3 ClipColor(float3 c)
+{
+    float l = Lum(c);
+    float n = min(c.r, min(c.g, c.b));
+
+    if (n < 0.0)
+    {
+        float d = l - n;
+        if (d > 1e-6)
+            c = l + ((c - l) * l) / d;
+    }
+
+    float x = max(c.r, max(c.g, c.b));
+
+    if (x > 1.0)
+    {
+        float d = x - l;
+        if (d > 1e-6)
+            c = l + ((c - l) * (1.0 - l)) / d;
+    }
+
+    return saturate(c);
+}
+
+float3 SetLum(float3 c, float targetLum)
+{
+    return ClipColor(c + (targetLum - Lum(c)));
+}
+
+// Luminosity blend: conserva el tono y la saturación del fondo.
+float3 BlendLuminosity(float3 backdrop, float3 source)
+{
+    return SetLum(backdrop, Lum(source));
+}
+
+// Color blend: conserva la luminosidad del fondo y usa el tono/saturación del tinte.
+float3 BlendColor(float3 backdrop, float3 source)
+{
+    return SetLum(source, Lum(backdrop));
+}
+
+float3 RGBToHSV(float3 c)
+{
+    float hi = max(c.r, max(c.g, c.b));
+    float lo = min(c.r, min(c.g, c.b));
+    float d = hi - lo;
+
+    float h = 0.0;
+    float s = (hi > 1e-6) ? d / hi : 0.0;
+
+    if (d > 1e-6)
+    {
+        if (hi == c.r)
+            h = (c.g - c.b) / d;
+        else if (hi == c.g)
+            h = 2.0 + (c.b - c.r) / d;
+        else
+            h = 4.0 + (c.r - c.g) / d;
+
+        h = frac(h / 6.0);
+    }
+
+    return float3(h, s, hi);
+}
+
+float3 HSVToRGB(float3 hsv)
+{
+    float3 p = abs(frac(hsv.xxx + float3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+    return hsv.z * lerp(float3(1.0, 1.0, 1.0), saturate(p - 1.0), hsv.y);
+}
+
+float QuantizeAlpha(float a)
+{
+    return floor(saturate(a) * 255.0 + 0.5) / 255.0;
+}
+
+float GetTintOpacityModifier(float3 tint)
+{
+    float3 hsv = RGBToHSV(tint);
+    float v = hsv.z;
+    float s = hsv.y;
+
+    float modifier = 0.90;
+
+    if (v != 0.50)
+    {
+        float lowestMaxOpacity;
+        float maxDeviation;
+
+        if (v > 0.50)
+        {
+            lowestMaxOpacity = 0.45;
+            maxDeviation = 0.50;
+        }
+        else
+        {
+            lowestMaxOpacity = 0.85;
+            maxDeviation = 0.50;
+        }
+
+        float suppression = (0.90 - lowestMaxOpacity)
+                          * (abs(v - 0.50) / maxDeviation);
+
+        suppression *= max(1.0 - (s * 2.0), 0.0);
+        modifier = 0.90 - suppression;
+    }
+
+    return modifier;
+}
+
 float4 main(float2 uv : TEXCOORD) : COLOR
 {
     float t = Time.x * TAU;
@@ -212,53 +325,61 @@ float4 main(float2 uv : TEXCOORD) : COLOR
         0.001,
         0.999
     );
-
-    float3 color = tex2D(Input, finalUV).rgb;
-
-    // Saturation
-
-    float luminance = dot(
-        color,
-        float3(0.2126, 0.7152, 0.0722)
-    );
-
-    color = lerp(
-        luminance.xxx,
-        color,
-        Parameters.y
-    );
-
-    // Contrast
     
-    color = (
-        color - 0.5
-    ) * Parameters.z + 0.5;
+    float3 backdrop = tex2D(Input, finalUV).rgb;
     
-    // Luminosity adjustment
+    float tintOpacity = saturate(AcrylicParameters.x);
+    float useExplicitLuminosityOpacity = step(0.5, AcrylicParameters.z);
     
-    float3 lumColor = ClampHsvValue(OverlayColor.rgb, 0.125, 0.965);
-    color = lerp(
-        color,
-        lumColor,
-        TintLuminosity.x
+    float3 tintHSV = RGBToHSV(TintColor.rgb);
+    float3 luminosityRGB = HSVToRGB(float3(
+        tintHSV.x,
+        tintHSV.y,
+        clamp(tintHSV.z, 0.125, 0.965)
+    ));
+    
+    float tintAlphaForLuminosity = QuantizeAlpha(TintColor.a * tintOpacity);
+    
+    float automaticLuminosityOpacity = min(0.15 + tintAlphaForLuminosity * 0.88, 1.0);
+    
+    float tintLum = Lum(TintColor.rgb);
+    
+    float darkFalloff = saturate(tintLum / 0.5);
+    darkFalloff *= darkFalloff;
+    automaticLuminosityOpacity *= darkFalloff;
+    
+    float luminosityOpacity = lerp(
+        automaticLuminosityOpacity,
+        saturate(AcrylicParameters.y),
+        useExplicitLuminosityOpacity
     );
     
-    // Acrylic tint
-
-    color = lerp(
-        color,
-        OverlayColor.rgb,
-        Parameters.x
+    float3 luminosityBlend = BlendLuminosity(backdrop, luminosityRGB);
+    float3 afterLuminosity = lerp(
+        backdrop,
+        luminosityBlend,
+        luminosityOpacity
     );
-
-    // Film grain
-
+    
+    float tintModifier = lerp(
+        GetTintOpacityModifier(TintColor.rgb),
+        1.0,
+        useExplicitLuminosityOpacity
+    );
+    
+    float effectiveTintOpacity = QuantizeAlpha(TintColor.a * tintOpacity * tintModifier);
+    
+    float3 colorBlend = BlendColor(afterLuminosity, TintColor.rgb);
+    float3 acrylic = lerp(
+        afterLuminosity,
+        colorBlend,
+        effectiveTintOpacity
+    );
+    
+    // noise
     float noise = random(uv) - 0.5;
-
-    color += noise * Parameters.w;
-
-    return float4(
-        saturate(color),
-        1.0
-    );
+    float noiseWeight = Lum(acrylic);
+    float3 result = acrylic + noise * AcrylicParameters.w * noiseWeight;
+    
+    return float4(saturate(result), 1.0);
 }

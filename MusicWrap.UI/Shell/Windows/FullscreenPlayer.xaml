@@ -114,10 +114,12 @@
                 <Border.Effect>
                     <shaders:FluidBackdropEffect
                         x:Name="FluidShader"
-                        OverlayColor="{
+                        TintColor="{
                             Binding PlayerViewModel.CurrentTrackDominantColorHex, 
                             Converter={StaticResource HexToColorConverter}}"
+                        AcrylicParameters="0.5,0.3,0.0,0.05"
                         />
+
                 </Border.Effect>
             </Border>
         </Grid>
@@ -191,9 +193,9 @@
                                         <Setter Property="Height" Value="24" />
                                         <Setter Property="Margin" Value="8,0" />
                                         <Style.Triggers>
-                                                <DataTrigger Binding="{Binding WaveformMode}" Value="{x:Static controls:WaveformPlayerRenderMode.None}">
-                                                    <Setter Property="Height" Value="8" />
-                                                </DataTrigger>
+                                            <DataTrigger Binding="{Binding WaveformMode}" Value="{x:Static controls:WaveformPlayerRenderMode.None}">
+                                                <Setter Property="Height" Value="8" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </controls:WaveformPlayerControl.Style>
@@ -424,6 +426,44 @@
                     Opacity="0.75"
                 />
             </Grid>
+
+            <!--<Border Panel.ZIndex="100"
+                    HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Margin="16" Padding="12,8"
+                    CornerRadius="8"
+                    Background="#D9000000"
+                    BorderBrush="#33FFFFFF" BorderThickness="1">
+                <StackPanel Width="240">
+                    <CheckBox x:Name="ShaderDebugToggle"
+                  Content="Shader debug"
+                  IsChecked="True"
+                  Foreground="White"
+                  Margin="0,0,0,4"/>
+
+                    <StackPanel Visibility="{Binding IsChecked, ElementName=ShaderDebugToggle,
+                                Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                        <TextBlock Text="Strength" Foreground="#CCC" FontSize="11" Margin="0,4,0,0"/>
+                        <Slider x:Name="SldStrength" Minimum="0" Maximum="3" Value="1"
+                    ValueChanged="ShaderSlider_ValueChanged"/>
+
+                        <TextBlock Text="Tint opacity" Foreground="#CCC" FontSize="11" Margin="0,4,0,0"/>
+                        <Slider x:Name="SldTint" Minimum="0" Maximum="1" Value="0.5"
+                    ValueChanged="ShaderSlider_ValueChanged"/>
+
+                        <TextBlock Text="Luminosity opacity" Foreground="#CCC" FontSize="11" Margin="0,4,0,0"/>
+                        <Slider x:Name="SldLum" Minimum="0" Maximum="1" Value="0.1"
+                    ValueChanged="ShaderSlider_ValueChanged"/>
+
+                        <TextBlock Text="Noise opacity" Foreground="#CCC" FontSize="11" Margin="0,4,0,0"/>
+                        <Slider x:Name="SldNoise" Minimum="0" Maximum="0.2" Value="0.025"
+                    ValueChanged="ShaderSlider_ValueChanged"/>
+
+                        <Button Content="Print values" Margin="0,8,0,0"
+                    Click="ShaderDebugPrint_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>-->
 
         </Grid>
     </Grid>
